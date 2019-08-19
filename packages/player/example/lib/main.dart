@@ -40,7 +40,7 @@ class _MyAppState extends State<MyApp> {
 
   Future<String> cookieSigner() async {
     final signer = CookieSigner.from('assets/pk-APKAIORXYQDPHCKBDXYQ.pem');
-    const resource = 'https://android.suamusica.com.br*';
+    const resource = 'https://*.suamusica.com.br*';
     const keyPairId = "APKAIORXYQDPHCKBDXYQ";
     DateTime expiresOn = DateTime.now().add(Duration(hours: 12));
 
@@ -65,7 +65,6 @@ class _MyAppState extends State<MyApp> {
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 MaterialButton(
-                  shape: StadiumBorder(),
                   padding: const EdgeInsets.all(8.0),
                   textColor: Colors.white,
                   color: Colors.blue,
@@ -89,7 +88,6 @@ class _MyAppState extends State<MyApp> {
                 ),
                 const SizedBox(height: 30),
                 MaterialButton(
-                  shape: StadiumBorder(),
                   padding: const EdgeInsets.all(8.0),
                   textColor: Colors.white,
                   color: Colors.blue,
@@ -98,7 +96,7 @@ class _MyAppState extends State<MyApp> {
                         id: "31196178",
                         name: "O Bebe",
                         url:
-                            "https://stream.suamusica.com.br/373377/2238511/stream/02+O+Bebe.m3u8",
+                            "https://android.suamusica.com.br/373377/2238511/stream/02+O+Bebe.m3u8",
                         coverUrl:
                             "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
                         author: "Xand Avião",
