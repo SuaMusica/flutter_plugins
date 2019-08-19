@@ -1,8 +1,10 @@
 import 'dart:convert';
 
+import 'dart:typed_data';
+
 class SignerUtils {
-  static String makeBytesUrlSafe(String input) {
-    String encoded = base64.encode(utf8.encode(input));
+  static String makeBytesUrlSafe(Uint8List input) {
+    String encoded = base64.encode(input);
     StringBuffer result = StringBuffer();
     for (int i = 0; i < encoded.length; i++) {
       switch (encoded[i]) {

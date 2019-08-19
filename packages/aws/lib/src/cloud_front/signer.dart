@@ -21,24 +21,21 @@ class Signer {
 
   Future<CookiesForCustomPolicy> getCookiesForCustomPolicy(
       String resourceUrlOrPath,
-      RSAPrivateKey privateKey,
       String keyPairId,
       DateTime expiresOn,
       DateTime activeFrom,
       String ipRange) async {
     final String policy =
         _buildCustomPolicy(resourceUrlOrPath, expiresOn, activeFrom, ipRange);
-
     Signature signature = await _signWithSha1RSA(
-        Uint8List.fromList(policy.codeUnits), privateKey);
+        Uint8List.fromList(policy.codeUnits), privateKeyPath);
 
-    String urlSafePolicy = SignerUtils.makeBytesUrlSafe(policy);
-
-    String urlSafeSignature =
-        SignerUtils.makeBytesUrlSafe(signature.toString());
-
+    String urlSafePolicy =
+        SignerUtils.makeBytesUrlSafe(Uint8List.fromList(policy.codeUnits));
+    pointycastle.RSASignature tmp = signature;
+    String urlSafeSignature = SignerUtils.makeBytesUrlSafe(tmp.bytes);
     return CookiesForCustomPolicy(
-      expiresOn, 
+      expiresOn,
       Entry(PolicyKey, urlSafePolicy),
       Entry(KeyPairIdKey, keyPairId),
       Entry(SignatureKey, urlSafeSignature),
@@ -47,7 +44,7 @@ class Signer {
 
   String _buildCustomPolicy(String resourceUrlOrPath, DateTime expiresOn,
       DateTime activeFrom, String ipRange) {
-    return "{\"Statement\": [{" +
+    String policy = "{\"Statement\":[{" +
         "\"Resource\":\"" +
         resourceUrlOrPath +
         "\"" +
@@ -68,19 +65,33 @@ class Signer {
                     .toString() +
                 "}") +
         "}}]}";
+    return policy.split(" ").join("");
   }
 
   static Future<Signature> _signWithSha1RSA(
-      Uint8List dataToSign, RSAPrivateKey privateKey) async {
-    var signer = new pointycastle.Signer("SHA-1/RSA");
-    var privateKey = await PrivateKeyLoader.loadPrivateKey();
-    var privk = new pointycastle.RSAPrivateKey(privateKey.modulus,
+      Uint8List dataToSign, String privateKeyPath) async {
+    var signer = pointycastle.Signer("SHA-1/RSA");
+    var privateKey = await PrivateKeyLoader.loadPrivateKey(privateKeyPath);
+    var publicKey = await PublicKeyLoader.loadPublicKey(
+        "assets/rsa-APKAIORXYQDPHCKBDXYQ.pem");
+
+    var privk = pointycastle.RSAPrivateKey(privateKey.modulus,
         privateKey.privateExponent, privateKey.prime1, privateKey.prime2);
-    CipherParameters privParams = new pointycastle.ParametersWithRandom(
-        new pointycastle.PrivateKeyParameter<pointycastle.RSAPrivateKey>(privk),
-        new FortunaRandom());
+    var pubk = pointycastle.RSAPublicKey(
+        publicKey.modulus, BigInt.from(publicKey.publicExponent));
+
+    CipherParameters privParams = pointycastle.ParametersWithRandom(
+        pointycastle.PrivateKeyParameter<pointycastle.RSAPrivateKey>(privk),
+        FortunaRandom());
+    CipherParameters pubParams = pointycastle.ParametersWithRandom(
+        PublicKeyParameter<pointycastle.RSAPublicKey>(pubk), FortunaRandom());
+
     signer.reset();
     signer.init(true, privParams);
-    return signer.generateSignature(dataToSign);
+    var signed = signer.generateSignature(dataToSign);
+    signer.reset();
+    signer.init(false, pubParams);
+    print(signer.verifySignature(dataToSign, signed));
+    return signed;
   }
 }
