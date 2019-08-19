@@ -17,7 +17,6 @@ class Plugin : MethodCallHandler {
     const val VOLUME_ARGUMENT = "volume"
     const val POSITION_ARGUMENT = "position"
     const val STAY_AWAKE_ARGUMENT = "stayAwake"
-    const val IS_LOCAL_ARGUMENT = "isLocal"
     const val RELEASE_MODE_ARGUMENT = "releaseMode"
 
     // Method names
@@ -28,11 +27,9 @@ class Plugin : MethodCallHandler {
     const val RELEASE_METHOD = "release"
     const val SEEK_METHOD = "seek"
     const val SET_VOLUME_METHOD = "setVolume"
-    const val SET_URL_METHOD = "setUrl"
     const val GET_DURATION_METHOD = "getDuration"
     const val GET_CURRENT_POSITION_METHOD = "getCurrentPosition"
     const val SET_RELEASE_MODE_METHOD = "setReleaseMode"
-    const val GET_PLATFORM_VERSION_METHOD = "getPlatformVersion"
 
     @JvmStatic
     fun registerWith(registrar: Registrar) {
@@ -62,17 +59,18 @@ class Plugin : MethodCallHandler {
 
   private fun handleMethodCall(call: MethodCall, response: MethodChannel.Result) {
     val playerId = playerId(call)
-    val player = getPlayer(playerId!!)
+    val cookie = call.argument<String>("cookie")
+    Log.i("SMPlayer", "cookie: $cookie")
+    val player = getPlayer(playerId!!, cookie)
     when (call.method) {
       PLAY_METHOD -> {
         val url = call.argument<String>(URL_ARGUMENT)!!
         val volume = call.argument<Double>(VOLUME_ARGUMENT)!!
         val position = call.argument<Int>(POSITION_ARGUMENT)
-        val isLocal = call.argument<Boolean>(IS_LOCAL_ARGUMENT)!!
         val stayAwake = call.argument<Boolean>(STAY_AWAKE_ARGUMENT)!!
         player.stayAwake = stayAwake
         player.volume = volume
-        player.setUrl(url, isLocal)
+        player.prepare(url)
         if (position != null) {
           player.seek(position)
         }
@@ -98,11 +96,6 @@ class Plugin : MethodCallHandler {
         val volume = call.argument<Double>(VOLUME_ARGUMENT)!!
         player.volume = volume
       }
-      SET_URL_METHOD -> {
-        val url = call.argument<String>(URL_ARGUMENT)!!
-        val isLocal = call.argument<Boolean>(IS_LOCAL_ARGUMENT)!!
-        player.setUrl(url, isLocal)
-      }
       GET_DURATION_METHOD -> {
         response.success(player.duration)
         return
@@ -116,10 +109,6 @@ class Plugin : MethodCallHandler {
         val releaseMode = ReleaseMode.valueOf(releaseModeName!!.substring("ReleaseMode.".length))
         player.releaseMode = releaseMode
       }
-      GET_PLATFORM_VERSION_METHOD -> {
-        response.success("Android ${android.os.Build.VERSION.RELEASE} !!!")
-        return
-      }
       else -> {
         response.notImplemented()
         return
@@ -131,9 +120,9 @@ class Plugin : MethodCallHandler {
   private fun playerId(call: MethodCall): String =
           if (call.hasArgument(PLAYER_ID_ARGUMENT)) call.argument(PLAYER_ID_ARGUMENT)!! else DEFAULT_PLAYER_ID
 
-  private fun getPlayer(playerId: String): Player {
+  private fun getPlayer(playerId: String, cookie: String?): Player {
     if (!players.containsKey(playerId)) {
-      val player = WrappedExoPlayer(playerId, activity)
+      val player = WrappedExoPlayer(playerId, activity, cookie!!)
       players[playerId] = player
     }
     return players[playerId]!!

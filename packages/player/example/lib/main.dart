@@ -1,3 +1,4 @@
+import 'package:aws/aws.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -12,7 +13,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
+  Player _player;
 
   @override
   void initState() {
@@ -25,22 +26,30 @@ class _MyAppState extends State<MyApp> {
     String platformVersion;
     // Platform messages may fail, so we use a try/catch PlatformException.
     try {
-      platformVersion = await Player.platformVersion;
+      var player = Player(cookieSigner);
 
-      var player = Player();
-      player.play('https://api.soundcloud.com/tracks/318791711/stream?secret_token=s-tj3IS&client_id=LBCcHmRB8XSStWL6wKH2HPACspQlXg2P');
+      if (!mounted) return;
+
+      setState(() {
+        _player = player;
+      });
     } on PlatformException {
       platformVersion = 'Failed to get platform version.';
     }
+  }
 
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) return;
+  Future<String> cookieSigner() async {
+    final signer = CookieSigner.from('assets/pk-APKAIORXYQDPHCKBDXYQ.pem');
+    const resource = 'https://android.suamusica.com.br*';
+    const keyPairId = "APKAIORXYQDPHCKBDXYQ";
+    DateTime expiresOn = DateTime.now().add(Duration(hours: 12));
 
-    setState(() {
-      _platformVersion = platformVersion;
-    });
+    final cookies = await signer.getCookiesForCustomPolicy(
+        resource, keyPairId, expiresOn, null, null);
+
+    final cookie =
+        "${cookies.policy.key}=${cookies.policy.value};${cookies.signature.key}=${cookies.signature.value};${cookies.keyPairId.key}=${cookies.keyPairId.value};";
+    return cookie;
   }
 
   @override
@@ -50,8 +59,61 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('Plugin example app'),
         ),
-        body: Center(
-          child: Text('Running on: $_platformVersion\n'),
+        body: Material(
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                MaterialButton(
+                  shape: StadiumBorder(),
+                  padding: const EdgeInsets.all(8.0),
+                  textColor: Colors.white,
+                  color: Colors.blue,
+                  onPressed: () {
+                    final media = Media(
+                        id: "31196178",
+                        name: "O Bebe",
+                        url:
+                            "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
+                        coverUrl:
+                            "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+                        author: "Xand Avião",
+                        isLocal: false,
+                        isVerified: true,
+                        shareUrl: "");
+                    _player.play(media, stayAwake: true, volume: 2.0);
+                  },
+                  child: const Text(
+                    'Play .mp3',
+                  ),
+                ),
+                const SizedBox(height: 30),
+                MaterialButton(
+                  shape: StadiumBorder(),
+                  padding: const EdgeInsets.all(8.0),
+                  textColor: Colors.white,
+                  color: Colors.blue,
+                  onPressed: () {
+                    final media = Media(
+                        id: "31196178",
+                        name: "O Bebe",
+                        url:
+                            "https://stream.suamusica.com.br/373377/2238511/stream/02+O+Bebe.m3u8",
+                        coverUrl:
+                            "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+                        author: "Xand Avião",
+                        isLocal: false,
+                        isVerified: true,
+                        shareUrl: "");
+                    _player.play(media, stayAwake: true, volume: 2.0);
+                  },
+                  child: const Text(
+                    'Play .m3u8',
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

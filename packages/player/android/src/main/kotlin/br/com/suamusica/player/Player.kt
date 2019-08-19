@@ -9,11 +9,13 @@ interface Player {
     var releaseMode: ReleaseMode
     val context: Context
     var stayAwake: Boolean
+    val cookie: String
 
-    fun setUrl(url: String, local: Boolean)
-    fun seek(position: Int)
+    fun prepare(url: String)
     fun play()
+    fun seek(position: Int)
     fun pause()
     fun stop()
     fun release()
+
 }

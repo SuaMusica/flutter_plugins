@@ -9,8 +9,11 @@ environment:
 
 dependencies:
   uuid: ^2.0.2
+  equatable: ^0.3.0
   flutter:
     sdk: flutter
+  aws:
+    path: ../aws
 
 dev_dependencies:
   flutter_test:
