@@ -1,4 +1,4 @@
-class SignedCookies {
+abstract class SignedCookies {
   final DateTime expires;
 
   SignedCookies(this.expires);

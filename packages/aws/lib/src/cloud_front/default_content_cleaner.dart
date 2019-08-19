@@ -1,9 +1,10 @@
 import 'dart:convert';
-
 import 'dart:typed_data';
 
-class SignerUtils {
-  static String makeBytesUrlSafe(Uint8List input) {
+import 'package:aws/src/cloud_front/content_cleaner.dart';
+
+class DefaultContentCleaner implements ContentCleaner {
+  String makeBytesUrlSafe(Uint8List input) {
     String encoded = base64.encode(input);
     StringBuffer result = StringBuffer();
     for (int i = 0; i < encoded.length; i++) {

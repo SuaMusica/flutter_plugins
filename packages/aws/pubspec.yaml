@@ -13,15 +13,17 @@ dependencies:
   
   convert: ^2.1.1
 
-  http: ^0.12.0+2
-
   rsa_pkcs: ^1.1.0
+
+  dio: 2.1.13
 
   pointycastle: ^1.0.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+  mockito: ^4.1.0
 
 flutter:
   assets:
