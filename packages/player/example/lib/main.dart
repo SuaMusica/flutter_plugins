@@ -96,7 +96,7 @@ class _MyAppState extends State<MyApp> {
                         id: "31196178",
                         name: "O Bebe",
                         url:
-                            "https://android.suamusica.com.br/373377/2238511/stream/02+O+Bebe.m3u8",
+                            "https://stream.suamusica.com.br/373377/2238511/stream/02+O+Bebe.m3u8",
                         coverUrl:
                             "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
                         author: "Xand Avião",
