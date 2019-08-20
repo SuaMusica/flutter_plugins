@@ -12,6 +12,7 @@ flutter_export_environment.sh
 examples/all_plugins/pubspec.yaml
 
 *.pem
+*.mp3
 
 Podfile
 Podfile.lock

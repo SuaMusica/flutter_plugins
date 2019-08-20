@@ -48,7 +48,7 @@ class _MyAppState extends State<MyApp> {
         resource, keyPairId, expiresOn, null, null);
 
     final cookie =
-        "${cookies.policy.key}=${cookies.policy.value};${cookies.signature.key}=${cookies.signature.value};${cookies.keyPairId.key}=${cookies.keyPairId.value};";
+        "${cookies.policy.key}=${cookies.policy.value};${cookies.signature.key}=${cookies.signature.value};${cookies.keyPairId.key}=${cookies.keyPairId.value}";
     return cookie;
   }
 

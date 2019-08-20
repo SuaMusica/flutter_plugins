@@ -8,7 +8,7 @@ static NSString *const CHANNEL_NAME = @"suamusica_player";
 
 static NSMutableDictionary * players;
 
-@interface SuamusicaPlayerPlugin()
+@interface Plugin()
 -(void) pause: (NSString *) playerId;
 -(void) stop: (NSString *) playerId;
 -(void) seek: (NSString *) playerId time: (CMTime) time;
@@ -17,22 +17,22 @@ static NSMutableDictionary * players;
 -(void) onTimeInterval: (NSString *) playerId time: (CMTime) time;
 @end
 
-@implementation SuamusicaPlayerPlugin {
+@implementation Plugin {
   FlutterResult _result;
 }
 
 typedef void (^VoidCallback)(NSString * playerId);
 
 NSMutableSet *timeobservers;
-FlutterMethodChannel *_channel_audioplayer;
+FlutterMethodChannel *_channel_player;
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
   FlutterMethodChannel* channel = [FlutterMethodChannel
                                    methodChannelWithName:CHANNEL_NAME
                                    binaryMessenger:[registrar messenger]];
-  SuamusicaPlayerPlugin* instance = [[SuamusicaPlayerPlugin alloc] init];
+  Plugin* instance = [[Plugin alloc] init];
   [registrar addMethodCallDelegate:instance channel:channel];
-  _channel_audioplayer = channel;
+  _channel_player = channel;
 }
 
 - (id)init {
@@ -55,7 +55,10 @@ FlutterMethodChannel *_channel_audioplayer;
                   ^{
                     NSLog(@"play!");
                     NSString *url = call.arguments[@"url"];
+                    NSString *cookie = call.arguments[@"cookie"];
                     if (url == nil)
+                        result(0);
+                    if (cookie == nil)
                         result(0);
                     if (call.arguments[@"isLocal"] == nil)
                         result(0);
@@ -70,10 +73,11 @@ FlutterMethodChannel *_channel_audioplayer;
                     int milliseconds = call.arguments[@"position"] == [NSNull null] ? 0.0 : [call.arguments[@"position"] intValue] ;
                     bool respectSilence = [call.arguments[@"respectSilence"]boolValue] ;
                     CMTime time = CMTimeMakeWithSeconds(milliseconds / 1000,NSEC_PER_SEC);
+                    NSLog(@"cookie: %@", cookie);
                     NSLog(@"isLocal: %d %@", isLocal, call.arguments[@"isLocal"] );
                     NSLog(@"volume: %f %@", volume, call.arguments[@"volume"] );
                     NSLog(@"position: %d %@", milliseconds, call.arguments[@"positions"] );
-                    [self play:playerId url:url isLocal:isLocal volume:volume time:time isNotification:respectSilence];
+                    [self play:playerId url:url cookie:cookie isLocal:isLocal volume:volume time:time isNotification:respectSilence];
                   },
                 @"pause":
                   ^{
@@ -110,9 +114,11 @@ FlutterMethodChannel *_channel_audioplayer;
                   ^{
                     NSLog(@"setUrl");
                     NSString *url = call.arguments[@"url"];
+                    NSString *cookie = call.arguments[@"cookie"];
                     int isLocal = [call.arguments[@"isLocal"]intValue];
                     [ self setUrl:url
                           isLocal:isLocal
+                          cookie:cookie
                           playerId:playerId
                           onReady:^(NSString * playerId) {
                             result(@(1));
@@ -167,6 +173,7 @@ FlutterMethodChannel *_channel_audioplayer;
 
 -(void) setUrl: (NSString*) url
        isLocal: (bool) isLocal
+       cookie: (NSString*) cookie
        playerId: (NSString*) playerId
        onReady:(VoidCallback)onReady
 {
@@ -175,64 +182,104 @@ FlutterMethodChannel *_channel_audioplayer;
   NSMutableSet *observers = playerInfo[@"observers"];
   AVPlayerItem *playerItem;
     
-  NSLog(@"setUrl %@", url);
+  NSLog(@"setUrl url: %@ cookie: %@", url, cookie);
 
-  if (!playerInfo || ![url isEqualToString:playerInfo[@"url"]]) {
-    if (isLocal) {
-      playerItem = [ [ AVPlayerItem alloc ] initWithURL:[ NSURL fileURLWithPath:url ]];
-    } else {
-      playerItem = [ [ AVPlayerItem alloc ] initWithURL:[ NSURL URLWithString:url ]];
-    }
-      
-    if (playerInfo[@"url"]) {
-      [[player currentItem] removeObserver:self forKeyPath:@"player.currentItem.status" ];
+  @try {
+    if (!playerInfo || ![url isEqualToString:playerInfo[@"url"]]) {
+      if (isLocal) {
+        playerItem = [ [ AVPlayerItem alloc ] initWithURL:[ NSURL fileURLWithPath:url ]];
+      } else {
+        NSURL *_url = [NSURL URLWithString: url];    
+        // NSMutableArray *cookies = [NSMutableArray array];
+        
+        // NSArray *cookiesItems = [cookie componentsSeparatedByString:@";"];
+        // for (NSString *cookieItem in cookiesItems) {
+        //   NSArray *keyValue = [cookieItem componentsSeparatedByString:@"="];
 
-      [ playerInfo setObject:url forKey:@"url" ];
+        //   if ([keyValue count] == 2) {
+        //     NSString *key = [keyValue objectAtIndex:0];
+        //     NSString *value = [keyValue objectAtIndex:1];
 
-      for (id ob in observers) {
-         [ [ NSNotificationCenter defaultCenter ] removeObserver:ob ];
+        //     NSLog(@"Processing %@...", key);
+
+        //     NSDictionary *properties = [NSDictionary dictionaryWithObjectsAndKeys:
+        //                             @"suamusica.com.br", NSHTTPCookieDomain,
+        //                             @"/", NSHTTPCookiePath,
+        //                             key, NSHTTPCookieName,
+        //                             value, NSHTTPCookieValue,
+        //                             nil];
+        //     NSHTTPCookie *httpCookie = [NSHTTPCookie cookieWithProperties:properties];                              
+        //     [cookies addObject:httpCookie];
+
+        //     NSLog(@"Done processing %@!", key);
+        //   }
+        // }
+
+        NSMutableDictionary * headers = [NSMutableDictionary dictionary];
+        [headers setObject:@"mp.next" forKey:@"User-Agent"];
+        [headers setObject:cookie forKey:@"Cookie"];
+        // AVURLAsset * asset = [AVURLAsset URLAssetWithURL:_url options:@{AVURLAssetHTTPCookiesKey : cookies, @"AVURLAssetHTTPHeaderFieldsKey": headers}];
+        AVURLAsset * asset = [AVURLAsset URLAssetWithURL:_url options:@{@"AVURLAssetHTTPHeaderFieldsKey": headers}];
+        playerItem = [AVPlayerItem playerItemWithAsset:asset];
       }
-      [ observers removeAllObjects ];
-      [ player replaceCurrentItemWithPlayerItem: playerItem ];
+        
+      if (playerInfo[@"url"]) {
+        [[player currentItem] removeObserver:self forKeyPath:@"player.currentItem.status" ];
+
+        [ playerInfo setObject:url forKey:@"url" ];
+
+        for (id ob in observers) {
+          [ [ NSNotificationCenter defaultCenter ] removeObserver:ob ];
+        }
+        [ observers removeAllObjects ];
+        [ player replaceCurrentItemWithPlayerItem: playerItem ];
+      } else {
+        player = [[ AVPlayer alloc ] initWithPlayerItem: playerItem ];
+        observers = [[NSMutableSet alloc] init];
+
+        [ playerInfo setObject:player forKey:@"player" ];
+        [ playerInfo setObject:url forKey:@"url" ];
+        [ playerInfo setObject:observers forKey:@"observers" ];
+
+        CMTime interval = CMTimeMakeWithSeconds(0.2, NSEC_PER_SEC);
+        id timeObserver = [ player  addPeriodicTimeObserverForInterval: interval queue: nil usingBlock:^(CMTime time){
+          [self onTimeInterval:playerId time:time];
+        }];
+          [timeobservers addObject:@{@"player":player, @"observer":timeObserver}];
+      }
+        
+      id anobserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVPlayerItemDidPlayToEndTimeNotification
+                                                                          object: playerItem
+                                                                          queue: nil
+                                                                      usingBlock:^(NSNotification* note){
+                                                                          [self onSoundComplete:playerId];
+                                                                      }];
+      [observers addObject:anobserver];
+        
+      // is sound ready
+      [playerInfo setObject:onReady forKey:@"onReady"];
+      [playerItem addObserver:self
+                            forKeyPath:@"player.currentItem.status"
+                            options:0
+                            context:(void*)playerId];
+        
     } else {
-      player = [[ AVPlayer alloc ] initWithPlayerItem: playerItem ];
-      observers = [[NSMutableSet alloc] init];
-
-      [ playerInfo setObject:player forKey:@"player" ];
-      [ playerInfo setObject:url forKey:@"url" ];
-      [ playerInfo setObject:observers forKey:@"observers" ];
-
-      CMTime interval = CMTimeMakeWithSeconds(0.2, NSEC_PER_SEC);
-      id timeObserver = [ player  addPeriodicTimeObserverForInterval: interval queue: nil usingBlock:^(CMTime time){
-        [self onTimeInterval:playerId time:time];
-      }];
-        [timeobservers addObject:@{@"player":player, @"observer":timeObserver}];
-    }
-      
-    id anobserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVPlayerItemDidPlayToEndTimeNotification
-                                                                        object: playerItem
-                                                                         queue: nil
-                                                                    usingBlock:^(NSNotification* note){
-                                                                        [self onSoundComplete:playerId];
-                                                                    }];
-    [observers addObject:anobserver];
-      
-    // is sound ready
-    [playerInfo setObject:onReady forKey:@"onReady"];
-    [playerItem addObserver:self
-                          forKeyPath:@"player.currentItem.status"
-                          options:0
-                          context:(void*)playerId];
-      
-  } else {
-    if ([[player currentItem] status ] == AVPlayerItemStatusReadyToPlay) {
-      onReady(playerId);
-    }
+      if ([[player currentItem] status ] == AVPlayerItemStatusReadyToPlay) {
+        onReady(playerId);
+      }
+    }    
+  }
+  @catch (NSException *exception) {
+    NSLog(@"%@", exception.reason);
+  }
+  @finally {
+    NSLog(@"Finally condition");
   }
 }
 
 -(void) play: (NSString*) playerId
          url: (NSString*) url
+      cookie: (NSString *) cookie
      isLocal: (int) isLocal
       volume: (float) volume
         time: (CMTime) time
@@ -253,8 +300,9 @@ FlutterMethodChannel *_channel_audioplayer;
   }
   [[AVAudioSession sharedInstance] setActive:YES error:&error];
 
-  [ self setUrl:url 
+  [ self setUrl:url
          isLocal:isLocal 
+         cookie:cookie 
          playerId:playerId 
          onReady:^(NSString * playerId) {
            NSMutableDictionary * playerInfo = players[playerId];
@@ -277,7 +325,7 @@ FlutterMethodChannel *_channel_audioplayer;
   if(CMTimeGetSeconds(duration)>0){
     NSLog(@"ios -> invokechannel");
    int mseconds= CMTimeGetSeconds(duration)*1000;
-    [_channel_audioplayer invokeMethod:@"audio.onDuration" arguments:@{@"playerId": playerId, @"value": @(mseconds)}];
+    // [_channel_player invokeMethod:@"audio.onDuration" arguments:@{@"playerId": playerId, @"value": @(mseconds)}];
   }
 }
 
@@ -305,7 +353,7 @@ FlutterMethodChannel *_channel_audioplayer;
     // NSLog(@"ios -> onTimeInterval...");
     int mseconds =  CMTimeGetSeconds(time)*1000;
     // NSLog(@"asdff %@ - %d", playerId, mseconds);
-    [_channel_audioplayer invokeMethod:@"audio.onCurrentPosition" arguments:@{@"playerId": playerId, @"value": @(mseconds)}];
+    // [_channel_player invokeMethod:@"audio.onCurrentPosition" arguments:@{@"playerId": playerId, @"value": @(mseconds)}];
     //    NSLog(@"asdff end");
 }
 
@@ -370,7 +418,7 @@ FlutterMethodChannel *_channel_audioplayer;
     [ self resume:playerId ];
   }
 
-  [ _channel_audioplayer invokeMethod:@"audio.onComplete" arguments:@{@"playerId": playerId}];
+  // [ _channel_player invokeMethod:@"audio.onComplete" arguments:@{@"playerId": playerId}];
 }
 
 -(void)observeValueForKeyPath:(NSString *)keyPath
@@ -394,7 +442,8 @@ FlutterMethodChannel *_channel_audioplayer;
         onReady(playerId);
       }
     } else if ([[player currentItem] status ] == AVPlayerItemStatusFailed) {
-      [_channel_audioplayer invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"value": @"AVPlayerItemStatus.failed"}];
+      NSLog(@"Error: %@", [[player currentItem] error]);
+      // [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"value": @"AVPlayerItemStatus.failed"}];
     }
   } else {
     // Any unrecognized context must belong to super

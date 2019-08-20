@@ -1,4 +1,4 @@
 #import <Flutter/Flutter.h>
 
-@interface SuamusicaPlayerPlugin : NSObject<FlutterPlugin>
+@interface Plugin : NSObject<FlutterPlugin>
 @end
