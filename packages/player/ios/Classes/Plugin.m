@@ -190,35 +190,9 @@ FlutterMethodChannel *_channel_player;
         playerItem = [ [ AVPlayerItem alloc ] initWithURL:[ NSURL fileURLWithPath:url ]];
       } else {
         NSURL *_url = [NSURL URLWithString: url];    
-        // NSMutableArray *cookies = [NSMutableArray array];
-        
-        // NSArray *cookiesItems = [cookie componentsSeparatedByString:@";"];
-        // for (NSString *cookieItem in cookiesItems) {
-        //   NSArray *keyValue = [cookieItem componentsSeparatedByString:@"="];
-
-        //   if ([keyValue count] == 2) {
-        //     NSString *key = [keyValue objectAtIndex:0];
-        //     NSString *value = [keyValue objectAtIndex:1];
-
-        //     NSLog(@"Processing %@...", key);
-
-        //     NSDictionary *properties = [NSDictionary dictionaryWithObjectsAndKeys:
-        //                             @"suamusica.com.br", NSHTTPCookieDomain,
-        //                             @"/", NSHTTPCookiePath,
-        //                             key, NSHTTPCookieName,
-        //                             value, NSHTTPCookieValue,
-        //                             nil];
-        //     NSHTTPCookie *httpCookie = [NSHTTPCookie cookieWithProperties:properties];                              
-        //     [cookies addObject:httpCookie];
-
-        //     NSLog(@"Done processing %@!", key);
-        //   }
-        // }
-
         NSMutableDictionary * headers = [NSMutableDictionary dictionary];
         [headers setObject:@"mp.next" forKey:@"User-Agent"];
         [headers setObject:cookie forKey:@"Cookie"];
-        // AVURLAsset * asset = [AVURLAsset URLAssetWithURL:_url options:@{AVURLAssetHTTPCookiesKey : cookies, @"AVURLAssetHTTPHeaderFieldsKey": headers}];
         AVURLAsset * asset = [AVURLAsset URLAssetWithURL:_url options:@{@"AVURLAssetHTTPHeaderFieldsKey": headers}];
         playerItem = [AVPlayerItem playerItemWithAsset:asset];
       }
