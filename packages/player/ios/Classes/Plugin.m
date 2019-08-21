@@ -193,7 +193,9 @@ FlutterMethodChannel *_channel_player;
         NSMutableDictionary * headers = [NSMutableDictionary dictionary];
         [headers setObject:@"mp.next" forKey:@"User-Agent"];
         [headers setObject:cookie forKey:@"Cookie"];
-        AVURLAsset * asset = [AVURLAsset URLAssetWithURL:_url options:@{@"AVURLAssetHTTPHeaderFieldsKey": headers}];
+        NSArray *cookies = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookies];
+
+        AVURLAsset * asset = [AVURLAsset URLAssetWithURL:_url options:@{"AVURLAssetHTTPHeaderFieldsKey": headers, AVURLAssetHTTPCookiesKey : cookies }];
         playerItem = [AVPlayerItem playerItemWithAsset:asset];
       }
         
@@ -298,7 +300,7 @@ FlutterMethodChannel *_channel_player;
   NSLog(@"ios -> updateDuration...%f", CMTimeGetSeconds(duration));
   if(CMTimeGetSeconds(duration)>0){
     NSLog(@"ios -> invokechannel");
-   int mseconds= CMTimeGetSeconds(duration)*1000;
+    int mseconds= CMTimeGetSeconds(duration)*1000;
     // [_channel_player invokeMethod:@"audio.onDuration" arguments:@{@"playerId": playerId, @"value": @(mseconds)}];
   }
 }
@@ -417,6 +419,8 @@ FlutterMethodChannel *_channel_player;
       }
     } else if ([[player currentItem] status ] == AVPlayerItemStatusFailed) {
       NSLog(@"Error: %@", [[player currentItem] error]);
+      // NSLog(@"Error: %@", [[[player currentItem] error] localizedDescription]);
+    
       // [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"value": @"AVPlayerItemStatus.failed"}];
     }
   } else {
