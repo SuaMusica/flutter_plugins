@@ -195,7 +195,7 @@ FlutterMethodChannel *_channel_player;
         [headers setObject:cookie forKey:@"Cookie"];
         NSArray *cookies = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookies];
 
-        AVURLAsset * asset = [AVURLAsset URLAssetWithURL:_url options:@{"AVURLAssetHTTPHeaderFieldsKey": headers, AVURLAssetHTTPCookiesKey : cookies }];
+        AVURLAsset * asset = [AVURLAsset URLAssetWithURL:_url options:@{@"AVURLAssetHTTPHeaderFieldsKey": headers, AVURLAssetHTTPCookiesKey : cookies }];
         playerItem = [AVPlayerItem playerItemWithAsset:asset];
       }
         
