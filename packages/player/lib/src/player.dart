@@ -22,7 +22,7 @@ class Player {
 
   final _uuid = Uuid();
   CookiesForCustomPolicy _cookies;
-  PlayerState _playerState;
+  PlayerState _playerState = PlayerState.IDLE;
   Queue _queue = Queue();
 
   final StreamController<Event> _eventStreamController =
@@ -206,8 +206,8 @@ class Player {
         // player._errorController.add(value);
         break;
       case 'state.change':
-        player.state = PlayerState.STOPPED;
-        // player._errorController.add(value);
+        final state = callArgs['state'];
+        player.state = PlayerState.values[state];
         break;        
       default:
         _log('Unknown method ${call.method} ');

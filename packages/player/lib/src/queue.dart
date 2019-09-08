@@ -31,7 +31,13 @@ class Queue {
 
   Queue({shuffler}): shuffler = shuffler ?? SimpleShuffler();
 
-  Media get current => storage.first;
+  Media get current {
+    if (storage.length > 0) {
+      return storage.first;
+    } else {
+      return null;
+    }
+  }
 
   play(Media media) {
     storage.addFirst(media);

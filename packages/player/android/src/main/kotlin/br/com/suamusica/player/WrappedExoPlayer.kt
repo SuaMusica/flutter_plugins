@@ -15,6 +15,7 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
 import com.google.android.exoplayer2.upstream.FileDataSourceFactory
 import com.google.android.exoplayer2.util.Util
+import com.google.android.exoplayer2.Player as ExoPlayer
 import io.flutter.plugin.common.MethodChannel
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -30,6 +31,7 @@ class WrappedExoPlayer(val playerId: String,
     override val currentPosition = 0
     override var releaseMode = ReleaseMode.RELEASE
     override var stayAwake: Boolean = false
+    val channelManager = MethodChannelManager(channel)
 
     private val uAmpAudioAttributes = AudioAttributes.Builder()
             .setContentType(C.CONTENT_TYPE_MUSIC)
@@ -54,6 +56,18 @@ class WrappedExoPlayer(val playerId: String,
 
             override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
                 Log.i("MusicService", "onPlayerStateChanged: playWhenReady: $playWhenReady playbackState: $playbackState")
+
+                if (playWhenReady && playbackState == ExoPlayer.STATE_READY) {
+                    channelManager.notifyPlayerStateChange(playerId, PlayerState.PLAYING)
+                } else if (playWhenReady) {
+                    if (player.playbackError != null) {
+                        channelManager.notifyPlayerStateChange(playerId, PlayerState.ERROR)
+                    } else {
+                        channelManager.notifyPlayerStateChange(playerId, PlayerState.values()[playbackState])
+                    }
+                } else {
+                    channelManager.notifyPlayerStateChange(playerId, PlayerState.PAUSED)
+                }
             }
 
             override fun onRepeatModeChanged(repeatMode: Int) {
@@ -144,14 +158,6 @@ class WrappedExoPlayer(val playerId: String,
         }
     }
 
-    private fun buildArguments(playerId: String, position: Long, duration: Long): Map<String, Any> {
-        val result = mutableMapOf<String, Any>()
-        result["playerId"] = playerId
-        result["position"] = position
-        result["duration"] = duration
-        return result
-    }
-
     private fun startTrackingProgress() {
         if (progressTracker != null) {
             return
@@ -185,8 +191,7 @@ class WrappedExoPlayer(val playerId: String,
             val currentPosition = player.currentPosition
             val duration = player.duration
 
-            channel.invokeMethod("audio.onCurrentPosition", buildArguments(playerId, currentPosition, duration))
-//            channel.invokeMethod("audio.onDuration", buildArguments(playerId, duration))
+            channelManager.notifyPositionChange(playerId, currentPosition, duration)
 
             if (!shutdownRequest.get()) {
                 handler.postDelayed(this, 600 /* ms */)

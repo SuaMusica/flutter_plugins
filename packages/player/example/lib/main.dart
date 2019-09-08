@@ -55,33 +55,38 @@ class _MyAppState extends State<MyApp> {
     return cookies;
   }
 
-  handleMP3ButtonAction() {
+  play() {
+    print(_player.state);
+    final media = Media(
+        id: "31196178",
+        name: "O Bebe",
+        url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
+        coverUrl:
+            "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+        author: "Xand Avião",
+        isLocal: false,
+        isVerified: true,
+        shareUrl: "");
+    _player.play(media, stayAwake: true, volume: 2.0);
+  }
+
+  pause() {
+    print(_player.state);
     if (_player.state == PlayerState.PLAYING) {
       _player.pause();
-      
-      setState(() {
-        mp3Action = 'Play .mp3';
-      });
-
-    } else if (_player.state == PlayerState.PAUSED) {
-      _player.resume();
-    } else {
-      final media = Media(
-          id: "31196178",
-          name: "O Bebe",
-          url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
-          coverUrl:
-              "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
-          author: "Xand Avião",
-          isLocal: false,
-          isVerified: true,
-          shareUrl: "");
-      _player.play(media, stayAwake: true, volume: 2.0);
-      
-      setState(() {
-        mp3Action = 'Play .mp3';
-      });
     }
+  }
+
+  resume() {
+    print(_player.state);
+    if (_player.state == PlayerState.PAUSED) {
+      _player.resume();
+    }
+  }
+
+  stop() {
+    print(_player.state);
+    _player.stop();
   }
 
   @override
@@ -96,14 +101,48 @@ class _MyAppState extends State<MyApp> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                MaterialButton(
-                  padding: const EdgeInsets.all(8.0),
-                  textColor: Colors.white,
-                  color: Colors.blue,
-                  onPressed: handleMP3ButtonAction,
-                  child: Text(
-                    mp3Action,
-                  ),
+                Row(
+                  children: <Widget>[
+                    MaterialButton(
+                      padding: const EdgeInsets.all(8.0),
+                      textColor: Colors.white,
+                      color: Colors.blue,
+                      onPressed: play,
+                      child: Text(
+                        'Play .mp3',
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    MaterialButton(
+                      padding: const EdgeInsets.all(8.0),
+                      textColor: Colors.white,
+                      color: Colors.blue,
+                      onPressed: pause,
+                      child: Text(
+                        'Pause .mp3',
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    MaterialButton(
+                      padding: const EdgeInsets.all(8.0),
+                      textColor: Colors.white,
+                      color: Colors.blue,
+                      onPressed: resume,
+                      child: Text(
+                        'Resume .mp3',
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    MaterialButton(
+                      padding: const EdgeInsets.all(8.0),
+                      textColor: Colors.white,
+                      color: Colors.blue,
+                      onPressed: stop,
+                      child: Text(
+                        'Stop .mp3',
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 30),
                 MaterialButton(

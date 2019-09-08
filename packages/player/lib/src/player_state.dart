@@ -1,6 +1,9 @@
 enum PlayerState {
-  STOPPED,
+  IDLE,
+  BUFFERING,
   PLAYING,
   PAUSED,
+  STOPPED,
   COMPLETED,
+  ERROR,
 }
