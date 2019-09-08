@@ -1,56 +1,42 @@
 import 'dart:async';
 
-import 'package:aws/src/cloud_front/cookies_for_custom_policy.dart';
+import 'package:aws/aws.dart';
 import 'package:flutter/services.dart';
+import 'package:suamusica_player/src/event.dart';
+import 'package:suamusica_player/src/event_type.dart';
 import 'package:suamusica_player/src/media.dart';
+import 'package:suamusica_player/src/new_duration_event.dart';
+import 'package:suamusica_player/src/new_position_event.dart';
+import 'package:suamusica_player/src/queue.dart';
 import 'package:uuid/uuid.dart';
 
 import 'player_state.dart';
 
 class Player {
-  static const MethodChannel _channel = const MethodChannel('suamusica_player');
-
-  static final _uuid = Uuid();
-
-  final StreamController<PlayerState> _playerStateController =
-      StreamController<PlayerState>.broadcast();
-
-  final StreamController<Duration> _positionController =
-      StreamController<Duration>.broadcast();
-
-  final StreamController<Duration> _durationController =
-      StreamController<Duration>.broadcast();
-
-  final StreamController<void> _completionController =
-      StreamController<void>.broadcast();
-
-  final StreamController<String> _errorController =
-      StreamController<String>.broadcast();
+  static const Ok = 1;
+  static final MethodChannel _channel = const MethodChannel('suamusica_player')
+    ..setMethodCallHandler(platformCallHandler);
 
   static final players = Map<String, Player>();
-
   static bool logEnabled = false;
 
+  final _uuid = Uuid();
+  CookiesForCustomPolicy _cookies;
   PlayerState _playerState;
+  Queue _queue = Queue();
 
-  final Future<String> Function() cookieSigner;
+  final StreamController<Event> _eventStreamController =
+      StreamController<Event>.broadcast();
+
+  final Future<CookiesForCustomPolicy> Function() cookieSigner;
 
   PlayerState get state => _playerState;
 
   set state(PlayerState state) {
-    _playerStateController.add(state);
     _playerState = state;
   }
 
-  Stream<PlayerState> get onPlayerStateChanged => _playerStateController.stream;
-
-  Stream<Duration> get onAudioPositionChanged => _positionController.stream;
-
-  Stream<Duration> get onDurationChanged => _durationController.stream;
-
-  Stream<void> get onPlayerCompletion => _completionController.stream;
-
-  Stream<String> get onPlayerError => _errorController.stream;
+  Stream<Event> get onEvent => _eventStreamController.stream;
 
   String playerId;
 
@@ -65,9 +51,17 @@ class Player {
   ]) async {
     arguments ??= const {};
 
-    final cookie = (() async => await cookieSigner())();
+    Future<CookiesForCustomPolicy> cookies = Future.value(_cookies);
+    if (_cookies == null || !_cookies.isValid()) {
+      cookies = (() async => await cookieSigner())();
+    }
 
-    return cookie.then((cookie) {
+    return cookies.then((cookies) {
+      // we need to save it in order to reuse if it is still valid
+      _cookies = cookies;
+      final cookie =
+          "${cookies.policy.key}=${cookies.policy.value};${cookies.signature.key}=${cookies.signature.value};${cookies.keyPairId.key}=${cookies.keyPairId.value}";
+
       final Map<String, dynamic> withPlayerId = Map.of(arguments)
         ..['playerId'] = playerId
         ..['cookie'] = cookie;
@@ -89,6 +83,11 @@ class Player {
     respectSilence ??= false;
     stayAwake ??= false;
 
+    _queue.play(media);
+
+    _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
+    _notifyPlayerStatusChangeEvent(EventType.BEFORE_PLAY);
+
     final int result = await _invokeMethod('play', {
       'url': media.url,
       'is_local': media.isLocal,
@@ -98,7 +97,8 @@ class Player {
       'stayAwake': stayAwake,
     });
 
-    if (result == 1) {
+    if (result == Ok) {
+      _notifyPlayerStatusChangeEvent(EventType.PLAYING);
       state = PlayerState.PLAYING;
     }
 
@@ -106,40 +106,48 @@ class Player {
   }
 
   Future<int> pause() async {
+    _notifyPlayerStatusChangeEvent(EventType.PAUSED_REQUEST);
     final int result = await _invokeMethod('pause');
 
-    if (result == 1) {
+    if (result == Ok) {
       state = PlayerState.PAUSED;
+      _notifyPlayerStatusChangeEvent(EventType.PAUSED);
     }
 
     return result;
   }
 
   Future<int> stop() async {
+    _notifyPlayerStatusChangeEvent(EventType.STOP_REQUESTED);
     final int result = await _invokeMethod('stop');
 
-    if (result == 1) {
+    if (result == Ok) {
       state = PlayerState.STOPPED;
+      _notifyPlayerStatusChangeEvent(EventType.STOPPED);
     }
 
     return result;
   }
 
   Future<int> resume() async {
+    _notifyPlayerStatusChangeEvent(EventType.RESUME_REQUESTED);
     final int result = await _invokeMethod('resume');
 
-    if (result == 1) {
+    if (result == Ok) {
       state = PlayerState.PLAYING;
+      _notifyPlayerStatusChangeEvent(EventType.RESUMED);
     }
 
     return result;
   }
 
   Future<int> release() async {
+    _notifyPlayerStatusChangeEvent(EventType.RELEASE_REQUESTED);
     final int result = await _invokeMethod('release');
 
-    if (result == 1) {
+    if (result == Ok) {
       state = PlayerState.STOPPED;
+      _notifyPlayerStatusChangeEvent(EventType.RELEASED);
     }
 
     return result;
@@ -175,28 +183,54 @@ class Player {
 
     final playerId = callArgs['playerId'] as String;
     final Player player = players[playerId];
-    final value = callArgs['value'];
-
+  
     switch (call.method) {
       case 'audio.onDuration':
-        Duration newDuration = Duration(milliseconds: value);
-        player._durationController.add(newDuration);
+        final duration = callArgs['duration'];
+        Duration newDuration = Duration(milliseconds: duration);
+        _notifyDurationChangeEvent(player, newDuration);
         break;
       case 'audio.onCurrentPosition':
-        Duration newDuration = Duration(milliseconds: value);
-        player._positionController.add(newDuration);
+        final position = callArgs['position'];
+        Duration newPosition = Duration(milliseconds: position);
+        final duration = callArgs['duration'];
+        Duration newDuration = Duration(milliseconds: duration);
+        _notifyPositionChangeEvent(player, newPosition, newDuration);
         break;
       case 'audio.onComplete':
         player.state = PlayerState.COMPLETED;
-        player._completionController.add(null);
+        // player._completionController.add(null);
         break;
       case 'audio.onError':
         player.state = PlayerState.STOPPED;
-        player._errorController.add(value);
+        // player._errorController.add(value);
         break;
+      case 'state.change':
+        player.state = PlayerState.STOPPED;
+        // player._errorController.add(value);
+        break;        
       default:
         _log('Unknown method ${call.method} ');
     }
+  }
+
+  _notifyPlayerStatusChangeEvent(EventType type) {
+    _eventStreamController.add(Event(type: type, media: _queue.current));
+  }
+
+  static _notifyDurationChangeEvent(Player player, Duration newDuration) {
+    player._eventStreamController.add(NewDurationEvent(
+        type: EventType.NEW_DURATION,
+        media: player._queue.current,
+        duration: newDuration));
+  }
+
+  static _notifyPositionChangeEvent(Player player, Duration newPosition, Duration newDuration) {
+    player._eventStreamController.add(NewPositionEvent(
+        type: EventType.NEW_POSITION,
+        media: player._queue.current,
+        position: newPosition,
+        duration: newDuration));
   }
 
   static void _log(String param) {
@@ -208,13 +242,17 @@ class Player {
   Future<void> dispose() async {
     List<Future> futures = [];
 
-    if (!_playerStateController.isClosed)
-      futures.add(_playerStateController.close());
-    if (!_positionController.isClosed) futures.add(_positionController.close());
-    if (!_durationController.isClosed) futures.add(_durationController.close());
-    if (!_completionController.isClosed)
-      futures.add(_completionController.close());
-    if (!_errorController.isClosed) futures.add(_errorController.close());
+    if (!_eventStreamController.isClosed) {
+      futures.add(_eventStreamController.close());
+    }
+
+    // if (!_playerStateController.isClosed)
+    //   futures.add(_playerStateController.close());
+    // if (!_positionController.isClosed) futures.add(_positionController.close());
+    // if (!_durationController.isClosed) futures.add(_durationController.close());
+    // if (!_completionController.isClosed)
+    //   futures.add(_completionController.close());
+    // if (!_errorController.isClosed) futures.add(_errorController.close());
 
     await Future.wait(futures);
   }

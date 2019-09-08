@@ -1,6 +1,7 @@
 package br.com.suamusica.player
 
 import android.app.Activity
+import android.os.Handler
 import android.util.Log
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -43,6 +44,8 @@ class Plugin : MethodCallHandler {
     this.activity = activity
   }
 
+  private val handler = Handler()
+  private var positionTracker: Runnable? = null
   private val channel: MethodChannel
   private val activity: Activity
 
@@ -122,7 +125,7 @@ class Plugin : MethodCallHandler {
 
   private fun getPlayer(playerId: String, cookie: String?): Player {
     if (!players.containsKey(playerId)) {
-      val player = WrappedExoPlayer(playerId, activity, cookie!!)
+      val player = WrappedExoPlayer(playerId, activity, channel, this, handler, cookie!!)
       players[playerId] = player
     }
     return players[playerId]!!

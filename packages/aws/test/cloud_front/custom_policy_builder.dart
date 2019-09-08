@@ -36,4 +36,5 @@ void main() {
       expect(policy, '{"Statement":[{"Resource":"https://android.suamusica.com.br*","Condition":{"DateLessThan":{"AWS:EpochTime":1665651900},"IpAddress":{"AWS:SourceIp":"*"},"DateGreaterThan":{"AWS:EpochTime":1546300800}}}]}');
     });
   });
+
 }

@@ -4,7 +4,7 @@ import 'package:aws/aws.dart';
 void main() {
   testWidgets('Cookie Signer Test Suit', (WidgetTester tester) async {
     final signer = CookieSigner.from('assets/pk-APKAIORXYQDPHCKBDXYQ.pem');
-    const resourceUrl = 'https://android.suamusica.com.br*';
+    const resourceUrl = 'https://*.suamusica.com.br*';
     const keyPairId = "APKAIORXYQDPHCKBDXYQ";
     DateTime expiresOn = DateTime.now().add(Duration(hours: 12));
 
@@ -14,7 +14,7 @@ void main() {
     final cookie =
         "${cookies.policy.key}=${cookies.policy.value};${cookies.signature.key}=${cookies.signature.value};${cookies.keyPairId.key}=${cookies.keyPairId.value};";
     final resource =
-        'https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3';
+        'https://stream.suamusica.com.br/373377/2238511/stream/02+O+Bebe.m3u8';
     String curl =
         "curl -v '$resource' --cookie \"$cookie\" --output ./test.mp3";
     print(curl);

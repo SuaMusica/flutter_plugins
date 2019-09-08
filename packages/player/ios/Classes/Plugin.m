@@ -1,5 +1,7 @@
 #import "Plugin.h"
 
+#import "AssetLoaderDelegate.h"
+
 #import <UIKit/UIKit.h>
 #import <AVKit/AVKit.h>
 #import <AVFoundation/AVFoundation.h>
@@ -189,14 +191,58 @@ FlutterMethodChannel *_channel_player;
       if (isLocal) {
         playerItem = [ [ AVPlayerItem alloc ] initWithURL:[ NSURL fileURLWithPath:url ]];
       } else {
-        NSURL *_url = [NSURL URLWithString: url];    
+        NSURL *_url = [NSURL URLWithString: @"myprotocol://url"];    
+
+        NSHTTPCookieStorage *cookiesStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
+        NSMutableArray *cookies = [NSMutableArray array];	
+        NSArray *cookiesItems = [cookie componentsSeparatedByString:@";"];	
+        for (NSString *cookieItem in cookiesItems) {	
+          NSArray *keyValue = [cookieItem componentsSeparatedByString:@"="];	
+          if ([keyValue count] == 2) {	
+            NSString *key = [keyValue objectAtIndex:0];	
+            NSString *value = [keyValue objectAtIndex:1];	
+
+//             NSLog(@"Processing %@...", key);
+
+            // NSDictionary *properties = [NSDictionary dictionaryWithObjectsAndKeys:	
+            //                         @"suamusica.com.br", NSHTTPCookieDomain,	
+            //                         @"/", NSHTTPCookiePath,	
+            //                         key, NSHTTPCookieName,	
+            //                         value, NSHTTPCookieValue,	
+            //                         nil];	
+            // NSHTTPCookie *httpCookie = [NSHTTPCookie cookieWithProperties:properties];
+            // [cookies addObject:httpCookie];
+
+            NSHTTPCookie *httpCookie = [ [NSHTTPCookie cookiesWithResponseHeaderFields:@{@"Set-Cookie": [NSString stringWithFormat:@"%@=%@", key, value]} forURL:_url] objectAtIndex:0];
+//            NSLog(@"httpCookie: %@", httpCookie);
+            [cookies addObject:httpCookie];
+            @try {
+              [cookiesStorage setCookie:httpCookie];
+            }
+            @catch (NSException *exception) {
+              NSLog(@"%@", exception.reason);
+            }
+//            NSLog(@"Done processing %@!", key);    
+          }
+        }
+
+//        NSLog(@"HERE 1 %@", cookies);
+        // NSDictionary *values = [NSHTTPCookie requestHeaderFieldsWithCookies:cookies];
         NSMutableDictionary * headers = [NSMutableDictionary dictionary];
         [headers setObject:@"mp.next" forKey:@"User-Agent"];
         [headers setObject:cookie forKey:@"Cookie"];
-        NSArray *cookies = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookies];
+        
+        // AVURLAsset * asset = [AVURLAsset URLAssetWithURL:_url options:@{@"AVURLAssetHTTPHeaderFieldsKey": headers, AVURLAssetHTTPCookiesKey : cookies }];
+        AVURLAsset * asset = [AVURLAsset URLAssetWithURL:_url options:@{@"AVURLAssetHTTPHeaderFieldsKey": headers, AVURLAssetHTTPCookiesKey : [cookiesStorage cookies] }];
+          
+        // AssetLoaderDelegate *assetLoader = [[AssetLoaderDelegate alloc] init];  
+        NSLog(@"resourceLoader: %@", [asset resourceLoader]);
+        [[asset resourceLoader] setDelegate:self queue:dispatch_get_main_queue()];
 
-        AVURLAsset * asset = [AVURLAsset URLAssetWithURL:_url options:@{@"AVURLAssetHTTPHeaderFieldsKey": headers, AVURLAssetHTTPCookiesKey : cookies }];
+        // AVURLAsset * asset = [AVURLAsset URLAssetWithURL:_url options:@{AVURLAssetHTTPCookiesKey : [cookiesStorage cookies]}];
+        // AVURLAsset * asset = [AVURLAsset URLAssetWithURL:_url options:@{@"AVURLAssetHTTPHeaderFieldsKey": values}];
         playerItem = [AVPlayerItem playerItemWithAsset:asset];
+        
       }
         
       if (playerInfo[@"url"]) {
@@ -251,6 +297,12 @@ FlutterMethodChannel *_channel_player;
   @finally {
     NSLog(@"Finally condition");
   }
+}
+
+- (BOOL)resourceLoader:(AVAssetResourceLoader *)resourceLoader shouldWaitForLoadingOfRequestedResource:(AVAssetResourceLoadingRequest *)loadingRequest{
+  NSLog(@"resourceLoader(2): %@", resourceLoader);
+  NSLog(@"pendingRequests:%@",loadingRequest);
+  return YES;
 }
 
 -(void) play: (NSString*) playerId
@@ -419,7 +471,10 @@ FlutterMethodChannel *_channel_player;
       }
     } else if ([[player currentItem] status ] == AVPlayerItemStatusFailed) {
       NSLog(@"Error: %@", [[player currentItem] error]);
-      // NSLog(@"Error: %@", [[[player currentItem] error] localizedDescription]);
+      AVPlayerItemErrorLog *errorLog = [[player currentItem] errorLog];
+      NSLog(@"errorLog: %@", errorLog);
+      NSLog(@"errorLog: events: %@", [errorLog events]);
+      NSLog(@"errorLog: extendedLogData: %@", [errorLog extendedLogData]);
     
       // [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"value": @"AVPlayerItemStatus.failed"}];
     }

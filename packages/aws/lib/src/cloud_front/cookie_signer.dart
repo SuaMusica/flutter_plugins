@@ -48,9 +48,9 @@ class CookieSigner {
         await _signWithSha1RSA(Uint8List.fromList(policy.codeUnits));
 
     String urlSafePolicy =
-        contentCleaner.makeBytesUrlSafe(Uint8List.fromList(policy.codeUnits));
+        _makeBytesUrlSafe(Uint8List.fromList(policy.codeUnits));
 
-    String urlSafeSignature = contentCleaner.makeBytesUrlSafe(signature.bytes);
+    String urlSafeSignature = _makeBytesUrlSafe(signature.bytes);
 
     return CookiesForCustomPolicy(
       expiresOn,
@@ -81,4 +81,6 @@ class CookieSigner {
     signer.init(true, privParams);
     return signer.generateSignature(dataToSign);
   }
+
+  String _makeBytesUrlSafe(Uint8List content) => contentCleaner.makeBytesUrlSafe(content);
 }

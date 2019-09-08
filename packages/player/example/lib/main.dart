@@ -14,6 +14,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   Player _player;
+  String mp3Action;
 
   @override
   void initState() {
@@ -23,22 +24,26 @@ class _MyAppState extends State<MyApp> {
 
   // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
-    String platformVersion;
-    // Platform messages may fail, so we use a try/catch PlatformException.
     try {
       var player = Player(cookieSigner);
+      player.onEvent.listen((Event event) async {
+        print("**********************************************");
+        print("**********************************************");
+        print(event);
+        print("**********************************************");
+        print("**********************************************");
+      });
 
       if (!mounted) return;
 
       setState(() {
         _player = player;
+        mp3Action = 'Play .mp3';
       });
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
-    }
+    } on PlatformException {}
   }
 
-  Future<String> cookieSigner() async {
+  Future<CookiesForCustomPolicy> cookieSigner() async {
     final signer = CookieSigner.from('assets/pk-APKAIORXYQDPHCKBDXYQ.pem');
     const resource = 'https://*.suamusica.com.br*';
     const keyPairId = "APKAIORXYQDPHCKBDXYQ";
@@ -47,9 +52,36 @@ class _MyAppState extends State<MyApp> {
     final cookies = await signer.getCookiesForCustomPolicy(
         resource, keyPairId, expiresOn, null, null);
 
-    final cookie =
-        "${cookies.policy.key}=${cookies.policy.value};${cookies.signature.key}=${cookies.signature.value};${cookies.keyPairId.key}=${cookies.keyPairId.value}";
-    return cookie;
+    return cookies;
+  }
+
+  handleMP3ButtonAction() {
+    if (_player.state == PlayerState.PLAYING) {
+      _player.pause();
+      
+      setState(() {
+        mp3Action = 'Play .mp3';
+      });
+
+    } else if (_player.state == PlayerState.PAUSED) {
+      _player.resume();
+    } else {
+      final media = Media(
+          id: "31196178",
+          name: "O Bebe",
+          url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
+          coverUrl:
+              "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+          author: "Xand Avião",
+          isLocal: false,
+          isVerified: true,
+          shareUrl: "");
+      _player.play(media, stayAwake: true, volume: 2.0);
+      
+      setState(() {
+        mp3Action = 'Play .mp3';
+      });
+    }
   }
 
   @override
@@ -68,22 +100,9 @@ class _MyAppState extends State<MyApp> {
                   padding: const EdgeInsets.all(8.0),
                   textColor: Colors.white,
                   color: Colors.blue,
-                  onPressed: () {
-                    final media = Media(
-                        id: "31196178",
-                        name: "O Bebe",
-                        url:
-                            "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
-                        coverUrl:
-                            "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
-                        author: "Xand Avião",
-                        isLocal: false,
-                        isVerified: true,
-                        shareUrl: "");
-                    _player.play(media, stayAwake: true, volume: 2.0);
-                  },
-                  child: const Text(
-                    'Play .mp3',
+                  onPressed: handleMP3ButtonAction,
+                  child: Text(
+                    mp3Action,
                   ),
                 ),
                 const SizedBox(height: 30),

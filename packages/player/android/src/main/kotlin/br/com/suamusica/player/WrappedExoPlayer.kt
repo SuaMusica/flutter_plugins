@@ -2,24 +2,29 @@ package br.com.suamusica.player
 
 import android.content.Context
 import android.net.Uri
+import android.os.Handler
 import android.util.Log
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.audio.AudioAttributes
+import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.source.TrackGroupArray
-import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource
+import com.google.android.exoplayer2.source.hls.HlsMediaSource
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray
+import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
-import java.util.*
-import com.google.android.exoplayer2.source.ProgressiveMediaSource
-import com.google.android.exoplayer2.source.MediaSource
-import com.google.android.exoplayer2.source.hls.HlsMediaSource
-import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.FileDataSourceFactory
 import com.google.android.exoplayer2.util.Util
+import io.flutter.plugin.common.MethodChannel
+import java.util.concurrent.atomic.AtomicBoolean
 
 
-class WrappedExoPlayer(val playerId: String, override val context: Context, override val cookie: String) : Player {
+class WrappedExoPlayer(val playerId: String,
+                       override val context: Context,
+                       val channel: MethodChannel,
+                       val plugin: Plugin,
+                       val handler: Handler,
+                       override val cookie: String) : Player {
     override var volume = 1.0
     override val duration = 0
     override val currentPosition = 0
@@ -30,6 +35,8 @@ class WrappedExoPlayer(val playerId: String, override val context: Context, over
             .setContentType(C.CONTENT_TYPE_MUSIC)
             .setUsage(C.USAGE_MEDIA)
             .build()
+
+    private var progressTracker: ProgressTracker? = null
 
     private fun playerEventListener(): com.google.android.exoplayer2.Player.EventListener {
         return object : com.google.android.exoplayer2.Player.EventListener {
@@ -81,8 +88,6 @@ class WrappedExoPlayer(val playerId: String, override val context: Context, over
     }
 
     override fun prepare(url: String) {
-        Log.i("SMPlayer", "Cookie=$cookie")
-
         val defaultHttpDataSourceFactory = DefaultHttpDataSourceFactory("mp.next")
         defaultHttpDataSourceFactory.defaultRequestProperties.set("Cookie", cookie)
         val dataSourceFactory = DefaultDataSourceFactory(context, null, defaultHttpDataSourceFactory)
@@ -109,26 +114,87 @@ class WrappedExoPlayer(val playerId: String, override val context: Context, over
                 throw IllegalStateException("Unsupported type: $type")
             }
         }
-
-//        val source = SsMediaSource.Factory(dataSourceFactory).createMediaSource(Uri.parse(url))
-//        val source = ProgressiveMediaSource.Factory(dataSourceFactory)
-//                .createMediaSource(Uri.parse(url))
         player.prepare(source)
     }
 
     override fun play() {
-        player.playWhenReady = true
+        performAndEnableTracking {
+            player.playWhenReady = true
+        }
     }
 
     override fun seek(position: Int) {
     }
 
     override fun pause() {
+        performAndDisableTracking {
+            player.playWhenReady = false
+        }
     }
 
     override fun stop() {
+        performAndDisableTracking {
+            player.playWhenReady = false
+        }
     }
 
     override fun release() {
+        performAndDisableTracking {
+            player.playWhenReady = false
+        }
+    }
+
+    private fun buildArguments(playerId: String, position: Long, duration: Long): Map<String, Any> {
+        val result = mutableMapOf<String, Any>()
+        result["playerId"] = playerId
+        result["position"] = position
+        result["duration"] = duration
+        return result
+    }
+
+    private fun startTrackingProgress() {
+        if (progressTracker != null) {
+            return
+        }
+        this.progressTracker = ProgressTracker()
+    }
+
+    private fun stopTrackingProgress() {
+        progressTracker?.stopTracking()
+        progressTracker = null
+    }
+
+    private fun performAndEnableTracking(callable: () -> Unit) {
+        callable()
+        startTrackingProgress()
+    }
+
+    private fun performAndDisableTracking(callable: () -> Unit) {
+        callable()
+        stopTrackingProgress()
+    }
+
+    inner class ProgressTracker : Runnable {
+        private val shutdownRequest = AtomicBoolean(false);
+
+        init{
+            handler.post(this)
+        }
+
+        override fun run() {
+            val currentPosition = player.currentPosition
+            val duration = player.duration
+
+            channel.invokeMethod("audio.onCurrentPosition", buildArguments(playerId, currentPosition, duration))
+//            channel.invokeMethod("audio.onDuration", buildArguments(playerId, duration))
+
+            if (!shutdownRequest.get()) {
+                handler.postDelayed(this, 600 /* ms */)
+            }
+        }
+
+        fun stopTracking() {
+            shutdownRequest.set(true)
+        }
     }
 }
