@@ -18,4 +18,7 @@ enum EventType {
 
   NEW_DURATION,
   NEW_POSITION,
+
+  NEXT,
+  PREVIOUS,
 }

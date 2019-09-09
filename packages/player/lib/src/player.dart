@@ -14,6 +14,7 @@ import 'player_state.dart';
 
 class Player {
   static const Ok = 1;
+  static const NotOk = -1;
   static final MethodChannel _channel = const MethodChannel('suamusica_player')
     ..setMethodCallHandler(platformCallHandler);
 
@@ -72,7 +73,30 @@ class Player {
     });
   }
 
+  Future<int> enqueue(
+    Media media, {
+    double volume = 1.0,
+    Duration position,
+    bool respectSilence = false,
+    bool stayAwake = false,
+  }) async {
+    _queue.add(media);
+    return Ok;
+  }
+
   Future<int> play(
+    Media media, {
+    double volume = 1.0,
+    Duration position,
+    bool respectSilence = false,
+    bool stayAwake = false,
+  }) async {
+    _queue.addOnTop(media);
+    _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
+    return _doPlay(_queue.current);
+  }
+
+  Future<int> _doPlay(
     Media media, {
     double volume = 1.0,
     Duration position,
@@ -83,9 +107,6 @@ class Player {
     respectSilence ??= false;
     stayAwake ??= false;
 
-    _queue.play(media);
-
-    _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
     _notifyPlayerStatusChangeEvent(EventType.BEFORE_PLAY);
 
     final int result = await _invokeMethod('play', {
@@ -104,6 +125,24 @@ class Player {
 
     return result;
   }
+
+  Future<int> next() async {
+    var media = _queue.next();
+    if (media == null) {
+      return NotOk;
+    }
+    _notifyChangeToNext(media);
+    return _doPlay(media);
+  }
+
+  Future<int> previous() async {
+    var media = _queue.previous();
+    if (media == null) {
+      return NotOk;
+    }
+    _notifyChangeToPrevious(media);
+    return _doPlay(media);
+  } 
 
   Future<int> pause() async {
     _notifyPlayerStatusChangeEvent(EventType.PAUSED_REQUEST);
@@ -153,6 +192,16 @@ class Player {
     return result;
   }
 
+  List<Media> items() => _queue.items();
+
+  void shuffle() {
+    _queue.shuffle();
+  }
+
+  void unshuffle() {
+    _queue.unshuffle();
+  }
+
   Future<int> seek(Duration position) {
     return _invokeMethod('seek', {'position': position.inMilliseconds});
   }
@@ -183,7 +232,7 @@ class Player {
 
     final playerId = callArgs['playerId'] as String;
     final Player player = players[playerId];
-  
+
     switch (call.method) {
       case 'audio.onDuration':
         final duration = callArgs['duration'];
@@ -208,10 +257,18 @@ class Player {
       case 'state.change':
         final state = callArgs['state'];
         player.state = PlayerState.values[state];
-        break;        
+        break;
       default:
         _log('Unknown method ${call.method} ');
     }
+  }
+
+  _notifyChangeToNext(Media media) {
+    _eventStreamController.add(Event(type: EventType.NEXT, media: media));
+  }
+
+  _notifyChangeToPrevious(Media media) {
+    _eventStreamController.add(Event(type: EventType.PREVIOUS, media: media));
   }
 
   _notifyPlayerStatusChangeEvent(EventType type) {
@@ -225,7 +282,8 @@ class Player {
         duration: newDuration));
   }
 
-  static _notifyPositionChangeEvent(Player player, Duration newPosition, Duration newDuration) {
+  static _notifyPositionChangeEvent(
+      Player player, Duration newPosition, Duration newDuration) {
     player._eventStreamController.add(NewPositionEvent(
         type: EventType.NEW_POSITION,
         media: player._queue.current,
@@ -245,14 +303,6 @@ class Player {
     if (!_eventStreamController.isClosed) {
       futures.add(_eventStreamController.close());
     }
-
-    // if (!_playerStateController.isClosed)
-    //   futures.add(_playerStateController.close());
-    // if (!_positionController.isClosed) futures.add(_positionController.close());
-    // if (!_durationController.isClosed) futures.add(_durationController.close());
-    // if (!_completionController.isClosed)
-    //   futures.add(_completionController.close());
-    // if (!_errorController.isClosed) futures.add(_errorController.close());
 
     await Future.wait(futures);
   }

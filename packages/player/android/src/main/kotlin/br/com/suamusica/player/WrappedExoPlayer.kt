@@ -138,6 +138,7 @@ class WrappedExoPlayer(val playerId: String,
     }
 
     override fun seek(position: Int) {
+        player.seekTo(position.toLong())
     }
 
     override fun pause() {
