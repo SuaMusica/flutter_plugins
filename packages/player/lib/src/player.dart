@@ -5,8 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:suamusica_player/src/event.dart';
 import 'package:suamusica_player/src/event_type.dart';
 import 'package:suamusica_player/src/media.dart';
-import 'package:suamusica_player/src/new_duration_event.dart';
-import 'package:suamusica_player/src/new_position_event.dart';
+import 'package:suamusica_player/src/duration_change_event.dart';
+import 'package:suamusica_player/src/position_change_event.dart';
 import 'package:suamusica_player/src/queue.dart';
 import 'package:uuid/uuid.dart';
 
@@ -33,9 +33,7 @@ class Player {
 
   PlayerState get state => _playerState;
 
-  set state(PlayerState state) {
-    _playerState = state;
-  }
+  set state(PlayerState state) => _playerState = state;
 
   Stream<Event> get onEvent => _eventStreamController.stream;
 
@@ -91,7 +89,7 @@ class Player {
     bool respectSilence = false,
     bool stayAwake = false,
   }) async {
-    _queue.addOnTop(media);
+    _queue.play(media);
     _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
     return _doPlay(_queue.current);
   }
@@ -192,7 +190,7 @@ class Player {
     return result;
   }
 
-  List<Media> items() => _queue.items();
+  List<Media> get items => _queue.items;
 
   void shuffle() {
     _queue.shuffle();
@@ -277,7 +275,7 @@ class Player {
 
   static _notifyDurationChangeEvent(Player player, Duration newDuration) {
     player._eventStreamController.add(NewDurationEvent(
-        type: EventType.NEW_DURATION,
+        type: EventType.DURATION_CHANGE,
         media: player._queue.current,
         duration: newDuration));
   }
@@ -285,7 +283,7 @@ class Player {
   static _notifyPositionChangeEvent(
       Player player, Duration newPosition, Duration newDuration) {
     player._eventStreamController.add(NewPositionEvent(
-        type: EventType.NEW_POSITION,
+        type: EventType.POSITION_CHANGE,
         media: player._queue.current,
         position: newPosition,
         duration: newDuration));

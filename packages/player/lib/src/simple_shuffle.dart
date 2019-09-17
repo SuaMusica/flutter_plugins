@@ -1,4 +1,4 @@
-import 'package:suamusica_player/src/queue.dart';
+import 'package:suamusica_player/src/queue_item.dart';
 import 'package:suamusica_player/src/shuffler.dart';
 
 class SimpleShuffler extends Shuffler {

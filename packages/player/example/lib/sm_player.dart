@@ -36,9 +36,10 @@ class _SMPlayerState extends State<SMPlayer> {
       var player = Player(cookieSigner);
       player.onEvent.listen((Event event) async {
         // print("${event.media.author} - ${event.media.name}");
+        print("$event");
 
         switch (event.type) {
-          case EventType.NEW_POSITION:
+          case EventType.POSITION_CHANGE:
             if (event is NewPositionEvent) {
               setState(() {
                 position = event.position;
@@ -136,6 +137,7 @@ class _SMPlayerState extends State<SMPlayer> {
       player.enqueue(media4);
       player.enqueue(media5);
       player.enqueue(media6);
+      //player.enqueueFromList();
 
       if (!mounted) return;
 
@@ -367,9 +369,9 @@ class _SMPlayerState extends State<SMPlayer> {
             height: 200,
             child: ListView.separated(
               padding: const EdgeInsets.all(8.0),
-              itemCount: _player.items().length,
+              itemCount: _player.items.length,
               itemBuilder: (BuildContext context, int index) {
-                var media = _player.items()[index];
+                var media = _player.items[index];
                 return Container(
                   height: 50,
                   color: Colors.blue[colorCodes[index % 3]],

@@ -1,9 +1,8 @@
 import 'dart:convert';
 
-import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 
-class Media extends Equatable {
+class Media {
   final String id;
   final String name;
   final String author;
@@ -37,4 +36,21 @@ class Media extends Equatable {
 
   @override
   String toString() => jsonEncode(toJson());
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Media &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          name == other.name &&
+          author == other.author &&
+          url == other.url &&
+          isLocal == other.isLocal &&
+          coverUrl == other.coverUrl &&
+          isVerified == other.isVerified &&
+          shareUrl == other.shareUrl;
+
+  @override
+  int get hashCode => [id, name, author, url, isLocal, coverUrl, isVerified, shareUrl].hashCode;
 }
