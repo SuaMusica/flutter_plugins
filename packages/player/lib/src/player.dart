@@ -71,16 +71,47 @@ class Player {
     });
   }
 
-  Future<int> enqueue(
+  int enqueue(
     Media media, {
     double volume = 1.0,
     Duration position,
     bool respectSilence = false,
     bool stayAwake = false,
-  }) async {
+  }) {
     _queue.add(media);
     return Ok;
   }
+
+  int enqueueAll(
+    List<Media> items, {
+    double volume = 1.0,
+    Duration position,
+    bool respectSilence = false,
+    bool stayAwake = false,
+  }) {
+    _queue.addAll(items);
+    return Ok;
+  }
+
+  int remove(Media media) {
+    _queue.remove(media);
+    return Ok;
+  }
+
+  int removeAll() {
+    _queue.removeAll();
+    return Ok;
+  }
+
+  int clear() => removeAll();
+
+  Media get current => _queue.current;
+
+  List<Media> get items => _queue.items;
+
+  int get size => _queue.size;
+
+  Media get top => _queue.top;
 
   Future<int> play(
     Media media, {
@@ -124,23 +155,60 @@ class Player {
     return result;
   }
 
-  Future<int> next() async {
-    var media = _queue.next();
+  Future<int> rewind() async {
+    var media = _queue.rewind();
+    return _rewind(media);
+  }
+
+  Future<int> _rewind(Media media) async {
     if (media == null) {
       return NotOk;
     }
-    _notifyChangeToNext(media);
-    return _doPlay(media);
+    _notifyRewind(media);
+    return seek(Duration(seconds: 0));
+  }
+
+  Future<int> forward() async {
+    var media = _queue.current;
+    return _forward(media);
+  }
+
+  Future<int> _forward(Media media) async {
+    if (media == null) {
+      return NotOk;
+    }
+    _notifyForward(media);
+    return seek(Duration(seconds: await getDuration()));
   }
 
   Future<int> previous() async {
-    var media = _queue.previous();
-    if (media == null) {
+    final current = _queue.current;
+    var previous = _queue.previous();
+    if (previous == null) {
       return NotOk;
     }
-    _notifyChangeToPrevious(media);
-    return _doPlay(media);
-  } 
+
+    if (previous == current) {
+      return _rewind(current);
+    } else {
+      _notifyChangeToPrevious(previous);
+      return _doPlay(previous);
+    }
+  }
+
+  Future<int> next() async {
+    final current = _queue.current;
+    var next = _queue.next();
+    if (next == null) {
+      return NotOk;
+    }
+    if (next == current) {
+      return _forward(current);
+    } else {
+      _notifyChangeToNext(next);
+      return _doPlay(next);
+    }
+  }
 
   Future<int> pause() async {
     _notifyPlayerStatusChangeEvent(EventType.PAUSED_REQUEST);
@@ -189,8 +257,6 @@ class Player {
 
     return result;
   }
-
-  List<Media> get items => _queue.items;
 
   void shuffle() {
     _queue.shuffle();
@@ -267,6 +333,14 @@ class Player {
 
   _notifyChangeToPrevious(Media media) {
     _eventStreamController.add(Event(type: EventType.PREVIOUS, media: media));
+  }
+
+  _notifyRewind(Media media) {
+    _eventStreamController.add(Event(type: EventType.REWIND, media: media));
+  }
+
+  _notifyForward(Media media) {
+    _eventStreamController.add(Event(type: EventType.FORWARD, media: media));
   }
 
   _notifyPlayerStatusChangeEvent(EventType type) {
