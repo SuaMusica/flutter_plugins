@@ -6,3 +6,4 @@ export 'src/event_type.dart';
 export 'src/event.dart';
 export 'src/duration_change_event.dart';
 export 'src/position_change_event.dart';
+export 'src/repeat_mode.dart';

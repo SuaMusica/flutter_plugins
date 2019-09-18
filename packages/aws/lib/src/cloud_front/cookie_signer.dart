@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:typed_data';
 import 'package:aws/src/cloud_front/cookies_for_custom_policy.dart';
 import 'package:aws/src/cloud_front/default_content_cleaner.dart';

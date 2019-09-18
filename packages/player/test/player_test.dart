@@ -414,6 +414,27 @@ void main() {
       expect(subject.size, 3);
       expect(subject.current, null);
     });
+  }); 
+
+  group('Events', () {
+    testWidgets('Test event emit chain',
+        (WidgetTester tester) async {
+      final subject = Player(cookieSigner);
+      await tester.pumpWidget(new SMPlayer(player: subject));
+      await tester.pump(Duration(seconds: 5));
+      await subject.play(media1);
+
+      // TODO: Fix this!
+      // subject.onEvent.listen((Event event) async {
+      //   print("HERE: $event");
+      // });
+
+      // expect(subject.onEvent, emitsInOrder([
+      //   Event(type: EventType.PLAY_REQUESTED, media: media1),
+      //   Event(type: EventType.BEFORE_PLAY, media: media1),
+      //   Event(type: EventType.PLAYING, media: media1)
+      // ]));
+    });
   });
 }
 

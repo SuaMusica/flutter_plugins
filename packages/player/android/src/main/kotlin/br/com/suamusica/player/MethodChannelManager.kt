@@ -14,10 +14,11 @@ class MethodChannelManager(val channel: MethodChannel) {
         invokeMethod("audio.onCurrentPosition", args)
     }
 
-    fun notifyPlayerStateChange(playerId: String, state: PlayerState) {
+    fun notifyPlayerStateChange(playerId: String, state: PlayerState, error: String? = null) {
         val args = ArgsBuilder()
                 .playerId(playerId)
                 .state(state)
+                .error(error)
                 .build()
 
         invokeMethod("state.change", args)

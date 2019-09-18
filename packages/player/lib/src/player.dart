@@ -8,6 +8,7 @@ import 'package:suamusica_player/src/media.dart';
 import 'package:suamusica_player/src/duration_change_event.dart';
 import 'package:suamusica_player/src/position_change_event.dart';
 import 'package:suamusica_player/src/queue.dart';
+import 'package:suamusica_player/src/repeat_mode.dart';
 import 'package:uuid/uuid.dart';
 
 import 'player_state.dart';
@@ -23,17 +24,14 @@ class Player {
 
   final _uuid = Uuid();
   CookiesForCustomPolicy _cookies;
-  PlayerState _playerState = PlayerState.IDLE;
+  PlayerState state = PlayerState.IDLE;
   Queue _queue = Queue();
+  RepeatMode repeatMode = RepeatMode.NONE;
 
   final StreamController<Event> _eventStreamController =
       StreamController<Event>.broadcast();
 
   final Future<CookiesForCustomPolicy> Function() cookieSigner;
-
-  PlayerState get state => _playerState;
-
-  set state(PlayerState state) => _playerState = state;
 
   Stream<Event> get onEvent => _eventStreamController.stream;
 
@@ -198,27 +196,31 @@ class Player {
 
   Future<int> next() async {
     final current = _queue.current;
-    var next = _queue.next();
-    if (next == null) {
-      return NotOk;
-    }
-    if (next == current) {
-      return _forward(current);
+    Media next;
+
+    if (repeatMode == RepeatMode.TRACK) {
+      return rewind();
     } else {
-      _notifyChangeToNext(next);
-      return _doPlay(next);
+      next = _queue.next();
+      if (next == null) {
+        if (repeatMode == RepeatMode.NONE) {
+          return NotOk;
+        } else {
+          next = _queue.restart();
+        }
+      }
+      if (next == current && _queue.size > 1) {
+        return _forward(current);
+      } else {
+        _notifyChangeToNext(next);
+        return _doPlay(next);
+      }
     }
   }
 
   Future<int> pause() async {
-    _notifyPlayerStatusChangeEvent(EventType.PAUSED_REQUEST);
+    _notifyPlayerStatusChangeEvent(EventType.PAUSE_REQUEST);
     final int result = await _invokeMethod('pause');
-
-    if (result == Ok) {
-      state = PlayerState.PAUSED;
-      _notifyPlayerStatusChangeEvent(EventType.PAUSED);
-    }
-
     return result;
   }
 
@@ -312,15 +314,60 @@ class Player {
         break;
       case 'audio.onComplete':
         player.state = PlayerState.COMPLETED;
-        // player._completionController.add(null);
+        _notifyPlayerStateChangeEvent(player, EventType.FINISHED_PLAYING);
         break;
       case 'audio.onError':
         player.state = PlayerState.STOPPED;
-        // player._errorController.add(value);
+        _notifyPlayerErrorEvent(player, 'error');
         break;
       case 'state.change':
         final state = callArgs['state'];
         player.state = PlayerState.values[state];
+
+        switch (player.state) {
+          case PlayerState.IDLE:
+            break;
+
+          case PlayerState.BUFFERING:
+            _notifyPlayerStateChangeEvent(player, EventType.BUFFERING);
+            break;
+
+          case PlayerState.PLAYING:
+            _notifyPlayerStateChangeEvent(player, EventType.PLAYING);
+            break;
+
+          case PlayerState.PAUSED:
+            _notifyPlayerStateChangeEvent(player, EventType.PAUSED);
+            break;
+
+          case PlayerState.STOPPED:
+            _notifyPlayerStateChangeEvent(player, EventType.STOP_REQUESTED);
+            break;
+
+          case PlayerState.COMPLETED:
+            _notifyPlayerStateChangeEvent(player, EventType.FINISHED_PLAYING);
+            switch (player.repeatMode) {
+              case RepeatMode.NONE:
+                player.next();
+                break;
+
+              case RepeatMode.QUEUE:
+                final next = player.next();
+                if (next == null) {}
+                break;
+
+              case RepeatMode.TRACK:
+                player.rewind();
+                break;
+            }
+            break;
+
+          case PlayerState.ERROR:
+            final error = callArgs['error'] as String;
+            _notifyPlayerErrorEvent(player, error);
+            break;
+        }
+
         break;
       default:
         _log('Unknown method ${call.method} ');
@@ -348,16 +395,25 @@ class Player {
   }
 
   static _notifyDurationChangeEvent(Player player, Duration newDuration) {
-    player._eventStreamController.add(NewDurationEvent(
-        type: EventType.DURATION_CHANGE,
+    player._eventStreamController.add(DurationChangeEvent(
+        media: player._queue.current, duration: newDuration));
+  }
+
+  static _notifyPlayerStateChangeEvent(Player player, EventType eventType) {
+    player._eventStreamController
+        .add(Event(type: eventType, media: player._queue.current));
+  }
+
+  static _notifyPlayerErrorEvent(Player player, String error) {
+    player._eventStreamController.add(Event(
+        type: EventType.ERROR_OCCURED,
         media: player._queue.current,
-        duration: newDuration));
+        error: error));
   }
 
   static _notifyPositionChangeEvent(
       Player player, Duration newPosition, Duration newDuration) {
-    player._eventStreamController.add(NewPositionEvent(
-        type: EventType.POSITION_CHANGE,
+    player._eventStreamController.add(PositionChangeEvent(
         media: player._queue.current,
         position: newPosition,
         duration: newDuration));

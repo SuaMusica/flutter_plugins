@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:suamusica_player/src/queue.dart';
 import 'package:suamusica_player/src/queue_item.dart';
 import 'package:suamusica_player/src/simple_shuffle.dart';
 

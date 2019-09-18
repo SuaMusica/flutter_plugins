@@ -3,12 +3,12 @@ import 'package:suamusica_player/src/event.dart';
 import 'package:suamusica_player/src/event_type.dart';
 import 'package:suamusica_player/src/media.dart';
 
-class NewDurationEvent extends Event {
+class DurationChangeEvent extends Event {
   final Duration duration;
 
-  NewDurationEvent(
-      {String id, EventType type, Media media, @required this.duration})
-      : super(id: id, type: type, media: media);
+  DurationChangeEvent(
+      {String id, Media media, @required this.duration})
+      : super(id: id, type: EventType.DURATION_CHANGE, media: media);
 
   @override
   String toString() => "${super.toString()} duration: $duration";

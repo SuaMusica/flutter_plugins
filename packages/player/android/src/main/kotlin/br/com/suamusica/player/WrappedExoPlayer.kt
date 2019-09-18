@@ -61,9 +61,24 @@ class WrappedExoPlayer(val playerId: String,
                     channelManager.notifyPlayerStateChange(playerId, PlayerState.PLAYING)
                 } else if (playWhenReady) {
                     if (player.playbackError != null) {
-                        channelManager.notifyPlayerStateChange(playerId, PlayerState.ERROR)
+                        channelManager.notifyPlayerStateChange(playerId, PlayerState.ERROR, player.playbackError.toString())
                     } else {
-                        channelManager.notifyPlayerStateChange(playerId, PlayerState.values()[playbackState])
+                        when (playbackState) {
+                            ExoPlayer.STATE_IDLE -> {
+                                channelManager.notifyPlayerStateChange(playerId, PlayerState.IDLE)
+                            }
+                            ExoPlayer.STATE_BUFFERING -> {
+                                channelManager.notifyPlayerStateChange(playerId, PlayerState.BUFFERING)
+                            }
+                            ExoPlayer.STATE_READY -> {
+                                channelManager.notifyPlayerStateChange(playerId, PlayerState.PLAYING)
+                            }
+                            ExoPlayer.STATE_ENDED -> {
+                                stopTrackingProgressAndPerformTask {
+                                    channelManager.notifyPlayerStateChange(playerId, PlayerState.COMPLETED)
+                                }
+                            }
+                        }
                     }
                 } else {
                     channelManager.notifyPlayerStateChange(playerId, PlayerState.PAUSED)
@@ -80,6 +95,8 @@ class WrappedExoPlayer(val playerId: String,
 
             override fun onPlayerError(error: ExoPlaybackException?) {
                 Log.e("MusicService", "onPLayerError: ${error?.message}", error)
+
+                channelManager.notifyPlayerStateChange(playerId, PlayerState.ERROR, player.playbackError.toString())
             }
 
             override fun onPositionDiscontinuity(reason: Int) {
@@ -138,7 +155,10 @@ class WrappedExoPlayer(val playerId: String,
     }
 
     override fun seek(position: Int) {
-        player.seekTo(position.toLong())
+        performAndEnableTracking {
+            player.seekTo(position.toLong())
+            player.playWhenReady = true
+        }
     }
 
     override fun pause() {
@@ -150,6 +170,7 @@ class WrappedExoPlayer(val playerId: String,
     override fun stop() {
         performAndDisableTracking {
             player.playWhenReady = false
+            channelManager.notifyPlayerStateChange(playerId, PlayerState.STOPPED)
         }
     }
 
@@ -171,6 +192,15 @@ class WrappedExoPlayer(val playerId: String,
         progressTracker = null
     }
 
+    private fun stopTrackingProgressAndPerformTask(callable: () -> Unit) {
+        if (progressTracker != null) {
+            progressTracker!!.stopTracking(callable)
+        } else {
+            callable()
+        }
+        progressTracker = null
+    }
+
     private fun performAndEnableTracking(callable: () -> Unit) {
         callable()
         startTrackingProgress()
@@ -182,9 +212,10 @@ class WrappedExoPlayer(val playerId: String,
     }
 
     inner class ProgressTracker : Runnable {
-        private val shutdownRequest = AtomicBoolean(false);
+        private val shutdownRequest = AtomicBoolean(false)
+        private var shutdownTask: (() -> Unit)? = null
 
-        init{
+        init {
             handler.post(this)
         }
 
@@ -195,12 +226,21 @@ class WrappedExoPlayer(val playerId: String,
             channelManager.notifyPositionChange(playerId, currentPosition, duration)
 
             if (!shutdownRequest.get()) {
-                handler.postDelayed(this, 600 /* ms */)
+                handler.postDelayed(this, 400 /* ms */)
+            } else {
+                shutdownTask?.let {
+                    it()
+                }
             }
         }
 
         fun stopTracking() {
             shutdownRequest.set(true)
+        }
+
+        fun stopTracking(callable: () -> Unit) {
+            shutdownTask = callable
+            stopTracking()
         }
     }
 }

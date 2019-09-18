@@ -3,17 +3,16 @@ import 'package:suamusica_player/src/event.dart';
 import 'package:suamusica_player/src/event_type.dart';
 import 'package:suamusica_player/src/media.dart';
 
-class NewPositionEvent extends Event {
+class PositionChangeEvent extends Event {
   final Duration position;
   final Duration duration;
 
-  NewPositionEvent(
+  PositionChangeEvent(
       {String id,
-      EventType type,
       Media media,
       @required this.position,
       @required this.duration})
-      : super(id: id, type: type, media: media);
+      : super(id: id, type: EventType.POSITION_CHANGE, media: media);
 
   @override
   String toString() => "${super.toString()} position: $position duration: $duration";

@@ -1,5 +1,5 @@
 enum RepeatMode {
-  NOTHING,
+  NONE,
   QUEUE,
   TRACK
 }

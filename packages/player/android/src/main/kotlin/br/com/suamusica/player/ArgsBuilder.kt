@@ -25,6 +25,13 @@ class ArgsBuilder {
         return this
     }
 
-    fun build() = Collections.unmodifiableMap(args)
+    fun error(error: String?): ArgsBuilder {
+        error?.let { value ->
+            args["error"] = value
+        }
+        return this
+    }
 
+
+    fun build() = Collections.unmodifiableMap(args)
 }

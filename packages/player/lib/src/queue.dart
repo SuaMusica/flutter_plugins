@@ -1,15 +1,7 @@
-import 'package:suamusica_player/src/event.dart';
-import 'package:suamusica_player/src/event_type.dart';
-import 'dart:async';
-
 import 'package:suamusica_player/src/media.dart';
 import 'package:suamusica_player/src/queue_item.dart';
 import 'package:suamusica_player/src/shuffler.dart';
 import 'package:suamusica_player/src/simple_shuffle.dart';
-
-// TODO: Se estiver na última música, é o mesmo que acabar.
-// TODO: ADICIONAR EVENTO DE QUEUE ENDED
-// TODO: SE TIVER EM LOOP VOLTA PRA PRIMEIRA
 
 class Queue {
   var index = -1;
@@ -18,7 +10,7 @@ class Queue {
   
   DateTime _lastPrevious;
 
-  Queue({shuffler}) : _shuffler = shuffler ?? SimpleShuffler();
+  Queue({shuffler, mode}) : _shuffler = shuffler ?? SimpleShuffler();
 
   Media get current {
     if (storage.length > 0 && index >= 0) {
@@ -43,7 +35,11 @@ class Queue {
 
   play(Media media) {
     ArgumentError.checkNotNull(media);
-    storage.replaceRange(0, 1, [QueueItem(0, media)]);
+    if (storage.length > 0) {
+      storage.replaceRange(0, 1, [QueueItem(0, media)]);
+    } else {
+      storage.add(QueueItem(_nextPosition(), media));
+    }
     index = 0;
   }
 
@@ -121,5 +117,10 @@ class Queue {
     } else {
       return null;
     }
+  }
+
+  Media restart() {
+    index = -1;
+    return next();
   }
 }

@@ -8,8 +8,6 @@ import 'package:suamusica_player_example/app_colors.dart';
 import 'package:suamusica_player_example/ui_data.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-const ok = 1;
-
 class SMPlayer extends StatefulWidget {
   SMPlayer({Key key}) : super(key: key);
 
@@ -23,7 +21,7 @@ class _SMPlayerState extends State<SMPlayer> {
   String mediaLabel = '';
   var duration = Duration(seconds: 0);
   var position = Duration(seconds: 0);
-  var shuffled = false;
+  var _shuffled = false;
 
   @override
   void initState() {
@@ -35,35 +33,34 @@ class _SMPlayerState extends State<SMPlayer> {
     try {
       var player = Player(cookieSigner);
       player.onEvent.listen((Event event) async {
-        // print("${event.media.author} - ${event.media.name}");
-        print("$event");
+        print("Event: $event");
 
         switch (event.type) {
           case EventType.POSITION_CHANGE:
-            if (event is NewPositionEvent) {
-              setState(() {
-                position = event.position;
-                duration = event.duration;
-              });
+            if (event is PositionChangeEvent) {
+              if (event.position < event.duration) {
+                setState(() {
+                  position = event.position;
+                  duration = event.duration;
+                });
+              }
             }
             break;
-          case EventType.PLAYING: 
-          case EventType.NEXT: 
-          case EventType.PREVIOUS: 
+          case EventType.PLAYING:
+          case EventType.NEXT:
+          case EventType.PREVIOUS:
             setState(() {
-              currentMedia = event.media;    
+              currentMedia = event.media;
               mediaLabel = toMediaLabel();
-              // print("Label $mediaLabel ${event.type}");
             });
             break;
           default:
-            
         }
       });
 
       var media1 = Media(
           id: "1",
-          name: "Solteiro Largado",
+          name: "Track 1",
           url:
               "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
           coverUrl:
@@ -75,7 +72,7 @@ class _SMPlayerState extends State<SMPlayer> {
 
       var media2 = Media(
           id: "2",
-          name: "O Bebe",
+          name: "Track 2",
           url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
           coverUrl:
               "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
@@ -86,7 +83,7 @@ class _SMPlayerState extends State<SMPlayer> {
 
       var media3 = Media(
           id: "3",
-          name: "Solteiro Largado",
+          name: "Track 3",
           url:
               "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
           coverUrl:
@@ -98,7 +95,7 @@ class _SMPlayerState extends State<SMPlayer> {
 
       var media4 = Media(
           id: "4",
-          name: "O Bebe",
+          name: "Track 4",
           url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
           coverUrl:
               "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
@@ -109,7 +106,7 @@ class _SMPlayerState extends State<SMPlayer> {
 
       var media5 = Media(
           id: "5",
-          name: "Solteiro Largado",
+          name: "Track 5",
           url:
               "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
           coverUrl:
@@ -119,10 +116,9 @@ class _SMPlayerState extends State<SMPlayer> {
           isVerified: true,
           shareUrl: "");
 
-
       var media6 = Media(
           id: "6",
-          name: "O Bebe",
+          name: "Track 6",
           url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
           coverUrl:
               "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
@@ -133,11 +129,10 @@ class _SMPlayerState extends State<SMPlayer> {
 
       player.enqueue(media1);
       player.enqueue(media2);
-      player.enqueue(media3);
-      player.enqueue(media4);
-      player.enqueue(media5);
-      player.enqueue(media6);
-      //player.enqueueFromList();
+      // player.enqueue(media3);
+      // player.enqueue(media4);
+      // player.enqueue(media5);
+      // player.enqueue(media6);
 
       if (!mounted) return;
 
@@ -174,30 +169,21 @@ class _SMPlayerState extends State<SMPlayer> {
   void playOrPause() async {
     if (_player.state == PlayerState.PLAYING) {
       int result = await _player.pause();
-      if (result == ok) {
+      if (result == Player.Ok) {
         Scaffold.of(context)
             .showSnackBar(SnackBar(content: Text('Audio is now paused!!!!')));
       }
     } else if (_player.state == PlayerState.PAUSED) {
       int result = await _player.resume();
-      if (result == ok) {
+      if (result == Player.Ok) {
         Scaffold.of(context).showSnackBar(
             SnackBar(content: Text('Audio is now playing again!!!!')));
       }
     } else {
-      int result = await _player.play(Media(
-          id: "7",
-          name: "O Bebe",
-          url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
-          coverUrl:
-              "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
-          author: "Xand Avião",
-          isLocal: false,
-          isVerified: true,
-          shareUrl: ""));
-      if (result == 1) {
-        Scaffold.of(context)
-            .showSnackBar(SnackBar(content: Text('Audio is now playing!!!!')));
+      int result = await _player.next();
+      if (result == Player.Ok) {
+        Scaffold.of(context).showSnackBar(
+            SnackBar(content: Text('Audio is now playing again!!!!')));
       }
     }
   }
@@ -221,13 +207,13 @@ class _SMPlayerState extends State<SMPlayer> {
 
   void shuffleOrUnshuffle() {
     setState(() {
-      if (shuffled) {
+      if (_shuffled) {
         _player.unshuffle();
-        shuffled = false;
+        _shuffled = false;
       } else {
         _player.shuffle();
-        shuffled = true;
-      } 
+        _shuffled = true;
+      }
     });
   }
 
@@ -236,6 +222,32 @@ class _SMPlayerState extends State<SMPlayer> {
       return "Tocando: ${currentMedia.author} - ${currentMedia.name}";
     } else {
       return '';
+    }
+  }
+
+  _repeatModeToColor() {
+    if (_player.repeatMode == RepeatMode.NONE) {
+      return AppColors.black;
+    } else if (_player.repeatMode == RepeatMode.QUEUE) {
+      return AppColors.primary;
+    } else {
+      return AppColors.darkPink;
+    }
+  }
+
+  _changeRepeatMode() {
+    if (_player.repeatMode == RepeatMode.NONE) {
+      setState(() {
+        _player.repeatMode = RepeatMode.QUEUE;
+      });
+    } else if (_player.repeatMode == RepeatMode.QUEUE) {
+      setState(() {
+        _player.repeatMode = RepeatMode.TRACK;
+      });
+    } else {
+      setState(() {
+        _player.repeatMode = RepeatMode.NONE;
+      });
     }
   }
 
@@ -301,7 +313,7 @@ class _SMPlayerState extends State<SMPlayer> {
                     clipBehavior: Clip.hardEdge,
                     child: IconButton(
                       iconSize: 25,
-                      icon: SvgPicture.asset(UIData.btPlayerSuffle),
+                      icon: SvgPicture.asset(UIData.btPlayerSuffle, color: _shuffled ? AppColors.darkPink : AppColors.primary),
                       onPressed: shuffleOrUnshuffle,
                     )),
               ),
@@ -352,11 +364,8 @@ class _SMPlayerState extends State<SMPlayer> {
                     clipBehavior: Clip.hardEdge,
                     child: IconButton(
                       iconSize: 25,
-                      icon: SvgPicture.asset(UIData.btPlayerRepeat),
-                      onPressed: () => {
-                        Scaffold.of(context).showSnackBar(
-                            SnackBar(content: Text('Not implemented yet!!!')))
-                      },
+                      icon: SvgPicture.asset(UIData.btPlayerRepeat, color: _repeatModeToColor() ),
+                      onPressed: _changeRepeatMode,
                     )),
               ),
             ],
