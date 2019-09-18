@@ -175,8 +175,10 @@ class Player {
     if (media == null) {
       return NotOk;
     }
+    final duration = Duration(milliseconds: await getDuration());
+    _notifyPositionChangeEvent(this, duration, duration);
     _notifyForward(media);
-    return seek(Duration(seconds: await getDuration()));
+    return seek(duration);
   }
 
   Future<int> previous() async {
@@ -203,13 +205,25 @@ class Player {
     } else {
       next = _queue.next();
       if (next == null) {
-        if (repeatMode == RepeatMode.NONE) {
+        if (current == null) {
           return NotOk;
+        }
+
+        if (state == PlayerState.PLAYING) {
+          return _forward(current);
         } else {
-          next = _queue.restart();
+          if (repeatMode == RepeatMode.NONE) {
+            return NotOk;
+          } else if (repeatMode == RepeatMode.QUEUE) {
+            next = _queue.restart();
+          } else {
+            // this should not happen!
+            return NotOk;
+          }
         }
       }
-      if (next == current && _queue.size > 1) {
+
+      if (next == current) {
         return _forward(current);
       } else {
         _notifyChangeToNext(next);

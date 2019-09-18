@@ -4,8 +4,8 @@ import android.content.Context
 
 interface Player {
     var volume: Double
-    val duration: Int
-    val currentPosition: Int
+    val duration: Long
+    val currentPosition: Long
     var releaseMode: ReleaseMode
     val context: Context
     var stayAwake: Boolean

@@ -38,7 +38,7 @@ class _SMPlayerState extends State<SMPlayer> {
         switch (event.type) {
           case EventType.POSITION_CHANGE:
             if (event is PositionChangeEvent) {
-              if (event.position < event.duration) {
+              if (event.position <= event.duration) {
                 setState(() {
                   position = event.position;
                   duration = event.duration;

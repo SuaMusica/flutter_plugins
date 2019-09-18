@@ -27,8 +27,10 @@ class WrappedExoPlayer(val playerId: String,
                        val handler: Handler,
                        override val cookie: String) : Player {
     override var volume = 1.0
-    override val duration = 0
-    override val currentPosition = 0
+    override val duration: Long
+        get() = player.duration
+    override val currentPosition: Long
+        get() = player.currentPosition
     override var releaseMode = ReleaseMode.RELEASE
     override var stayAwake: Boolean = false
     val channelManager = MethodChannelManager(channel)
@@ -220,7 +222,7 @@ class WrappedExoPlayer(val playerId: String,
         }
 
         override fun run() {
-            val currentPosition = player.currentPosition
+            val currentPosition = if (player.currentPosition > player.duration) player.duration else player.currentPosition
             val duration = player.duration
 
             channelManager.notifyPositionChange(playerId, currentPosition, duration)
