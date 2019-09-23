@@ -8,6 +8,14 @@
 
 static NSString *const CHANNEL_NAME = @"suamusica_player";
 
+static int *const STATE_IDLE = 0;
+static int *const STATE_BUFFERING = 1;
+static int *const STATE_PLAYING = 2;
+static int *const STATE_PAUSED = 3;
+static int *const STATE_STOPPED = 4;
+static int *const STATE_COMPLETED = 5;
+static int *const STATE_ERROR = 6;
+
 static NSMutableDictionary * players;
 
 @interface Plugin()
@@ -123,6 +131,8 @@ FlutterMethodChannel *_channel_player;
                           cookie:cookie
                           playerId:playerId
                           onReady:^(NSString * playerId) {
+                            int state = STATE_PLAYING;
+                            [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": playerId, @"state": @(state)}];
                             result(@(1));
                           }
                     ];
@@ -191,8 +201,7 @@ FlutterMethodChannel *_channel_player;
       if (isLocal) {
         playerItem = [ [ AVPlayerItem alloc ] initWithURL:[ NSURL fileURLWithPath:url ]];
       } else {
-        NSURL *_url = [NSURL URLWithString: @"myprotocol://url"];    
-
+        NSURL *_url = [NSURL URLWithString: url];
         NSHTTPCookieStorage *cookiesStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
         NSMutableArray *cookies = [NSMutableArray array];	
         NSArray *cookiesItems = [cookie componentsSeparatedByString:@";"];	
@@ -201,20 +210,7 @@ FlutterMethodChannel *_channel_player;
           if ([keyValue count] == 2) {	
             NSString *key = [keyValue objectAtIndex:0];	
             NSString *value = [keyValue objectAtIndex:1];	
-
-//             NSLog(@"Processing %@...", key);
-
-            // NSDictionary *properties = [NSDictionary dictionaryWithObjectsAndKeys:	
-            //                         @"suamusica.com.br", NSHTTPCookieDomain,	
-            //                         @"/", NSHTTPCookiePath,	
-            //                         key, NSHTTPCookieName,	
-            //                         value, NSHTTPCookieValue,	
-            //                         nil];	
-            // NSHTTPCookie *httpCookie = [NSHTTPCookie cookieWithProperties:properties];
-            // [cookies addObject:httpCookie];
-
             NSHTTPCookie *httpCookie = [ [NSHTTPCookie cookiesWithResponseHeaderFields:@{@"Set-Cookie": [NSString stringWithFormat:@"%@=%@", key, value]} forURL:_url] objectAtIndex:0];
-//            NSLog(@"httpCookie: %@", httpCookie);
             [cookies addObject:httpCookie];
             @try {
               [cookiesStorage setCookie:httpCookie];
@@ -222,12 +218,9 @@ FlutterMethodChannel *_channel_player;
             @catch (NSException *exception) {
               NSLog(@"%@", exception.reason);
             }
-//            NSLog(@"Done processing %@!", key);    
           }
         }
 
-//        NSLog(@"HERE 1 %@", cookies);
-        // NSDictionary *values = [NSHTTPCookie requestHeaderFieldsWithCookies:cookies];
         NSMutableDictionary * headers = [NSMutableDictionary dictionary];
         [headers setObject:@"mp.next" forKey:@"User-Agent"];
         [headers setObject:cookie forKey:@"Cookie"];
@@ -235,14 +228,10 @@ FlutterMethodChannel *_channel_player;
         // AVURLAsset * asset = [AVURLAsset URLAssetWithURL:_url options:@{@"AVURLAssetHTTPHeaderFieldsKey": headers, AVURLAssetHTTPCookiesKey : cookies }];
         AVURLAsset * asset = [AVURLAsset URLAssetWithURL:_url options:@{@"AVURLAssetHTTPHeaderFieldsKey": headers, AVURLAssetHTTPCookiesKey : [cookiesStorage cookies] }];
           
-        // AssetLoaderDelegate *assetLoader = [[AssetLoaderDelegate alloc] init];  
         NSLog(@"resourceLoader: %@", [asset resourceLoader]);
         [[asset resourceLoader] setDelegate:self queue:dispatch_get_main_queue()];
 
-        // AVURLAsset * asset = [AVURLAsset URLAssetWithURL:_url options:@{AVURLAssetHTTPCookiesKey : [cookiesStorage cookies]}];
-        // AVURLAsset * asset = [AVURLAsset URLAssetWithURL:_url options:@{@"AVURLAssetHTTPHeaderFieldsKey": values}];
         playerItem = [AVPlayerItem playerItemWithAsset:asset];
-        
       }
         
       if (playerInfo[@"url"]) {
@@ -267,7 +256,7 @@ FlutterMethodChannel *_channel_player;
         id timeObserver = [ player  addPeriodicTimeObserverForInterval: interval queue: nil usingBlock:^(CMTime time){
           [self onTimeInterval:playerId time:time];
         }];
-          [timeobservers addObject:@{@"player":player, @"observer":timeObserver}];
+        [timeobservers addObject:@{@"player":player, @"observer":timeObserver}];
       }
         
       id anobserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVPlayerItemDidPlayToEndTimeNotification
@@ -339,6 +328,8 @@ FlutterMethodChannel *_channel_player;
            [ player seekToTime:time ];
            [ player play];
            [ playerInfo setObject:@true forKey:@"isPlaying" ];
+           int state = STATE_PLAYING;
+            [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": playerId, @"state": @(state)}];
          }    
   ];
 }
@@ -352,8 +343,8 @@ FlutterMethodChannel *_channel_player;
   NSLog(@"ios -> updateDuration...%f", CMTimeGetSeconds(duration));
   if(CMTimeGetSeconds(duration)>0){
     NSLog(@"ios -> invokechannel");
-    int mseconds= CMTimeGetSeconds(duration)*1000;
-    // [_channel_player invokeMethod:@"audio.onDuration" arguments:@{@"playerId": playerId, @"value": @(mseconds)}];
+    int durationInMilliseconds = CMTimeGetSeconds(duration)*1000;
+    [_channel_player invokeMethod:@"audio.onDuration" arguments:@{@"playerId": playerId, @"duration": @(durationInMilliseconds)}];
   }
 }
 
@@ -371,18 +362,15 @@ FlutterMethodChannel *_channel_player;
     AVPlayer *player = playerInfo[@"player"];
     
     CMTime duration = [player currentTime];
-    int mseconds= CMTimeGetSeconds(duration)*1000;
-    return mseconds;
+    int durationInMilliseconds = CMTimeGetSeconds(duration)*1000;
+    return durationInMilliseconds;
 }
 
-// No need to spam the logs with every time interval update
 -(void) onTimeInterval: (NSString *) playerId
                   time: (CMTime) time {
-    // NSLog(@"ios -> onTimeInterval...");
-    int mseconds =  CMTimeGetSeconds(time)*1000;
-    // NSLog(@"asdff %@ - %d", playerId, mseconds);
-    // [_channel_player invokeMethod:@"audio.onCurrentPosition" arguments:@{@"playerId": playerId, @"value": @(mseconds)}];
-    //    NSLog(@"asdff end");
+    int position =  CMTimeGetSeconds(time)*1000;
+    int duration = [self getDuration:playerId];
+    [_channel_player invokeMethod:@"audio.onCurrentPosition" arguments:@{@"playerId": playerId, @"position": @(position), @"duration": @(duration)}];
 }
 
 -(void) pause: (NSString *) playerId {
@@ -391,6 +379,8 @@ FlutterMethodChannel *_channel_player;
 
   [ player pause ];
   [playerInfo setObject:@false forKey:@"isPlaying"];
+  int state = STATE_PAUSED;
+  [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": playerId, @"state": @(state)}];
 }
 
 -(void) resume: (NSString *) playerId {
@@ -398,6 +388,8 @@ FlutterMethodChannel *_channel_player;
   AVPlayer *player = playerInfo[@"player"];
   [player play];
   [playerInfo setObject:@true forKey:@"isPlaying"];
+  int state = STATE_PLAYING;
+  [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": playerId, @"state": @(state)}];
 }
 
 -(void) setVolume: (float) volume 
@@ -421,6 +413,8 @@ FlutterMethodChannel *_channel_player;
     [ self pause:playerId ];
     [ self seek:playerId time:CMTimeMake(0, 1) ];
     [playerInfo setObject:@false forKey:@"isPlaying"];
+    int state = STATE_STOPPED;
+    [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": playerId, @"state": @(state)}];
   }
 }
 
@@ -446,7 +440,7 @@ FlutterMethodChannel *_channel_player;
     [ self resume:playerId ];
   }
 
-  // [ _channel_player invokeMethod:@"audio.onComplete" arguments:@{@"playerId": playerId}];
+  [ _channel_player invokeMethod:@"audio.onComplete" arguments:@{@"playerId": playerId}];
 }
 
 -(void)observeValueForKeyPath:(NSString *)keyPath
@@ -476,7 +470,7 @@ FlutterMethodChannel *_channel_player;
       NSLog(@"errorLog: events: %@", [errorLog events]);
       NSLog(@"errorLog: extendedLogData: %@", [errorLog extendedLogData]);
     
-      // [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"value": @"AVPlayerItemStatus.failed"}];
+      [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"value": @"AVPlayerItemStatus.failed"}];
     }
   } else {
     // Any unrecognized context must belong to super

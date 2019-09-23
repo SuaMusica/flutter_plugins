@@ -18,6 +18,7 @@ class Plugin : MethodCallHandler {
     const val VOLUME_ARGUMENT = "volume"
     const val POSITION_ARGUMENT = "position"
     const val STAY_AWAKE_ARGUMENT = "stayAwake"
+    const val LOAD_ONLY = "loadOnly"
     const val RELEASE_MODE_ARGUMENT = "releaseMode"
 
     // Method names
@@ -31,6 +32,8 @@ class Plugin : MethodCallHandler {
     const val GET_DURATION_METHOD = "getDuration"
     const val GET_CURRENT_POSITION_METHOD = "getCurrentPosition"
     const val SET_RELEASE_MODE_METHOD = "setReleaseMode"
+
+    const val Ok = 1
 
     @JvmStatic
     fun registerWith(registrar: Registrar) {
@@ -71,13 +74,16 @@ class Plugin : MethodCallHandler {
         val volume = call.argument<Double>(VOLUME_ARGUMENT)!!
         val position = call.argument<Int>(POSITION_ARGUMENT)
         val stayAwake = call.argument<Boolean>(STAY_AWAKE_ARGUMENT)!!
+        val loadOnly = call.argument<Boolean>(LOAD_ONLY)!!
         player.stayAwake = stayAwake
         player.volume = volume
         player.prepare(url)
         if (position != null) {
           player.seek(position)
         }
-        player.play()
+        if (!loadOnly) {
+          player.play()
+        }
       }
       RESUME_METHOD -> {
         player.play()
@@ -117,7 +123,7 @@ class Plugin : MethodCallHandler {
         return
       }
     }
-    response.success(1)
+    response.success(Ok)
   }
 
   private fun playerId(call: MethodCall): String =

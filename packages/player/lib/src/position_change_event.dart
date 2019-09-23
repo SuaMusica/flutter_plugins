@@ -12,7 +12,7 @@ class PositionChangeEvent extends Event {
       Media media,
       @required this.position,
       @required this.duration})
-      : super(id: id, type: EventType.POSITION_CHANGE, media: media);
+      : super(type: EventType.POSITION_CHANGE, media: media);
 
   @override
   String toString() => "${super.toString()} position: $position duration: $duration";

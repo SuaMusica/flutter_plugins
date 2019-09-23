@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:aws/aws.dart';
 import 'package:flutter/services.dart';
+import 'package:suamusica_player/src/before_play_event.dart';
 import 'package:suamusica_player/src/event.dart';
 import 'package:suamusica_player/src/event_type.dart';
 import 'package:suamusica_player/src/media.dart';
@@ -29,15 +30,23 @@ class Player {
   RepeatMode repeatMode = RepeatMode.NONE;
 
   final StreamController<Event> _eventStreamController =
-      StreamController<Event>.broadcast();
+      StreamController<Event>();
 
   final Future<CookiesForCustomPolicy> Function() cookieSigner;
 
-  Stream<Event> get onEvent => _eventStreamController.stream;
+  Stream<Event> _stream;
+
+  Stream<Event> get onEvent {
+    if (_stream == null) {
+      _stream = _eventStreamController.stream.asBroadcastStream();
+    }
+    return _stream;
+  }
 
   String playerId;
+  bool autoPlay;
 
-  Player(this.cookieSigner) {
+  Player(this.cookieSigner, this.autoPlay) {
     playerId = _uuid.v4();
     players[playerId] = this;
   }
@@ -134,22 +143,37 @@ class Player {
     respectSilence ??= false;
     stayAwake ??= false;
 
-    _notifyPlayerStatusChangeEvent(EventType.BEFORE_PLAY);
+    if (autoPlay) {
+      _notifyBeforePlayEvent((loadOnly) => {});
 
-    final int result = await _invokeMethod('play', {
-      'url': media.url,
-      'is_local': media.isLocal,
-      'volume': volume,
-      'position': position?.inMilliseconds,
-      'respectSilence': respectSilence,
-      'stayAwake': stayAwake,
-    });
+      return invokePlay(media, {
+        'url': media.url,
+        'loadOnly': false,
+        'isLocal': media.isLocal,
+        'volume': volume,
+        'position': position?.inMilliseconds,
+        'respectSilence': respectSilence,
+        'stayAwake': stayAwake,
+      });
+    } else {
+      _notifyBeforePlayEvent((loadOnly) {
+        invokePlay(media, {
+          'url': media.url,
+          'loadOnly': loadOnly,
+          'isLocal': media.isLocal,
+          'volume': volume,
+          'position': position?.inMilliseconds,
+          'respectSilence': respectSilence,
+          'stayAwake': stayAwake,
+        });
+      });
 
-    if (result == Ok) {
-      _notifyPlayerStatusChangeEvent(EventType.PLAYING);
-      state = PlayerState.PLAYING;
+      return Ok;
     }
+  }
 
+  Future<int> invokePlay(Media media, Map<String, dynamic> args) async {
+    final int result = await _invokeMethod('play', args);
     return result;
   }
 
@@ -178,7 +202,7 @@ class Player {
     final duration = Duration(milliseconds: await getDuration());
     _notifyPositionChangeEvent(this, duration, duration);
     _notifyForward(media);
-    return seek(duration);
+    return stop();
   }
 
   Future<int> previous() async {
@@ -188,6 +212,10 @@ class Player {
       return NotOk;
     }
 
+    //TODO: Tirar dúvida com o Trope.
+    // Se tiver com o autoplay desligado e tiver tocando uma música
+    // e clicar em voltar
+    // é para parar e esperar mandar continuar?
     if (previous == current) {
       return _rewind(current);
     } else {
@@ -209,7 +237,8 @@ class Player {
           return NotOk;
         }
 
-        if (state == PlayerState.PLAYING) {
+        if ((state == PlayerState.PLAYING || state == PlayerState.PAUSED) &&
+            repeatMode == RepeatMode.NONE) {
           return _forward(current);
         } else {
           if (repeatMode == RepeatMode.NONE) {
@@ -223,12 +252,8 @@ class Player {
         }
       }
 
-      if (next == current) {
-        return _forward(current);
-      } else {
-        _notifyChangeToNext(next);
-        return _doPlay(next);
-      }
+      _notifyChangeToNext(next);
+      return _doPlay(next);
     }
   }
 
@@ -255,7 +280,6 @@ class Player {
     final int result = await _invokeMethod('resume');
 
     if (result == Ok) {
-      state = PlayerState.PLAYING;
       _notifyPlayerStatusChangeEvent(EventType.RESUMED);
     }
 
@@ -306,6 +330,25 @@ class Player {
     }
   }
 
+  static Future<void> _handleOnComplete(Player player) async {
+    player.state = PlayerState.COMPLETED;
+    _notifyPlayerStateChangeEvent(player, EventType.FINISHED_PLAYING);
+    switch (player.repeatMode) {
+      case RepeatMode.NONE:
+        player.next();
+        break;
+
+      case RepeatMode.QUEUE:
+        final next = player.next();
+        if (next == null) {}
+        break;
+
+      case RepeatMode.TRACK:
+        player.rewind();
+        break;
+    }
+  }
+
   static Future<void> _doHandlePlatformCall(MethodCall call) async {
     final Map<dynamic, dynamic> callArgs = call.arguments as Map;
     _log('_platformCallHandler call ${call.method} $callArgs');
@@ -316,8 +359,10 @@ class Player {
     switch (call.method) {
       case 'audio.onDuration':
         final duration = callArgs['duration'];
-        Duration newDuration = Duration(milliseconds: duration);
-        _notifyDurationChangeEvent(player, newDuration);
+        if (duration > 0) {
+          Duration newDuration = Duration(milliseconds: duration);
+          _notifyDurationChangeEvent(player, newDuration);
+        }
         break;
       case 'audio.onCurrentPosition':
         final position = callArgs['position'];
@@ -327,8 +372,7 @@ class Player {
         _notifyPositionChangeEvent(player, newPosition, newDuration);
         break;
       case 'audio.onComplete':
-        player.state = PlayerState.COMPLETED;
-        _notifyPlayerStateChangeEvent(player, EventType.FINISHED_PLAYING);
+        _handleOnComplete(player);
         break;
       case 'audio.onError':
         player.state = PlayerState.STOPPED;
@@ -359,21 +403,7 @@ class Player {
             break;
 
           case PlayerState.COMPLETED:
-            _notifyPlayerStateChangeEvent(player, EventType.FINISHED_PLAYING);
-            switch (player.repeatMode) {
-              case RepeatMode.NONE:
-                player.next();
-                break;
-
-              case RepeatMode.QUEUE:
-                final next = player.next();
-                if (next == null) {}
-                break;
-
-              case RepeatMode.TRACK:
-                player.rewind();
-                break;
-            }
+            _handleOnComplete(player);
             break;
 
           case PlayerState.ERROR:
@@ -406,6 +436,11 @@ class Player {
 
   _notifyPlayerStatusChangeEvent(EventType type) {
     _eventStreamController.add(Event(type: type, media: _queue.current));
+  }
+
+  _notifyBeforePlayEvent(Function(bool) operation) {
+    _eventStreamController
+        .add(BeforePlayEvent(media: _queue.current, operation: operation));
   }
 
   static _notifyDurationChangeEvent(Player player, Duration newDuration) {

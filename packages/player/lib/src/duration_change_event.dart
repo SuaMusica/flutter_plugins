@@ -8,7 +8,7 @@ class DurationChangeEvent extends Event {
 
   DurationChangeEvent(
       {String id, Media media, @required this.duration})
-      : super(id: id, type: EventType.DURATION_CHANGE, media: media);
+      : super(type: EventType.DURATION_CHANGE, media: media);
 
   @override
   String toString() => "${super.toString()} duration: $duration";

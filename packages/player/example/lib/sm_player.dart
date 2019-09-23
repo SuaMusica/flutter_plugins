@@ -31,11 +31,17 @@ class _SMPlayerState extends State<SMPlayer> {
 
   Future<void> initPlatformState() async {
     try {
-      var player = Player(cookieSigner);
+      var player = Player(cookieSigner, false);
       player.onEvent.listen((Event event) async {
-        print("Event: $event");
+        // print("Event: $event");
 
         switch (event.type) {
+          case EventType.BEFORE_PLAY:
+            if (event is BeforePlayEvent) {
+              event.continueWithLoadingOnly();
+            }
+            break;
+
           case EventType.POSITION_CHANGE:
             if (event is PositionChangeEvent) {
               if (event.position <= event.duration) {
@@ -47,6 +53,19 @@ class _SMPlayerState extends State<SMPlayer> {
             }
             break;
           case EventType.PLAYING:
+            setState(() {
+              currentMedia = event.media;
+              mediaLabel = toMediaLabel();
+            });
+            break;
+
+          case EventType.PAUSED:
+            setState(() {
+              currentMedia = event.media;
+              mediaLabel = toMediaLabel();
+            });
+            break;
+
           case EventType.NEXT:
           case EventType.PREVIOUS:
             setState(() {
@@ -313,7 +332,10 @@ class _SMPlayerState extends State<SMPlayer> {
                     clipBehavior: Clip.hardEdge,
                     child: IconButton(
                       iconSize: 25,
-                      icon: SvgPicture.asset(UIData.btPlayerSuffle, color: _shuffled ? AppColors.darkPink : AppColors.primary),
+                      icon: SvgPicture.asset(UIData.btPlayerSuffle,
+                          color: _shuffled
+                              ? AppColors.darkPink
+                              : AppColors.primary),
                       onPressed: shuffleOrUnshuffle,
                     )),
               ),
@@ -364,7 +386,8 @@ class _SMPlayerState extends State<SMPlayer> {
                     clipBehavior: Clip.hardEdge,
                     child: IconButton(
                       iconSize: 25,
-                      icon: SvgPicture.asset(UIData.btPlayerRepeat, color: _repeatModeToColor() ),
+                      icon: SvgPicture.asset(UIData.btPlayerRepeat,
+                          color: _repeatModeToColor()),
                       onPressed: _changeRepeatMode,
                     )),
               ),

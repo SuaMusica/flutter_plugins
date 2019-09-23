@@ -55,27 +55,21 @@ void main() {
       shareUrl: "");
 
   group('Player operations', () {
-    testWidgets('Adding null media shall throw exception',
-        (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+    test('Adding null media shall throw exception',
+        () async {
+      final subject = createPlayer();
       expect(() => subject.enqueue(null), throwsArgumentError);
     });
-    testWidgets('Adding media to an empty queue shall make it the queue top',
-        (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+    test('Adding media to an empty queue shall make it the queue top',
+        () async {
+      final subject = createPlayer();
       subject.enqueue(media1);
       expect(subject.size, 1);
       expect(subject.top, media1);
     });
-    testWidgets('The queue shall support multiple items',
-        (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+    test('The queue shall support multiple items',
+        () async {
+      final subject = createPlayer();
       subject.enqueue(media1);
       subject.enqueue(media2);
       subject.enqueue(media3);
@@ -83,11 +77,9 @@ void main() {
       expect(subject.top, media1);
       expect(subject.items, [media1, media2, media3]);
     });
-    testWidgets('Playing a media shall replace the queue top',
-        (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+    test('Playing a media shall replace the queue top',
+        () async {
+      final subject = createPlayer();
       subject.enqueue(media1);
       subject.enqueue(media2);
       subject.play(media3);
@@ -95,18 +87,14 @@ void main() {
       expect(subject.top, media3);
       expect(subject.items, [media3, media2]);
     });
-    testWidgets('Removing null media shall throw exception',
-        (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+    test('Removing null media shall throw exception',
+        () async {
+      final subject = createPlayer();
       expect(() => subject.remove(null), throwsArgumentError);
     });
-    testWidgets('Removing a media shall be supported',
-        (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+    test('Removing a media shall be supported',
+        () async {
+      final subject = createPlayer();
       subject.enqueue(media1);
       subject.enqueue(media2);
       subject.enqueue(media3);
@@ -117,17 +105,13 @@ void main() {
       expect(subject.top, media1);
       expect(subject.items, [media1, media3]);
     });
-    testWidgets('Add all with null list shall throw an exception',
-        (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+    test('Add all with null list shall throw an exception',
+        () async {
+      final subject = createPlayer();
       expect(() => subject.enqueueAll(null), throwsArgumentError);
     });
-    testWidgets('Add all shall be supported', (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+    test('Add all shall be supported', () async {
+      final subject = createPlayer();
       final items = List<Media>();
       for (int i = 0; i < 10; ++i) {
         items.addAll([media1, media2, media3]);
@@ -137,10 +121,8 @@ void main() {
       expect(subject.top, media1);
       expect(subject.items, items);
     });
-    testWidgets('Shuffle shall be supported', (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+    test('Shuffle shall be supported', () async {
+      final subject = createPlayer();
       final items = List<Media>();
       final interactions = 100;
       for (int i = 0; i < interactions; ++i) {
@@ -153,10 +135,8 @@ void main() {
       expect(subject.top, media1);
       expect(subject.items, isNot(items));
     });
-    testWidgets('Unshuffle shall be supported', (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+    test('Unshuffle shall be supported', () async {
+      final subject = createPlayer();
       final items = List<Media>();
       final interactions = 100;
       for (int i = 0; i < interactions; ++i) {
@@ -175,28 +155,22 @@ void main() {
       expect(subject.top, media1);
       expect(subject.items, items);
     });
-    testWidgets('Rewind on empty queue shall raise an error',
-        (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+    test('Rewind on empty queue shall raise an error',
+        () async {
+      final subject = createPlayer();
       expect(() => subject.rewind(), throwsAssertionError);
     });
-    testWidgets('Rewind on a queue that was not played shall raise an error',
-        (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+    test('Rewind on a queue that was not played shall raise an error',
+        () async {
+      final subject = createPlayer();
       subject.enqueue(media1);
       subject.enqueue(media2);
       subject.enqueue(media3);
 
       expect(() => subject.rewind(), throwsAssertionError);
     });
-    testWidgets('Rewind shall be supported', (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+    test('Rewind shall be supported', () async {
+      final subject = createPlayer();
       subject.enqueue(media1);
       subject.enqueue(media2);
       subject.enqueue(media3);
@@ -208,28 +182,22 @@ void main() {
       expect(subject.top, media1);
       expect(subject.items, [media1, media2, media3]);
     });
-    testWidgets('Previous on empty queue shall raise an error',
-        (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+    test('Previous on empty queue shall raise an error',
+        () async {
+      final subject = createPlayer();
       expect(() => subject.previous(), throwsAssertionError);
     });
-    testWidgets('Previous on a queue that was not played shall raise an error',
-        (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+    test('Previous on a queue that was not played shall raise an error',
+        () async {
+      final subject = createPlayer();
       subject.enqueue(media1);
       subject.enqueue(media2);
       subject.enqueue(media3);
 
       expect(() => subject.previous(), throwsAssertionError);
     });
-    testWidgets('Previous shall act as rewind', (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+    test('Previous shall act as rewind', () async {
+      final subject = createPlayer();
       subject.enqueue(media1);
       subject.enqueue(media2);
       subject.enqueue(media3);
@@ -241,17 +209,13 @@ void main() {
       expect(subject.top, media1);
       expect(subject.items, [media1, media2, media3]);
     });
-    testWidgets(
+    test(
         'Two consecutive previous invocation shall really go the previous track',
-        (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+        () async {
+      final subject = createPlayer();
       subject.enqueue(media1);
       subject.enqueue(media2);
       subject.enqueue(media3);
-
-      await tester.pump(Duration(seconds: 3));
 
       expect(await subject.next(), Player.Ok);
       expect(subject.size, 3);
@@ -269,12 +233,10 @@ void main() {
       expect(subject.current, media1);
       expect(subject.items, [media1, media2, media3]);
     });
-    testWidgets(
+    test(
         'Two consecutive previous invocation with interval greater than 1 sec shall solely rewind',
-        (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+        () async {
+      final subject = createPlayer();
 
       subject.enqueue(media1);
       subject.enqueue(media2);
@@ -297,18 +259,14 @@ void main() {
       expect(subject.current, media2);
       expect(subject.items, [media1, media2, media3]);
     });
-    testWidgets('Next on empty queue shall raise an error',
-        (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+    test('Next on empty queue shall raise an error',
+        () async {
+      final subject = createPlayer();
       expect(() => subject.next(), throwsAssertionError);
     });
-    testWidgets('Next on a queue that was not played shall start playing it',
-        (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+    test('Next on a queue that was not played shall start playing it',
+        () async {
+      final subject = createPlayer();
       subject.enqueue(media1);
       subject.enqueue(media2);
       subject.enqueue(media3);
@@ -318,11 +276,9 @@ void main() {
       expect(subject.top, media1);
       expect(subject.items, [media1, media2, media3]);
     });
-    testWidgets('Next on a queue that is playing shall move to the next',
-        (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+    test('Next on a queue that is playing shall move to the next',
+        () async {
+      final subject = createPlayer();
 
       subject.enqueue(media1);
       subject.enqueue(media2);
@@ -339,11 +295,9 @@ void main() {
       expect(subject.current, media2);
       expect(subject.items, [media1, media2, media3]);
     });
-    testWidgets('Next when reaching the end of the queue shall return null',
-        (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+    test('Next when reaching the end of the queue shall return null',
+        () async {
+      final subject = createPlayer();
 
       subject.enqueue(media1);
       subject.enqueue(media2);
@@ -369,11 +323,9 @@ void main() {
       expect(subject.current, media3);
       expect(subject.items, [media1, media2, media3]);
     });
-    testWidgets('Clear shall remove all tracks from queue',
-        (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+    test('Clear shall remove all tracks from queue',
+        () async {
+      final subject = createPlayer();
 
       final items = List<Media>();
       final interactions = 100;
@@ -391,52 +343,42 @@ void main() {
       expect(subject.top, null);
       expect(subject.items, []);
     });
-    testWidgets('Top on an unplayed queue shall return the top of the queue',
-        (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+    test('Top on an unplayed queue shall return the top of the queue',
+        () async {
+      final subject = createPlayer();
       subject.enqueue(media1);
       subject.enqueue(media2);
       subject.enqueue(media3);
       expect(subject.size, 3);
       expect(subject.top, media1);
     });
-
-    testWidgets('Current on an unplayed queue shall return null',
-        (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump();
+    test('Current on an unplayed queue shall return null',
+        () async {
+      final subject = createPlayer();
       subject.enqueue(media1);
       subject.enqueue(media2);
       subject.enqueue(media3);
       expect(subject.size, 3);
       expect(subject.current, null);
     });
-  }); 
-
+  });
   group('Events', () {
-    testWidgets('Test event emit chain',
-        (WidgetTester tester) async {
-      final subject = Player(cookieSigner);
-      await tester.pumpWidget(new SMPlayer(player: subject));
-      await tester.pump(Duration(seconds: 5));
+    test('Test event emit chain', () async {
+      final subject = createPlayer();
       await subject.play(media1);
 
-      // TODO: Fix this!
-      // subject.onEvent.listen((Event event) async {
-      //   print("HERE: $event");
-      // });
-
-      // expect(subject.onEvent, emitsInOrder([
-      //   Event(type: EventType.PLAY_REQUESTED, media: media1),
-      //   Event(type: EventType.BEFORE_PLAY, media: media1),
-      //   Event(type: EventType.PLAYING, media: media1)
-      // ]));
+      // expectLater(
+      //     subject.onEvent,
+      //     emitsInOrder([
+      //       Event(type: EventType.PLAY_REQUESTED, media: media1),
+      //       Event(type: EventType.BEFORE_PLAY, media: media1),
+      //       Event(type: EventType.PLAYING, media: media1)
+      //     ]));
     });
   });
 }
+
+Player createPlayer() => Player(cookieSigner, false);
 
 Future<CookiesForCustomPolicy> cookieSigner() async {
   DateTime expiresOn = DateTime.now().add(Duration(hours: 12));

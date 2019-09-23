@@ -97,12 +97,15 @@ class Queue {
       _lastPrevious = now;
       return rewind();
     } else {
-      if (now.difference(_lastPrevious).inMilliseconds < 1000) {
+      final diff = now.difference(_lastPrevious).inMilliseconds;
+      print("diff: $diff");
+      if (diff < 1000) {
         if (index > 0) {
           --index;   
         }
         return storage.elementAt(index).item;    
       } else {
+        _lastPrevious = now;
         return rewind();
       }
     }

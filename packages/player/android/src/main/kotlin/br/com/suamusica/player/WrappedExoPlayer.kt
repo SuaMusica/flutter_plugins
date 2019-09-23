@@ -54,6 +54,9 @@ class WrappedExoPlayer(val playerId: String,
 
             override fun onLoadingChanged(isLoading: Boolean) {
                 Log.i("MusicService", "onLoadingChanged: isLoading: $isLoading")
+                if (isLoading) {
+                    channelManager.notifyPlayerStateChange(playerId, PlayerState.BUFFERING)
+                }
             }
 
             override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
@@ -83,6 +86,7 @@ class WrappedExoPlayer(val playerId: String,
                         }
                     }
                 } else {
+                    notifyPositionChange()
                     channelManager.notifyPlayerStateChange(playerId, PlayerState.PAUSED)
                 }
             }
@@ -213,6 +217,17 @@ class WrappedExoPlayer(val playerId: String,
         stopTrackingProgress()
     }
 
+    private fun notifyPositionChange() {
+        val currentPosition = if (player.currentPosition > player.duration) player.duration else player.currentPosition
+        val duration = player.duration
+
+        Log.i("MusicService", "notifyPositionChange: position: $currentPosition duration: $duration")
+
+        if (duration > 0) {
+            channelManager.notifyPositionChange(playerId, currentPosition, duration)
+        }
+    }
+
     inner class ProgressTracker : Runnable {
         private val shutdownRequest = AtomicBoolean(false)
         private var shutdownTask: (() -> Unit)? = null
@@ -222,10 +237,7 @@ class WrappedExoPlayer(val playerId: String,
         }
 
         override fun run() {
-            val currentPosition = if (player.currentPosition > player.duration) player.duration else player.currentPosition
-            val duration = player.duration
-
-            channelManager.notifyPositionChange(playerId, currentPosition, duration)
+            notifyPositionChange()
 
             if (!shutdownRequest.get()) {
                 handler.postDelayed(this, 400 /* ms */)
