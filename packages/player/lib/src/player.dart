@@ -46,7 +46,10 @@ class Player {
   String playerId;
   bool autoPlay;
 
-  Player(this.cookieSigner, this.autoPlay) {
+  Player({
+    this.cookieSigner,
+    this.autoPlay = false,
+  }) {
     playerId = _uuid.v4();
     players[playerId] = this;
   }

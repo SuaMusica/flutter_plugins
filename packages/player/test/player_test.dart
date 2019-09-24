@@ -55,8 +55,7 @@ void main() {
       shareUrl: "");
 
   group('Player operations', () {
-    test('Adding null media shall throw exception',
-        () async {
+    test('Adding null media shall throw exception', () async {
       final subject = createPlayer();
       expect(() => subject.enqueue(null), throwsArgumentError);
     });
@@ -67,8 +66,7 @@ void main() {
       expect(subject.size, 1);
       expect(subject.top, media1);
     });
-    test('The queue shall support multiple items',
-        () async {
+    test('The queue shall support multiple items', () async {
       final subject = createPlayer();
       subject.enqueue(media1);
       subject.enqueue(media2);
@@ -77,8 +75,7 @@ void main() {
       expect(subject.top, media1);
       expect(subject.items, [media1, media2, media3]);
     });
-    test('Playing a media shall replace the queue top',
-        () async {
+    test('Playing a media shall replace the queue top', () async {
       final subject = createPlayer();
       subject.enqueue(media1);
       subject.enqueue(media2);
@@ -87,13 +84,11 @@ void main() {
       expect(subject.top, media3);
       expect(subject.items, [media3, media2]);
     });
-    test('Removing null media shall throw exception',
-        () async {
+    test('Removing null media shall throw exception', () async {
       final subject = createPlayer();
       expect(() => subject.remove(null), throwsArgumentError);
     });
-    test('Removing a media shall be supported',
-        () async {
+    test('Removing a media shall be supported', () async {
       final subject = createPlayer();
       subject.enqueue(media1);
       subject.enqueue(media2);
@@ -105,8 +100,7 @@ void main() {
       expect(subject.top, media1);
       expect(subject.items, [media1, media3]);
     });
-    test('Add all with null list shall throw an exception',
-        () async {
+    test('Add all with null list shall throw an exception', () async {
       final subject = createPlayer();
       expect(() => subject.enqueueAll(null), throwsArgumentError);
     });
@@ -155,8 +149,7 @@ void main() {
       expect(subject.top, media1);
       expect(subject.items, items);
     });
-    test('Rewind on empty queue shall raise an error',
-        () async {
+    test('Rewind on empty queue shall raise an error', () async {
       final subject = createPlayer();
       expect(() => subject.rewind(), throwsAssertionError);
     });
@@ -182,8 +175,7 @@ void main() {
       expect(subject.top, media1);
       expect(subject.items, [media1, media2, media3]);
     });
-    test('Previous on empty queue shall raise an error',
-        () async {
+    test('Previous on empty queue shall raise an error', () async {
       final subject = createPlayer();
       expect(() => subject.previous(), throwsAssertionError);
     });
@@ -259,8 +251,7 @@ void main() {
       expect(subject.current, media2);
       expect(subject.items, [media1, media2, media3]);
     });
-    test('Next on empty queue shall raise an error',
-        () async {
+    test('Next on empty queue shall raise an error', () async {
       final subject = createPlayer();
       expect(() => subject.next(), throwsAssertionError);
     });
@@ -276,8 +267,7 @@ void main() {
       expect(subject.top, media1);
       expect(subject.items, [media1, media2, media3]);
     });
-    test('Next on a queue that is playing shall move to the next',
-        () async {
+    test('Next on a queue that is playing shall move to the next', () async {
       final subject = createPlayer();
 
       subject.enqueue(media1);
@@ -295,8 +285,7 @@ void main() {
       expect(subject.current, media2);
       expect(subject.items, [media1, media2, media3]);
     });
-    test('Next when reaching the end of the queue shall return null',
-        () async {
+    test('Next when reaching the end of the queue shall return null', () async {
       final subject = createPlayer();
 
       subject.enqueue(media1);
@@ -323,8 +312,7 @@ void main() {
       expect(subject.current, media3);
       expect(subject.items, [media1, media2, media3]);
     });
-    test('Clear shall remove all tracks from queue',
-        () async {
+    test('Clear shall remove all tracks from queue', () async {
       final subject = createPlayer();
 
       final items = List<Media>();
@@ -352,8 +340,7 @@ void main() {
       expect(subject.size, 3);
       expect(subject.top, media1);
     });
-    test('Current on an unplayed queue shall return null',
-        () async {
+    test('Current on an unplayed queue shall return null', () async {
       final subject = createPlayer();
       subject.enqueue(media1);
       subject.enqueue(media2);
@@ -378,7 +365,7 @@ void main() {
   });
 }
 
-Player createPlayer() => Player(cookieSigner, false);
+Player createPlayer() => Player(cookieSigner: cookieSigner, autoPlay: false);
 
 Future<CookiesForCustomPolicy> cookieSigner() async {
   DateTime expiresOn = DateTime.now().add(Duration(hours: 12));

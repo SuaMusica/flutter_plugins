@@ -60,6 +60,7 @@ class WrappedExoPlayer(val playerId: String,
             }
 
             override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
+                //TODO: Only emit Paused when user paused
                 Log.i("MusicService", "onPlayerStateChanged: playWhenReady: $playWhenReady playbackState: $playbackState")
 
                 if (playWhenReady && playbackState == ExoPlayer.STATE_READY) {
@@ -69,16 +70,16 @@ class WrappedExoPlayer(val playerId: String,
                         channelManager.notifyPlayerStateChange(playerId, PlayerState.ERROR, player.playbackError.toString())
                     } else {
                         when (playbackState) {
-                            ExoPlayer.STATE_IDLE -> {
+                            ExoPlayer.STATE_IDLE -> { // 1
                                 channelManager.notifyPlayerStateChange(playerId, PlayerState.IDLE)
                             }
-                            ExoPlayer.STATE_BUFFERING -> {
+                            ExoPlayer.STATE_BUFFERING -> { // 2 
                                 channelManager.notifyPlayerStateChange(playerId, PlayerState.BUFFERING)
                             }
-                            ExoPlayer.STATE_READY -> {
+                            ExoPlayer.STATE_READY -> { // 3
                                 channelManager.notifyPlayerStateChange(playerId, PlayerState.PLAYING)
                             }
-                            ExoPlayer.STATE_ENDED -> {
+                            ExoPlayer.STATE_ENDED -> { // 4
                                 stopTrackingProgressAndPerformTask {
                                     channelManager.notifyPlayerStateChange(playerId, PlayerState.COMPLETED)
                                 }
@@ -92,7 +93,7 @@ class WrappedExoPlayer(val playerId: String,
             }
 
             override fun onRepeatModeChanged(repeatMode: Int) {
-                Log.i("MusicService", "onRepeatModeChanged: $repeatMode")
+                Log.i("MusicServiceMusicService", "onRepeatModeChanged: $repeatMode")
             }
 
             override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
