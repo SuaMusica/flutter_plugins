@@ -42,18 +42,20 @@ class WrappedExoPlayer(val playerId: String,
 
     private var progressTracker: ProgressTracker? = null
 
+    private var previousState: Int = -1
+
     private fun playerEventListener(): com.google.android.exoplayer2.Player.EventListener {
         return object : com.google.android.exoplayer2.Player.EventListener {
             override fun onTimelineChanged(timeline: Timeline?, manifest: Any?, reason: Int) {
-                Log.i("MusicService", "onTimelineChanged: timeline: $timeline manifest: $manifest reason: $reason")
+                // Log.i("MusicService", "onTimelineChanged: timeline: $timeline manifest: $manifest reason: $reason")
             }
 
             override fun onTracksChanged(trackGroups: TrackGroupArray?, trackSelections: TrackSelectionArray?) {
-                Log.i("MusicService", "onTimelineChanged: trackGroups: $trackGroups trackSelections: $trackSelections")
+                // Log.i("MusicService", "onTimelineChanged: trackGroups: $trackGroups trackSelections: $trackSelections")
             }
 
             override fun onLoadingChanged(isLoading: Boolean) {
-                Log.i("MusicService", "onLoadingChanged: isLoading: $isLoading")
+                // Log.i("MusicService", "onLoadingChanged: isLoading: $isLoading")
                 if (isLoading) {
                     channelManager.notifyPlayerStateChange(playerId, PlayerState.BUFFERING)
                 }
@@ -61,11 +63,11 @@ class WrappedExoPlayer(val playerId: String,
 
             override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
                 //TODO: Only emit Paused when user paused
-                Log.i("MusicService", "onPlayerStateChanged: playWhenReady: $playWhenReady playbackState: $playbackState")
+                Log.i("MusicService", "onPlayerStateChanged: playWhenReady: $playWhenReady playbackState: $playbackState currentPlaybackState: ${player.getPlaybackState()}")
 
                 if (playWhenReady && playbackState == ExoPlayer.STATE_READY) {
                     channelManager.notifyPlayerStateChange(playerId, PlayerState.PLAYING)
-                } else if (playWhenReady) {
+                } else {
                     if (player.playbackError != null) {
                         channelManager.notifyPlayerStateChange(playerId, PlayerState.ERROR, player.playbackError.toString())
                     } else {
@@ -77,7 +79,23 @@ class WrappedExoPlayer(val playerId: String,
                                 channelManager.notifyPlayerStateChange(playerId, PlayerState.BUFFERING)
                             }
                             ExoPlayer.STATE_READY -> { // 3
-                                channelManager.notifyPlayerStateChange(playerId, PlayerState.PLAYING)
+                                val status = if (playWhenReady == true) PlayerState.PLAYING else PlayerState.PAUSED
+                                if (previousState == -1) {
+                                    // when we define that the track shall not "playWhenReady"
+                                    // no position info is sent
+                                    // therefore, we need to "emulate" the first position notification
+                                    // by sending it directly
+                                    notifyPositionChange()
+                                } else {
+                                    if (status == PlayerState.PAUSED) {
+                                        stopTrackingProgressAndPerformTask {
+                                            channelManager.notifyPlayerStateChange(playerId, status)
+                                        }
+                                    } else {
+                                        channelManager.notifyPlayerStateChange(playerId, status)
+                                    }
+                                    
+                                }
                             }
                             ExoPlayer.STATE_ENDED -> { // 4
                                 stopTrackingProgressAndPerformTask {
@@ -86,36 +104,34 @@ class WrappedExoPlayer(val playerId: String,
                             }
                         }
                     }
-                } else {
-                    notifyPositionChange()
-                    channelManager.notifyPlayerStateChange(playerId, PlayerState.PAUSED)
                 }
+                previousState = playbackState
             }
 
             override fun onRepeatModeChanged(repeatMode: Int) {
-                Log.i("MusicServiceMusicService", "onRepeatModeChanged: $repeatMode")
+                // Log.i("MusicServiceMusicService", "onRepeatModeChanged: $repeatMode")
             }
 
             override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
-                Log.i("MusicService", "onShuffleModeEnabledChanged: $shuffleModeEnabled")
+                // Log.i("MusicService", "onShuffleModeEnabledChanged: $shuffleModeEnabled")
             }
 
             override fun onPlayerError(error: ExoPlaybackException?) {
-                Log.e("MusicService", "onPLayerError: ${error?.message}", error)
+                // Log.e("MusicService", "onPLayerError: ${error?.message}", error)
 
                 channelManager.notifyPlayerStateChange(playerId, PlayerState.ERROR, player.playbackError.toString())
             }
 
             override fun onPositionDiscontinuity(reason: Int) {
-                Log.i("MusicService", "onPositionDiscontinuity: $reason")
+                // Log.i("MusicService", "onPositionDiscontinuity: $reason")
             }
 
             override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters?) {
-                Log.i("MusicService", "onPlaybackParametersChanged: $playbackParameters")
+                // Log.i("MusicService", "onPlaybackParametersChanged: $playbackParameters")
             }
 
             override fun onSeekProcessed() {
-                Log.i("MusicService", "onSeekProcessed")
+                // Log.i("MusicService", "onSeekProcessed")
             }
         }
     }
@@ -153,6 +169,8 @@ class WrappedExoPlayer(val playerId: String,
             }
         }
         player.prepare(source)
+        // we have to reset the previus state
+        previousState = -1
     }
 
     override fun play() {
@@ -222,7 +240,7 @@ class WrappedExoPlayer(val playerId: String,
         val currentPosition = if (player.currentPosition > player.duration) player.duration else player.currentPosition
         val duration = player.duration
 
-        Log.i("MusicService", "notifyPositionChange: position: $currentPosition duration: $duration")
+        // Log.i("MusicService", "notifyPositionChange: position: $currentPosition duration: $duration")
 
         if (duration > 0) {
             channelManager.notifyPositionChange(playerId, currentPosition, duration)

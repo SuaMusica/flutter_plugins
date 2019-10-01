@@ -60,24 +60,31 @@ class Player {
   ]) async {
     arguments ??= const {};
 
-    Future<CookiesForCustomPolicy> cookies = Future.value(_cookies);
-    if (_cookies == null || !_cookies.isValid()) {
-      cookies = (() async => await cookieSigner())();
-    }
+    Future<bool> requiresCookie = Future.value(method == 'play');
+    return requiresCookie.then((requires) {
+      Future<CookiesForCustomPolicy> cookies = Future.value(_cookies);
+      if (requires) {
+        if (_cookies == null || !_cookies.isValid()) {
+          cookies = (() async => await cookieSigner())();
+        }
+      }
 
-    return cookies.then((cookies) {
-      // we need to save it in order to reuse if it is still valid
-      _cookies = cookies;
-      final cookie =
-          "${cookies.policy.key}=${cookies.policy.value};${cookies.signature.key}=${cookies.signature.value};${cookies.keyPairId.key}=${cookies.keyPairId.value}";
+      return cookies.then((cookies) {
+        String cookie = "";
+        // we need to save it in order to reuse if it is still valid
+        if (requires) {
+          _cookies = cookies;
+          cookie = "${cookies.policy.key}=${cookies.policy.value};${cookies.signature.key}=${cookies.signature.value};${cookies.keyPairId.key}=${cookies.keyPairId.value}";
+        }
 
-      final Map<String, dynamic> withPlayerId = Map.of(arguments)
-        ..['playerId'] = playerId
-        ..['cookie'] = cookie;
+        final Map<String, dynamic> withPlayerId = Map.of(arguments)
+          ..['playerId'] = playerId
+          ..['cookie'] = cookie;
 
-      return _channel
-          .invokeMethod(method, withPlayerId)
-          .then((result) => (result as int));
+        return _channel
+            .invokeMethod(method, withPlayerId)
+            .then((result) => (result as int));
+      });
     });
   }
 
@@ -215,10 +222,6 @@ class Player {
       return NotOk;
     }
 
-    //TODO: Tirar dúvida com o Trope.
-    // Se tiver com o autoplay desligado e tiver tocando uma música
-    // e clicar em voltar
-    // é para parar e esperar mandar continuar?
     if (previous == current) {
       return _rewind(current);
     } else {
@@ -228,8 +231,28 @@ class Player {
   }
 
   Future<int> next() async {
+    return _doNext(true);
+  }
+
+  Future<int> _doNext(bool shallNotify) async {
     final current = _queue.current;
     Media next;
+
+    // first case, nothing has yet played
+    // therefore, we need to play the first
+    // track on the key and treat this as a
+    // play method invocation
+    if (current == null) {
+      next = _queue.next();
+      if (next == null) {
+        // nothing to play
+        return NotOk;
+      }
+      // notice that in this case
+      // we do not emit the NEXT event
+      // we only play the track
+      return _doPlay(next);
+    }
 
     if (repeatMode == RepeatMode.TRACK) {
       return rewind();
@@ -255,7 +278,9 @@ class Player {
         }
       }
 
-      _notifyChangeToNext(next);
+      if (shallNotify) {
+        _notifyChangeToNext(next);
+      }
       return _doPlay(next);
     }
   }
@@ -338,12 +363,8 @@ class Player {
     _notifyPlayerStateChangeEvent(player, EventType.FINISHED_PLAYING);
     switch (player.repeatMode) {
       case RepeatMode.NONE:
-        player.next();
-        break;
-
       case RepeatMode.QUEUE:
-        final next = player.next();
-        if (next == null) {}
+        player._doNext(false);
         break;
 
       case RepeatMode.TRACK:
@@ -429,12 +450,28 @@ class Player {
     _eventStreamController.add(Event(type: EventType.PREVIOUS, media: media));
   }
 
-  _notifyRewind(Media media) {
-    _eventStreamController.add(Event(type: EventType.REWIND, media: media));
+  _notifyRewind(Media media) async {
+    final positionInMilli = await getCurrentPosition();
+    final durationInMilli = await getDuration();
+
+    _eventStreamController.add(Event(
+      type: EventType.REWIND,
+      media: media,
+      position: Duration(milliseconds: positionInMilli),
+      duration: Duration(milliseconds: durationInMilli),
+    ));
   }
 
-  _notifyForward(Media media) {
-    _eventStreamController.add(Event(type: EventType.FORWARD, media: media));
+  _notifyForward(Media media) async {
+    final positionInMilli = await getCurrentPosition();
+    final durationInMilli = await getDuration();
+
+    _eventStreamController.add(Event(
+      type: EventType.FORWARD,
+      media: media,
+      position: Duration(milliseconds: positionInMilli),
+      duration: Duration(milliseconds: durationInMilli),
+    ));
   }
 
   _notifyPlayerStatusChangeEvent(EventType type) {

@@ -1,4 +1,3 @@
-//TODO: Rewind e next, ter o tempo atual da musica.
 enum EventType {
   PLAY_REQUESTED,
   BEFORE_PLAY,

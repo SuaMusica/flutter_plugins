@@ -36,16 +36,13 @@ class _SMPlayerState extends State<SMPlayer> {
         autoPlay: false,
       );
       player.onEvent.listen((Event event) async {
-        print("Event: $event");
+        print("Event: [${event.type}] [${event.media.author}-${event.media.name}] [${event.position}] [${event.duration}]");
 
         switch (event.type) {
           case EventType.BEFORE_PLAY:
             if (event is BeforePlayEvent) {
-              //TODO: Fix Bug when no event is here.
-
-              event.continueWithLoadingOnly();
-              // event.continueWithLoadingAndPlay();
-
+              // event.continueWithLoadingOnly();
+              event.continueWithLoadingAndPlay();
             }
             break;
 
@@ -55,6 +52,8 @@ class _SMPlayerState extends State<SMPlayer> {
                 setState(() {
                   position = event.position;
                   duration = event.duration;
+                  currentMedia = event.media;
+                  mediaLabel = toMediaLabel();
                 });
               }
             }
@@ -193,7 +192,21 @@ class _SMPlayerState extends State<SMPlayer> {
   }
 
   void playOrPause() async {
-    if (_player.state == PlayerState.PLAYING) {
+    print("Player State: ${_player.state}");
+
+    if (_player.state == PlayerState.IDLE && _player.current != null) {
+      int result = await _player.play(_player.current);
+      if (result == Player.Ok) {
+        Scaffold.of(context)
+            .showSnackBar(SnackBar(content: Text('Audio is now playing!!!!')));
+      }
+    } else if (_player.state == PlayerState.BUFFERING && _player.current != null) {
+      int result = await _player.resume();
+      if (result == Player.Ok) {
+        Scaffold.of(context)
+            .showSnackBar(SnackBar(content: Text('Audio is now playing!!!!')));
+      }  
+    } else if (_player.state == PlayerState.PLAYING) {
       int result = await _player.pause();
       if (result == Player.Ok) {
         Scaffold.of(context)
@@ -206,7 +219,6 @@ class _SMPlayerState extends State<SMPlayer> {
             SnackBar(content: Text('Audio is now playing again!!!!')));
       }
     } else {
-      //TODO: First Play should not fire Next Evernt
       int result = await _player.next();
       if (result == Player.Ok) {
         Scaffold.of(context).showSnackBar(

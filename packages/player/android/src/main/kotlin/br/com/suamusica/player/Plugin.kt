@@ -62,7 +62,7 @@ class Plugin : MethodCallHandler {
       response.error("Unexpected error!", e.message, e)
     }
   }
-
+  
   private fun handleMethodCall(call: MethodCall, response: MethodChannel.Result) {
     val playerId = playerId(call)
     val cookie = call.argument<String>("cookie")

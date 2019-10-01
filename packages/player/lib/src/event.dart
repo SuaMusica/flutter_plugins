@@ -6,11 +6,13 @@ class Event {
   final EventType type;
   final Media media;
   final String error;
+  final Duration position;
+  final Duration duration;
 
-  Event({@required this.type, @required this.media, this.error});
+  Event({@required this.type, @required this.media, this.error, this.position, this.duration});
 
   @override
-  String toString() => "Event type: $type media: $media error: $error";
+  String toString() => "Event type: $type media: $media error: $error position: $position duration: $duration";
 
 @override
   bool operator ==(Object other) =>
@@ -19,7 +21,9 @@ class Event {
           runtimeType == other.runtimeType &&
           type == other.type &&
           media == other.media &&
-          error == other.error;
+          error == other.error &&
+          position == other.position &&
+          duration == other.duration;
 
   @override
   int get hashCode => [type, media, error].hashCode;  
