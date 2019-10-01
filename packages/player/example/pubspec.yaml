@@ -1,4 +1,4 @@
-name: suamusica_player_example
+name: smplayer_example
 description: Demonstrates how to use the suamusica_player plugin.
 publish_to: 'none'
 
@@ -9,7 +9,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  aws:
+  smaws:
     path: ../../aws
 
   flutter_svg: ^0.14.1
@@ -19,7 +19,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  suamusica_player:
+  smplayer:
     path: ../
 
 flutter:

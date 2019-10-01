@@ -1,4 +1,4 @@
-name: suamusica_player
+name: smplayer
 description: A new flutter plugin project.
 version: 0.0.1
 author:
@@ -9,12 +9,11 @@ environment:
 
 dependencies:
   uuid: ^2.0.2
-  equatable: ^0.3.0
   flutter:
     sdk: flutter
-  aws:
+  smaws:
     path: ../aws
-
+ 
 dev_dependencies:
   flutter_test:
     sdk: flutter

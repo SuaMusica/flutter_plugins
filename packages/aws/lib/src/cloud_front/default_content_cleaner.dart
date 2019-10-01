@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:aws/src/cloud_front/content_cleaner.dart';
+import 'package:smaws/src/cloud_front/content_cleaner.dart';
 
 class DefaultContentCleaner implements ContentCleaner {
   String makeBytesUrlSafe(Uint8List input) {

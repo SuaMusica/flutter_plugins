@@ -1,12 +1,12 @@
 import 'dart:io';
 
-import 'package:aws/aws.dart';
+import 'package:smaws/aws.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:suamusica_player/player.dart';
-import 'package:suamusica_player/src/media.dart';
-import 'package:suamusica_player/src/player.dart';
+import 'package:smplayer/player.dart';
+import 'package:smplayer/src/media.dart';
+import 'package:smplayer/src/player.dart';
 
 void main() {
   const MethodChannel channel = MethodChannel('suamusica_player');

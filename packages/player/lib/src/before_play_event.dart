@@ -1,6 +1,6 @@
-import 'package:suamusica_player/src/event.dart';
-import 'package:suamusica_player/src/event_type.dart';
-import 'package:suamusica_player/src/media.dart';
+import 'package:smplayer/src/event.dart';
+import 'package:smplayer/src/event_type.dart';
+import 'package:smplayer/src/media.dart';
 
 class BeforePlayEvent extends Event {
   Function(bool) operation;

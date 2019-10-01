@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:suamusica_player/src/queue_item.dart';
-import 'package:suamusica_player/src/simple_shuffle.dart';
+import 'package:smplayer/src/queue_item.dart';
+import 'package:smplayer/src/simple_shuffle.dart';
 
 void main() {
   group('Simple Shuffle Test Suit', () {

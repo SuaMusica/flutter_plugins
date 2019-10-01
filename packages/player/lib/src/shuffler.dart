@@ -1,4 +1,4 @@
-import 'package:suamusica_player/src/queue_item.dart';
+import 'package:smplayer/src/queue_item.dart';
 
 abstract class Shuffler {
   shuffle(List<QueueItem> list);

@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:suamusica_player/src/media.dart';
-import 'package:suamusica_player/src/queue.dart';
+import 'package:smplayer/src/media.dart';
+import 'package:smplayer/src/queue.dart';
 
 void main() {
   final media1 = Media(

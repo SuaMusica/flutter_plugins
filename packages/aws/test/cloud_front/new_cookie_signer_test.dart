@@ -1,8 +1,8 @@
-import 'package:aws/src/cloud_front/default_content_cleaner.dart';
-import 'package:aws/src/cloud_front/policy_builder.dart';
-import 'package:aws/src/cloud_front/private_key_loader.dart';
+import 'package:smaws/src/cloud_front/default_content_cleaner.dart';
+import 'package:smaws/src/cloud_front/policy_builder.dart';
+import 'package:smaws/src/cloud_front/private_key_loader.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:aws/aws.dart';
+import 'package:smaws/aws.dart';
 import 'package:mockito/mockito.dart';
 import 'package:rsa_pkcs/rsa_pkcs.dart';
 

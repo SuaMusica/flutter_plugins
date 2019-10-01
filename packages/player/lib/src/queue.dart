@@ -1,7 +1,7 @@
-import 'package:suamusica_player/src/media.dart';
-import 'package:suamusica_player/src/queue_item.dart';
-import 'package:suamusica_player/src/shuffler.dart';
-import 'package:suamusica_player/src/simple_shuffle.dart';
+import 'package:smplayer/src/media.dart';
+import 'package:smplayer/src/queue_item.dart';
+import 'package:smplayer/src/shuffler.dart';
+import 'package:smplayer/src/simple_shuffle.dart';
 
 class Queue {
   var index = -1;

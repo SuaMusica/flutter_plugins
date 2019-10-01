@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:aws/aws.dart';
+import 'package:smaws/aws.dart';
 
 void main() {
   testWidgets('Cookie Signer Test Suit', (WidgetTester tester) async {

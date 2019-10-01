@@ -1,4 +1,4 @@
-import 'package:aws/src/cloud_front/custom_policy_builder.dart';
+import 'package:smaws/src/cloud_front/custom_policy_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

@@ -1,15 +1,15 @@
 import 'dart:async';
 
-import 'package:aws/aws.dart';
+import 'package:smaws/aws.dart';
 import 'package:flutter/services.dart';
-import 'package:suamusica_player/src/before_play_event.dart';
-import 'package:suamusica_player/src/event.dart';
-import 'package:suamusica_player/src/event_type.dart';
-import 'package:suamusica_player/src/media.dart';
-import 'package:suamusica_player/src/duration_change_event.dart';
-import 'package:suamusica_player/src/position_change_event.dart';
-import 'package:suamusica_player/src/queue.dart';
-import 'package:suamusica_player/src/repeat_mode.dart';
+import 'package:smplayer/src/before_play_event.dart';
+import 'package:smplayer/src/event.dart';
+import 'package:smplayer/src/event_type.dart';
+import 'package:smplayer/src/media.dart';
+import 'package:smplayer/src/duration_change_event.dart';
+import 'package:smplayer/src/position_change_event.dart';
+import 'package:smplayer/src/queue.dart';
+import 'package:smplayer/src/repeat_mode.dart';
 import 'package:uuid/uuid.dart';
 
 import 'player_state.dart';

@@ -1,6 +1,4 @@
-import 'package:equatable/equatable.dart';
-
-class QueueItem<T> extends Equatable {
+class QueueItem<T> {
   final position;
   final T item;
   QueueItem(this.position, this.item) : super();

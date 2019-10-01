@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:aws/aws.dart';
-import 'package:suamusica_player/player.dart';
+import 'package:smaws/aws.dart';
+import 'package:smplayer/player.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
-import 'package:suamusica_player_example/app_colors.dart';
-import 'package:suamusica_player_example/ui_data.dart';
+import 'package:smplayer_example/app_colors.dart';
+import 'package:smplayer_example/ui_data.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class SMPlayer extends StatefulWidget {

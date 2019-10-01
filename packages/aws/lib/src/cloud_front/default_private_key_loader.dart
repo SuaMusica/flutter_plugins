@@ -1,4 +1,4 @@
-import 'package:aws/src/cloud_front/private_key_loader.dart';
+import 'package:smaws/src/cloud_front/private_key_loader.dart';
 import 'package:flutter/services.dart';
 import 'package:rsa_pkcs/rsa_pkcs.dart';
 

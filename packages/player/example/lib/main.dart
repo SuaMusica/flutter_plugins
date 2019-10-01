@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:suamusica_player_example/sm_player.dart';
+import 'package:smplayer_example/sm_player.dart';
 
 void main() => runApp(MyApp());
 

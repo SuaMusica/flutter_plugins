@@ -1,5 +1,5 @@
-import 'package:aws/src/cloud_front/entry.dart';
-import 'package:aws/src/cloud_front/signed_cookie.dart';
+import 'package:smaws/src/cloud_front/entry.dart';
+import 'package:smaws/src/cloud_front/signed_cookie.dart';
 
 class CookiesForCustomPolicy extends SignedCookies {
   final Entry<String, String> policy;

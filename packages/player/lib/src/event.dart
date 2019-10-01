@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:suamusica_player/src/event_type.dart';
-import 'package:suamusica_player/src/media.dart';
+import 'package:smplayer/src/event_type.dart';
+import 'package:smplayer/src/media.dart';
 
 class Event {
   final EventType type;

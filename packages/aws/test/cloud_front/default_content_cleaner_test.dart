@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:aws/src/cloud_front/default_content_cleaner.dart';
+import 'package:smaws/src/cloud_front/default_content_cleaner.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
