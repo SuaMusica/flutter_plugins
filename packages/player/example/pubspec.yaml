@@ -10,7 +10,9 @@ dependencies:
     sdk: flutter
 
   smaws:
-    path: ../../aws
+    git:
+      url: git@github.com:SuaMusica/flutter_plugins.git
+      path: packages/aws/
 
   flutter_svg: ^0.14.1
   cupertino_icons: ^0.1.2
