@@ -2,7 +2,7 @@
 # To learn more about a Podspec see http://guides.cocoapods.org/syntax/podspec.html
 #
 Pod::Spec.new do |s|
-  s.name             = 'suamusica_player'
+  s.name             = 'smplayer'
   s.version          = '0.0.1'
   s.summary          = 'Desenvolvendo, conectando e amplificando o universo da música..'
   s.description      = <<-DESC
