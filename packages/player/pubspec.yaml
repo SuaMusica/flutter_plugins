@@ -13,7 +13,7 @@ dependencies:
     sdk: flutter
   smaws:
     git: 
-      url: git@github.com:SuaMusica/flutter_plugins.git
+      url: https://github.com/SuaMusica/flutter_plugins.git 
       path: packages/aws/
 
 dev_dependencies:
