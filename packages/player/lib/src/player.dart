@@ -455,11 +455,11 @@ class Player {
   }
 
   _notifyChangeToNext(Media media) {
-    _eventStreamController.add(Event(type: EventType.NEXT, media: media));
+    _eventStreamController.add(Event(type: EventType.NEXT, media: media, queuePosition: _queue.index));
   }
 
   _notifyChangeToPrevious(Media media) {
-    _eventStreamController.add(Event(type: EventType.PREVIOUS, media: media));
+    _eventStreamController.add(Event(type: EventType.PREVIOUS, media: media, queuePosition: _queue.index));
   }
 
   _notifyRewind(Media media) async {
@@ -469,6 +469,7 @@ class Player {
     _eventStreamController.add(Event(
       type: EventType.REWIND,
       media: media,
+      queuePosition: _queue.index,
       position: Duration(milliseconds: positionInMilli),
       duration: Duration(milliseconds: durationInMilli),
     ));
@@ -481,18 +482,19 @@ class Player {
     _eventStreamController.add(Event(
       type: EventType.FORWARD,
       media: media,
+      queuePosition: _queue.index,
       position: Duration(milliseconds: positionInMilli),
       duration: Duration(milliseconds: durationInMilli),
     ));
   }
 
   _notifyPlayerStatusChangeEvent(EventType type) {
-    _eventStreamController.add(Event(type: type, media: _queue.current));
+    _eventStreamController.add(Event(type: type, media: _queue.current, queuePosition: _queue.index));
   }
 
   _notifyBeforePlayEvent(Function(bool) operation) {
     _eventStreamController
-        .add(BeforePlayEvent(media: _queue.current, operation: operation));
+        .add(BeforePlayEvent(media: _queue.current, queuePosition: _queue.index, operation: operation));
   }
 
   static _notifyDurationChangeEvent(Player player, Duration newDuration) {
@@ -502,13 +504,14 @@ class Player {
 
   static _notifyPlayerStateChangeEvent(Player player, EventType eventType) {
     player._eventStreamController
-        .add(Event(type: eventType, media: player._queue.current));
+        .add(Event(type: eventType, media: player._queue.current, queuePosition: player._queue.index));
   }
 
   static _notifyPlayerErrorEvent(Player player, String error) {
     player._eventStreamController.add(Event(
         type: EventType.ERROR_OCCURED,
         media: player._queue.current,
+        queuePosition: player._queue.index,
         error: error));
   }
 

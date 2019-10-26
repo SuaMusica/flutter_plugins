@@ -6,8 +6,8 @@ class BeforePlayEvent extends Event {
   Function(bool) operation;
 
   BeforePlayEvent(
-      {String id, Media media, this.operation})
-      : super(type: EventType.BEFORE_PLAY, media: media);
+      {String id, Media media, this.operation, int queuePosition})
+      : super(type: EventType.BEFORE_PLAY, media: media, queuePosition: queuePosition);
 
   continueWithLoadingOnly() {
     this.operation(true);
