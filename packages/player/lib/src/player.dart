@@ -125,6 +125,7 @@ class Player {
   Media get current => _queue.current;
 
   List<Media> get items => _queue.items;
+  int get queuePosition => _queue.index;
 
   int get size => _queue.size;
 
