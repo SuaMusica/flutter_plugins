@@ -150,9 +150,8 @@ class Player {
     bool stayAwake = false,
   }) async {
     final media = _queue.move(pos);
-    _queue.play(media);
     _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
-    return _doPlay(_queue.current);
+    return _doPlay(media);
   }
 
   Future<int> _doPlay(
