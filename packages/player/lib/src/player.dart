@@ -142,6 +142,19 @@ class Player {
     return _doPlay(_queue.current);
   }
 
+  Future<int> playFromQueue(
+    int pos, {
+    double volume = 1.0,
+    Duration position,
+    bool respectSilence = false,
+    bool stayAwake = false,
+  }) async {
+    final media = _queue.move(pos);
+    _queue.play(media);
+    _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
+    return _doPlay(_queue.current);
+  }
+
   Future<int> _doPlay(
     Media media, {
     double volume = 1.0,

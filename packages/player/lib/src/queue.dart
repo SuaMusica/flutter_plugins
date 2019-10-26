@@ -7,7 +7,7 @@ class Queue {
   var index = -1;
   final Shuffler _shuffler;
   var storage = List<QueueItem<Media>>();
-  
+
   DateTime _lastPrevious;
 
   Queue({shuffler, mode}) : _shuffler = shuffler ?? SimpleShuffler();
@@ -21,12 +21,14 @@ class Queue {
   }
 
   List<Media> get items {
-    return storage.length > 0 ? List<Media>.unmodifiable((storage.map((i) => i.item).toList())) : [];
+    return storage.length > 0
+        ? List<Media>.unmodifiable((storage.map((i) => i.item).toList()))
+        : [];
   }
 
   int get size => storage.length;
 
-  Media get top { 
+  Media get top {
     if (this.size > 0) {
       return storage[0].item;
     }
@@ -51,7 +53,7 @@ class Queue {
   addAll(List<Media> items) {
     ArgumentError.checkNotNull(items);
     for (var media in items) {
-      storage.add(QueueItem(_nextPosition(), media));  
+      storage.add(QueueItem(_nextPosition(), media));
     }
   }
 
@@ -86,12 +88,12 @@ class Queue {
   _nextPosition() => storage.length + 1;
 
   Media rewind() {
-    assert (index >= 0);
+    assert(index >= 0);
     return storage.elementAt(index).item;
   }
 
   Media previous() {
-    assert (index >= 0);
+    assert(index >= 0);
     final now = DateTime.now();
     if (_lastPrevious == null) {
       _lastPrevious = now;
@@ -101,9 +103,9 @@ class Queue {
       print("diff: $diff");
       if (diff < 1000) {
         if (index > 0) {
-          --index;   
+          --index;
         }
-        return storage.elementAt(index).item;    
+        return storage.elementAt(index).item;
       } else {
         _lastPrevious = now;
         return rewind();
@@ -116,6 +118,18 @@ class Queue {
       throw AssertionError("Queue is empty");
     } else if (storage.length > 0 && index < storage.length - 1) {
       var media = storage.elementAt(++index).item;
+      return media;
+    } else {
+      return null;
+    }
+  }
+
+  Media move(int pos) {
+    if (storage.length == 0) {
+      throw AssertionError("Queue is empty");
+    } else if (storage.length > 0 && pos < storage.length - 1) {
+      var media = storage.elementAt(pos).item;
+      index = pos;
       return media;
     } else {
       return null;
