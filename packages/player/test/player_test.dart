@@ -21,7 +21,7 @@ void main() {
   });
 
   final media1 = Media(
-      id: "1",
+      id: 1,
       name: "O Bebe",
       url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
       coverUrl:
@@ -32,7 +32,7 @@ void main() {
       shareUrl: "");
 
   final media2 = Media(
-      id: "2",
+      id: 2,
       name: "Solteiro Largado",
       url:
           "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
@@ -44,7 +44,7 @@ void main() {
       shareUrl: "");
 
   final media3 = Media(
-      id: "3",
+      id: 3,
       name: "Borrachinha",
       url: "https://android.suamusica.com.br/373377/2238511/05+Borrachinha.mp3",
       coverUrl:

@@ -6,7 +6,7 @@ import 'package:smplayer/src/queue.dart';
 
 void main() {
   final media1 = Media(
-      id: "1",
+      id: 1,
       name: "O Bebe",
       url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
       coverUrl:
@@ -17,7 +17,7 @@ void main() {
       shareUrl: "");
 
   final media2 = Media(
-      id: "2",
+      id: 2,
       name: "Solteiro Largado",
       url:
           "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
@@ -29,7 +29,7 @@ void main() {
       shareUrl: "");
 
   final media3 = Media(
-      id: "3",
+      id: 3,
       name: "Borrachinha",
       url: "https://android.suamusica.com.br/373377/2238511/05+Borrachinha.mp3",
       coverUrl:
@@ -96,7 +96,7 @@ void main() {
     test('Add all shall be supported', () {
       final subject = Queue();
       final items = List<Media>();
-      for(int i = 0; i < 10; ++i) {
+      for (int i = 0; i < 10; ++i) {
         items.addAll([media1, media2, media3]);
       }
       subject.addAll(items);
@@ -109,7 +109,7 @@ void main() {
       final subject = Queue();
       final items = List<Media>();
       final interactions = 100;
-      for(int i = 0; i < interactions; ++i) {
+      for (int i = 0; i < interactions; ++i) {
         items.addAll([media1, media2, media3]);
       }
       subject.addAll(items);
@@ -124,7 +124,7 @@ void main() {
       final subject = Queue();
       final items = List<Media>();
       final interactions = 100;
-      for(int i = 0; i < interactions; ++i) {
+      for (int i = 0; i < interactions; ++i) {
         items.addAll([media1, media2, media3]);
       }
       subject.addAll(items);
@@ -195,13 +195,15 @@ void main() {
       expect(subject.size, 3);
       expect(subject.top, media1);
       expect(subject.items, [media1, media2, media3]);
-    }); 
-    test('Two consecutive previous invocation shall really go the previous track', () {
+    });
+    test(
+        'Two consecutive previous invocation shall really go the previous track',
+        () {
       final subject = Queue();
       subject.add(media1);
       subject.add(media2);
       subject.add(media3);
-      
+
       final next1 = subject.next();
       expect(subject.size, 3);
       expect(subject.current, media1);
@@ -212,7 +214,7 @@ void main() {
       expect(subject.size, 3);
       expect(subject.current, media2);
       expect(next2, media2);
-      expect(subject.items, [media1, media2, media3]);      
+      expect(subject.items, [media1, media2, media3]);
 
       subject.previous();
       final previous = subject.previous();
@@ -221,12 +223,14 @@ void main() {
       expect(previous, media1);
       expect(subject.items, [media1, media2, media3]);
     });
-    test('Two consecutive previous invocation with interval greater than 1 sec shall solely rewind', () {
+    test(
+        'Two consecutive previous invocation with interval greater than 1 sec shall solely rewind',
+        () {
       final subject = Queue();
       subject.add(media1);
       subject.add(media2);
       subject.add(media3);
-      
+
       final next1 = subject.next();
       expect(subject.size, 3);
       expect(subject.current, media1);
@@ -237,7 +241,7 @@ void main() {
       expect(subject.size, 3);
       expect(subject.current, media2);
       expect(next2, media2);
-      expect(subject.items, [media1, media2, media3]);      
+      expect(subject.items, [media1, media2, media3]);
 
       subject.previous();
       sleep(Duration(seconds: 3));
@@ -280,7 +284,7 @@ void main() {
       expect(subject.size, 3);
       expect(subject.current, media2);
       expect(next2, media2);
-      expect(subject.items, [media1, media2, media3]);      
+      expect(subject.items, [media1, media2, media3]);
     });
     test('Next when reaching the end of the queue shall return null', () {
       final subject = Queue();
@@ -298,7 +302,7 @@ void main() {
       expect(subject.size, 3);
       expect(subject.current, media2);
       expect(next2, media2);
-      expect(subject.items, [media1, media2, media3]);      
+      expect(subject.items, [media1, media2, media3]);
 
       final next3 = subject.next();
       expect(subject.size, 3);
@@ -316,7 +320,7 @@ void main() {
       final subject = Queue();
       final items = List<Media>();
       final interactions = 100;
-      for(int i = 0; i < interactions; ++i) {
+      for (int i = 0; i < interactions; ++i) {
         items.addAll([media1, media2, media3]);
       }
       subject.addAll(items);

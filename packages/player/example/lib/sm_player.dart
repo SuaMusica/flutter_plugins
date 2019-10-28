@@ -36,7 +36,8 @@ class _SMPlayerState extends State<SMPlayer> {
         autoPlay: false,
       );
       player.onEvent.listen((Event event) async {
-        print("Event: [${event.type}] [${event.media.author}-${event.media.name}] [${event.position}] [${event.duration}]");
+        print(
+            "Event: [${event.type}] [${event.media.author}-${event.media.name}] [${event.position}] [${event.duration}]");
 
         switch (event.type) {
           case EventType.BEFORE_PLAY:
@@ -84,7 +85,7 @@ class _SMPlayerState extends State<SMPlayer> {
       });
 
       var media1 = Media(
-          id: "1",
+          id: 1,
           name: "Track 1",
           url:
               "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
@@ -96,7 +97,7 @@ class _SMPlayerState extends State<SMPlayer> {
           shareUrl: "");
 
       var media2 = Media(
-          id: "2",
+          id: 2,
           name: "Track 2",
           url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
           coverUrl:
@@ -107,7 +108,7 @@ class _SMPlayerState extends State<SMPlayer> {
           shareUrl: "");
 
       var media3 = Media(
-          id: "3",
+          id: 3,
           name: "Track 3",
           url:
               "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
@@ -119,7 +120,7 @@ class _SMPlayerState extends State<SMPlayer> {
           shareUrl: "");
 
       var media4 = Media(
-          id: "4",
+          id: 4,
           name: "Track 4",
           url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
           coverUrl:
@@ -130,7 +131,7 @@ class _SMPlayerState extends State<SMPlayer> {
           shareUrl: "");
 
       var media5 = Media(
-          id: "5",
+          id: 5,
           name: "Track 5",
           url:
               "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
@@ -142,7 +143,7 @@ class _SMPlayerState extends State<SMPlayer> {
           shareUrl: "");
 
       var media6 = Media(
-          id: "6",
+          id: 6,
           name: "Track 6",
           url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
           coverUrl:
@@ -200,12 +201,13 @@ class _SMPlayerState extends State<SMPlayer> {
         Scaffold.of(context)
             .showSnackBar(SnackBar(content: Text('Audio is now playing!!!!')));
       }
-    } else if (_player.state == PlayerState.BUFFERING && _player.current != null) {
+    } else if (_player.state == PlayerState.BUFFERING &&
+        _player.current != null) {
       int result = await _player.resume();
       if (result == Player.Ok) {
         Scaffold.of(context)
             .showSnackBar(SnackBar(content: Text('Audio is now playing!!!!')));
-      }  
+      }
     } else if (_player.state == PlayerState.PLAYING) {
       int result = await _player.pause();
       if (result == Player.Ok) {

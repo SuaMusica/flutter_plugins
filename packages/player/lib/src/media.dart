@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/widgets.dart';
 
 class Media {
-  final String id;
+  final int id;
   final String name;
   final String author;
   final String url;
@@ -20,19 +20,19 @@ class Media {
       this.isLocal,
       @required this.coverUrl,
       this.isVerified,
-      this.shareUrl}) : super();
+      this.shareUrl})
+      : super();
 
-  Map<String, dynamic> toJson() =>
-    {
-      'id': id,
-      'name': name,
-      'author': author,
-      'url': url,
-      'is_local': isLocal,
-      'cover_url': coverUrl,
-      'is_verified': isVerified,
-      'shared_url': shareUrl
-    };
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'author': author,
+        'url': url,
+        'is_local': isLocal,
+        'cover_url': coverUrl,
+        'is_verified': isVerified,
+        'shared_url': shareUrl
+      };
 
   @override
   String toString() => jsonEncode(toJson());
@@ -52,5 +52,6 @@ class Media {
           shareUrl == other.shareUrl;
 
   @override
-  int get hashCode => [id, name, author, url, isLocal, coverUrl, isVerified, shareUrl].hashCode;
+  int get hashCode =>
+      [id, name, author, url, isLocal, coverUrl, isVerified, shareUrl].hashCode;
 }
