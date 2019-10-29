@@ -1,5 +1,5 @@
 class QueueItem<T> {
-  final position;
+  int position;
   final T item;
   QueueItem(this.position, this.item) : super();
 

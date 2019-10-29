@@ -142,9 +142,10 @@ class Queue {
   }
 
   void reorder(int oldIndex, int newIndex) {
-    final oldItem = this.items.getRange(oldIndex, oldIndex);
-    final newItem = this.items.getRange(newIndex, newIndex);
-    this.items.setRange(oldIndex, oldIndex, List.of(newItem));
-    this.items.setRange(newIndex, newIndex, List.of(oldItem));
+    final oldItem = storage.getRange(oldIndex, oldIndex + 1);
+    oldItem.first.position = newIndex;
+    final newItem = storage.getRange(newIndex, newIndex + 1);
+    newItem.first.position = oldIndex;
+    storage.sort((a, b) => a.position.compareTo(b.position));
   }
 }
