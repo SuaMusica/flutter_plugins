@@ -120,6 +120,11 @@ class Player {
     return Ok;
   }
 
+  int reorder(int oldIndex, int newIndex) {
+    _queue.reorder(oldIndex, newIndex);
+    return Ok;
+  }
+
   int clear() => removeAll();
 
   Media get current => _queue.current;
