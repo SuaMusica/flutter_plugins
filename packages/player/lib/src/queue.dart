@@ -140,4 +140,11 @@ class Queue {
     index = -1;
     return next();
   }
+
+  void reorder(int oldIndex, int newIndex) {
+    final oldItem = this.items.getRange(oldIndex, oldIndex);
+    final newItem = this.items.getRange(newIndex, newIndex);
+    this.items.setRange(oldIndex, oldIndex, List.of(newItem));
+    this.items.setRange(newIndex, newIndex, List.of(oldItem));
+  }
 }
