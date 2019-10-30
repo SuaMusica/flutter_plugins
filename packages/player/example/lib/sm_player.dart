@@ -107,51 +107,51 @@ class _SMPlayerState extends State<SMPlayer> {
           isVerified: true,
           shareUrl: "");
 
-      var media3 = Media(
-          id: 3,
-          name: "Track 3",
-          url:
-              "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
-          coverUrl:
-              "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
-          author: "Xand Avião",
-          isLocal: false,
-          isVerified: true,
-          shareUrl: "");
+      // var media3 = Media(
+      //     id: 3,
+      //     name: "Track 3",
+      //     url:
+      //         "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
+      //     coverUrl:
+      //         "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+      //     author: "Xand Avião",
+      //     isLocal: false,
+      //     isVerified: true,
+      //     shareUrl: "");
 
-      var media4 = Media(
-          id: 4,
-          name: "Track 4",
-          url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
-          coverUrl:
-              "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
-          author: "Xand Avião",
-          isLocal: false,
-          isVerified: true,
-          shareUrl: "");
+      // var media4 = Media(
+      //     id: 4,
+      //     name: "Track 4",
+      //     url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
+      //     coverUrl:
+      //         "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+      //     author: "Xand Avião",
+      //     isLocal: false,
+      //     isVerified: true,
+      //     shareUrl: "");
 
-      var media5 = Media(
-          id: 5,
-          name: "Track 5",
-          url:
-              "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
-          coverUrl:
-              "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
-          author: "Xand Avião",
-          isLocal: false,
-          isVerified: true,
-          shareUrl: "");
+      // var media5 = Media(
+      //     id: 5,
+      //     name: "Track 5",
+      //     url:
+      //         "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
+      //     coverUrl:
+      //         "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+      //     author: "Xand Avião",
+      //     isLocal: false,
+      //     isVerified: true,
+      //     shareUrl: "");
 
-      var media6 = Media(
-          id: 6,
-          name: "Track 6",
-          url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
-          coverUrl:
-              "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
-          author: "Xand Avião",
-          isLocal: false,
-          isVerified: true,
-          shareUrl: "");
+      // var media6 = Media(
+      //     id: 6,
+      //     name: "Track 6",
+      //     url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
+      //     coverUrl:
+      //         "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+      //     author: "Xand Avião",
+      //     isLocal: false,
+      //     isVerified: true,
+      //     shareUrl: "");
 
       player.enqueue(media1);
       player.enqueue(media2);

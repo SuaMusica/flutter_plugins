@@ -8,12 +8,16 @@ class PositionChangeEvent extends Event {
   final Duration duration;
 
   PositionChangeEvent(
-      {String id,
-      Media media,
+      {@required Media media,
+      @required int queuePosition,
       @required this.position,
       @required this.duration})
-      : super(type: EventType.POSITION_CHANGE, media: media);
+      : super(
+            type: EventType.POSITION_CHANGE,
+            media: media,
+            queuePosition: queuePosition);
 
   @override
-  String toString() => "${super.toString()} position: $position duration: $duration";
+  String toString() =>
+      "${super.toString()} position: $position duration: $duration";
 }

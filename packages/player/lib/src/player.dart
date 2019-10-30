@@ -505,7 +505,7 @@ class Player {
 
   static _notifyDurationChangeEvent(Player player, Duration newDuration) {
     player._eventStreamController.add(DurationChangeEvent(
-        media: player._queue.current, duration: newDuration));
+        media: player._queue.current, queuePosition: player._queue.index, duration: newDuration));
   }
 
   static _notifyPlayerStateChangeEvent(Player player, EventType eventType) {
@@ -525,6 +525,7 @@ class Player {
       Player player, Duration newPosition, Duration newDuration) {
     player._eventStreamController.add(PositionChangeEvent(
         media: player._queue.current,
+        queuePosition: player._queue.index,
         position: newPosition,
         duration: newDuration));
   }

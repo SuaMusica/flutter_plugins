@@ -59,7 +59,11 @@ class Queue {
 
   remove(Media media) {
     ArgumentError.checkNotNull(media);
-    storage.removeWhere((i) => i.item == media);
+    final itemToBeRemoved = storage.firstWhere((i) => i.item == media);
+    if (itemToBeRemoved.position < index) {
+      --index;
+    }
+    storage.remove(itemToBeRemoved);
   }
 
   clear() => removeAll();
