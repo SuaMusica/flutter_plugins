@@ -64,6 +64,9 @@ class Queue {
       --index;
     }
     storage.remove(itemToBeRemoved);
+    for (var i = 0; i < storage.length; ++i) {
+      storage[i].position = i;
+    }
   }
 
   clear() => removeAll();
