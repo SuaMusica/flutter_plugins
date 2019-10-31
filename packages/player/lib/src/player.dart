@@ -74,7 +74,8 @@ class Player {
         // we need to save it in order to reuse if it is still valid
         if (requires) {
           _cookies = cookies;
-          cookie = "${cookies.policy.key}=${cookies.policy.value};${cookies.signature.key}=${cookies.signature.value};${cookies.keyPairId.key}=${cookies.keyPairId.value}";
+          cookie =
+              "${cookies.policy.key}=${cookies.policy.value};${cookies.signature.key}=${cookies.signature.value};${cookies.keyPairId.key}=${cookies.keyPairId.value}";
         }
 
         final Map<String, dynamic> withPlayerId = Map.of(arguments)
@@ -461,18 +462,20 @@ class Player {
   }
 
   _notifyChangeToNext(Media media) {
-    _eventStreamController.add(Event(type: EventType.NEXT, media: media, queuePosition: _queue.index));
+    _add(
+        Event(type: EventType.NEXT, media: media, queuePosition: _queue.index));
   }
 
   _notifyChangeToPrevious(Media media) {
-    _eventStreamController.add(Event(type: EventType.PREVIOUS, media: media, queuePosition: _queue.index));
+    _add(Event(
+        type: EventType.PREVIOUS, media: media, queuePosition: _queue.index));
   }
 
   _notifyRewind(Media media) async {
     final positionInMilli = await getCurrentPosition();
     final durationInMilli = await getDuration();
 
-    _eventStreamController.add(Event(
+    _add(Event(
       type: EventType.REWIND,
       media: media,
       queuePosition: _queue.index,
@@ -485,7 +488,7 @@ class Player {
     final positionInMilli = await getCurrentPosition();
     final durationInMilli = await getDuration();
 
-    _eventStreamController.add(Event(
+    _add(Event(
       type: EventType.FORWARD,
       media: media,
       queuePosition: _queue.index,
@@ -495,26 +498,37 @@ class Player {
   }
 
   _notifyPlayerStatusChangeEvent(EventType type) {
-    _eventStreamController.add(Event(type: type, media: _queue.current, queuePosition: _queue.index));
+    _add(
+        Event(type: type, media: _queue.current, queuePosition: _queue.index));
   }
 
   _notifyBeforePlayEvent(Function(bool) operation) {
-    _eventStreamController
-        .add(BeforePlayEvent(media: _queue.current, queuePosition: _queue.index, operation: operation));
+    _add(BeforePlayEvent(
+        media: _queue.current,
+        queuePosition: _queue.index,
+        operation: operation));
   }
 
   static _notifyDurationChangeEvent(Player player, Duration newDuration) {
-    player._eventStreamController.add(DurationChangeEvent(
-        media: player._queue.current, queuePosition: player._queue.index, duration: newDuration));
+    _addUsingPlayer(
+        player,
+        DurationChangeEvent(
+            media: player._queue.current,
+            queuePosition: player._queue.index,
+            duration: newDuration));
   }
 
   static _notifyPlayerStateChangeEvent(Player player, EventType eventType) {
-    player._eventStreamController
-        .add(Event(type: eventType, media: player._queue.current, queuePosition: player._queue.index));
+    _addUsingPlayer(
+        player,
+        Event(
+            type: eventType,
+            media: player._queue.current,
+            queuePosition: player._queue.index));
   }
 
   static _notifyPlayerErrorEvent(Player player, String error) {
-    player._eventStreamController.add(Event(
+    _addUsingPlayer(player, Event(
         type: EventType.ERROR_OCCURED,
         media: player._queue.current,
         queuePosition: player._queue.index,
@@ -523,7 +537,7 @@ class Player {
 
   static _notifyPositionChangeEvent(
       Player player, Duration newPosition, Duration newDuration) {
-    player._eventStreamController.add(PositionChangeEvent(
+    _addUsingPlayer(player, PositionChangeEvent(
         media: player._queue.current,
         queuePosition: player._queue.index,
         position: newPosition,
@@ -533,6 +547,19 @@ class Player {
   static void _log(String param) {
     if (logEnabled) {
       print(param);
+    }
+  }
+
+  void _add(Event event) {
+    if (_eventStreamController != null && !_eventStreamController.isClosed) {
+      _eventStreamController.add(event);
+    }
+  }
+
+  static void _addUsingPlayer(Player player, Event event) {
+    if (player._eventStreamController != null &&
+        !player._eventStreamController.isClosed) {
+      player._eventStreamController.add(event);
     }
   }
 
