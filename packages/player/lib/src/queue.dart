@@ -134,7 +134,7 @@ class Queue {
   Media move(int pos) {
     if (storage.length == 0) {
       throw AssertionError("Queue is empty");
-    } else if (storage.length > 0 && pos < storage.length - 1) {
+    } else if (storage.length > 0 && pos <= storage.length - 1) {
       var media = storage.elementAt(pos).item;
       index = pos;
       return media;
