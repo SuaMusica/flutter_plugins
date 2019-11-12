@@ -78,16 +78,18 @@ class Queue {
 
   shuffle() {
     if (storage.length > 2) {
-      var newStorage = _shuffler.shuffle(storage.sublist(1));
-      newStorage.insert(0, storage.elementAt(0));
+      var current = storage.elementAt(index);
+      var newStorage = _shuffler.shuffle(storage);
+      this.index = newStorage.indexOf(current);
       storage = newStorage;
     }
   }
 
   unshuffle() {
     if (storage.length > 2) {
-      var newStorage = _shuffler.unshuffle(storage.sublist(1));
-      newStorage.insert(0, storage.elementAt(0));
+      var current = storage.elementAt(index);
+      var newStorage = _shuffler.unshuffle(storage);
+      this.index = newStorage.indexOf(current);
       storage = newStorage;
     }
   }
