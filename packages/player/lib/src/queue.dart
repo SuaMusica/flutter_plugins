@@ -67,8 +67,9 @@ class Queue {
       --index;
     }
     storage.remove(itemToBeRemoved);
-    for (var i = 0; i < storage.length; ++i) {
-      storage[i].position = i;
+    for (var i = itemToBeRemoved.position + 1; i < storage.length; ++i) {
+      storage[i].position -= 1;
+      storage[i].originalPosition -= 1;
     }
   }
 
@@ -97,11 +98,14 @@ class Queue {
       var pos = newStorage.indexOf(current);
       storage = newStorage;
       reorder(pos, current.originalPosition);
-      this.index = current.position;
+      this.index = current.originalPosition;
     }
   }
 
-  _nextPosition() => storage.length + 1;
+  _nextPosition() {
+    if (storage.length == 0) return 0;
+    return storage.length;
+  }
 
   Media rewind() {
     assert(index >= 0);
@@ -158,10 +162,15 @@ class Queue {
   }
 
   void reorder(int oldIndex, int newIndex) {
-    final oldItem = storage.getRange(oldIndex, oldIndex + 1);
-    oldItem.first.position = newIndex;
-    final newItem = storage.getRange(newIndex, newIndex + 1);
-    newItem.first.position = oldIndex;
+    final oldItem = storage.elementAt(oldIndex);
+    oldItem.position = newIndex;
+    for (var index = newIndex; index < oldIndex; ++index) {
+      final item = storage.elementAt(index);
+      item.position += 1;
+    }
+    final current = storage.elementAt(index);
     storage.sort((a, b) => a.position.compareTo(b.position));
+    final playingIndex = storage.indexOf(current);
+    this.index = playingIndex;
   }
 }
