@@ -10,7 +10,7 @@ class SimpleShuffler extends Shuffler {
 
   List<QueueItem> unshuffle(List<QueueItem> list) {
     ArgumentError.checkNotNull(list);
-    list.sort((a, b) => a.position.compareTo(b.position));
+    list.sort((a, b) => a.originalPosition.compareTo(b.originalPosition));
     return list;
   }
 }

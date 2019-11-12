@@ -38,22 +38,25 @@ class Queue {
   play(Media media) {
     ArgumentError.checkNotNull(media);
     if (storage.length > 0) {
-      storage.replaceRange(0, 1, [QueueItem(0, media)]);
+      storage.replaceRange(0, 1, [QueueItem(0, 0, media)]);
     } else {
-      storage.add(QueueItem(_nextPosition(), media));
+      int pos = _nextPosition();
+      storage.add(QueueItem(pos, pos, media));
     }
     index = 0;
   }
 
   add(Media media) {
     ArgumentError.checkNotNull(media);
-    storage.add(QueueItem(_nextPosition(), media));
+    int pos = _nextPosition();
+    storage.add(QueueItem(pos, pos, media));
   }
 
   addAll(List<Media> items) {
     ArgumentError.checkNotNull(items);
     for (var media in items) {
-      storage.add(QueueItem(_nextPosition(), media));
+      int pos = _nextPosition();
+      storage.add(QueueItem(pos, pos, media));
     }
   }
 
@@ -80,8 +83,10 @@ class Queue {
     if (storage.length > 2) {
       var current = storage.elementAt(index);
       var newStorage = _shuffler.shuffle(storage);
-      this.index = newStorage.indexOf(current);
+      var currentIndex = newStorage.indexOf(current);
       storage = newStorage;
+      reorder(currentIndex, 0);
+      this.index = 0;
     }
   }
 
@@ -89,8 +94,10 @@ class Queue {
     if (storage.length > 2) {
       var current = storage.elementAt(index);
       var newStorage = _shuffler.unshuffle(storage);
-      this.index = newStorage.indexOf(current);
+      var pos = newStorage.indexOf(current);
       storage = newStorage;
+      reorder(pos, current.originalPosition);
+      this.index = current.position;
     }
   }
 
