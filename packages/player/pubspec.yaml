@@ -16,6 +16,8 @@ dependencies:
       url: https://github.com/SuaMusica/flutter_plugins.git 
       path: packages/aws/
 
+  mutex: ^1.0.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
