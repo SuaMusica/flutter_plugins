@@ -34,15 +34,20 @@ static NSMutableDictionary * players;
 typedef void (^VoidCallback)(NSString * playerId);
 
 NSMutableSet *timeobservers;
-FlutterMethodChannel *_channel_player;
+FlutterMethodChannel *_channel_player = nil;
+Plugin* instance = nil;
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
-  FlutterMethodChannel* channel = [FlutterMethodChannel
-                                   methodChannelWithName:CHANNEL_NAME
-                                   binaryMessenger:[registrar messenger]];
-  Plugin* instance = [[Plugin alloc] init];
-  [registrar addMethodCallDelegate:instance channel:channel];
-  _channel_player = channel;
+  @synchronized(self) {
+    if (instance == nil) {
+      instance = [[Plugin alloc] init];
+      FlutterMethodChannel* channel = [FlutterMethodChannel
+                                      methodChannelWithName:CHANNEL_NAME
+                                      binaryMessenger:[registrar messenger]];
+      [registrar addMethodCallDelegate:instance channel:channel];
+      _channel_player = channel;
+    }
+  }
 }
 
 - (id)init {

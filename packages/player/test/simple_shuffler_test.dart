@@ -30,7 +30,7 @@ void main() {
 _createTestData(int size) {
   var items = List<QueueItem>();
   for (var i = 0; i < size; ++i) {
-    items.add(QueueItem(i, "ITEM-$i"));
+    items.add(QueueItem(i, 0, "ITEM-$i"));
   }
 
   return items;
