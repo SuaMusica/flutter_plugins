@@ -18,7 +18,7 @@ import 'player_state.dart';
 class Player {
   static const Ok = 1;
   static const NotOk = -1;
-  static final MethodChannel _channel = const MethodChannel('suamusica_player')
+  static final MethodChannel _channel = const MethodChannel('smplayer')
     ..setMethodCallHandler(platformCallHandler);
 
   static final players = Map<String, Player>();
