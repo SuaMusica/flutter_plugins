@@ -6,7 +6,7 @@
 #import <AVKit/AVKit.h>
 #import <AVFoundation/AVFoundation.h>
 
-static NSString *const CHANNEL_NAME = @"suamusica_player";
+static NSString *const CHANNEL_NAME = @"smplayer";
 
 static int *const STATE_IDLE = 0;
 static int *const STATE_BUFFERING = 1;
@@ -342,7 +342,6 @@ FlutterMethodChannel *_channel_player;
   CMTime duration = [[[player currentItem]  asset] duration];
   NSLog(@"ios -> updateDuration...%f", CMTimeGetSeconds(duration));
   if(CMTimeGetSeconds(duration)>0){
-    NSLog(@"ios -> invokechannel");
     int durationInMilliseconds = CMTimeGetSeconds(duration)*1000;
     [_channel_player invokeMethod:@"audio.onDuration" arguments:@{@"playerId": playerId, @"duration": @(durationInMilliseconds)}];
   }
@@ -370,7 +369,6 @@ FlutterMethodChannel *_channel_player;
                   time: (CMTime) time {
     int position =  CMTimeGetSeconds(time)*1000;
     int duration = [self getDuration:playerId];
-    NSLog(@"ios -> onTimeInterval...");
     [_channel_player invokeMethod:@"audio.onCurrentPosition" arguments:@{@"playerId": playerId, @"position": @(position), @"duration": @(duration)}];
 }
 

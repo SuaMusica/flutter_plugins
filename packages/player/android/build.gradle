@@ -1,4 +1,4 @@
-group 'br.com.suamusica.suamusica_player'
+group 'br.com.suamusica.player'
 version '1.0-SNAPSHOT'
 
 buildscript {

@@ -37,7 +37,7 @@ class Plugin : MethodCallHandler {
 
     @JvmStatic
     fun registerWith(registrar: Registrar) {
-      val channel = MethodChannel(registrar.messenger(), "suamusica_player")
+      val channel = MethodChannel(registrar.messenger(), "smplayer")
       channel.setMethodCallHandler(Plugin(channel, registrar.context()))
     }
   }
