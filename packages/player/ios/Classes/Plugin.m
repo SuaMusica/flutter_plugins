@@ -370,6 +370,7 @@ FlutterMethodChannel *_channel_player;
                   time: (CMTime) time {
     int position =  CMTimeGetSeconds(time)*1000;
     int duration = [self getDuration:playerId];
+    NSLog(@"ios -> onTimeInterval...");
     [_channel_player invokeMethod:@"audio.onCurrentPosition" arguments:@{@"playerId": playerId, @"position": @(position), @"duration": @(duration)}];
 }
 
