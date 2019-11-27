@@ -5,6 +5,7 @@
 #import <UIKit/UIKit.h>
 #import <AVKit/AVKit.h>
 #import <AVFoundation/AVFoundation.h>
+#import <Foundation/Foundation.h>
 
 static NSString *const CHANNEL_NAME = @"smplayer";
 
@@ -38,15 +39,13 @@ FlutterMethodChannel *_channel_player = nil;
 Plugin* instance = nil;
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
-  @synchronized(self) {
-    if (instance == nil) {
-      instance = [[Plugin alloc] init];
-      FlutterMethodChannel* channel = [FlutterMethodChannel
+  if (instance == nil) {
+    instance = [[Plugin alloc] init];
+    FlutterMethodChannel* channel = [FlutterMethodChannel
                                       methodChannelWithName:CHANNEL_NAME
                                       binaryMessenger:[registrar messenger]];
-      [registrar addMethodCallDelegate:instance channel:channel];
-      _channel_player = channel;
-    }
+    [registrar addMethodCallDelegate:instance channel:channel];
+    _channel_player = channel;
   }
 }
 
