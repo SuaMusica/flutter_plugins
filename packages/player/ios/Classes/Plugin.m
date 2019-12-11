@@ -56,7 +56,7 @@ Plugin* instance = nil;
       players = [[NSMutableDictionary alloc] init];
       playersCurrentItem = [[NSMutableDictionary alloc] init];
 
-      [[UIApplication sharedApplication] beginReceivingRemoteControlEvents]
+      [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
       MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
 
       [commandCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
