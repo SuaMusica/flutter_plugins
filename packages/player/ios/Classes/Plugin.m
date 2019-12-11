@@ -55,6 +55,25 @@ Plugin* instance = nil;
   if (self) {
       players = [[NSMutableDictionary alloc] init];
       playersCurrentItem = [[NSMutableDictionary alloc] init];
+
+      [[UIApplication sharedApplication] beginReceivingRemoteControlEvents]
+      MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
+
+      [commandCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+          return MPRemoteCommandHandlerStatusSuccess;
+      }];
+
+      [commandCenter.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+          return MPRemoteCommandHandlerStatusSuccess;
+      }];
+
+      [commandCenter.nextTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+          return MPRemoteCommandHandlerStatusSuccess;
+      }];
+
+      [commandCenter.previousTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+          return MPRemoteCommandHandlerStatusSuccess;
+      }];
   }
   return self;
 }
