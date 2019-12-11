@@ -1,0 +1,24 @@
+<resources>
+  <string name="app_name">Media</string>
+  <!-- Notificaiton Channel -->
+  <string name="notification_channel">SM - Tocando Agora</string>
+  <string name="notification_channel_description">Exibe que música está tocando no Sua Música</string>
+  
+  <!-- Notification actions -->
+  <string name="notification_skip_to_previous">Voltar a música anterior</string>
+  <string name="notification_skip_to_next">Ir a próxima música</string>
+  <string name="notification_play">Tocar</string>
+  <string name="notification_pause">Pausar</string>
+  
+  <!-- Error messages -->
+  <string name="error_media_not_found">Não foi possível localizar a mídia selecionada.</string>
+  
+  <!-- Allowed caller template -->
+  <string name="allowed_caller_log">
+        O chamador tem um certificado válido, mas seu pacote não corresponde a nenhum pacote esperado para o
+        certificado dado. Para permitir que este chamador, adicione o seguinte à lista de chamadores permitidos:\n
+        <![CDATA[
+        <signature name=\"%1$s\" package=\"%2$s\">\n\t<key>%3$s</key>\n</signature>\n
+        ]]>
+    </string>
+</resources>

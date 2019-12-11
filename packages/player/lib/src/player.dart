@@ -195,7 +195,10 @@ class Player {
         _notifyBeforePlayEvent((loadOnly) => {});
 
         return invokePlay(media, {
+          'name': media.name,
+          'author': media.author,
           'url': media.url,
+          'coverUrl': media.coverUrl,
           'loadOnly': false,
           'isLocal': media.isLocal,
           'volume': volume,

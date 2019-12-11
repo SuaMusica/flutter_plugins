@@ -1,22 +1,24 @@
 #import "Plugin.h"
 
-#import "AssetLoaderDelegate.h"
+#import "NotificationManager.h"
 
 #import <UIKit/UIKit.h>
 #import <AVKit/AVKit.h>
 #import <AVFoundation/AVFoundation.h>
+#import <MediaPlayer/MediaPlayer.h>
 
 static NSString *const CHANNEL_NAME = @"smplayer";
 
-static int *const STATE_IDLE = 0;
-static int *const STATE_BUFFERING = 1;
-static int *const STATE_PLAYING = 2;
-static int *const STATE_PAUSED = 3;
-static int *const STATE_STOPPED = 4;
-static int *const STATE_COMPLETED = 5;
-static int *const STATE_ERROR = 6;
+static int const STATE_IDLE = 0;
+static int const STATE_BUFFERING = 1;
+static int const STATE_PLAYING = 2;
+static int const STATE_PAUSED = 3;
+static int const STATE_STOPPED = 4;
+static int const STATE_COMPLETED = 5;
+static int const STATE_ERROR = 6;
 
 static NSMutableDictionary * players;
+static NSMutableDictionary * playersCurrentItem;
 
 @interface Plugin()
 -(void) pause: (NSString *) playerId;
@@ -54,6 +56,7 @@ Plugin* instance = nil;
   self = [super init];
   if (self) {
       players = [[NSMutableDictionary alloc] init];
+      playersCurrentItem = [[NSMutableDictionary alloc] init];
   }
   return self;
 }
@@ -69,8 +72,15 @@ Plugin* instance = nil;
                 @"play":
                   ^{
                     NSLog(@"play!");
+                    NSString *name = call.arguments[@"name"];
+                    NSString *author = call.arguments[@"author"];
                     NSString *url = call.arguments[@"url"];
+                    NSString *coverUrl = call.arguments[@"coverUrl"];
                     NSString *cookie = call.arguments[@"cookie"];
+                    if (name == nil)
+                        result(0);
+                    if (author == nil)
+                        result(0);                        
                     if (url == nil)
                         result(0);
                     if (cookie == nil)
@@ -92,7 +102,7 @@ Plugin* instance = nil;
                     NSLog(@"isLocal: %d %@", isLocal, call.arguments[@"isLocal"] );
                     NSLog(@"volume: %f %@", volume, call.arguments[@"volume"] );
                     NSLog(@"position: %d %@", milliseconds, call.arguments[@"positions"] );
-                    [self play:playerId url:url cookie:cookie isLocal:isLocal volume:volume time:time isNotification:respectSilence];
+                    [self play:playerId name:name author:author url:url coverUrl:coverUrl cookie:cookie isLocal:isLocal volume:volume time:time isNotification:respectSilence];
                   },
                 @"pause":
                   ^{
@@ -186,6 +196,19 @@ Plugin* instance = nil;
   if (!playerInfo) {
     players[playerId] = [@{@"isPlaying": @false, @"volume": @(1.0), @"looping": @(false)} mutableCopy];
   }
+}
+
+-(void) setCurrentItem: (NSString *) playerId 
+                  name:(NSString *) name
+                author:(NSString *) author
+                   url:(NSString *) url
+              coverUrl:(NSString *) coverUrl
+                  {
+  playersCurrentItem[playerId] = @{
+    @"name": name, 
+    @"author": author, 
+    @"url": url,
+    @"coverUrl": coverUrl};
 }
 
 -(void) setUrl: (NSString*) url
@@ -300,7 +323,10 @@ Plugin* instance = nil;
 }
 
 -(void) play: (NSString*) playerId
+        name: (NSString*) name
+      author: (NSString*) author
          url: (NSString*) url
+    coverUrl: (NSString*) coverUrl 
       cookie: (NSString *) cookie
      isLocal: (int) isLocal
       volume: (float) volume
@@ -321,6 +347,8 @@ Plugin* instance = nil;
     NSLog(@"Error setting speaker: %@", error);
   }
   [[AVAudioSession sharedInstance] setActive:YES error:&error];
+
+  [self setCurrentItem:playerId name:name author:author url:url coverUrl:coverUrl];
 
   [ self setUrl:url
          isLocal:isLocal 
@@ -374,6 +402,20 @@ Plugin* instance = nil;
                   time: (CMTime) time {
     int position =  CMTimeGetSeconds(time)*1000;
     int duration = [self getDuration:playerId];
+
+    NSDictionary *currentItem = playersCurrentItem[playerId];
+    NSString *name = currentItem[@"name"];
+    NSString *author = currentItem[@"author"];
+    NSString *coverUrl = currentItem[@"coverUrl"];
+
+    [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = @{
+           MPMediaItemPropertyTitle: name,
+           MPMediaItemPropertyAlbumTitle: name,
+           MPMediaItemPropertyArtist: author,
+           MPMediaItemPropertyPlaybackDuration: [NSNumber numberWithInt:duration],
+           MPNowPlayingInfoPropertyElapsedPlaybackTime: [NSNumber numberWithInt:position]
+        };
+
     [_channel_player invokeMethod:@"audio.onCurrentPosition" arguments:@{@"playerId": playerId, @"position": @(position), @"duration": @(duration)}];
 }
 
@@ -497,6 +539,7 @@ Plugin* instance = nil;
         [[NSNotificationCenter defaultCenter] removeObserver:ob];
   }
   players = nil;
+  playersCurrentItem = nil;
 }
 
 @end

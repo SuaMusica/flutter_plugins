@@ -14,7 +14,10 @@ class Plugin : MethodCallHandler {
     // Argument names
     const val PLAYER_ID_ARGUMENT = "playerId"
     const val DEFAULT_PLAYER_ID = "default"
+    const val NAME_ARGUMENT = "name"
+    const val AUTHOR_ARGUMENT = "author"
     const val URL_ARGUMENT = "url"
+    const val COVER_URL_ARGUMENT = "coverUrl"
     const val VOLUME_ARGUMENT = "volume"
     const val POSITION_ARGUMENT = "position"
     const val STAY_AWAKE_ARGUMENT = "stayAwake"
@@ -70,14 +73,17 @@ class Plugin : MethodCallHandler {
     val player = getPlayer(playerId!!, cookie)
     when (call.method) {
       PLAY_METHOD -> {
+        val name = call.argument<String>(NAME_ARGUMENT)!!
+        val author = call.argument<String>(AUTHOR_ARGUMENT)!!
         val url = call.argument<String>(URL_ARGUMENT)!!
+        val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
         val volume = call.argument<Double>(VOLUME_ARGUMENT)!!
         val position = call.argument<Int>(POSITION_ARGUMENT)
         val stayAwake = call.argument<Boolean>(STAY_AWAKE_ARGUMENT)!!
         val loadOnly = call.argument<Boolean>(LOAD_ONLY)!!
         player.stayAwake = stayAwake
         player.volume = volume
-        player.prepare(url)
+        player.prepare(Media(name, author, url, coverUrl))
         if (position != null) {
           player.seek(position)
         }

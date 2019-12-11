@@ -1,9 +1,19 @@
 package br.com.suamusica.player
 
-import android.content.Context
-import android.net.Uri
 import android.os.Handler
 import android.util.Log
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.media.AudioManager
+import android.net.Uri
+import android.net.wifi.WifiManager
+import android.os.Build
+import android.os.Bundle
+import android.os.PowerManager
+import android.os.ResultReceiver
+import android.os.AsyncTask
+import androidx.core.app.NotificationManagerCompat
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
@@ -18,7 +28,6 @@ import com.google.android.exoplayer2.util.Util
 import com.google.android.exoplayer2.Player as ExoPlayer
 import io.flutter.plugin.common.MethodChannel
 import java.util.concurrent.atomic.AtomicBoolean
-
 
 class WrappedExoPlayer(val playerId: String,
                        override val context: Context,
@@ -35,6 +44,14 @@ class WrappedExoPlayer(val playerId: String,
     override var stayAwake: Boolean = false
     val channelManager = MethodChannelManager(channel)
 
+    var media: Media? = null
+
+    val notificationBuilder = NotificationBuilder(context)
+    val notificationManager = NotificationManagerCompat.from(context)
+
+    private var wifiLock: WifiManager.WifiLock? = null
+    private var wakeLock: PowerManager.WakeLock? = null
+
     private val uAmpAudioAttributes = AudioAttributes.Builder()
             .setContentType(C.CONTENT_TYPE_MUSIC)
             .setUsage(C.USAGE_MEDIA)
@@ -43,6 +60,15 @@ class WrappedExoPlayer(val playerId: String,
     private var progressTracker: ProgressTracker? = null
 
     private var previousState: Int = -1
+
+    private fun initializeService() {
+        wifiLock = (context.getSystemService(Context.WIFI_SERVICE) as WifiManager)
+            .createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "wifiLock")
+        wakeLock = (context.getSystemService(Context.POWER_SERVICE) as PowerManager)
+            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ON_AFTER_RELEASE, "suamusica:wakeLock")
+        wifiLock?.setReferenceCounted(false)
+        wakeLock?.setReferenceCounted(false)
+    }
 
     private fun playerEventListener(): com.google.android.exoplayer2.Player.EventListener {
         return object : com.google.android.exoplayer2.Player.EventListener {
@@ -141,12 +167,13 @@ class WrappedExoPlayer(val playerId: String,
         addListener(playerEventListener())
     }
 
-    override fun prepare(url: String) {
+    override fun prepare(media: Media) {
+        this.media = media
         val defaultHttpDataSourceFactory = DefaultHttpDataSourceFactory("mp.next")
         defaultHttpDataSourceFactory.defaultRequestProperties.set("Cookie", cookie)
         val dataSourceFactory = DefaultDataSourceFactory(context, null, defaultHttpDataSourceFactory)
 
-        val uri = Uri.parse(url)
+        val uri = Uri.parse(media.url)
 
         @C.ContentType val type = Util.inferContentType(uri)
         val source = when (type) {
@@ -176,6 +203,13 @@ class WrappedExoPlayer(val playerId: String,
     override fun play() {
         performAndEnableTracking {
             player.playWhenReady = true
+
+            AsyncTask.execute {
+                val notification = notificationBuilder.buildNotification(this.media!!)
+                notification?.let {
+                    notificationManager?.notify(NOW_PLAYING_NOTIFICATION, it)
+                }
+            }
         }
     }
 

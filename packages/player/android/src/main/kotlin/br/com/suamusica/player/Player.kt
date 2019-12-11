@@ -11,7 +11,7 @@ interface Player {
     var stayAwake: Boolean
     val cookie: String
 
-    fun prepare(url: String)
+    fun prepare(media: Media)
     fun play()
     fun seek(position: Int)
     fun pause()

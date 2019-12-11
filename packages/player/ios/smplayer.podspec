@@ -11,6 +11,7 @@ A new flutter plugin project.
   s.homepage         = 'http://www.suamusica.com.br'
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Sua Música' => 'contato@suamusica.com.br' }
+  s.swift_version    = '5.0'
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.public_header_files = 'Classes/**/*.h'
