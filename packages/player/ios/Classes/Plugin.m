@@ -463,8 +463,10 @@ NSString* _playerId = nil;
         });
         data = nil;
     });
+    int durationInMillis = _duration*1000;
+    int positionInMillis = position*1000;
 
-    [_channel_player invokeMethod:@"audio.onCurrentPosition" arguments:@{@"playerId": playerId, @"position": @(position), @"duration": @(_duration*1000)}];
+    [_channel_player invokeMethod:@"audio.onCurrentPosition" arguments:@{@"playerId": playerId, @"position": @(positionInMillis), @"duration": @(durationInMillis)}];
     
     playerInfo = nil;
     player = nil;
