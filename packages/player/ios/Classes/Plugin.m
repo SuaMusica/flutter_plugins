@@ -36,6 +36,7 @@ typedef void (^VoidCallback)(NSString * playerId);
 NSMutableSet *timeobservers;
 FlutterMethodChannel *_channel_player = nil;
 Plugin* instance = nil;
+NSString* _playerId = nil;
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
   @synchronized(self) {
@@ -60,10 +61,16 @@ Plugin* instance = nil;
       MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
 
       [commandCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+          if (_playerId != nil) {
+              [self resume:_playerId];
+          }
           return MPRemoteCommandHandlerStatusSuccess;
       }];
 
       [commandCenter.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+          if (_playerId != nil) {
+              [self pause:_playerId];
+          }
           return MPRemoteCommandHandlerStatusSuccess;
       }];
 
@@ -97,7 +104,7 @@ Plugin* instance = nil;
                     if (name == nil)
                         result(0);
                     if (author == nil)
-                        result(0);                        
+                        result(0);
                     if (url == nil)
                         result(0);
                     if (cookie == nil)
@@ -176,7 +183,7 @@ Plugin* instance = nil;
                         NSLog(@"getDuration: %i ", duration);
                         result(@(duration));
                     },
-				@"getCurrentPosition":
+                @"getCurrentPosition":
                     ^{
                         int currentPosition = [self getCurrentPosition:playerId];
                         NSLog(@"getCurrentPosition: %i ", currentPosition);
@@ -212,18 +219,19 @@ Plugin* instance = nil;
   NSMutableDictionary * playerInfo = players[playerId];
   if (!playerInfo) {
     players[playerId] = [@{@"isPlaying": @false, @"volume": @(1.0), @"looping": @(false)} mutableCopy];
+    _playerId = playerId;
   }
 }
 
--(void) setCurrentItem: (NSString *) playerId 
+-(void) setCurrentItem: (NSString *) playerId
                   name:(NSString *) name
                 author:(NSString *) author
                    url:(NSString *) url
               coverUrl:(NSString *) coverUrl
                   {
   playersCurrentItem[playerId] = @{
-    @"name": name, 
-    @"author": author, 
+    @"name": name,
+    @"author": author,
     @"url": url,
     @"coverUrl": coverUrl};
 }
@@ -248,13 +256,13 @@ Plugin* instance = nil;
       } else {
         NSURL *_url = [NSURL URLWithString: url];
         NSHTTPCookieStorage *cookiesStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
-        NSMutableArray *cookies = [NSMutableArray array];	
-        NSArray *cookiesItems = [cookie componentsSeparatedByString:@";"];	
-        for (NSString *cookieItem in cookiesItems) {	
-          NSArray *keyValue = [cookieItem componentsSeparatedByString:@"="];	
-          if ([keyValue count] == 2) {	
-            NSString *key = [keyValue objectAtIndex:0];	
-            NSString *value = [keyValue objectAtIndex:1];	
+        NSMutableArray *cookies = [NSMutableArray array];
+        NSArray *cookiesItems = [cookie componentsSeparatedByString:@";"];
+        for (NSString *cookieItem in cookiesItems) {
+          NSArray *keyValue = [cookieItem componentsSeparatedByString:@"="];
+          if ([keyValue count] == 2) {
+            NSString *key = [keyValue objectAtIndex:0];
+            NSString *value = [keyValue objectAtIndex:1];
             NSHTTPCookie *httpCookie = [ [NSHTTPCookie cookiesWithResponseHeaderFields:@{@"Set-Cookie": [NSString stringWithFormat:@"%@=%@", key, value]} forURL:_url] objectAtIndex:0];
             [cookies addObject:httpCookie];
             @try {
@@ -323,7 +331,7 @@ Plugin* instance = nil;
       if ([[player currentItem] status ] == AVPlayerItemStatusReadyToPlay) {
         onReady(playerId);
       }
-    }    
+    }
   }
   @catch (NSException *exception) {
     NSLog(@"%@", exception.reason);
@@ -343,7 +351,7 @@ Plugin* instance = nil;
         name: (NSString*) name
       author: (NSString*) author
          url: (NSString*) url
-    coverUrl: (NSString*) coverUrl 
+    coverUrl: (NSString*) coverUrl
       cookie: (NSString *) cookie
      isLocal: (int) isLocal
       volume: (float) volume
@@ -368,9 +376,9 @@ Plugin* instance = nil;
   [self setCurrentItem:playerId name:name author:author url:url coverUrl:coverUrl];
 
   [ self setUrl:url
-         isLocal:isLocal 
-         cookie:cookie 
-         playerId:playerId 
+         isLocal:isLocal
+         cookie:cookie
+         playerId:playerId
          onReady:^(NSString * playerId) {
            NSMutableDictionary * playerInfo = players[playerId];
            AVPlayer *player = playerInfo[@"player"];
@@ -380,7 +388,7 @@ Plugin* instance = nil;
            [ playerInfo setObject:@true forKey:@"isPlaying" ];
            int state = STATE_PLAYING;
             [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": playerId, @"state": @(state)}];
-         }    
+         }
   ];
 }
 
@@ -417,23 +425,49 @@ Plugin* instance = nil;
 
 -(void) onTimeInterval: (NSString *) playerId
                   time: (CMTime) time {
-    int position =  CMTimeGetSeconds(time)*1000;
-    int duration = [self getDuration:playerId];
+    int position =  CMTimeGetSeconds(time);
+    NSMutableDictionary * playerInfo = players[playerId];
+    AVPlayer *player = playerInfo[@"player"];
+     
+    CMTime duration = [[[player currentItem]  asset] duration];
+    int _duration = CMTimeGetSeconds(duration);
 
     NSDictionary *currentItem = playersCurrentItem[playerId];
     NSString *name = currentItem[@"name"];
     NSString *author = currentItem[@"author"];
     NSString *coverUrl = currentItem[@"coverUrl"];
+    dispatch_async(dispatch_get_global_queue(0,0), ^{
+        NSData * data = [[NSData alloc] initWithContentsOfURL: [NSURL URLWithString: coverUrl]];
+        if ( data == nil )
+            return;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            UIImage* image = [UIImage imageWithData: data];
+            MPMediaItemArtwork* art = nil;
+            if (@available(iOS 10.0, *)) {
+                art = [[MPMediaItemArtwork alloc] initWithBoundsSize:image.size requestHandler:^UIImage * _Nonnull(CGSize size) {
+                    return image;
+                }];
+            } else {
+                art = [[MPMediaItemArtwork alloc] initWithImage: image];
+            }
+            [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = @{
+                   MPMediaItemPropertyTitle: name,
+                   MPMediaItemPropertyAlbumTitle: name,
+                   MPMediaItemPropertyArtist: author,
+                   MPMediaItemPropertyArtwork: art,
+                   MPMediaItemPropertyPlaybackDuration: [NSNumber numberWithInt:_duration],
+                   MPNowPlayingInfoPropertyElapsedPlaybackTime: [NSNumber numberWithInt:position]
+                };
+            image = nil;
+            art = nil;
+        });
+        data = nil;
+    });
 
-    [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = @{
-           MPMediaItemPropertyTitle: name,
-           MPMediaItemPropertyAlbumTitle: name,
-           MPMediaItemPropertyArtist: author,
-           MPMediaItemPropertyPlaybackDuration: [NSNumber numberWithInt:duration],
-           MPNowPlayingInfoPropertyElapsedPlaybackTime: [NSNumber numberWithInt:position]
-        };
-
-    [_channel_player invokeMethod:@"audio.onCurrentPosition" arguments:@{@"playerId": playerId, @"position": @(position), @"duration": @(duration)}];
+    [_channel_player invokeMethod:@"audio.onCurrentPosition" arguments:@{@"playerId": playerId, @"position": @(position), @"duration": @(_duration)}];
+    
+    playerInfo = nil;
+    player = nil;
 }
 
 -(void) pause: (NSString *) playerId {
@@ -455,7 +489,7 @@ Plugin* instance = nil;
   [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": playerId, @"state": @(state)}];
 }
 
--(void) setVolume: (float) volume 
+-(void) setVolume: (float) volume
         playerId:  (NSString *) playerId {
   NSMutableDictionary *playerInfo = players[playerId];
   AVPlayer *player = playerInfo[@"player"];
@@ -523,7 +557,7 @@ Plugin* instance = nil;
 
       VoidCallback onReady = playerInfo[@"onReady"];
       if (onReady != nil) {
-        [playerInfo removeObjectForKey:@"onReady"];  
+        [playerInfo removeObjectForKey:@"onReady"];
         onReady(playerId);
       }
     } else if ([[player currentItem] status ] == AVPlayerItemStatusFailed) {
@@ -557,6 +591,8 @@ Plugin* instance = nil;
   }
   players = nil;
   playersCurrentItem = nil;
+  _playerId = nil;
 }
 
 @end
+
