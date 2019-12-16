@@ -508,6 +508,12 @@ class Player {
         }
 
         break;
+      case 'commandCenter.onNext':
+        player.next();
+        break;
+      case 'commandCenter.onPrevious':
+        player.previous();
+        break;        
       default:
         _log('Unknown method ${call.method} ');
     }

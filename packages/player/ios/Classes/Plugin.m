@@ -75,10 +75,16 @@ NSString* _playerId = nil;
       }];
 
       [commandCenter.nextTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+          if (_playerId != nil) {
+              [_channel_player invokeMethod:@"commandCenter.onNext" arguments:@{@"playerId": playerId}];
+          }
           return MPRemoteCommandHandlerStatusSuccess;
       }];
 
       [commandCenter.previousTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+          if (_playerId != nil) {
+              [_channel_player invokeMethod:@"commandCenter.onPrevious" arguments:@{@"playerId": playerId}];
+          }        
           return MPRemoteCommandHandlerStatusSuccess;
       }];
   }
