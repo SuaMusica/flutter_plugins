@@ -76,14 +76,14 @@ NSString* _playerId = nil;
 
       [commandCenter.nextTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
           if (_playerId != nil) {
-              [_channel_player invokeMethod:@"commandCenter.onNext" arguments:@{@"playerId": playerId}];
+              [_channel_player invokeMethod:@"commandCenter.onNext" arguments:@{@"playerId": _playerId}];
           }
           return MPRemoteCommandHandlerStatusSuccess;
       }];
 
       [commandCenter.previousTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
           if (_playerId != nil) {
-              [_channel_player invokeMethod:@"commandCenter.onPrevious" arguments:@{@"playerId": playerId}];
+              [_channel_player invokeMethod:@"commandCenter.onPrevious" arguments:@{@"playerId": _playerId}];
           }        
           return MPRemoteCommandHandlerStatusSuccess;
       }];
