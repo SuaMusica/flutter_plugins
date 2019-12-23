@@ -366,14 +366,14 @@ NSString* _playerId = nil;
         time: (CMTime) time
       isNotification: (bool) respectSilence
 {
-    NSError *error = nil;
-    AVAudioSessionCategory category;
-    if (respectSilence) {
-        category = AVAudioSessionCategoryAmbient;
-    } else {
-        category = AVAudioSessionCategoryPlayback;
-    }
-    BOOL success = [[AVAudioSession sharedInstance]
+  NSError *error = nil;
+  AVAudioSessionCategory category;
+  if (respectSilence) {
+    category = AVAudioSessionCategoryAmbient;
+  } else {
+    category = AVAudioSessionCategoryPlayback;
+  }
+  BOOL success = [[AVAudioSession sharedInstance]
                     setCategory: category
                     error:&error];
   if (!success) {
@@ -382,7 +382,7 @@ NSString* _playerId = nil;
   [[AVAudioSession sharedInstance] setActive:YES error:&error];
 
   NSLog(@"playerId=%@ name=%@ author=%@ url=%@ coverUrl=%@", playerId, name, author, url, coverUrl); 
-  [self setCurrentItem:playerId name:name author:author url:url coverUrl:coverUrl];
+  //[self setCurrentItem:playerId name:name author:author url:url coverUrl:coverUrl];
 
   [ self setUrl:url
          isLocal:isLocal
