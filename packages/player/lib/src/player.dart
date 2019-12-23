@@ -209,7 +209,10 @@ class Player {
       } else {
         _notifyBeforePlayEvent((loadOnly) {
           invokePlay(media, {
+            'name': media.name,
+            'author': media.author,
             'url': media.url,
+            'coverUrl': media.coverUrl,
             'loadOnly': loadOnly,
             'isLocal': media.isLocal,
             'volume': volume,
