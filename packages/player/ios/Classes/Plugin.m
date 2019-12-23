@@ -236,6 +236,7 @@ NSString* _playerId = nil;
                    url:(NSString *) url
               coverUrl:(NSString *) coverUrl
                   {
+  NSLog(@"playerId=%@ name=%@ author=%@ url=%@ coverUrl=%@", playerId, name, author, url, coverUrl); 
   playersCurrentItem[playerId] = @{
     @"name": name,
     @"author": author,
