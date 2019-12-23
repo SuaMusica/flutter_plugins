@@ -14,9 +14,7 @@ A new flutter plugin project.
   s.author           = { 'Your Company' => 'email@example.com' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
-  s.resource_bundles = {
-    'smads' => ['Classes/**/*.{storyboard,xib}']
-  }
+  s.resources = ['Classes/**/*.{storyboard,xib}']
   s.dependency 'Flutter'
   s.dependency 'GoogleAds-IMA-iOS-SDK', '~> 3.9'
   s.platform = :ios, '9.0'
