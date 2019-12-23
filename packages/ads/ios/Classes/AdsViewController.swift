@@ -80,7 +80,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         if (notification.object as! AVPlayerItem) == contentPlayer?.currentItem {
             adsLoader.contentComplete()
         }
-        self.dismiss(animated: false, completion: nil)
     }
     
     func setUpAdsLoader() {
@@ -142,6 +141,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         case IMAAdEventType.LOADED:
             adsManager.start()
         case IMAAdEventType.COMPLETE:
+            self.channel?.invokeMethod("onComplete", arguments: [String: String]())
             adsManager.destroy()
             self.dismiss(animated: false, completion: nil)
         default:

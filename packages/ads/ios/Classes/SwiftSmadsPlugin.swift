@@ -2,25 +2,29 @@ import Flutter
 import UIKit
 
 public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
-    let channel: FlutterMethodChannel
+    static var channel: FlutterMethodChannel? = nil
     
     public static func register(with registrar: FlutterPluginRegistrar) {
-        let channel = FlutterMethodChannel(name: "smads", binaryMessenger: registrar.messenger())
-        let instance = SwiftSmadsPlugin(channel: channel)
-        registrar.addMethodCallDelegate(instance, channel: channel)
+        SwiftSmadsPlugin.synced(self) {
+            if (SwiftSmadsPlugin.channel == nil) {
+                SwiftSmadsPlugin.channel = FlutterMethodChannel(name: "smads", binaryMessenger: registrar.messenger())
+                let instance = SwiftSmadsPlugin(channel: SwiftSmadsPlugin.channel!)
+                registrar.addMethodCallDelegate(instance, channel: SwiftSmadsPlugin.channel!)
+            }
+        }
     }
-    
+
     init(channel: FlutterMethodChannel) {
-        self.channel = channel
+        SwiftSmadsPlugin.channel = channel
     }
-    
+        
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "load":
             DispatchQueue.main.async {
                 do {
                     try ObjC.catchException {
-                        let adsViewController = AdsViewController(channel: self.channel)
+                        let adsViewController = AdsViewController(channel: SwiftSmadsPlugin.channel)
                         adsViewController.modalPresentationStyle = .fullScreen
                         let rootViewController = UIApplication.shared.keyWindow?.rootViewController
                         rootViewController?.present(adsViewController, animated: false, completion: nil)
@@ -31,14 +35,14 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                 }
             }
             
-        case "play":
-            DispatchQueue.main.async {
-                let alert = UIAlertController(title: "Alert", message: "Playing...", preferredStyle: .alert);
-                alert.addAction(UIAlertAction(title: "OK", style: UIAlertAction.Style.default, handler: nil))
-                UIApplication.shared.keyWindow?.rootViewController?.present(alert, animated: true, completion: nil);
-            }
         default:
             result(FlutterError(code: "-1", message: "Operation not supported", details: nil))
         }
+    }
+
+    static func synced(_ lock: Any, closure: () -> ()) {
+        objc_sync_enter(lock)
+        closure()
+        objc_sync_exit(lock)
     }
 }

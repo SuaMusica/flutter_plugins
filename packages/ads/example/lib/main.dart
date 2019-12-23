@@ -47,14 +47,9 @@ class _MyAppState extends State<MyApp> {
                 child: Text('Load'),
                 color: Colors.blueAccent,
                 onPressed: () async {
-                  await ads.load({"gender": "femela"});
-                }
-              ),
-              MaterialButton(
-                child: Text('Play'),
-                color: Colors.deepOrangeAccent,
-                onPressed: () async {
-                  await ads.play();
+                  await ads.load({"gender": "female"}, () {
+                    print("Ad display have been completed!");
+                  });
                 }
               )              
             ],

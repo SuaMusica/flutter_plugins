@@ -10,6 +10,7 @@ class SMAds {
     ..setMethodCallHandler(platformCallHandler);
   
   static SMAds lastAd;
+  Function onComplete;
 
   final StreamController<AdEvent> _eventStreamController =
       StreamController<AdEvent>();
@@ -23,14 +24,10 @@ class SMAds {
     return _stream;
   }
 
-  Future<int> load(Map<String, dynamic> args) async {
+  Future<int> load(Map<String, dynamic> args, Function onComplete) async {
+    this.onComplete = onComplete;
     SMAds.lastAd = this;
     final int result = await _channel.invokeMethod('load', args);
-    return result;
-  }
-
-  Future<int> play() async {
-    final int result = await _channel.invokeMethod('play');
     return result;
   }
 
@@ -58,6 +55,13 @@ class SMAds {
         }
 
         break;
+
+      case 'onComplete':
+        if (lastAd != null && lastAd.onComplete != null) {
+          lastAd.onComplete();
+        }
+
+        break;        
 
       default:
         _log('Unknown method ${call.method} ');
