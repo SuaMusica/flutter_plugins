@@ -382,15 +382,15 @@ NSString* _playerId = nil;
   [[AVAudioSession sharedInstance] setActive:YES error:&error];
   
   if (name == nil) {
-    name = "unknown";
+    name = @"unknown";
   }
 
   if (author == nil) {
-    author = "unknown";
+    author = @"unknown";
   }
 
   if (coverUrl == nil) {
-    coverUrl = "unknown";
+    coverUrl = @"unknown";
   }
 
   NSLog(@"[SET_CURRENT_ITEM LOG] playerId=%@ name=%@ author=%@ url=%@ coverUrl=%@", playerId, name, author, url, coverUrl); 
