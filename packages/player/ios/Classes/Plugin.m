@@ -380,9 +380,21 @@ NSString* _playerId = nil;
     NSLog(@"Error setting speaker: %@", error);
   }
   [[AVAudioSession sharedInstance] setActive:YES error:&error];
+  
+  if (name == nil) {
+    name = "unknown"
+  }
 
-  NSLog(@"playerId=%@ name=%@ author=%@ url=%@ coverUrl=%@", playerId, name, author, url, coverUrl); 
-  //[self setCurrentItem:playerId name:name author:author url:url coverUrl:coverUrl];
+  if (author == nil) {
+    author = "unknown"
+  }
+
+  if (coverUrl == nil) {
+    coverUrl = "unknown"
+  }
+
+  NSLog(@"[SET_CURRENT_ITEM LOG] playerId=%@ name=%@ author=%@ url=%@ coverUrl=%@", playerId, name, author, url, coverUrl); 
+  [self setCurrentItem:playerId name:name author:author url:url coverUrl:coverUrl];
 
   [ self setUrl:url
          isLocal:isLocal
