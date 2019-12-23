@@ -2,49 +2,33 @@ import Flutter
 import UIKit
 
 public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
+    let channel: FlutterMethodChannel
+    
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "smads", binaryMessenger: registrar.messenger())
-        let instance = SwiftSmadsPlugin()
+        let instance = SwiftSmadsPlugin(channel: channel)
         registrar.addMethodCallDelegate(instance, channel: channel)
+    }
+    
+    init(channel: FlutterMethodChannel) {
+        self.channel = channel
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "load":
             DispatchQueue.main.async {
-                //        let flutterViewController = FlutterViewController()
-                //        let uiNavigationController = UINavigationController(rootViewController: flutterViewController)
-                //        uiNavigationController.setNavigationBarHidden(true, animated: false)
-                //        let window = UIWindow.init(frame: UIScreen.main.bounds)
-                //        window.rootViewController = uiNavigationController
-                //        window.makeKeyAndVisible()
-                //        uiNavigationController.present(UIViewController.init(), animated: false, completion: nil)
-                
-                
-                //        let storyBoard: UIStoryboard = UIStoryboard.init(name: "Main", bundle: nil)
-                //        print(storyBoard.description)
-                //        let adsViewController = storyBoard.instantiateViewController(withIdentifier: "adsViewController") as! UIViewController
-                //rootViewController.present(adsViewController, animated: true, completion: nil)
                 do {
                     try ObjC.catchException {
-                        print("HERE 1")
-//                        let storyboard : UIStoryboard? = UIStoryboard.init(name: "iPhone", bundle: nil);
-                        print("HERE 2")
-//                        let adsViewController = storyboard?.instantiateViewController(withIdentifier: "adsViewController")
-                        let adsViewController = AdsViewController()
-                        print("HERE 3")
+                        let adsViewController = AdsViewController(channel: self.channel)
+                        adsViewController.modalPresentationStyle = .fullScreen
                         let rootViewController = UIApplication.shared.keyWindow?.rootViewController
-                        print("HERE 4")
-//                        if (adsViewController != nil) {
-                            rootViewController?.present(adsViewController, animated: false, completion: nil)
-//                        }
-                        print("HERE 5")
+                        rootViewController?.present(adsViewController, animated: false, completion: nil)
                     }
                 }
                 catch {
                     print("An error ocurred: \(error)")
                 }
-                
             }
             
         case "play":
