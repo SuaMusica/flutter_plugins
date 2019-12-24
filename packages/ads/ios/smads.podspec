@@ -14,9 +14,10 @@ A new flutter plugin project.
   s.author           = { 'Your Company' => 'email@example.com' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
-  s.resources = ['Classes/**/*.{storyboard,xib}']
+#  s.resources = ['Classes/**/*.{storyboard,xib}']
   s.dependency 'Flutter'
   s.dependency 'GoogleAds-IMA-iOS-SDK', '~> 3.9'
+  s.dependency 'PureLayout'
   s.platform = :ios, '9.0'
 
   # Flutter.framework does not contain a i386 slice. Only x86_64 simulators are supported.

@@ -1,6 +1,7 @@
 import AVFoundation
 import GoogleInteractiveMediaAds
 import UIKit
+import PureLayout
 
 class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
     static let kTestAppContentUrl_MP4 = "https://assets.suamusica.com.br/video/virgula.mp3"
