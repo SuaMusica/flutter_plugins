@@ -1,11 +1,13 @@
 package com.suamusica.snowplow;
 
+import com.snowplowanalytics.snowplow.tracker.Tracker;
+import com.snowplowanalytics.snowplow.tracker.events.ScreenView;
+import android.content.Context;
 import androidx.annotation.NonNull;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
-import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
 
 /** SnowplowPlugin */
@@ -15,11 +17,11 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
   private SnowplowTrackerBuilder stb;
   private Tracker tracker;
   private Context applicationContext;
-
+  public SnowplowPlugin(){}
   @Override
   public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
-    applicationContext = binding.getApplicationContext();
-    channel = new MethodChannel(binding.getFlutterEngine().getDartExecutor(), CHANNEL_NAME);
+    applicationContext = flutterPluginBinding.getApplicationContext();
+    channel = new MethodChannel(flutterPluginBinding.getFlutterEngine().getDartExecutor(), CHANNEL_NAME);
     stb = new SnowplowTrackerBuilder();
     tracker = stb.getTracker(applicationContext);
     channel.setMethodCallHandler(this);
