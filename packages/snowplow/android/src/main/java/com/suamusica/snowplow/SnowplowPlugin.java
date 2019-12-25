@@ -4,6 +4,9 @@ import com.snowplowanalytics.snowplow.tracker.Tracker;
 import com.snowplowanalytics.snowplow.tracker.events.ScreenView;
 import android.content.Context;
 import androidx.annotation.NonNull;
+
+import java.util.UUID;
+
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
@@ -17,21 +20,26 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
   private SnowplowTrackerBuilder stb;
   private Tracker tracker;
   private Context applicationContext;
-  public SnowplowPlugin(){}
+
+  public SnowplowPlugin() {
+  }
+
   @Override
   public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
     applicationContext = flutterPluginBinding.getApplicationContext();
-    channel = new MethodChannel(flutterPluginBinding.getFlutterEngine().getDartExecutor(), CHANNEL_NAME);
+    channel =
+        new MethodChannel(flutterPluginBinding.getFlutterEngine().getDartExecutor(), CHANNEL_NAME);
     stb = new SnowplowTrackerBuilder();
     tracker = stb.getTracker(applicationContext);
     channel.setMethodCallHandler(this);
   }
-  
+
   private SnowplowPlugin(Context context) {
     this.applicationContext = context;
     this.stb = new SnowplowTrackerBuilder();
     this.tracker = this.stb.getTracker(this.applicationContext);
-}
+  }
+
   // This static function is optional and equivalent to onAttachedToEngine. It supports the old
   // pre-Flutter-1.12 Android projects. You are encouraged to continue supporting
   // plugin registration via this function while apps migrate to use the new Android APIs
@@ -45,11 +53,13 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
     final MethodChannel channel = new MethodChannel(registrar.messenger(), CHANNEL_NAME);
     channel.setMethodCallHandler(new SnowplowPlugin(registrar.context()));
   }
+
   @Override
   public void onMethodCall(MethodCall methodCall, final MethodChannel.Result result) {
     switch (methodCall.method) {
       case "trackPageview":
-        trackPageview(result,"test");
+        final String screenName = methodCall.argument("screenName");
+        trackPageview(result,screenName);
         break;
       case "getPlatformVersion":
         result.success("Android " + android.os.Build.VERSION.RELEASE);
@@ -60,9 +70,9 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
   }
 
 
-  private void trackPageview(final MethodChannel.Result result,String screenName){
-      this.tracker.track(ScreenView.builder().name(screenName).build());
-      result.success(true);
+  private void trackPageview(final MethodChannel.Result result, String screenName) {
+    tracker.track(ScreenView.builder().name(screenName).id(UUID.nameUUIDFromBytes(screenName.getBytes()).toString()).build());
+    result.success(true);
   }
 
   @Override

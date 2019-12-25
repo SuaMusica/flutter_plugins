@@ -13,7 +13,10 @@ class Snowplow {
 
   Future<bool> logPageView(String name) async {
     try {
-      return _channel.invokeMethod('trackPageview');
+      Map<String, String> args = <String, String>{
+        'screenName': name,
+      };
+      return _channel.invokeMethod('trackPageview', args);
     } on PlatformException catch (e) {
       print("Failed ${e.message}");
       return Future.value(false);
