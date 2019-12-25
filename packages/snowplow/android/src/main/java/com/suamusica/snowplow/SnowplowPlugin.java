@@ -1,5 +1,6 @@
 package com.suamusica.snowplow;
 
+import com.snowplowanalytics.snowplow.tracker.Subject;
 import com.snowplowanalytics.snowplow.tracker.Tracker;
 import com.snowplowanalytics.snowplow.tracker.events.ScreenView;
 import android.content.Context;
@@ -59,11 +60,13 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
     switch (methodCall.method) {
       case "trackPageview":
         final String screenName = methodCall.argument("screenName");
-        trackPageview(result,screenName);
+        trackPageview(result, screenName);
         break;
-      case "getPlatformVersion":
-        result.success("Android " + android.os.Build.VERSION.RELEASE);
+      case "setUserId":
+        final String userId = methodCall.argument("userId");
+        setUserId(result, userId);
         break;
+
       default:
         result.notImplemented();
     }
@@ -71,9 +74,17 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
 
 
   private void trackPageview(final MethodChannel.Result result, String screenName) {
-    tracker.track(ScreenView.builder().name(screenName).id(UUID.nameUUIDFromBytes(screenName.getBytes()).toString()).build());
+    tracker.track(ScreenView.builder().name(screenName)
+            .id(UUID.nameUUIDFromBytes(screenName.getBytes()).toString()).build());
     result.success(true);
   }
+  private void setUserId(final MethodChannel.Result result, String userId) {
+    Subject sbj = tracker.getSubject();
+    sbj.setUserId(userId);
+    tracker.setSubject(sbj);
+    result.success(true);
+  }
+
 
   @Override
   public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {

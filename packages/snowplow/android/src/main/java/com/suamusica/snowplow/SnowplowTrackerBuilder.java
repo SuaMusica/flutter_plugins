@@ -12,6 +12,7 @@ public class SnowplowTrackerBuilder {
     public static Tracker getTracker(Context context) {
         Emitter emitter = getEmitter(context);
         Subject subject = getSubject(context); // Optional
+        subject.setUserId("0");
         return Tracker.init(new Tracker.TrackerBuilder(emitter, "sm", "1", context).subject(subject) // Optional
                 .build());
 
