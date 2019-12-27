@@ -236,6 +236,7 @@ NSString* _playerId = nil;
                    url:(NSString *) url
               coverUrl:(NSString *) coverUrl
                   {
+  NSLog(@"playerId=%@ name=%@ author=%@ url=%@ coverUrl=%@", playerId, name, author, url, coverUrl); 
   playersCurrentItem[playerId] = @{
     @"name": name,
     @"author": author,
@@ -365,21 +366,34 @@ NSString* _playerId = nil;
         time: (CMTime) time
       isNotification: (bool) respectSilence
 {
-    NSError *error = nil;
-    AVAudioSessionCategory category;
-    if (respectSilence) {
-        category = AVAudioSessionCategoryAmbient;
-    } else {
-        category = AVAudioSessionCategoryPlayback;
-    }
-    BOOL success = [[AVAudioSession sharedInstance]
+  NSError *error = nil;
+  AVAudioSessionCategory category;
+  if (respectSilence) {
+    category = AVAudioSessionCategoryAmbient;
+  } else {
+    category = AVAudioSessionCategoryPlayback;
+  }
+  BOOL success = [[AVAudioSession sharedInstance]
                     setCategory: category
                     error:&error];
   if (!success) {
     NSLog(@"Error setting speaker: %@", error);
   }
   [[AVAudioSession sharedInstance] setActive:YES error:&error];
+  
+  if (name == nil) {
+    name = @"unknown";
+  }
 
+  if (author == nil) {
+    author = @"unknown";
+  }
+
+  if (coverUrl == nil) {
+    coverUrl = @"unknown";
+  }
+
+  NSLog(@"[SET_CURRENT_ITEM LOG] playerId=%@ name=%@ author=%@ url=%@ coverUrl=%@", playerId, name, author, url, coverUrl); 
   [self setCurrentItem:playerId name:name author:author url:url coverUrl:coverUrl];
 
   [ self setUrl:url
