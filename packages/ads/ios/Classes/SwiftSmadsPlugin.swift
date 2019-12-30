@@ -24,7 +24,14 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
             DispatchQueue.main.async {
                 do {
                     try ObjC.catchException {
-                        let adsViewController = AdsViewController(channel: SwiftSmadsPlugin.channel)
+                        let args = call.arguments as! [String : Any]
+                        let adUrl  = args["__URL__"] as! String
+                        let contentUrl = args["__CONTENT__"] as! String
+                        let adsViewController = AdsViewController(
+                            channel: SwiftSmadsPlugin.channel, 
+                            adUrl: adUrl,
+                            contentUrl: contentUrl,
+                            args: args)
                         adsViewController.modalPresentationStyle = .fullScreen
                         let rootViewController = UIApplication.shared.keyWindow?.rootViewController
                         rootViewController?.present(adsViewController, animated: false, completion: nil)

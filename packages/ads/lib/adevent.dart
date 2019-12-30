@@ -2,19 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:smads/adevent_type.dart';
 
 class AdEvent {
-  AdEvent(
-      {
-        @required this.type, 
-        @required this.id,
-        @required this.title,
-        @required this.description,
-        @required this.system,
-        @required this.advertiserName,
-        @required this.contentType,
-        @required this.creativeAdID,
-        @required this.creativeID,
-        @required this.dealID,
-      });
+  AdEvent({
+    @required this.type,
+    @required this.id,
+    @required this.title,
+    @required this.description,
+    @required this.system,
+    @required this.advertiserName,
+    @required this.contentType,
+    @required this.creativeAdID,
+    @required this.creativeID,
+    @required this.dealID,
+  });
 
   final AdEventType type;
   final String id;
@@ -53,7 +52,8 @@ class AdEvent {
   int get hashCode => [type].hashCode;
 
   factory AdEvent.fromMap(Map<dynamic, dynamic> args) {
-    final type = AdEventType.values.firstWhere((e) => e.toString() == "AdEventType.${args["type"]}");
+    final type = AdEventType.values
+        .firstWhere((e) => e.toString().endsWith(args["type"]));
     final id = args["ad.id"];
     final title = args["ad.title"];
     final description = args["ad.description"];
@@ -69,7 +69,7 @@ class AdEvent {
       title: title,
       description: description,
       system: system,
-      advertiserName: advertiserName, 
+      advertiserName: advertiserName,
       contentType: contentType,
       creativeAdID: creativeAdID,
       creativeID: creativeID,

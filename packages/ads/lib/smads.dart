@@ -1,14 +1,22 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:smads/adevent.dart';
 
 class SMAds {
+  SMAds({
+    @required this.adUrl,
+    @required this.contentUrl,
+  });
+
+  final adUrl;
+  final contentUrl;
   static const Ok = 1;
   static const NotOk = -1;
   static final MethodChannel _channel = const MethodChannel('smads')
     ..setMethodCallHandler(platformCallHandler);
-  
+
   static SMAds lastAd;
   Function onComplete;
 
@@ -27,6 +35,8 @@ class SMAds {
   Future<int> load(Map<String, dynamic> args, Function onComplete) async {
     this.onComplete = onComplete;
     SMAds.lastAd = this;
+    args["__URL__"] = adUrl;
+    args["__CONTENT__"] = contentUrl;
     final int result = await _channel.invokeMethod('load', args);
     return result;
   }
@@ -44,12 +54,14 @@ class SMAds {
   }
 
   static Future<void> _doHandlePlatformCall(MethodCall call) async {
-    final Map<dynamic, dynamic> callArgs = call.arguments as Map<dynamic, dynamic>;
+    final Map<dynamic, dynamic> callArgs =
+        call.arguments as Map<dynamic, dynamic>;
     _log('_platformCallHandler call ${call.method} $callArgs');
 
     switch (call.method) {
       case 'onAdEvent':
-        if (lastAd != null && lastAd._eventStreamController != null &&
+        if (lastAd != null &&
+            lastAd._eventStreamController != null &&
             !lastAd._eventStreamController.isClosed) {
           lastAd._eventStreamController.add(AdEvent.fromMap(callArgs));
         }
@@ -61,7 +73,7 @@ class SMAds {
           lastAd.onComplete();
         }
 
-        break;        
+        break;
 
       default:
         _log('Unknown method ${call.method} ');
