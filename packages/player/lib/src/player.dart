@@ -516,7 +516,7 @@ class Player {
         break;
       case 'commandCenter.onPrevious':
         player.previous();
-        break;        
+        break;
       default:
         _log('Unknown method ${call.method} ');
     }
@@ -563,7 +563,6 @@ class Player {
   }
 
   _notifyBeforePlayEvent(Function(bool) operation) async {
-    await _invokeMethod('pause');
     _add(BeforePlayEvent(
         media: _queue.current,
         queuePosition: _queue.index,
