@@ -152,14 +152,53 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     
     func adsManager(_ adsManager: IMAAdsManager!, didReceive event: IMAAdEvent!) {
         switch event.type {
-        case IMAAdEventType.LOADED:
-            adsManager.start()
+        case IMAAdEventType.ALL_ADS_COMPLETED:
+            print("Got a ALL_ADS_COMPLETED event")
+        case IMAAdEventType.CLICKED:
+            print("Got a CLICKED event")
         case IMAAdEventType.COMPLETE:
+            print("Got a COMPLETE event")
             self.channel?.invokeMethod("onComplete", arguments: [String: String]())
             adsManager.destroy()
             self.dismiss(animated: false, completion: nil)
+        case IMAAdEventType.CUEPOINTS_CHANGED:
+            print("Got a CUEPOINTS_CHANGED event")
+        case IMAAdEventType.FIRST_QUARTILE:
+            print("Got a FIRST_QUARTILE event")
+        case IMAAdEventType.LOG:
+            print("Got a LOG event")
+        case IMAAdEventType.AD_BREAK_READY:
+            print("Got a AD_BREAK_READY event")
+        case IMAAdEventType.MIDPOINT:
+            print("Got a MIDPOINT event")
+        case IMAAdEventType.PAUSE:
+            print("Got a PAUSE event")
+        case IMAAdEventType.RESUME:
+            print("Got a RESUME event")
+        case IMAAdEventType.SKIPPED:
+            print("Got a SKIPPED event")
+            self.channel?.invokeMethod("onComplete", arguments: [String: String]())
+            adsManager.destroy()
+            self.dismiss(animated: false, completion: nil)
+        case IMAAdEventType.STARTED:
+            print("Got a STARTED event")
+        case IMAAdEventType.TAPPED:
+            print("Got a TAPPED event")
+        case IMAAdEventType.THIRD_QUARTILE:
+            print("Got a THIRD_QUARTILE event")
+        case IMAAdEventType.LOADED:
+            print("Got a LOADED event")
+            adsManager.start()
+        case IMAAdEventType.AD_BREAK_STARTED:
+            print("Got a AD_BREAK_STARTED event")
+        case IMAAdEventType.AD_BREAK_ENDED:
+            print("Got a AD_BREAK_ENDED event")
+        case IMAAdEventType.AD_PERIOD_STARTED:
+            print("Got a AD_PERIOD_STARTED event")
+        case IMAAdEventType.AD_PERIOD_ENDED:
+            print("Got a AD_PERIOD_ENDED event")
         default:
-            print(event.type)
+            print("Got an unknown event")
         }
         
         let type = AdsViewController.toEventType(event: event)
