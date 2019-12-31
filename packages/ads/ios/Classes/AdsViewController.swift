@@ -30,6 +30,18 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         self.init(channel: nil, adUrl: nil, contentUrl: nil, args: nil)
     }
     
+    deinit {
+        NotificationCenter.default.removeObserver(
+            self,
+            name: UIApplication.didBecomeActiveNotification,
+            object: nil);
+
+        NotificationCenter.default.removeObserver(
+            self,
+            name: UIApplication.didEnterBackgroundNotification,
+            object: nil);
+    }
+    
     override func loadView() {
         view = UIView()
         view.backgroundColor = .white
@@ -47,7 +59,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         setUpContentPlayer()
         setUpAdsLoader()
     }
-    
+        
     override func viewDidAppear(_ animated: Bool) {
         playerLayer?.frame = self.videoView.layer.bounds
         
