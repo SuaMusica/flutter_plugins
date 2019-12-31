@@ -15,6 +15,8 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     let adUrl: String
     let contentUrl: String
     let args: [String: Any]
+    var active: Bool = true
+    var playing: Bool = false
     
     init(channel: FlutterMethodChannel?, adUrl: String?, contentUrl: String?, args: [String: Any]?) {
         self.channel = channel
@@ -74,6 +76,32 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             selector: #selector(AdsViewController.contentDidFinishPlaying(_:)),
             name: NSNotification.Name.AVPlayerItemDidPlayToEndTime,
             object: contentPlayer?.currentItem);
+
+        NotificationCenter.default.addObserver(
+            self, 
+            selector: #selector(AdsViewController.applicationDidBecomeActive(notification:)), 
+            name: UIApplication.didBecomeActiveNotification,
+            object: nil);
+
+        NotificationCenter.default.addObserver(
+            self, 
+            selector: #selector(AdsViewController.applicationDidEnterBackground(notification:)), 
+            name: UIApplication.didEnterBackgroundNotification,
+            object: nil);
+    }
+
+    @objc func applicationDidBecomeActive(notification: NSNotification) {
+        let oldStatus = self.active
+        self.active = true
+        if (!oldStatus) {
+            if (self.playing) {
+                adsManager.resume()
+            }
+        }
+    }
+
+    @objc func applicationDidEnterBackground(notification: NSNotification) {
+        self.active = false
     }
     
     @objc func contentDidFinishPlaying(_ notification: Notification) {
@@ -89,16 +117,21 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     }
     
     func requestAds() {
-        // Create ad display container for ad rendering.
-        let adDisplayContainer = IMAAdDisplayContainer(adContainer: videoView, companionSlots: nil)
-        // Create an ad request with our ad tag, display container, and optional user context.
-        let request = IMAAdsRequest(
-            adTagUrl: getAdTagUrl(),
-            adDisplayContainer: adDisplayContainer,
-            contentPlayhead: contentPlayhead,
-            userContext: nil)
-        
-        adsLoader.requestAds(with: request)
+        if (self.active) {
+            // Create ad display container for ad rendering.
+            let adDisplayContainer = IMAAdDisplayContainer(adContainer: videoView, companionSlots: nil)
+            // Create an ad request with our ad tag, display container, and optional user context.
+            let request = IMAAdsRequest(
+                adTagUrl: getAdTagUrl(),
+                adDisplayContainer: adDisplayContainer,
+                contentPlayhead: contentPlayhead,
+                userContext: nil)
+            
+            adsLoader.requestAds(with: request)
+        } else {
+            // If the screen is not active we shall not play the AD
+            self.channel?.invokeMethod("onComplete", arguments: [String: String]())
+        }
     }
     
     func getsafeAreaBottomMargin() -> CGFloat {
@@ -173,6 +206,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             print("Got a MIDPOINT event")
         case IMAAdEventType.PAUSE:
             print("Got a PAUSE event")
+            self.playing = false
         case IMAAdEventType.RESUME:
             print("Got a RESUME event")
         case IMAAdEventType.SKIPPED:
@@ -189,6 +223,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         case IMAAdEventType.LOADED:
             print("Got a LOADED event")
             adsManager.start()
+            self.playing = true
         case IMAAdEventType.AD_BREAK_STARTED:
             print("Got a AD_BREAK_STARTED event")
         case IMAAdEventType.AD_BREAK_ENDED:
