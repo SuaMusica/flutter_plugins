@@ -106,9 +106,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         let oldStatus = self.active
         self.active = true
         if (!oldStatus) {
-            if (self.playing) {
-                adsManager.resume()
-            }
+            adsManager.resume()
         }
     }
 
@@ -228,6 +226,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             self.dismiss(animated: false, completion: nil)
         case IMAAdEventType.STARTED:
             print("Got a STARTED event")
+            self.playing = true
         case IMAAdEventType.TAPPED:
             print("Got a TAPPED event")
         case IMAAdEventType.THIRD_QUARTILE:
@@ -235,7 +234,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         case IMAAdEventType.LOADED:
             print("Got a LOADED event")
             adsManager.start()
-            self.playing = true
         case IMAAdEventType.AD_BREAK_STARTED:
             print("Got a AD_BREAK_STARTED event")
         case IMAAdEventType.AD_BREAK_ENDED:
