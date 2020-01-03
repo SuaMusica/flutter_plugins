@@ -6,6 +6,7 @@ class Media {
   final int id;
   final String name;
   final int ownerId;
+  final int albumId;
   final String author;
   final String url;
   final bool isLocal;
@@ -19,6 +20,7 @@ class Media {
     @required this.ownerId,
     @required this.author,
     @required this.url,
+    @required this.albumId,
     this.isLocal,
     @required this.coverUrl,
     this.isVerified,
@@ -29,6 +31,7 @@ class Media {
         'id': id,
         'name': name,
         'ownerId': ownerId,
+        'albumId': albumId,
         'author': author,
         'url': url,
         'is_local': isLocal,
@@ -46,6 +49,7 @@ class Media {
       other is Media &&
           runtimeType == other.runtimeType &&
           id == other.id &&
+          albumId == other.albumId &&
           name == other.name &&
           ownerId == other.ownerId &&
           author == other.author &&
@@ -59,6 +63,7 @@ class Media {
   int get hashCode => [
         id,
         name,
+        albumId,
         ownerId,
         author,
         url,

@@ -86,6 +86,7 @@ class _SMPlayerState extends State<SMPlayer> {
 
       var media1 = Media(
           id: 1,
+          albumId: 1,
           name: "Track 1",
           url:
               "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
@@ -98,6 +99,7 @@ class _SMPlayerState extends State<SMPlayer> {
 
       var media2 = Media(
           id: 2,
+          albumId: 1,
           name: "Track 2",
           url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
           coverUrl:
@@ -109,6 +111,7 @@ class _SMPlayerState extends State<SMPlayer> {
 
       // var media3 = Media(
       //     id: 3,
+      //     albumId: 1,
       //     name: "Track 3",
       //     url:
       //         "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
@@ -121,6 +124,7 @@ class _SMPlayerState extends State<SMPlayer> {
 
       // var media4 = Media(
       //     id: 4,
+      //     albumId: 1,
       //     name: "Track 4",
       //     url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
       //     coverUrl:
@@ -132,6 +136,7 @@ class _SMPlayerState extends State<SMPlayer> {
 
       // var media5 = Media(
       //     id: 5,
+      //     albumId: 1,
       //     name: "Track 5",
       //     url:
       //         "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
@@ -144,6 +149,7 @@ class _SMPlayerState extends State<SMPlayer> {
 
       // var media6 = Media(
       //     id: 6,
+      //     albumId: 1,
       //     name: "Track 6",
       //     url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
       //     coverUrl:
