@@ -17,6 +17,7 @@ A new flutter plugin project.
 #  s.resources = ['Classes/**/*.{storyboard,xib}']
   s.dependency 'Flutter'
   s.dependency 'GoogleAds-IMA-iOS-SDK', '~> 3.9'
+  s.dependency 'ReachabilitySwift'
   s.dependency 'PureLayout'
   s.platform = :ios, '9.0'
 
