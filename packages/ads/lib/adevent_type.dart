@@ -18,4 +18,5 @@ enum AdEventType {
   AD_BREAK_ENDED,
   AD_PERIOD_STARTED,
   AD_PERIOD_ENDED,
+  ERROR,
 }

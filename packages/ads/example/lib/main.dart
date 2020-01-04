@@ -11,7 +11,11 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final ads = SMAds();
+  final ads = SMAds(
+    adUrl:
+        "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=",
+    contentUrl: "https://assets.suamusica.com.br/video/virgula.mp3",
+  );
 
   @override
   void initState() {
@@ -44,14 +48,13 @@ class _MyAppState extends State<MyApp> {
           child: Column(
             children: <Widget>[
               MaterialButton(
-                child: Text('Load'),
-                color: Colors.blueAccent,
-                onPressed: () async {
-                  await ads.load({"gender": "female"}, () {
-                    print("Ad display have been completed!");
-                  });
-                }
-              )              
+                  child: Text('Load'),
+                  color: Colors.blueAccent,
+                  onPressed: () async {
+                    await ads.load({"gender": "female", "age": 45}, () {
+                      print("Ad display have been completed!");
+                    });
+                  })
             ],
           ),
         ),

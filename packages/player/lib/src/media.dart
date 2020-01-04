@@ -5,6 +5,8 @@ import 'package:flutter/widgets.dart';
 class Media {
   final int id;
   final String name;
+  final int ownerId;
+  final int albumId;
   final String author;
   final String url;
   final bool isLocal;
@@ -12,20 +14,24 @@ class Media {
   final bool isVerified;
   final String shareUrl;
 
-  Media(
-      {@required this.id,
-      @required this.name,
-      @required this.author,
-      @required this.url,
-      this.isLocal,
-      @required this.coverUrl,
-      this.isVerified,
-      this.shareUrl})
-      : super();
+  Media({
+    @required this.id,
+    @required this.name,
+    @required this.ownerId,
+    @required this.author,
+    @required this.url,
+    @required this.albumId,
+    this.isLocal,
+    @required this.coverUrl,
+    this.isVerified,
+    this.shareUrl,
+  }) : super();
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
+        'ownerId': ownerId,
+        'albumId': albumId,
         'author': author,
         'url': url,
         'is_local': isLocal,
@@ -43,7 +49,9 @@ class Media {
       other is Media &&
           runtimeType == other.runtimeType &&
           id == other.id &&
+          albumId == other.albumId &&
           name == other.name &&
+          ownerId == other.ownerId &&
           author == other.author &&
           url == other.url &&
           isLocal == other.isLocal &&
@@ -52,6 +60,16 @@ class Media {
           shareUrl == other.shareUrl;
 
   @override
-  int get hashCode =>
-      [id, name, author, url, isLocal, coverUrl, isVerified, shareUrl].hashCode;
+  int get hashCode => [
+        id,
+        name,
+        albumId,
+        ownerId,
+        author,
+        url,
+        isLocal,
+        coverUrl,
+        isVerified,
+        shareUrl,
+      ].hashCode;
 }
