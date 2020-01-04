@@ -35,6 +35,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                         adsViewController.modalPresentationStyle = .fullScreen
                         let rootViewController = UIApplication.shared.keyWindow?.rootViewController
                         rootViewController?.present(adsViewController, animated: false, completion: nil)
+                        result(1);
                     }
                 }
                 catch {
