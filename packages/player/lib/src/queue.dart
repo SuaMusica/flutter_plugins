@@ -82,11 +82,20 @@ class Queue {
 
   shuffle() {
     if (storage.length > 2) {
+      print("Before");
+      for (var item in storage) {
+        print(
+            "pos: ${item.position} orig: ${item.originalPosition} name: ${item.item.name}");
+      }
       var current = storage.elementAt(index);
-      var newStorage = _shuffler.shuffle(storage);
-      var currentIndex = newStorage.indexOf(current);
-      storage = newStorage;
+      _shuffler.shuffle(storage);
+      var currentIndex = storage.indexOf(current);
       reorder(currentIndex, 0);
+      print("After");
+      for (var item in storage) {
+        print(
+            "pos: ${item.position} orig: ${item.originalPosition} name: ${item.item.name}");
+      }
       this.index = 0;
     }
   }
@@ -94,10 +103,12 @@ class Queue {
   unshuffle() {
     if (storage.length > 2) {
       var current = storage.elementAt(index);
-      var newStorage = _shuffler.unshuffle(storage);
-      var pos = newStorage.indexOf(current);
-      storage = newStorage;
-      reorder(pos, current.originalPosition);
+      _shuffler.unshuffle(storage);
+      var pos = storage.indexOf(current);
+      for (var i = 0; i < storage.length; ++i) {
+        final item = storage.elementAt(i);
+        item.position = i;
+      }
       this.index = current.originalPosition;
     }
   }
@@ -162,15 +173,24 @@ class Queue {
   }
 
   void reorder(int oldIndex, int newIndex) {
-    final oldItem = storage.elementAt(oldIndex);
-    oldItem.position = newIndex;
-    for (var index = newIndex; index < oldIndex; ++index) {
-      final item = storage.elementAt(index);
+    // first we reposition all the items
+    for (var i = 0; i < storage.length; ++i) {
+      final item = storage.elementAt(i);
+      item.position = i;
+    }
+
+    //now we need to fix the position impacting by moving the
+    // currenty playing item to poistion 0
+    final playingItem = storage.elementAt(oldIndex);
+    final playingIndex = storage.indexOf(playingItem);
+    playingItem.position = 0;
+    for (var i = 0; i < playingIndex; ++i) {
+      final item = storage.elementAt(i);
       item.position += 1;
     }
-    final current = storage.elementAt(index);
+
     storage.sort((a, b) => a.position.compareTo(b.position));
-    final playingIndex = storage.indexOf(current);
+
     this.index = playingIndex;
   }
 }
