@@ -9,12 +9,14 @@ Pod::Spec.new do |s|
   s.description      = <<-DESC
 A new flutter plugin project.
                        DESC
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'http://www.suamusica.com.br'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Your Company' => 'email@example.com' }
+  s.author           = { 'Sua Música' => 'contato@suamusica.com.br' }
+  s.swift_version    = '5.0'
   s.source           = { :path => '.' }
-  s.source_files = 'Classes/**/*'
-#  s.resources = ['Classes/**/*.{storyboard,xib}']
+  s.source_files = 'Classes/**/*.{swift,h,m}'
+  s.public_header_files = 'Classes/**/*.h'
+  s.resources  = ['Classes/**/*.{storyboard,xib,png}']
   s.dependency 'Flutter'
   s.dependency 'GoogleAds-IMA-iOS-SDK', '~> 3.9'
   s.dependency 'ReachabilitySwift'
@@ -23,5 +25,4 @@ A new flutter plugin project.
 
   # Flutter.framework does not contain a i386 slice. Only x86_64 simulators are supported.
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'VALID_ARCHS[sdk=iphonesimulator*]' => 'x86_64' }
-  s.swift_version = '5.0'
 end

@@ -56,12 +56,12 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                         }
                         
                         if (Network.reachability.isReachable) {
-                            let adsViewController = AdsViewController(
+                            let adsViewController:AdsViewController = AdsViewController.instantiateFromNib()
+                            adsViewController.setup(
                                 channel: SwiftSmadsPlugin.channel,
                                 adUrl: adUrl,
                                 contentUrl: contentUrl,
-                                args: args
-                            )
+                                args: args)
                             adsViewController.modalPresentationStyle = .fullScreen
                             let rootViewController = UIApplication.shared.keyWindow?.rootViewController
                             rootViewController?.present(adsViewController, animated: false, completion: nil)

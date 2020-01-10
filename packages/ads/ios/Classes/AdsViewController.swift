@@ -4,30 +4,28 @@ import UIKit
 import PureLayout
 
 class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
-    let channel: FlutterMethodChannel?
-    var videoView: UIView!
+    var channel: FlutterMethodChannel?
     var contentPlayer: AVPlayer?
     var playerLayer: AVPlayerLayer?
-    
     var contentPlayhead: IMAAVPlayerContentPlayhead?
     var adsLoader: IMAAdsLoader!
     var adsManager: IMAAdsManager!
-    let adUrl: String
-    let contentUrl: String
-    let args: [String: Any]
+    var adUrl: String!
+    var contentUrl: String!
+    var args: [String: Any]!
     var active: Bool = true
     var playing: Bool = false
     
-    init(channel: FlutterMethodChannel?, adUrl: String?, contentUrl: String?, args: [String: Any]?) {
-        self.channel = channel
-        self.adUrl = adUrl!
-        self.contentUrl = contentUrl!
-        self.args = args!
-        super.init(nibName: nil, bundle: nil)
+    @IBOutlet weak var whyListenAdView: UIView!
+    @IBOutlet weak var playPauseButton: UIButton!
+    @IBOutlet weak var videoView: UIView!
+    
+    override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
+        super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
     }
     
-    convenience required init(coder aDecoder: NSCoder) {
-        self.init(channel: nil, adUrl: nil, contentUrl: nil, args: nil)
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
     }
     
     deinit {
@@ -42,16 +40,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             object: nil);
     }
     
-    override func loadView() {
-        view = UIView()
-        view.backgroundColor = .white
-        view.frame = CGRect(x: 0, y: 0, width: self.view.frame.width, height: self.view.frame.height)
-        
-        videoView = UIView()
-        videoView.frame = CGRect(x: 0, y: 0, width: 400, height: 200)
-        videoView.backgroundColor = .white
-        view.addSubview(videoView)
-    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -61,9 +49,38 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     }
         
     override func viewDidAppear(_ animated: Bool) {
-        playerLayer?.frame = self.videoView.layer.bounds
-        
         requestAds()
+    }
+    
+    @IBAction func playPauseHandler(_ sender: Any) {
+        if (playing) {
+            adsManager.pause()
+        } else {
+            adsManager.resume()
+        }
+    }
+    
+    @IBAction func understoodAdHandler(_ sender: Any) {UIView.animate(withDuration: 0.6, delay: 0, options: .curveEaseInOut, animations: { [weak self] in
+            self?.whyListenAdView.alpha = 0.0
+        }) { [weak self] (isCompleted) in
+        self?.whyListenAdView.isHidden = true
+        }
+    }
+    
+    @IBAction func whyListenAdHandler(_ sender: Any) {
+        whyListenAdView.alpha = 0.0
+        whyListenAdView.isHidden = false
+            
+        UIView.animate(withDuration: 0.6, delay: 0, options: .curveEaseInOut, animations: { [weak self] in
+            self?.whyListenAdView.alpha = 1.0
+            }) { (isCompleted) in }
+    }
+    
+    func setup(channel: FlutterMethodChannel?, adUrl: String?, contentUrl: String?, args: [String: Any]?) {
+        self.channel = channel
+        self.adUrl = adUrl
+        self.contentUrl = contentUrl
+        self.args = args
     }
     
     func setUpContentPlayer() {
@@ -72,14 +89,20 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             print("ERROR: please use a valid URL for the content URL")
             return
         }
+        
+        guard let videoViewUnwraped = self.videoView else {
+            print("ERROR: videoView NOT FOUND")
+            return
+        }
         contentPlayer = AVPlayer(url: contentUrl)
         
         // Create a player layer for the player.
         playerLayer = AVPlayerLayer(player: contentPlayer)
         
+        
         // Size, position, and display the AVPlayer.
-        playerLayer?.frame = videoView.layer.bounds
-        videoView.layer.addSublayer(playerLayer!)
+        playerLayer?.frame = videoViewUnwraped.layer.bounds
+       videoViewUnwraped.layer.addSublayer(playerLayer!)
         
         // Set up our content playhead and contentComplete callback.
         contentPlayhead = IMAAVPlayerContentPlayhead(avPlayer: contentPlayer)
@@ -216,9 +239,10 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             print("Got a MIDPOINT event")
         case IMAAdEventType.PAUSE:
             print("Got a PAUSE event")
-            self.playing = false
+            self.setPaused()
         case IMAAdEventType.RESUME:
             print("Got a RESUME event")
+            self.setPlaying()
         case IMAAdEventType.SKIPPED:
             print("Got a SKIPPED event")
             self.channel?.invokeMethod("onComplete", arguments: [String: String]())
@@ -226,7 +250,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             self.dismiss(animated: false, completion: nil)
         case IMAAdEventType.STARTED:
             print("Got a STARTED event")
-            self.playing = true
+            self.setPlaying()
         case IMAAdEventType.TAPPED:
             print("Got a TAPPED event")
         case IMAAdEventType.THIRD_QUARTILE:
@@ -264,6 +288,15 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         self.channel?.invokeMethod("onAdEvent", arguments: args)
     }
     
+    func setPlaying() {
+        self.playing = true
+        self.playPauseButton.setImage(UIImage(named: "bt_pause.png", in: Bundle(identifier: "org.cocoapods.smads"), compatibleWith: nil), for: UIControl.State.normal)
+    }
+    
+    func setPaused() {
+        self.playing = false
+        self.playPauseButton.setImage(UIImage(named: "bt_play.png", in: Bundle(identifier: "org.cocoapods.smads"), compatibleWith: nil), for: UIControl.State.normal)
+    }
     
     func adsManager(_ adsManager: IMAAdsManager!, didReceive error: IMAAdError!) {
         let code = AdsViewController.toErrorCode(error: error)
@@ -299,7 +332,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     }
 
     func getAdTagUrl() -> String {
-        var url = self.adUrl
+        var url: String = self.adUrl
 
         url += "platform%3Dios%26Domain%3Dsuamusica"
 
@@ -421,5 +454,40 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         
         return type
     }
+    
+    class func instantiateFromNib() -> AdsViewController {
+        return AdsViewController(nibName: String(describing:self), bundle: Bundle(identifier: "org.cocoapods.smads"))
+    }
 }
 
+@IBDesignable extension UIButton {
+
+    @IBInspectable var borderWidth: CGFloat {
+        set {
+            layer.borderWidth = newValue
+        }
+        get {
+            return layer.borderWidth
+        }
+    }
+
+    @IBInspectable var cornerRadius: CGFloat {
+        set {
+            layer.cornerRadius = newValue
+        }
+        get {
+            return layer.cornerRadius
+        }
+    }
+
+    @IBInspectable var borderColor: UIColor? {
+        set {
+            guard let uiColor = newValue else { return }
+            layer.borderColor = uiColor.cgColor
+        }
+        get {
+            guard let color = layer.borderColor else { return nil }
+            return UIColor(cgColor: color)
+        }
+    }
+}
