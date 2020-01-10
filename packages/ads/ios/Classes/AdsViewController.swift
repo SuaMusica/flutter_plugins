@@ -16,6 +16,9 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     var active: Bool = true
     var playing: Bool = false
     
+    @IBOutlet weak var totalProgress: UILabel!
+    @IBOutlet weak var currentProgress: UILabel!
+    @IBOutlet weak var progressSlider: UISlider!
     @IBOutlet weak var whyListenAdView: UIView!
     @IBOutlet weak var playPauseButton: UIButton!
     @IBOutlet weak var videoView: UIView!
@@ -319,6 +322,23 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
 
         self.channel?.invokeMethod("onAdEvent", arguments: args)
         self.dismiss(animated: false, completion: nil)
+    }
+    
+    func adsManager(_ adsManager: IMAAdsManager!, adDidProgressToTime mediaTime: TimeInterval, totalTime: TimeInterval) {
+        
+        let progress = Float(mediaTime/totalTime)
+        currentProgress?.text = formatTimeInterval(mediaTime)
+        totalProgress?.text = formatTimeInterval(totalTime)
+        progressSlider?.value = progress
+    }
+    
+    func formatTimeInterval(_ time: TimeInterval) -> String {
+        let formatter = DateComponentsFormatter()
+        formatter.unitsStyle = .positional // Use the appropriate positioning for the current locale
+        formatter.allowedUnits = [.minute, .second ] // Units to display in the formatted string
+        formatter.zeroFormattingBehavior = [ .pad ] // Pad with zeroes where appropriate for the locale
+
+        return formatter.string(from: time)!
     }
     
     func adsManagerDidRequestContentPause(_ adsManager: IMAAdsManager!) {
