@@ -22,7 +22,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
             }
         }
     }
-    
+
     public static func register(with registrar: FlutterPluginRegistrar) {
         SwiftSmadsPlugin.synced(self) {
             if SwiftSmadsPlugin.channel == nil {
@@ -48,8 +48,8 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                         let args = call.arguments as! [String: Any]
                         let adUrl = args["__URL__"] as! String
                         let contentUrl = args["__CONTENT__"] as! String
-                        
-                        if (!Network.reachability.isReachable) {
+
+                        if !Network.reachability.isReachable {
                             // if for any reason we are not reachable
                             // we shall try to update the network manager
                             SwiftSmadsPlugin.verifyNetworkAccess()
@@ -67,11 +67,11 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                             rootViewController?.present(adsViewController, animated: false, completion: nil)
                             result(1)
                         } else {
-                            result(FlutterError(code: "-1", message: "Not internet available", details: nil))
+                            result(0)
                         }
                     }
                 } catch {
-                    result(FlutterError(code: "-1", message: "An error ocurred: \(error)", details: nil))
+                    result(0)
                     print("An error ocurred: \(error)")
                 }
             }
