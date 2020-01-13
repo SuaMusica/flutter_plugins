@@ -195,6 +195,7 @@ class Player {
       stayAwake ??= false;
 
       final url = (await localMediaValidator(media)) ?? media.url;
+      final isLocal = url.startsWith("http");
 
       if (autoPlay) {
         _notifyBeforePlayEvent((loadOnly) => {});
@@ -205,7 +206,7 @@ class Player {
           'url': url,
           'coverUrl': media.coverUrl,
           'loadOnly': false,
-          'isLocal': media.isLocal,
+          'isLocal': isLocal,
           'volume': volume,
           'position': position?.inMilliseconds,
           'respectSilence': respectSilence,
@@ -219,7 +220,7 @@ class Player {
             'url': url,
             'coverUrl': media.coverUrl,
             'loadOnly': loadOnly,
-            'isLocal': media.isLocal,
+            'isLocal': isLocal,
             'volume': volume,
             'position': position?.inMilliseconds,
             'respectSilence': respectSilence,
