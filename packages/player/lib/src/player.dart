@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:smaws/aws.dart';
 import 'package:flutter/services.dart';
 import 'package:smplayer/src/before_play_event.dart';
@@ -35,6 +36,7 @@ class Player {
       StreamController<Event>();
 
   final Future<CookiesForCustomPolicy> Function() cookieSigner;
+  final Future<String> Function(Media) localMediaValidator;
 
   Stream<Event> _stream;
 
@@ -49,7 +51,8 @@ class Player {
   bool autoPlay;
 
   Player({
-    this.cookieSigner,
+    @required this.cookieSigner,
+    @required this.localMediaValidator,
     this.autoPlay = false,
   }) {
     playerId = _uuid.v4();
@@ -186,7 +189,7 @@ class Player {
     bool respectSilence = false,
     bool stayAwake = false,
   }) async {
-    return executeCritialCode(() {
+    return executeCritialCode(() async {
       volume ??= 1.0;
       respectSilence ??= false;
       stayAwake ??= false;
@@ -194,10 +197,12 @@ class Player {
       if (autoPlay) {
         _notifyBeforePlayEvent((loadOnly) => {});
 
+        final url = (await localMediaValidator(media)) ?? media.url;
+
         return invokePlay(media, {
           'name': media.name,
           'author': media.author,
-          'url': media.url,
+          'url': url,
           'coverUrl': media.coverUrl,
           'loadOnly': false,
           'isLocal': media.isLocal,
