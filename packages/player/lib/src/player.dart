@@ -195,7 +195,7 @@ class Player {
       stayAwake ??= false;
 
       final url = (await localMediaValidator(media)) ?? media.url;
-      final isLocal = url.startsWith("http");
+      final isLocal = !url.startsWith("http");
 
       if (autoPlay) {
         _notifyBeforePlayEvent((loadOnly) => {});
