@@ -194,10 +194,10 @@ class Player {
       respectSilence ??= false;
       stayAwake ??= false;
 
+      final url = (await localMediaValidator(media)) ?? media.url;
+
       if (autoPlay) {
         _notifyBeforePlayEvent((loadOnly) => {});
-
-        final url = (await localMediaValidator(media)) ?? media.url;
 
         return invokePlay(media, {
           'name': media.name,
@@ -216,7 +216,7 @@ class Player {
           invokePlay(media, {
             'name': media.name,
             'author': media.author,
-            'url': media.url,
+            'url': url,
             'coverUrl': media.coverUrl,
             'loadOnly': loadOnly,
             'isLocal': media.isLocal,
