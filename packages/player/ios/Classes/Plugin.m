@@ -305,9 +305,7 @@ NSString* _playerId = nil;
           [ [ NSNotificationCenter defaultCenter ] removeObserver:ob ];
         }
         [ observers removeAllObjects ];
-        [asset loadValuesAsynchronouslyForKeys:@[@"duration"] completionHandler:^{
-            [ player replaceCurrentItemWithPlayerItem: playerItem ];
-        }];
+        [ player replaceCurrentItemWithPlayerItem: playerItem ];
         
       } else {
         player = [[ AVPlayer alloc ] initWithPlayerItem: playerItem ];
@@ -325,9 +323,9 @@ NSString* _playerId = nil;
       }
         
       id anobserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVPlayerItemDidPlayToEndTimeNotification
-                                                                          object: playerItem
-                                                                          queue: nil
-                                                                      usingBlock:^(NSNotification* note){
+                                                  object: playerItem
+                                                  queue: nil
+                                            usingBlock:^(NSNotification* note){
                                                                           [self onSoundComplete:playerId];
                                                                       }];
       [observers addObject:anobserver];
