@@ -253,7 +253,8 @@ NSString* _playerId = nil;
   NSMutableDictionary * playerInfo = players[playerId];
   AVPlayer *player = playerInfo[@"player"];
   NSMutableSet *observers = playerInfo[@"observers"];
-  AVPlayerItem *playerItem;
+  AVPlayerItem *playerItem = nil;
+  AVURLAsset * asset = nil;
     
   NSLog(@"setUrl url: %@ cookie: %@", url, cookie);
 
@@ -287,10 +288,10 @@ NSString* _playerId = nil;
         [headers setObject:cookie forKey:@"Cookie"];
         
         // AVURLAsset * asset = [AVURLAsset URLAssetWithURL:_url options:@{@"AVURLAssetHTTPHeaderFieldsKey": headers, AVURLAssetHTTPCookiesKey : cookies }];
-        AVURLAsset * asset = [AVURLAsset URLAssetWithURL:_url options:@{@"AVURLAssetHTTPHeaderFieldsKey": headers, AVURLAssetHTTPCookiesKey : [cookiesStorage cookies] }];
+        asset = [AVURLAsset URLAssetWithURL:_url options:@{@"AVURLAssetHTTPHeaderFieldsKey": headers, AVURLAssetHTTPCookiesKey : [cookiesStorage cookies] }];
           
         NSLog(@"resourceLoader: %@", [asset resourceLoader]);
-        [[asset resourceLoader] setDelegate:self queue:dispatch_get_main_queue()];
+        [[asset resourceLoader] setDelegate:(id)self queue:dispatch_get_main_queue()];
 
         playerItem = [AVPlayerItem playerItemWithAsset:asset];
       }
@@ -304,7 +305,10 @@ NSString* _playerId = nil;
           [ [ NSNotificationCenter defaultCenter ] removeObserver:ob ];
         }
         [ observers removeAllObjects ];
-        [ player replaceCurrentItemWithPlayerItem: playerItem ];
+        [asset loadValuesAsynchronouslyForKeys:@[@"duration"] completionHandler:^{
+            [ player replaceCurrentItemWithPlayerItem: playerItem ];
+        }];
+        
       } else {
         player = [[ AVPlayer alloc ] initWithPlayerItem: playerItem ];
         observers = [[NSMutableSet alloc] init];
