@@ -102,6 +102,11 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         // Create a player layer for the player.
         playerLayer = AVPlayerLayer(player: contentPlayer)
         
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback)
+        } catch(let error) {
+            print(error.localizedDescription)
+        }
         
         // Size, position, and display the AVPlayer.
         playerLayer?.frame = videoViewUnwraped.layer.bounds
