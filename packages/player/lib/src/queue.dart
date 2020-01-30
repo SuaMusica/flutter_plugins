@@ -104,7 +104,6 @@ class Queue {
     if (storage.length > 2) {
       var current = storage.elementAt(index);
       _shuffler.unshuffle(storage);
-      var pos = storage.indexOf(current);
       for (var i = 0; i < storage.length; ++i) {
         final item = storage.elementAt(i);
         item.position = i;

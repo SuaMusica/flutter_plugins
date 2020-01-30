@@ -541,7 +541,6 @@ class Player {
   _notifyRewind(Media media) async {
     final positionInMilli = await getCurrentPosition();
     final durationInMilli = await getDuration();
-
     _add(Event(
       type: EventType.REWIND,
       media: media,
