@@ -396,8 +396,6 @@ dispatch_queue_t serialQueue = nil;
 - (BOOL)resourceLoader:(AVAssetResourceLoader *)resourceLoader    shouldWaitForLoadingOfRequestedResource:(AVAssetResourceLoadingRequest *)loadingRequest{
 //  NSLog(@"loadingRequest.URL: %@", [[loadingRequest request] URL]);
   NSString* scheme = [[[loadingRequest request] URL] scheme];
-  NSString* path = [[[loadingRequest request] URL] path];
-//  NSLog(@"loadingRequest.PATH: %@",path);
   if (currentResourceLoader != resourceLoader) {
     return NO;
   }
