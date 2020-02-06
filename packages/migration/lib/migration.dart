@@ -1,40 +1,36 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
+import 'package:migration/downloaded_content.dart';
 
 class Migration {
+  Migration._();
+
+  static Migration _instance;
+
+  static Migration get instance {
+    return _instance ??= Migration._();
+  }
+
   static const MethodChannel _channel = const MethodChannel('migration');
 
-  static void _log(String param) {
-    print(param);
-  }
+  final StreamController<List<DownloadedContent>> _streamController =
+      StreamController<List<DownloadedContent>>.broadcast();
 
-  Future<int> getLegacyDownloadContent(Map<String, dynamic> args) async {
-    final int result =
-        await _channel.invokeMethod('getLegacyDownloadedContent', args);
+  Stream<List<DownloadedContent>> get downloadedContent =>
+      _streamController.stream;
 
-    return result;
-  }
+  void getLegacyDownloadContent() async {
+    final List<dynamic> result =
+        await _channel.invokeMethod('getLegacyDownloadedContent');
 
-  static Future<void> platformCallHandler(MethodCall call) async {
-    try {
-      _doHandlePlatformCall(call);
-    } catch (ex) {
-      _log('Unexpected error: $ex');
-    }
-  }
+    final content = result
+        .where((item) => item is Map<String, dynamic>)
+        .map(
+          (item) => DownloadedContent.fromJson(item as Map<String, dynamic>),
+        )
+        .toList();
 
-  static Future<void> _doHandlePlatformCall(MethodCall call) async {
-    final Map<dynamic, dynamic> callArgs =
-        call.arguments as Map<dynamic, dynamic>;
-    _log('_platformCallHandler call ${call.method} $callArgs');
-
-    switch (call.method) {
-      case 'getLegacyDownloadedContent':
-        break;
-
-      default:
-        _log('Unknown method ${call.method} ');
-    }
+    _streamController.add(content);
   }
 }
