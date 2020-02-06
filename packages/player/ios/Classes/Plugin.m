@@ -5,8 +5,17 @@
 #import <AVFoundation/AVFoundation.h>
 #import <MediaPlayer/MediaPlayer.h>
 #import <Foundation/Foundation.h>
+#include <AudioToolbox/AudioToolbox.h>
 
 static NSString *const CHANNEL_NAME = @"smplayer";
+static NSString *redirectScheme = @"rdtp";
+static NSString *customPlaylistScheme = @"cplp";
+static NSString *customKeyScheme = @"ckey";
+static NSString *httpsScheme = @"https";
+static NSString *m3u8Ext = @".m3u8";
+static NSString *extInfo = @"#EXTINF:";
+static int redirectErrorCode = 302;
+static int badRequestErrorCode = 400;
 
 static int const STATE_IDLE = 0;
 static int const STATE_BUFFERING = 1;
@@ -38,6 +47,11 @@ NSMutableSet *timeobservers;
 FlutterMethodChannel *_channel_player = nil;
 Plugin* instance = nil;
 NSString* _playerId = nil;
+BOOL alreadyInAudioSession = false;
+BOOL isLoadingComplete = false;
+AVAssetResourceLoadingRequest* currentResourceLoadingRequest = nil;
+AVAssetResourceLoader* currentResourceLoader = nil;
+dispatch_queue_t serialQueue = nil;
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
   @synchronized(self) {
@@ -55,6 +69,7 @@ NSString* _playerId = nil;
 - (id)init {
   self = [super init];
   if (self) {
+      serialQueue = dispatch_queue_create("com.suamusica.player.queue", DISPATCH_QUEUE_SERIAL);
       players = [[NSMutableDictionary alloc] init];
       playersCurrentItem = [[NSMutableDictionary alloc] init];
 
@@ -64,8 +79,6 @@ NSString* _playerId = nil;
       [commandCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
           if (_playerId != nil) {
               [self resume:_playerId];
-              int state = STATE_PLAYING;
-              [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
           }
           return MPRemoteCommandHandlerStatusSuccess;
       }];
@@ -73,8 +86,6 @@ NSString* _playerId = nil;
       [commandCenter.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
           if (_playerId != nil) {
               [self pause:_playerId];
-              int state = STATE_PAUSED;
-              [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
           }
           return MPRemoteCommandHandlerStatusSuccess;
       }];
@@ -89,16 +100,26 @@ NSString* _playerId = nil;
       [commandCenter.previousTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
           if (_playerId != nil) {
               [_channel_player invokeMethod:@"commandCenter.onPrevious" arguments:@{@"playerId": _playerId}];
-          }        
+          }
           return MPRemoteCommandHandlerStatusSuccess;
       }];
   }
   return self;
 }
 
+-(void)setCurrentResourceLoadingRequest: (AVAssetResourceLoadingRequest*) resourceLoadingRequest {
+//  NSLog(@"===> set.resourceLoading: %@", resourceLoadingRequest);
+  if (currentResourceLoadingRequest != nil) {
+    if (!currentResourceLoadingRequest.cancelled && !currentResourceLoadingRequest.finished) {
+      [currentResourceLoadingRequest finishLoading];
+    }
+  }
+  currentResourceLoadingRequest = resourceLoadingRequest;
+}
+
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
   NSString * playerId = call.arguments[@"playerId"];
-  NSLog(@"iOS => call %@, playerId %@", call.method, playerId);
+//  NSLog(@"iOS => call %@, playerId %@", call.method, playerId);
 
   typedef void (^CaseBlock)(void);
 
@@ -106,7 +127,7 @@ NSString* _playerId = nil;
   NSDictionary *methods = @{
                 @"play":
                   ^{
-                    NSLog(@"play!");
+//                    NSLog(@"play!");
                     NSString *name = call.arguments[@"name"];
                     NSString *author = call.arguments[@"author"];
                     NSString *url = call.arguments[@"url"];
@@ -133,35 +154,35 @@ NSString* _playerId = nil;
                     int milliseconds = call.arguments[@"position"] == [NSNull null] ? 0.0 : [call.arguments[@"position"] intValue] ;
                     bool respectSilence = [call.arguments[@"respectSilence"]boolValue] ;
                     CMTime time = CMTimeMakeWithSeconds(milliseconds / 1000,NSEC_PER_SEC);
-                    NSLog(@"cookie: %@", cookie);
-                    NSLog(@"isLocal: %d %@", isLocal, call.arguments[@"isLocal"] );
-                    NSLog(@"volume: %f %@", volume, call.arguments[@"volume"] );
-                    NSLog(@"position: %d %@", milliseconds, call.arguments[@"positions"] );
+//                    NSLog(@"cookie: %@", cookie);
+//                    NSLog(@"isLocal: %d %@", isLocal, call.arguments[@"isLocal"] );
+//                    NSLog(@"volume: %f %@", volume, call.arguments[@"volume"] );
+//                    NSLog(@"position: %d %@", milliseconds, call.arguments[@"positions"] );
                     [self play:playerId name:name author:author url:url coverUrl:coverUrl cookie:cookie isLocal:isLocal volume:volume time:time isNotification:respectSilence];
                   },
                 @"pause":
                   ^{
-                    NSLog(@"pause");
+//                    NSLog(@"pause");
                     [self pause:playerId];
                   },
                 @"resume":
                   ^{
-                    NSLog(@"resume");
+//                    NSLog(@"resume");
                     [self resume:playerId];
                   },
                 @"stop":
                   ^{
-                    NSLog(@"stop");
+//                    NSLog(@"stop");
                     [self stop:playerId];
                   },
                 @"release":
                     ^{
-                        NSLog(@"release");
-                        [self stop:playerId];
+//                      NSLog(@"release");
+                      [self stop:playerId];
                     },
                 @"seek":
                   ^{
-                    NSLog(@"seek");
+//                    NSLog(@"seek");
                     if (!call.arguments[@"position"]) {
                       result(0);
                     } else {
@@ -172,7 +193,7 @@ NSString* _playerId = nil;
                   },
                 @"setUrl":
                   ^{
-                    NSLog(@"setUrl");
+//                    NSLog(@"setUrl");
                     NSString *url = call.arguments[@"url"];
                     NSString *cookie = call.arguments[@"cookie"];
                     int isLocal = [call.arguments[@"isLocal"]intValue];
@@ -191,24 +212,24 @@ NSString* _playerId = nil;
                     ^{
                         
                         int duration = [self getDuration:playerId];
-                        NSLog(@"getDuration: %i ", duration);
+//                        NSLog(@"getDuration: %i ", duration);
                         result(@(duration));
                     },
                 @"getCurrentPosition":
                     ^{
                         int currentPosition = [self getCurrentPosition:playerId];
-                        NSLog(@"getCurrentPosition: %i ", currentPosition);
+//                        NSLog(@"getCurrentPosition: %i ", currentPosition);
                         result(@(currentPosition));
                     },
                 @"setVolume":
                   ^{
-                    NSLog(@"setVolume");
+//                    NSLog(@"setVolume");
                     float volume = (float)[call.arguments[@"volume"] doubleValue];
                     [self setVolume:volume playerId:playerId];
                   },
                 @"setReleaseMode":
                   ^{
-                    NSLog(@"setReleaseMode");
+//                    NSLog(@"setReleaseMode");
                     NSString *releaseMode = call.arguments[@"releaseMode"];
                     bool looping = [releaseMode hasSuffix:@"LOOP"];
                     [self setLooping:looping playerId:playerId];
@@ -218,7 +239,7 @@ NSString* _playerId = nil;
   [ self initPlayerInfo:playerId ];
   CaseBlock c = methods[call.method];
   if (c) c(); else {
-    NSLog(@"not implemented");
+//    NSLog(@"not implemented");
     result(FlutterMethodNotImplemented);
   }
   if(![call.method isEqualToString:@"setUrl"]) {
@@ -240,12 +261,24 @@ NSString* _playerId = nil;
                    url:(NSString *) url
               coverUrl:(NSString *) coverUrl
                   {
-  NSLog(@"playerId=%@ name=%@ author=%@ url=%@ coverUrl=%@", playerId, name, author, url, coverUrl); 
+//  NSLog(@"playerId=%@ name=%@ author=%@ url=%@ coverUrl=%@", playerId, name, author, url, coverUrl);
   playersCurrentItem[playerId] = @{
     @"name": name,
     @"author": author,
     @"url": url,
     @"coverUrl": coverUrl};
+}
+
+-(NSString*) replaceScheme: (NSString*) oldScheme
+                 newScheme: (NSString*) newScheme
+                   fromUrl: (NSString*) url {
+  NSURLComponents *components = [NSURLComponents componentsWithString: url];
+  if ([components.scheme rangeOfString: oldScheme].location != NSNotFound) {
+    components.scheme = newScheme;
+    return components.URL.absoluteString;
+  }
+  
+  return url;
 }
 
 -(void) setUrl: (NSString*) url
@@ -254,30 +287,38 @@ NSString* _playerId = nil;
        playerId: (NSString*) playerId
        onReady:(VoidCallback)onReady
 {
+//  NSLog(@"setUrl url: %@ cookie: %@", url, cookie);
+  currentResourceLoader = nil;
+  
   NSMutableDictionary * playerInfo = players[playerId];
   AVPlayer *player = playerInfo[@"player"];
   NSMutableSet *observers = playerInfo[@"observers"];
-  AVPlayerItem *playerItem = nil;
-  AVURLAsset * asset = nil;
-    
-  NSLog(@"setUrl url: %@ cookie: %@", url, cookie);
+  AVPlayerItem *playerItem;
 
   @try {
     if (!playerInfo || ![url isEqualToString:playerInfo[@"url"]]) {
       if (isLocal) {
         playerItem = [ [ AVPlayerItem alloc ] initWithURL:[ NSURL fileURLWithPath:url ]];
       } else {
+        NSURLComponents *components = [NSURLComponents componentsWithURL:[NSURL URLWithString:url] resolvingAgainstBaseURL:YES];
+        if ([components.path rangeOfString: m3u8Ext].location != NSNotFound) {
+          components.scheme = customPlaylistScheme;
+          url = components.URL.absoluteString;
+//          NSLog(@"newUrl: %@", url);
+        }
+        
         NSURL *_url = [NSURL URLWithString: url];
+        NSURL *_urlWildcard = [NSURL URLWithString: @"*.suamusica.com.br/*"];
         NSHTTPCookieStorage *cookiesStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
-        NSMutableArray *cookies = [NSMutableArray array];
+
         NSArray *cookiesItems = [cookie componentsSeparatedByString:@";"];
         for (NSString *cookieItem in cookiesItems) {
           NSArray *keyValue = [cookieItem componentsSeparatedByString:@"="];
           if ([keyValue count] == 2) {
             NSString *key = [keyValue objectAtIndex:0];
             NSString *value = [keyValue objectAtIndex:1];
-            NSHTTPCookie *httpCookie = [ [NSHTTPCookie cookiesWithResponseHeaderFields:@{@"Set-Cookie": [NSString stringWithFormat:@"%@=%@", key, value]} forURL:_url] objectAtIndex:0];
-            [cookies addObject:httpCookie];
+            NSHTTPCookie *httpCookie = [ [NSHTTPCookie cookiesWithResponseHeaderFields:@{@"Set-Cookie": [NSString stringWithFormat:@"%@=%@", key, value]} forURL:_urlWildcard] objectAtIndex:0];
+           
             @try {
               [cookiesStorage setCookie:httpCookie];
             }
@@ -291,11 +332,9 @@ NSString* _playerId = nil;
         [headers setObject:@"mp.next" forKey:@"User-Agent"];
         [headers setObject:cookie forKey:@"Cookie"];
         
-        // AVURLAsset * asset = [AVURLAsset URLAssetWithURL:_url options:@{@"AVURLAssetHTTPHeaderFieldsKey": headers, AVURLAssetHTTPCookiesKey : cookies }];
-        asset = [AVURLAsset URLAssetWithURL:_url options:@{@"AVURLAssetHTTPHeaderFieldsKey": headers, AVURLAssetHTTPCookiesKey : [cookiesStorage cookies] }];
-          
-        NSLog(@"resourceLoader: %@", [asset resourceLoader]);
-        [[asset resourceLoader] setDelegate:(id)self queue:dispatch_get_main_queue()];
+        AVURLAsset * asset = [AVURLAsset URLAssetWithURL:_url options:@{@"AVURLAssetHTTPHeaderFieldsKey": headers, AVURLAssetHTTPCookiesKey : [cookiesStorage cookies] }];
+        currentResourceLoader = [asset resourceLoader];
+        [[asset resourceLoader] setDelegate:(id)self queue:serialQueue];
 
         playerItem = [AVPlayerItem playerItemWithAsset:asset];
       }
@@ -310,11 +349,10 @@ NSString* _playerId = nil;
         }
         [ observers removeAllObjects ];
         [ player replaceCurrentItemWithPlayerItem: playerItem ];
-        
       } else {
         player = [[ AVPlayer alloc ] initWithPlayerItem: playerItem ];
         observers = [[NSMutableSet alloc] init];
-
+        
         [ playerInfo setObject:player forKey:@"player" ];
         [ playerInfo setObject:url forKey:@"url" ];
         [ playerInfo setObject:observers forKey:@"observers" ];
@@ -327,9 +365,9 @@ NSString* _playerId = nil;
       }
         
       id anobserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVPlayerItemDidPlayToEndTimeNotification
-                                                  object: playerItem
-                                                  queue: nil
-                                            usingBlock:^(NSNotification* note){
+                                                                          object: playerItem
+                                                                          queue: nil
+                                                                      usingBlock:^(NSNotification* note){
                                                                           [self onSoundComplete:playerId];
                                                                       }];
       [observers addObject:anobserver];
@@ -355,10 +393,162 @@ NSString* _playerId = nil;
   }
 }
 
-- (BOOL)resourceLoader:(AVAssetResourceLoader *)resourceLoader shouldWaitForLoadingOfRequestedResource:(AVAssetResourceLoadingRequest *)loadingRequest{
-  NSLog(@"resourceLoader(2): %@", resourceLoader);
-  NSLog(@"pendingRequests:%@",loadingRequest);
+- (BOOL)resourceLoader:(AVAssetResourceLoader *)resourceLoader    shouldWaitForLoadingOfRequestedResource:(AVAssetResourceLoadingRequest *)loadingRequest{
+//  NSLog(@"loadingRequest.URL: %@", [[loadingRequest request] URL]);
+  NSString* scheme = [[[loadingRequest request] URL] scheme];
+  NSString* path = [[[loadingRequest request] URL] path];
+//  NSLog(@"loadingRequest.PATH: %@",path);
+  if (currentResourceLoader != resourceLoader) {
+    return NO;
+  }
+  
+  if ([self isRedirectSchemeValid:scheme]) {
+    return [self handleRedirectRequest:loadingRequest];
+  }
+  
+  if ([self isCustomPlaylistSchemeValid:scheme]) {
+    dispatch_async (serialQueue,  ^ {
+        [self handleCustomPlaylistRequest:loadingRequest];
+    });
+    return YES;
+  }
+  
+  return NO;
+}
+
+- (void)resourceLoader:(AVAssetResourceLoader *)resourceLoader didCancelLoadingRequest:(AVAssetResourceLoadingRequest *)loadingRequest {
+  if (currentResourceLoadingRequest != nil && currentResourceLoadingRequest.request == loadingRequest.request) {
+    [self setCurrentResourceLoadingRequest:nil];
+  }
+}
+
+- (BOOL) isCustomPlaylistSchemeValid:(NSString *)scheme
+{
+    return ([customPlaylistScheme isEqualToString:scheme]);
+}
+
+/*!
+ *  Handles the custom play list scheme:
+ *
+ *  1) Verifies its a custom playlist request, otherwise report an error.
+ *  2) Generates the play list.
+ *  3) Create a reponse with the new URL and report success.
+ */
+- (BOOL) handleCustomPlaylistRequest:(AVAssetResourceLoadingRequest *)loadingRequest
+{
+  [self setCurrentResourceLoadingRequest:loadingRequest];
+  NSString* url = [[[loadingRequest request] URL] absoluteString];
+  __block NSString *requestUrl = [self replaceScheme:customPlaylistScheme newScheme:httpsScheme fromUrl:url];
+  __block NSString *playlistRequest = [self replaceScheme:customPlaylistScheme newScheme:redirectScheme fromUrl:url];
+  
+  NSHTTPCookieStorage *cookiesStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
+  NSDictionary *headers = [NSHTTPCookie requestHeaderFieldsWithCookies:[cookiesStorage cookies]];
+  
+  NSMutableURLRequest *request = [[NSMutableURLRequest alloc] init];
+  [request setHTTPMethod:@"GET"];
+  [request setURL:[NSURL URLWithString:requestUrl]];
+  [request setAllHTTPHeaderFields:headers];
+
+  dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+
+//  NSLog(@"==> requestURL: %@", [[request URL] absoluteString]);
+  NSURLSession *session = [NSURLSession sharedSession];
+  [[session dataTaskWithRequest:request completionHandler:^(NSData * _Nullable _data, NSURLResponse * _Nullable _response, NSError * _Nullable error) {
+    NSHTTPURLResponse *responseCode = (NSHTTPURLResponse *) _response;
+    
+    if([responseCode statusCode] != 200) {
+//      NSLog(@"Error getting %@, HTTP status code %li", requestUrl, (long)[responseCode statusCode]);
+      [self reportError:loadingRequest withErrorCode:badRequestErrorCode];
+      dispatch_semaphore_signal(sema);
+    }
+    
+    NSString* file = [[NSString alloc] initWithData:_data encoding:NSUTF8StringEncoding];
+    NSMutableArray<NSString *>* lines = [file componentsSeparatedByString:@"\n"].mutableCopy;
+    
+    NSMutableArray<NSString *>* splittedUrl = [playlistRequest componentsSeparatedByString:@"/"].mutableCopy;
+    if ([[splittedUrl lastObject] rangeOfString:m3u8Ext].location != NSNotFound) {
+      [splittedUrl removeLastObject];
+    }
+    __block NSString* baseUrl = [splittedUrl componentsJoinedByString:@"/"];
+//    NSLog(@"==> baseURL: %@", baseUrl);
+    
+    for (int i = 0; i < [lines count]; i++) {
+      NSString* line = lines[i];
+      if ([line rangeOfString:extInfo].location != NSNotFound) {
+        i++;
+        NSString* treatedUrl = [lines[i] stringByReplacingOccurrencesOfString:@" " withString:@"+"];
+        lines[i] = [NSString stringWithFormat:@"%@/%@", baseUrl, treatedUrl];
+      }
+    }
+    NSString* _file = [lines componentsJoinedByString:@"\n"];
+//    NSLog(@"%@", _file);
+    
+    NSData* data = [_file dataUsingEncoding:NSUTF8StringEncoding];
+    if (data)
+    {
+        [loadingRequest.dataRequest respondWithData:data];
+        [loadingRequest finishLoading];
+    } else
+    {
+        [self reportError:loadingRequest withErrorCode:badRequestErrorCode];
+    }
+    dispatch_semaphore_signal(sema);
+  }] resume];
+  
+  dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
+    
+    return YES;
+}
+
+/*!
+ * Validates the given redirect schme.
+ */
+- (BOOL) isRedirectSchemeValid:(NSString *)scheme
+{
+    return ([redirectScheme isEqualToString:scheme]);
+}
+
+-(NSURLRequest* ) generateRedirectURL:(NSURLRequest *)sourceURL
+{
+  NSHTTPCookieStorage *cookiesStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
+  NSDictionary * headers = [NSHTTPCookie requestHeaderFieldsWithCookies:[cookiesStorage cookies]];
+    NSMutableURLRequest *redirect = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:[[[sourceURL URL] absoluteString] stringByReplacingOccurrencesOfString:redirectScheme withString:httpsScheme]]];
+  [redirect setAllHTTPHeaderFields:headers];
+//  NSLog(@"==> Redirect.URL: %@", [[redirect URL] absoluteString]);
+    return redirect;
+}
+/*!
+ *  The delegate handler, handles the received request:
+ *
+ *  1) Verifies its a redirect request, otherwise report an error.
+ *  2) Generates the new URL
+ *  3) Create a reponse with the new URL and report success.
+ */
+- (BOOL) handleRedirectRequest:(AVAssetResourceLoadingRequest *)loadingRequest
+{
+    NSURLRequest *redirect = nil;
+  [self setCurrentResourceLoadingRequest:loadingRequest];
+    
+    redirect = [self generateRedirectURL:(NSURLRequest *)[loadingRequest request]];
+    if (redirect)
+    {
+      [loadingRequest setRedirect:redirect];
+      NSHTTPCookieStorage *cookiesStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
+      NSDictionary * headers = [NSHTTPCookie requestHeaderFieldsWithCookies:[cookiesStorage cookies]];
+      NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc] initWithURL:[redirect URL] statusCode:redirectErrorCode HTTPVersion:nil headerFields:headers];
+      [loadingRequest setResponse:response];
+      [loadingRequest finishLoading];
+    } else
+    {
+        [self reportError:loadingRequest withErrorCode:badRequestErrorCode];
+    }
   return YES;
+}
+
+- (void) reportError:(AVAssetResourceLoadingRequest *) loadingRequest withErrorCode:(int) error
+{
+//  NSLog(@"reportError.error: %d",error);
+    [loadingRequest finishLoadingWithError:[NSError errorWithDomain: NSURLErrorDomain code:error userInfo: nil]];
 }
 
 -(void) play: (NSString*) playerId
@@ -383,9 +573,11 @@ NSString* _playerId = nil;
                     setCategory: category
                     error:&error];
   if (!success) {
-    NSLog(@"Error setting speaker: %@", error);
+//    NSLog(@"Error setting speaker: %@", error);
   }
   [[AVAudioSession sharedInstance] setActive:YES error:&error];
+  
+  
   
   if (name == nil) {
     name = @"unknown";
@@ -399,7 +591,7 @@ NSString* _playerId = nil;
     coverUrl = @"unknown";
   }
 
-  NSLog(@"[SET_CURRENT_ITEM LOG] playerId=%@ name=%@ author=%@ url=%@ coverUrl=%@", playerId, name, author, url, coverUrl); 
+//  NSLog(@"[SET_CURRENT_ITEM LOG] playerId=%@ name=%@ author=%@ url=%@ coverUrl=%@", playerId, name, author, url, coverUrl);
   [self setCurrentItem:playerId name:name author:author url:url coverUrl:coverUrl];
 
   [ self setUrl:url
@@ -425,7 +617,7 @@ NSString* _playerId = nil;
   AVPlayer *player = playerInfo[@"player"];
 
   CMTime duration = [[[player currentItem]  asset] duration];
-  NSLog(@"ios -> updateDuration...%f", CMTimeGetSeconds(duration));
+//  NSLog(@"ios -> updateDuration...%f", CMTimeGetSeconds(duration));
   if(CMTimeGetSeconds(duration)>0){
     int durationInMilliseconds = CMTimeGetSeconds(duration)*1000;
     [_channel_player invokeMethod:@"audio.onDuration" arguments:@{@"playerId": playerId, @"duration": @(durationInMilliseconds)}];
@@ -552,7 +744,7 @@ NSString* _playerId = nil;
 }
 
 -(void) onSoundComplete: (NSString *) playerId {
-  NSLog(@"ios -> onSoundComplete...");
+//  NSLog(@"ios -> onSoundComplete...");
   NSMutableDictionary * playerInfo = players[playerId];
 
   if (![playerInfo[@"isPlaying"] boolValue]) {
@@ -578,7 +770,7 @@ NSString* _playerId = nil;
     NSMutableDictionary * playerInfo = players[playerId];
     AVPlayer *player = playerInfo[@"player"];
 
-    NSLog(@"player status: %ld",(long)[[player currentItem] status ]);
+//    NSLog(@"player status: %ld",(long)[[player currentItem] status ]);
 
     // Do something with the status...
     if ([[player currentItem] status ] == AVPlayerItemStatusReadyToPlay) {
@@ -590,6 +782,11 @@ NSString* _playerId = nil;
         onReady(playerId);
       }
     } else if ([[player currentItem] status ] == AVPlayerItemStatusFailed) {
+      AVAsset *currentPlayerAsset = [[player currentItem] asset];
+      
+      if ([currentPlayerAsset isKindOfClass:AVURLAsset.class]) {
+       NSLog(@"Error.URL: %@", [(AVURLAsset *)currentPlayerAsset URL]);
+      }
       NSLog(@"Error: %@", [[player currentItem] error]);
       AVPlayerItemErrorLog *errorLog = [[player currentItem] errorLog];
       NSLog(@"errorLog: %@", errorLog);
@@ -597,6 +794,12 @@ NSString* _playerId = nil;
       NSLog(@"errorLog: extendedLogData: %@", [errorLog extendedLogData]);
     
       [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"value": @"AVPlayerItemStatus.failed"}];
+    } else {
+      NSLog(@"Unknown Error: %@", [[player currentItem] error]);
+      AVPlayerItemErrorLog *errorLog = [[player currentItem] errorLog];
+      NSLog(@"Unknown errorLog: %@", errorLog);
+      NSLog(@"Unknown errorLog: events: %@", [errorLog events]);
+      NSLog(@"Unknown errorLog: extendedLogData: %@", [errorLog extendedLogData]);
     }
   } else {
     // Any unrecognized context must belong to super
@@ -621,6 +824,9 @@ NSString* _playerId = nil;
   players = nil;
   playersCurrentItem = nil;
   _playerId = nil;
+  currentResourceLoadingRequest = nil;
+  currentResourceLoader = nil;
+  serialQueue = nil;
 }
 
 @end
