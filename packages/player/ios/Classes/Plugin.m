@@ -79,6 +79,8 @@ dispatch_queue_t serialQueue = nil;
       [commandCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
           if (_playerId != nil) {
               [self resume:_playerId];
+              int state = STATE_PLAYING;
+              [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
           }
           return MPRemoteCommandHandlerStatusSuccess;
       }];
@@ -86,6 +88,8 @@ dispatch_queue_t serialQueue = nil;
       [commandCenter.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
           if (_playerId != nil) {
               [self pause:_playerId];
+              int state = STATE_PAUSED;
+              [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
           }
           return MPRemoteCommandHandlerStatusSuccess;
       }];
