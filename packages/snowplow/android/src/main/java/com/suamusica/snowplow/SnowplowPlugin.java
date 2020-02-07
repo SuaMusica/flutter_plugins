@@ -2,8 +2,11 @@ package com.suamusica.snowplow;
 
 import com.snowplowanalytics.snowplow.tracker.Subject;
 import com.snowplowanalytics.snowplow.tracker.Tracker;
+import com.snowplowanalytics.snowplow.tracker.events.SelfDescribing;
+import com.snowplowanalytics.snowplow.tracker.payload.SelfDescribingJson;
 import com.snowplowanalytics.snowplow.tracker.events.ScreenView;
 import android.content.Context;
+import java.util.Map;
 import androidx.annotation.NonNull;
 
 import java.util.UUID;
@@ -66,6 +69,11 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
         final String userId = methodCall.argument("userId");
         setUserId(result, userId);
         break;
+      case "trackCustomEvent":
+        final String customScheme = methodCall.argument("customScheme");
+        final Map<String, Object> eventMap = methodCall.argument("eventMap");
+        trackCustomEvent(result, customScheme, eventMap);
+        break;
 
       default:
         result.notImplemented();
@@ -75,9 +83,17 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
 
   private void trackPageview(final MethodChannel.Result result, String screenName) {
     tracker.track(ScreenView.builder().name(screenName)
-            .id(UUID.nameUUIDFromBytes(screenName.getBytes()).toString()).build());
+        .id(UUID.nameUUIDFromBytes(screenName.getBytes()).toString()).build());
     result.success(true);
   }
+
+  private void trackCustomEvent(final MethodChannel.Result result, String customScheme,
+      Map<String, Object> eventMap) {
+    SelfDescribingJson eventData = new SelfDescribingJson(customScheme, eventMap);
+    tracker.track(SelfDescribing.builder().eventData(eventData).build());
+    result.success(true);
+  }
+
   private void setUserId(final MethodChannel.Result result, String userId) {
     Subject sbj = tracker.getSubject();
     sbj.setUserId(userId);

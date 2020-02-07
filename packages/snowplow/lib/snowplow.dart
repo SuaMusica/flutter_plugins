@@ -29,4 +29,18 @@ class Snowplow {
       return Future.value(false);
     }
   }
+
+  Future<bool> trackCustomEvent(
+      String customScheme, Map<String, Object> eventMap) async {
+    try {
+      Map<String, dynamic> args = <String, dynamic>{
+        'customScheme': customScheme,
+        'eventMap': eventMap,
+      };
+      return _channel.invokeMethod('trackCustomEvent', args);
+    } on PlatformException catch (e) {
+      print("Failed ${e.message}");
+      return Future.value(false);
+    }
+  }
 }
