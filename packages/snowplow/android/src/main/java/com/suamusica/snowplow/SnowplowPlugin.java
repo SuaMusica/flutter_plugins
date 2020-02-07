@@ -3,6 +3,7 @@ package com.suamusica.snowplow;
 import com.snowplowanalytics.snowplow.tracker.Subject;
 import com.snowplowanalytics.snowplow.tracker.Tracker;
 import com.snowplowanalytics.snowplow.tracker.events.SelfDescribing;
+import com.snowplowanalytics.snowplow.tracker.events.Structured;
 import com.snowplowanalytics.snowplow.tracker.payload.SelfDescribingJson;
 import com.snowplowanalytics.snowplow.tracker.events.ScreenView;
 import android.content.Context;
@@ -74,7 +75,13 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
         final Map<String, Object> eventMap = methodCall.argument("eventMap");
         trackCustomEvent(result, customScheme, eventMap);
         break;
-
+      case "trackEvent":
+        final String category = methodCall.argument("category");
+        final String action = methodCall.argument("action");
+        final String label = methodCall.argument("label");
+        final String property = methodCall.argument("property");
+        trackEvent(result, category, action, label, property);
+        break;
       default:
         result.notImplemented();
     }
@@ -84,6 +91,13 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
   private void trackPageview(final MethodChannel.Result result, String screenName) {
     tracker.track(ScreenView.builder().name(screenName)
         .id(UUID.nameUUIDFromBytes(screenName.getBytes()).toString()).build());
+    result.success(true);
+  }
+
+  private void trackEvent(final MethodChannel.Result result, String category, String action,
+      String label, String property) {
+    tracker.track(Structured.builder().category(category).action(action).label(label)
+        .property(property).build());
     result.success(true);
   }
 
