@@ -64,6 +64,8 @@ NSString* _playerId = nil;
       [commandCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
           if (_playerId != nil) {
               [self resume:_playerId];
+              int state = STATE_PLAYING;
+              [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
           }
           return MPRemoteCommandHandlerStatusSuccess;
       }];
@@ -71,6 +73,8 @@ NSString* _playerId = nil;
       [commandCenter.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
           if (_playerId != nil) {
               [self pause:_playerId];
+              int state = STATE_PAUSED;
+              [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
           }
           return MPRemoteCommandHandlerStatusSuccess;
       }];
@@ -253,7 +257,8 @@ NSString* _playerId = nil;
   NSMutableDictionary * playerInfo = players[playerId];
   AVPlayer *player = playerInfo[@"player"];
   NSMutableSet *observers = playerInfo[@"observers"];
-  AVPlayerItem *playerItem;
+  AVPlayerItem *playerItem = nil;
+  AVURLAsset * asset = nil;
     
   NSLog(@"setUrl url: %@ cookie: %@", url, cookie);
 
@@ -287,10 +292,10 @@ NSString* _playerId = nil;
         [headers setObject:cookie forKey:@"Cookie"];
         
         // AVURLAsset * asset = [AVURLAsset URLAssetWithURL:_url options:@{@"AVURLAssetHTTPHeaderFieldsKey": headers, AVURLAssetHTTPCookiesKey : cookies }];
-        AVURLAsset * asset = [AVURLAsset URLAssetWithURL:_url options:@{@"AVURLAssetHTTPHeaderFieldsKey": headers, AVURLAssetHTTPCookiesKey : [cookiesStorage cookies] }];
+        asset = [AVURLAsset URLAssetWithURL:_url options:@{@"AVURLAssetHTTPHeaderFieldsKey": headers, AVURLAssetHTTPCookiesKey : [cookiesStorage cookies] }];
           
         NSLog(@"resourceLoader: %@", [asset resourceLoader]);
-        [[asset resourceLoader] setDelegate:self queue:dispatch_get_main_queue()];
+        [[asset resourceLoader] setDelegate:(id)self queue:dispatch_get_main_queue()];
 
         playerItem = [AVPlayerItem playerItemWithAsset:asset];
       }
@@ -305,6 +310,7 @@ NSString* _playerId = nil;
         }
         [ observers removeAllObjects ];
         [ player replaceCurrentItemWithPlayerItem: playerItem ];
+        
       } else {
         player = [[ AVPlayer alloc ] initWithPlayerItem: playerItem ];
         observers = [[NSMutableSet alloc] init];
@@ -321,9 +327,9 @@ NSString* _playerId = nil;
       }
         
       id anobserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVPlayerItemDidPlayToEndTimeNotification
-                                                                          object: playerItem
-                                                                          queue: nil
-                                                                      usingBlock:^(NSNotification* note){
+                                                  object: playerItem
+                                                  queue: nil
+                                            usingBlock:^(NSNotification* note){
                                                                           [self onSoundComplete:playerId];
                                                                       }];
       [observers addObject:anobserver];

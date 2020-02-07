@@ -8,8 +8,8 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     var contentPlayer: AVPlayer?
     var playerLayer: AVPlayerLayer?
     var contentPlayhead: IMAAVPlayerContentPlayhead?
-    var adsLoader: IMAAdsLoader!
-    var adsManager: IMAAdsManager!
+    var adsLoader: IMAAdsLoader?
+    var adsManager: IMAAdsManager?
     var adUrl: String!
     var contentUrl: String!
     var args: [String: Any]!
@@ -57,9 +57,9 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     
     @IBAction func playPauseHandler(_ sender: Any) {
         if (playing) {
-            adsManager.pause()
+            adsManager?.pause()
         } else {
-            adsManager.resume()
+            adsManager?.resume()
         }
     }
     
@@ -102,6 +102,11 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         // Create a player layer for the player.
         playerLayer = AVPlayerLayer(player: contentPlayer)
         
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback)
+        } catch(let error) {
+            print(error.localizedDescription)
+        }
         
         // Size, position, and display the AVPlayer.
         playerLayer?.frame = videoViewUnwraped.layer.bounds
@@ -116,14 +121,14 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             object: contentPlayer?.currentItem);
 
         NotificationCenter.default.addObserver(
-            self, 
-            selector: #selector(AdsViewController.applicationDidBecomeActive(notification:)), 
+            self,
+            selector: #selector(AdsViewController.applicationDidBecomeActive(notification:)),
             name: UIApplication.didBecomeActiveNotification,
             object: nil);
 
         NotificationCenter.default.addObserver(
-            self, 
-            selector: #selector(AdsViewController.applicationDidEnterBackground(notification:)), 
+            self,
+            selector: #selector(AdsViewController.applicationDidEnterBackground(notification:)),
             name: UIApplication.didEnterBackgroundNotification,
             object: nil);
     }
@@ -132,7 +137,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         let oldStatus = self.active
         self.active = true
         if (!oldStatus) {
-            adsManager.resume()
+            adsManager?.resume()
         }
     }
 
@@ -143,13 +148,13 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     @objc func contentDidFinishPlaying(_ notification: Notification) {
         // Make sure we don't call contentComplete as a result of an ad completing.
         if (notification.object as! AVPlayerItem) == contentPlayer?.currentItem {
-            adsLoader.contentComplete()
+            adsLoader?.contentComplete()
         }
     }
     
     func setUpAdsLoader() {
         adsLoader = IMAAdsLoader(settings: nil)
-        adsLoader.delegate = self
+        adsLoader?.delegate = self
     }
     
     func requestAds() {
@@ -163,7 +168,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
                 contentPlayhead: contentPlayhead,
                 userContext: nil)
             
-            adsLoader.requestAds(with: request)
+            adsLoader?.requestAds(with: request)
         } else {
             // If the screen is not active we shall not play the AD
             self.channel?.invokeMethod("onComplete", arguments: [String: String]())
@@ -185,14 +190,14 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     func adsLoader(_ loader: IMAAdsLoader!, adsLoadedWith adsLoadedData: IMAAdsLoadedData!) {
         // Grab the instance of the IMAAdsManager and set ourselves as the delegate.
         adsManager = adsLoadedData.adsManager
-        adsManager.delegate = self
+        adsManager?.delegate = self
         
         // Create ads rendering settings and tell the SDK to use the in-app browser.
         let adsRenderingSettings = IMAAdsRenderingSettings()
         adsRenderingSettings.webOpenerPresentingController = self
         
         // Initialize the ads manager.
-        adsManager.initialize(with: adsRenderingSettings)
+        adsManager?.initialize(with: adsRenderingSettings)
     }
     
     func adsLoader(_ loader: IMAAdsLoader!, failedWith adErrorData: IMAAdLoadingErrorData!) {
@@ -229,6 +234,9 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             print("Got a COMPLETE event")
             self.channel?.invokeMethod("onComplete", arguments: [String: String]())
             adsManager.destroy()
+            
+            self.adsManager = nil
+            self.adsLoader = nil
             self.dismiss(animated: false, completion: nil)
         case IMAAdEventType.CUEPOINTS_CHANGED:
             print("Got a CUEPOINTS_CHANGED event")
@@ -242,6 +250,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             print("Got a MIDPOINT event")
         case IMAAdEventType.PAUSE:
             print("Got a PAUSE event")
+            
             self.setPaused()
         case IMAAdEventType.RESUME:
             print("Got a RESUME event")
@@ -250,9 +259,13 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             print("Got a SKIPPED event")
             self.channel?.invokeMethod("onComplete", arguments: [String: String]())
             adsManager.destroy()
+            
+            self.adsManager = nil
+            self.adsLoader = nil
             self.dismiss(animated: false, completion: nil)
         case IMAAdEventType.STARTED:
             print("Got a STARTED event")
+            
             self.setPlaying()
         case IMAAdEventType.TAPPED:
             print("Got a TAPPED event")
