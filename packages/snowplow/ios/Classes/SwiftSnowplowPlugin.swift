@@ -33,6 +33,16 @@ public class SwiftSnowplowPlugin: NSObject, FlutterPlugin {
         case "setUserId":
           let userId = args["userId"] as! String;
           setUserId(result: result, userId);
+        case "trackCustomEvent":
+          let customScheme = args["customScheme"] as! String;
+          let eventMap = args["eventMap"] as! [String: Any];
+          trackCustomEvent(result: result, customScheme, eventMap);
+        case "trackEvent":
+          let category = args["category"] as! String;
+          let action = args["action"] as! String;
+          let label = args["label"] as! String;
+          let property = args["property"] as! String;
+          trackEvent(result: result, category, action, label, property);
         default:
             result(FlutterError(code: "-1", message: "Operation not supported", details: nil))
         }
@@ -45,12 +55,22 @@ public class SwiftSnowplowPlugin: NSObject, FlutterPlugin {
   }
 
   public func trackPageview(result: @escaping FlutterResult, _ screenName: String) {
-    SnowplowUtils.trackScreenViewWithTracker(SwiftSnowplowPlugin.tracker!, screenName)
+    SnowplowUtils.trackScreenViewWithTracker(with: SwiftSnowplowPlugin.tracker!, andScreenName: screenName)
     result(true)
   }
 
   public func setUserId(result: @escaping FlutterResult, _ userId: String) {
     SwiftSnowplowPlugin.tracker!.subject.setUserId(userId)
+    result(true)
+  }
+
+  public func trackCustomEvent(result: @escaping FlutterResult, _ customSchema: String, _ eventMap: [String: Any]) {
+    SnowplowUtils.trackCustomEventWithTracker(with: SwiftSnowplowPlugin.tracker!, andSchema: customSchema, andData: eventMap as! NSObject)
+    result(true)
+  }
+
+  public func trackEvent(result: @escaping FlutterResult, _ category: String, _ action: String, _ label: String, _ property: String) {
+    SnowplowUtils.trackStructuredEventWithTracker(with: SwiftSnowplowPlugin.tracker!, andCategory: category, andAction: action, andLabel: label, andProperty: property)
     result(true)
   }
 }
