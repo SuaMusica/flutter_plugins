@@ -25,17 +25,20 @@ public class SwiftMigrationPlugin: NSObject, FlutterPlugin {
         DispatchQueue.main.async {
             let tracks = Track.getAll() as! [Track]
           
-          let downloadedContent = tracks.map { (track) -> [String: Any?] in
-            guard let id = track.idTrack, let path = track.localFile()?.absoluteString else {
-              return [:]
+          let downloadedContent = tracks.map { (track) -> [String: Any]? in
+            guard let id = track.idTrack, let path = track.localFile()?.absoluteString, let directory = FileManager.documentsDir(), FileManager().fileExists(atPath: directory.appending(path)) else {
+              return nil
             }
             
             return [
               "id": id,
-              "path": path.components(separatedBy: "Documents").last ?? ""
+              "path": directory.appending(path)
             ]
           }
-          SwiftMigrationPlugin.channel?.invokeMethod("downloadedContent", arguments: downloadedContent)
+          
+          let downloads = downloadedContent.compactMap { $0 }
+          
+          SwiftMigrationPlugin.channel?.invokeMethod("downloadedContent", arguments: downloads)
         }
         result(1)
 
@@ -49,4 +52,15 @@ public class SwiftMigrationPlugin: NSObject, FlutterPlugin {
       closure()
       objc_sync_exit(lock)
   }
+}
+
+extension FileManager {
+    class func documentsDir() -> String? {
+      let paths = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true) as [String]
+      if (paths.isEmpty) {
+        return nil
+      } else {
+        return paths[0]
+      }
+    }
 }
