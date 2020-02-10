@@ -1,0 +1,6 @@
+#import "SnowplowTracker/SPEmitter.h"
+#import "SnowplowTracker/SPTracker.h"
+#import "SnowplowTracker/SPUtilities.h"
+#import "SnowplowTracker/SPSubject.h"
+#import "SnowplowTracker/SPRequestCallback.h"
+#import "SnowplowTracker/SPSelfDescribingJson.h"
