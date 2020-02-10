@@ -1,6 +1,7 @@
 import Flutter
 import UIKit
 import CoreData
+import os.log
 
 public class SwiftMigrationPlugin: NSObject, FlutterPlugin {
   static var channel: FlutterMethodChannel?
@@ -22,25 +23,29 @@ public class SwiftMigrationPlugin: NSObject, FlutterPlugin {
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     switch call.method {
     case "requestDownloadedContent":
-        DispatchQueue.main.async {
-            let tracks = Track.getAll() as! [Track]
-          
-          let downloadedContent = tracks.map { (track) -> [String: Any]? in
-            guard let id = track.idTrack, let path = track.localFile()?.absoluteString, let directory = FileManager.documentsDir(), FileManager().fileExists(atPath: directory.appending(path)) else {
-              return nil
-            }
-            
-            return [
-              "id": id,
-              "path": directory.appending(path)
-            ]
+        let tracks = Track.getAll() as! [Track]
+        
+        let downloadedContent = tracks.map { (track) -> [String: Any]? in
+          guard let id = track.idTrack, let path = track.localFile()?.absoluteString.components(separatedBy: "Documents").last,
+          let directory = FileManager.documentsDir(), FileManager().fileExists(atPath: directory.appending(path)) else {
+            print("Migration incomplete downloadItem: \(track.idTrack ?? "unknown") not available;", terminator: "")
+            return nil
           }
           
-          let downloads = downloadedContent.compactMap { $0 }
-          
-          SwiftMigrationPlugin.channel?.invokeMethod("downloadedContent", arguments: downloads)
+          return [
+            "id": id,
+            "path": path
+          ]
         }
-        result(1)
+        
+        let downloads = downloadedContent.compactMap { $0 }
+        
+        SwiftMigrationPlugin.channel?.invokeMethod("downloadedContent", arguments: downloads)
+        if (downloads.isEmpty) {
+          result(0)
+        } else {
+          result(1)
+        }
 
     default:
         result(FlutterError(code: "-1", message: "Operation not supported", details: nil))
