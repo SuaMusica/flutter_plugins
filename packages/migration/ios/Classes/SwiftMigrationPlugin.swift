@@ -20,16 +20,24 @@ public class SwiftMigrationPlugin: NSObject, FlutterPlugin {
   }
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-    result("iOS " + UIDevice.current.systemVersion)
-    
     switch call.method {
-    case "getLegacyDownloadedContent":
+    case "requestDownloadedContent":
         DispatchQueue.main.async {
             let tracks = Track.getAll() as! [Track]
-          //TODO: split documents in localFile, check if exists
-          //TODO: idTrack
-          // DownloadedTrack(idTrack: Int, localPath: String)
+          
+          let downloadedContent = tracks.map { (track) -> [String: Any?] in
+            guard let id = track.idTrack, let path = track.localFile()?.absoluteString else {
+              return [:]
+            }
+            
+            return [
+              "id": id,
+              "path": path.components(separatedBy: "Documents").last ?? ""
+            ]
+          }
+          SwiftMigrationPlugin.channel?.invokeMethod("downloadedContent", arguments: downloadedContent)
         }
+        result(1)
 
     default:
         result(FlutterError(code: "-1", message: "Operation not supported", details: nil))
