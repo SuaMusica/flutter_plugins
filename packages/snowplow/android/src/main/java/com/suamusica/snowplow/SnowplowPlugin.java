@@ -8,6 +8,8 @@ import com.snowplowanalytics.snowplow.tracker.payload.SelfDescribingJson;
 import com.snowplowanalytics.snowplow.tracker.events.ScreenView;
 import android.content.Context;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 import androidx.annotation.NonNull;
 
 import java.util.UUID;
@@ -104,7 +106,9 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
   private void trackCustomEvent(final MethodChannel.Result result, String customScheme,
       Map<String, Object> eventMap) {
     SelfDescribingJson eventData = new SelfDescribingJson(customScheme, eventMap);
-    tracker.track(SelfDescribing.builder().eventData(eventData).build());
+    List<SelfDescribingJson> contexts = new ArrayList<>();
+    contexts.add(eventData);
+    tracker.track(SelfDescribing.builder().eventData(eventData).customContext(contexts).build());
     result.success(true);
   }
 
