@@ -108,7 +108,12 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
     SelfDescribingJson eventData = new SelfDescribingJson(customScheme, eventMap);
     List<SelfDescribingJson> contexts = new ArrayList<>();
     contexts.add(eventData);
-    tracker.track(SelfDescribing.builder().eventData(eventData).customContext(contexts).build());
+    Map<String, Object> emptyEventMap = new HashMap<>();
+    emptyEventMap.put("schema", customScheme);
+    emptyEventMap.put("location", "CONTEXTS");
+    SelfDescribingJson emptyEvent = new SelfDescribingJson(
+        "iglu:com.snowplowanalytics.snowplow/shredded_type/jsonschema/1-0-0", eventMap);
+    tracker.track(SelfDescribing.builder().eventData(emptyEvent).customContext(contexts).build());
     result.success(true);
   }
 
