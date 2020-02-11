@@ -23,13 +23,8 @@ class SnowplowUtils {
         let eventData = SPSelfDescribingJson(schema: customSchema, andData: data);
         var contexts: [SPSelfDescribingJson] = []
         contexts.append(eventData!)
-        var emptyEventMap: [String: String] = [:]
-        emptyEventMap["schema"] = customSchema
-        emptyEventMap["location"] = "CONTEXTS"
-        let emptyEvent: SPSelfDescribingJson = SPSelfDescribingJson(schema: "iglu:com.snowplowanalytics.snowplow/shredded_type/jsonschema/1-0-0", andData: emptyEventMap as NSObject);
-
         let event = SPUnstructured.build({ (builder : SPUnstructuredBuilder?) -> Void in
-            builder!.setEventData(emptyEvent)
+            builder!.setEventData(eventData)
             builder!.setContexts(NSMutableArray(array: contexts))
         })
         tracker.trackUnstructuredEvent(event)
