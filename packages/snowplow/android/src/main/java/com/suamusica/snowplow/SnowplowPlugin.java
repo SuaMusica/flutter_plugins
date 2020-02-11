@@ -10,6 +10,7 @@ import android.content.Context;
 import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.HashMap;
 import androidx.annotation.NonNull;
 
 import java.util.UUID;
@@ -112,7 +113,7 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
     emptyEventMap.put("schema", customScheme);
     emptyEventMap.put("location", "CONTEXTS");
     SelfDescribingJson emptyEvent = new SelfDescribingJson(
-        "iglu:com.snowplowanalytics.snowplow/shredded_type/jsonschema/1-0-0", eventMap);
+        "iglu:com.snowplowanalytics.snowplow/shredded_type/jsonschema/1-0-0", emptyEventMap);
     tracker.track(SelfDescribing.builder().eventData(emptyEvent).customContext(contexts).build());
     result.success(true);
   }
