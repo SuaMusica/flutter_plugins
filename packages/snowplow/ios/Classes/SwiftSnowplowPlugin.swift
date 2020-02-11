@@ -11,8 +11,8 @@ public class SwiftSnowplowPlugin: NSObject, FlutterPlugin {
     SwiftSnowplowPlugin.synced(self) {
             if SwiftSnowplowPlugin.channel == nil {
                 SwiftSnowplowPlugin.channel = FlutterMethodChannel(name: "com.suamusica.br/snowplow", binaryMessenger: registrar.messenger())
-                let methodType : SPRequestOptions = SPRequestGet
-                let protocolType : SPProtocol = SPHttps
+                let methodType : SPRequestOptions = .get
+                let protocolType : SPProtocol = .https
                 SwiftSnowplowPlugin.tracker = SnowplowTrackerBuilder().getTracker("snowplow.suamusica.com.br", method: methodType, protocol: protocolType)
                 let instance = SwiftSnowplowPlugin(channel: SwiftSnowplowPlugin.channel!)
                 registrar.addMethodCallDelegate(instance, channel: SwiftSnowplowPlugin.channel!)
@@ -65,7 +65,7 @@ public class SwiftSnowplowPlugin: NSObject, FlutterPlugin {
   }
 
   public func trackCustomEvent(result: @escaping FlutterResult, _ customSchema: String, _ eventMap: [String: Any]) {
-    SnowplowUtils.trackCustomEventWithTracker(with: SwiftSnowplowPlugin.tracker!, andSchema: customSchema, andData: eventMap as! NSObject)
+    SnowplowUtils.trackCustomEventWithTracker(with: SwiftSnowplowPlugin.tracker!, andSchema: customSchema, andData: eventMap as NSObject)
     result(true)
   }
 

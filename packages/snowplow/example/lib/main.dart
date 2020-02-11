@@ -58,8 +58,13 @@ class _MyAppState extends State<MyApp> {
                                             return FutureBuilder<bool>(
                                                 future:
                                                     Snowplow().trackCustomEvent(
-                                                  customScheme: "a",
-                                                  eventMap: {"a": "value"},
+                                                  customScheme:
+                                                      "http://iglucentral.com/schemas/com.snowplowanalytics.self-desc/schema/jsonschema/1-0-0",
+                                                  eventMap: {
+                                                    "id": "1",
+                                                    "mediatype": "mp3",
+                                                    "position": 123,
+                                                  },
                                                 ),
                                                 builder: (BuildContext context,
                                                     AsyncSnapshot<bool>

@@ -16,6 +16,7 @@ class SnowplowTrackerBuilder: NSObject, SPRequestCallback {
             builder!.setByteLimitPost(52000)
         })
         let subject = SPSubject(platformContext: true, andGeoContext: false)
+        subject?.setUserId("0")
         let newTracker = SPTracker.build({ (builder : SPTrackerBuilder?) -> Void in
             builder!.setEmitter(emitter)
             builder!.setAppId(self.kAppId)
