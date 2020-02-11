@@ -24,7 +24,6 @@ class SnowplowTrackerBuilder: NSObject, SPRequestCallback {
             builder!.setBase64Encoded(false)
             builder!.setSessionContext(true)
             builder!.setSubject(subject)
-            builder!.setLifecycleEvents(true)
         })
         return newTracker!
     }
