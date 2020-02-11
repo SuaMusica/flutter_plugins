@@ -11,11 +11,16 @@ public class SwiftSnowplowPlugin: NSObject, FlutterPlugin {
     SwiftSnowplowPlugin.synced(self) {
             if SwiftSnowplowPlugin.channel == nil {
                 SwiftSnowplowPlugin.channel = FlutterMethodChannel(name: "com.suamusica.br/snowplow", binaryMessenger: registrar.messenger())
-                let methodType : SPRequestOptions = .get
-                let protocolType : SPProtocol = .https
-                SwiftSnowplowPlugin.tracker = SnowplowTrackerBuilder().getTracker("snowplow.suamusica.com.br", method: methodType, protocol: protocolType)
-                let instance = SwiftSnowplowPlugin(channel: SwiftSnowplowPlugin.channel!)
-                registrar.addMethodCallDelegate(instance, channel: SwiftSnowplowPlugin.channel!)
+              let GET: SPRequestOptions? = SPRequestOptions(rawValue: 0)
+              let HTTPS: SPProtocol? = SPProtocol(rawValue: 1)
+              
+              if (GET != nil && HTTPS != nil) {
+                let methodType : SPRequestOptions = GET!
+                let protocolType : SPProtocol = HTTPS!
+                  SwiftSnowplowPlugin.tracker = SnowplowTrackerBuilder().getTracker("snowplow.suamusica.com.br", method: methodType, protocol: protocolType)
+                  let instance = SwiftSnowplowPlugin(channel: SwiftSnowplowPlugin.channel!)
+                  registrar.addMethodCallDelegate(instance, channel: SwiftSnowplowPlugin.channel!)
+              }
             }
         }    
   }
