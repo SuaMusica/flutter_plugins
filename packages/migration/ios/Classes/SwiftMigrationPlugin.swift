@@ -46,6 +46,12 @@ public class SwiftMigrationPlugin: NSObject, FlutterPlugin {
         } else {
           result(1)
         }
+      break
+    case "deleteOldContent":
+      let wasDeleted = AppHelper.shared.removeDatabase()
+      print("Migration: Database was deleted: \(wasDeleted == 1)")
+      result(wasDeleted)
+      break
 
     default:
         result(FlutterError(code: "-1", message: "Operation not supported", details: nil))

@@ -62,4 +62,23 @@ struct AppHelper {
         managedObjectContext.persistentStoreCoordinator = coordinator
         return managedObjectContext
     }()
+  
+  func removeDatabase() -> Int {
+    var mutatableSelf = self
+    let url = mutatableSelf.applicationDocumentsDirectory.appendingPathComponent("SuaMusica.sqlite")
+    let path = url.absoluteString
+    
+    do {
+      if (FileManager.default.fileExists(atPath: path)) {
+        try FileManager.default.removeItem(atPath: path)
+        print("[iOS] => Database deleted with success in path: \(path).")
+        return 1
+      } else {
+        print("[iOS] => Database file not found in path: \(path).")
+      }
+    } catch {
+      print("Unexpected error: \(error).")
+    }
+    return 0
+  }
 }

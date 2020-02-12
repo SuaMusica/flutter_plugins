@@ -46,6 +46,12 @@ class Migration {
     return result;
   }
 
+  Future<int> deleteOldDatabase() async {
+    final int result = await _channel.invokeMethod('deleteOldContent');
+
+    return result;
+  }
+
   static Future<void> _doHandlePlatformCall(MethodCall call) async {
     switch (call.method) {
       case 'downloadedContent':
