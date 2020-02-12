@@ -1,4 +1,4 @@
-package com.suamusica.migration.migration
+package com.suamusica.migration;
 
 import androidx.annotation.NonNull;
 import io.flutter.embedding.engine.plugins.FlutterPlugin
