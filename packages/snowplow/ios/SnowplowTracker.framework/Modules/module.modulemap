@@ -1,0 +1,13 @@
+framework module SnowplowTracker {
+    header "Snowplow.h"
+    header "SPTracker.h"
+    header "SPEmitter.h"
+    header "SPSubject.h"
+    header "SPPayload.h"
+    header "SPUtilities.h"
+    header "SPRequestCallback.h"
+    header "SPEvent.h"
+    header "SPSelfDescribingJson.h"
+    header "SPDevicePlatform.h"
+    export *
+}
