@@ -17,10 +17,9 @@ A new flutter plugin project.
   s.source_files = 'Classes/**/*.{swift,h,m}'
   s.public_header_files = 'Classes/**/*.h'
   s.dependency 'Flutter'
+  s.dependency 'FMDB', '~> 2.7.2'
   s.platform = :ios, '9.0'
-  s.frameworks = 'SnowplowTracker'
-  s.ios.vendored_frameworks = 'SnowplowTracker.framework'
-  s.preserve_paths = '*.framework'
+  
 
   # Flutter.framework does not contain a i386 slice. Only x86_64 simulators are supported.
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'VALID_ARCHS[sdk=iphonesimulator*]' => 'x86_64' }

@@ -141,7 +141,6 @@
 				8871FED66140A17D42556E72 /* Pods-Runner.release.xcconfig */,
 				A94C7FF2C3C41BEC4AD2E7B9 /* Pods-Runner.profile.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -385,6 +384,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Flutter",
+					"$(PROJECT_DIR)/Runner",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.suamusica.smadsExample;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -519,6 +519,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Flutter",
+					"$(PROJECT_DIR)/Runner",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.suamusica.smadsExample;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -546,6 +547,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Flutter",
+					"$(PROJECT_DIR)/Runner",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.suamusica.smadsExample;
 				PRODUCT_NAME = "$(TARGET_NAME)";

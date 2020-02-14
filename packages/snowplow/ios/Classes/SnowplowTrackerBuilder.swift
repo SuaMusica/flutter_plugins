@@ -1,5 +1,4 @@
 import Foundation
-import SnowplowTracker
 
 class SnowplowTrackerBuilder: NSObject, SPRequestCallback {    
     let kNamespace = "sm"

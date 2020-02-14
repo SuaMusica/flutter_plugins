@@ -1,7 +1,6 @@
 import Flutter
 import UIKit
 import Foundation
-import SnowplowTracker
 
 public class SwiftSnowplowPlugin: NSObject, FlutterPlugin {
   static var channel: FlutterMethodChannel?

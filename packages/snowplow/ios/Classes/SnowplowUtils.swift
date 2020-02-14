@@ -1,5 +1,4 @@
 import Foundation
-import SnowplowTracker
 
 class SnowplowUtils {
     static func trackScreenViewWithTracker(with tracker: SPTracker, andScreenName screenName: String) {
