@@ -13,7 +13,8 @@ class Media {
   final String coverUrl;
   final bool isVerified;
   final String shareUrl;
-  final String playlistId;
+  final int playlistId;
+  final bool isSpot;
 
   Media({
     @required this.id,
@@ -27,6 +28,7 @@ class Media {
     this.isVerified,
     this.shareUrl,
     this.playlistId,
+    this.isSpot,
   }) : super();
 
   Map<String, dynamic> toJson() => {
@@ -41,6 +43,7 @@ class Media {
         'is_verified': isVerified,
         'shared_url': shareUrl,
         'playlist_id': playlistId,
+        'is_spot': isSpot,
       };
 
   @override
@@ -61,7 +64,8 @@ class Media {
           coverUrl == other.coverUrl &&
           isVerified == other.isVerified &&
           shareUrl == other.shareUrl &&
-          playlistId == other.playlistId;
+          playlistId == other.playlistId &&
+          isSpot == other.isSpot;
 
   @override
   int get hashCode => [
@@ -76,5 +80,6 @@ class Media {
         isVerified,
         shareUrl,
         playlistId,
+        isSpot,
       ].hashCode;
 }
