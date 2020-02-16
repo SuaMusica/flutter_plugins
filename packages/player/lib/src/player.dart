@@ -197,6 +197,11 @@ class Player {
       final url = (await localMediaValidator(media)) ?? media.url;
       final isLocal = !url.startsWith("http");
 
+      // we need to update the value as it could have been
+      // downloading and is not downloaded
+      media.isLocal = isLocal;
+      media.url = url;
+
       if (autoPlay) {
         _notifyBeforePlayEvent((loadOnly) => {});
 
