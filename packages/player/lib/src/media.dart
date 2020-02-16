@@ -8,8 +8,8 @@ class Media {
   final int ownerId;
   final int albumId;
   final String author;
-  final String url;
-  final bool isLocal;
+  String url;
+  bool isLocal;
   final String coverUrl;
   final bool isVerified;
   final String shareUrl;
