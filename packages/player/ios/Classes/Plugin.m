@@ -29,6 +29,8 @@ static int const STATE_ERROR = 6;
 
 static int const PLAYER_ERROR_FAILED = 0;
 static int const PLAYER_ERROR_UNKNOWN = 1;
+static int const PLAYER_ERROR_FAILED_TO_PLAY = 2;
+static int const PLAYER_ERROR_FAILED_TO_PLAY_ERROR = 3;
 
 static NSMutableDictionary * players;
 static NSMutableDictionary * playersCurrentItem;
@@ -63,6 +65,7 @@ bool latestIsLocal = NO;
 NSString* latestCookie = nil;
 NSString* latestPlayerId = nil;
 VoidCallback latestOnReady = nil;
+AVPlayerItem* latestPlayerItemObserved = nil;
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
   @synchronized(self) {
@@ -218,6 +221,8 @@ VoidCallback latestOnReady = nil;
                           playerId:playerId
                           onReady:^(NSString * playerId) {
                             int state = STATE_PLAYING;
+                            NSMutableDictionary * playerInfo = players[playerId];
+                            [ playerInfo setObject:@true forKey:@"isPlaying" ];
                             [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": playerId, @"state": @(state)}];
                             result(@(1));
                           }
@@ -303,7 +308,7 @@ VoidCallback latestOnReady = nil;
   
   [ playerInfo setObject:player forKey:@"player" ];
   [ playerInfo setObject:url forKey:@"url" ];
-  [ playerInfo setObject:observers forKey:@"observers" ];
+  [ playerInfo setObject:observers forKey:@"observers"];
   
   CMTime interval = CMTimeMakeWithSeconds(0.2, NSEC_PER_SEC);
   id timeObserver = [player  addPeriodicTimeObserverForInterval: interval queue: nil usingBlock:^(CMTime time){
@@ -336,41 +341,167 @@ VoidCallback latestOnReady = nil;
     
     [self setUrl:latestUrl isLocal:latestIsLocal cookie:latestCookie playerId:latestPlayerId onReady:latestOnReady];
   }];
-    
-  id anobserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVPlayerItemDidPlayToEndTimeNotification
-                                                                      object: playerItem
-                                                                      queue: nil
-                                                                  usingBlock:^(NSNotification* note){
-                                                                      [self onSoundComplete:playerId];
-                                                                  }];
   [observers addObject:avlostobserver];
   [observers addObject:avrouteobserver];
   [observers addObject:avrestartobserver];
-  [observers addObject:anobserver];
     
   // is sound ready
   [playerInfo setObject:onReady forKey:@"onReady"];
-  [playerItem addObserver:self
-                        forKeyPath:@"player.currentItem.status"
-                        options:0
-                        context:(void*)playerId];
+}
+
+-(void)observePlayerItem:(AVPlayerItem *)playerItem playerId:(NSString *)playerId {
+  if (latestPlayerItemObserved != playerItem) {
+    if (latestPlayerItemObserved != nil) {
+      [self disposePlayerItem:latestPlayerItemObserved];
+    }
+    [playerItem addObserver:self
+                          forKeyPath:@"player.currentItem.status"
+                          options:NSKeyValueObservingOptionNew
+                          context:(void*)playerId];
+    
+    [playerItem addObserver:self
+                          forKeyPath:@"playbackBufferEmpty"
+                          options:NSKeyValueObservingOptionNew
+                          context:nil];
+    
+    [playerItem addObserver:self
+                          forKeyPath:@"playbackLikelyToKeepUp"
+                          options:NSKeyValueObservingOptionNew
+                          context:nil];
+    
+    [playerItem addObserver:self
+                          forKeyPath:@"playbackBufferFull"
+                          options:NSKeyValueObservingOptionNew
+                          context:nil];
+    
+    NSMutableSet *observers = [[NSMutableSet alloc] init];
+      
+    id timeEndObserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVPlayerItemDidPlayToEndTimeNotification
+                                                                        object: playerItem
+                                                                        queue: nil
+                                                                    usingBlock:^(NSNotification* note){
+                                                                        [self onSoundComplete:playerId];
+                                                                    }];
+    
+    
+    id jumpedItemObserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVPlayerItemTimeJumpedNotification
+        object: playerItem
+        queue: nil
+    usingBlock:^(NSNotification* note){
+      NSLog(@"AVPlayerItemTimeJumpedNotification: %@", [note object]);
+    }];
+    id failedEndTimeObserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVPlayerItemFailedToPlayToEndTimeNotification
+        object: playerItem
+        queue: nil
+    usingBlock:^(NSNotification* note){
+      // item has failed to play to its end time
+        NSLog(@"AVPlayerItemFailedToPlayToEndTimeNotification: %@", [note object]);
+        [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_FAILED)}];
+    }];
+    id stalledObserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVPlayerItemPlaybackStalledNotification
+        object: playerItem
+        queue: nil
+    usingBlock:^(NSNotification* note){
+      // media did not arrive in time to continue playback
+        NSLog(@"AVPlayerItemPlaybackStalledNotification: %@", [note object]);
+    }];
+    id newAccessLogObserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVPlayerItemNewAccessLogEntryNotification
+        object: playerItem
+        queue: nil
+    usingBlock:^(NSNotification* note){
+      // a new access log entry has been added
+        NSLog(@"AVPlayerItemNewAccessLogEntryNotification: %@", [note object]);
+    }];
+    id newAccessLogErrorObserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVPlayerItemNewErrorLogEntryNotification
+        object: playerItem
+        queue: nil
+    usingBlock:^(NSNotification* note){
+      // a new access log entry error has been added
+        NSLog(@"AVPlayerItemNewErrorLogEntryNotification: %@", [note object]);
+    }];
+    if (@available(iOS 13.0, *)) {
+      id selectionDidChangeObserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVPlayerItemMediaSelectionDidChangeNotification
+          object: playerItem
+          queue: nil
+      usingBlock:^(NSNotification* note){
+        // a media selection group changed its selected option
+        NSLog(@"AVPlayerItemMediaSelectionDidChangeNotification: %@", [note object]);
+      }];
+      id timeOffsetFromLiveObserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVPlayerItemRecommendedTimeOffsetFromLiveDidChangeNotification
+          object: playerItem
+          queue: nil
+      usingBlock:^(NSNotification* note){
+        // the value of recommendedTimeOffsetFromLive has changed
+          NSLog(@"AVPlayerItemRecommendedTimeOffsetFromLiveDidChangeNotification: %@", [note object]);
+      }];
+      
+      [observers addObject:selectionDidChangeObserver];
+      [observers addObject:timeOffsetFromLiveObserver];
+    }
+    id failedToPlayEndTimeObserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVPlayerItemFailedToPlayToEndTimeErrorKey
+        object: playerItem
+        queue: nil
+    usingBlock:^(NSNotification* note){
+      // NSError
+        NSLog(@"AVPlayerItemFailedToPlayToEndTimeErrorKey: %@", [note object]);
+      [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_FAILED)}];
+    }];
+    
+    
+    NSMutableDictionary * playerInfo = players[_playerId];
+    
+    [observers addObject:timeEndObserver];
+    [observers addObject:jumpedItemObserver];
+    [observers addObject:failedEndTimeObserver];
+    [observers addObject:stalledObserver];
+    [observers addObject:newAccessLogObserver];
+    [observers addObject:newAccessLogErrorObserver];
+    [observers addObject:failedToPlayEndTimeObserver];
+    
+    [playerInfo setObject:observers forKey:@"observers_player_item"];
+    latestPlayerItemObserved = playerItem;
+  }
+}
+
+-(void)disposePlayerItem:(AVPlayerItem *)playerItem {
+  if (latestPlayerItemObserved == playerItem) {
+    @try {
+      [playerItem removeObserver:self forKeyPath:@"player.currentItem.status" context:(void*)_playerId];
+    } @catch (NSException * __unused exception) {}
+    @try {
+      [playerItem removeObserver:self forKeyPath:@"playbackLikelyToKeepUp" context:nil];
+    } @catch (NSException * __unused exception) {}
+    @try {
+      [playerItem removeObserver:self forKeyPath:@"playbackBufferFull" context:nil];
+    } @catch (NSException * __unused exception) {}
+    @try {
+      [playerItem removeObserver:self forKeyPath:@"playbackBufferEmpty" context:nil];
+    } @catch (NSException * __unused exception) {}
+    
+    NSMutableDictionary * playerInfo = players[_playerId];
+    NSMutableSet *observers = playerInfo[@"observers_player_item"];
+    
+    for (id ob in observers) {
+      @try {
+        [ [ NSNotificationCenter defaultCenter ] removeObserver:ob ];
+      } @catch (NSException * __unused exception) {}
+    }
+  }
 }
 
 - (void)treatPlayerObservers:(AVPlayer *)player url:(NSString *)url {
-//  NSMutableDictionary * playerInfo = players[_playerId];
-//  NSMutableSet *observers = playerInfo[@"observers"];
-//  @try {
-//    [[player currentItem] removeObserver:self forKeyPath:@"player.currentItem.status" ];
-//  } @catch (NSException * __unused exception) {}
-//
-//  [ playerInfo setObject:url forKey:@"url" ];
-//
-//  for (id ob in observers) {
-//    @try {
-//      [ [ NSNotificationCenter defaultCenter ] removeObserver:ob ];
-//    } @catch (NSException * __unused exception) {}
-//  }
-//  [ observers removeAllObjects ];
+  NSMutableDictionary * playerInfo = players[_playerId];
+  NSMutableSet *observers = playerInfo[@"observers"];
+  @try {
+    [[player currentItem] removeObserver:self forKeyPath:@"player.currentItem.status" ];
+  } @catch (NSException * __unused exception) {}
+
+  for (id ob in observers) {
+    @try {
+      [ [ NSNotificationCenter defaultCenter ] removeObserver:ob ];
+    } @catch (NSException * __unused exception) {}
+  }
+  [ observers removeAllObjects ];
 }
 
 -(void) setUrl: (NSString*) url
@@ -389,7 +520,6 @@ VoidCallback latestOnReady = nil;
 
   @try {
     if (!playerInfo || ![url isEqualToString:playerInfo[@"url"]]) {
-      NSLog(@"ENTERED 1");
       if (isLocal) {
         playerItem = [ [ AVPlayerItem alloc ] initWithURL:[ NSURL fileURLWithPath:url ]];
       } else {
@@ -431,39 +561,39 @@ VoidCallback latestOnReady = nil;
 
         playerItem = [AVPlayerItem playerItemWithAsset:asset];
       }
-        
+
       if (playerInfo[@"url"]) {
-        [self treatPlayerObservers:player url:url];
         @autoreleasepool {
+          [self observePlayerItem:playerItem playerId:playerId];
           [ player replaceCurrentItemWithPlayerItem: playerItem ];
         }
       } else {
+        [self observePlayerItem:playerItem playerId:playerId];
         [self initAVPlayer:playerId playerItem:playerItem url:url onReady: onReady];
       }
+      [self resume:playerId];
+      int state = STATE_BUFFERING;
+      [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": playerId, @"state": @(state)}];
+      [ playerInfo setObject:@false forKey:@"isPlaying" ];
+      [ playerInfo setObject:url forKey:@"url" ];
     } else {
-      NSLog(@"ENTERED 2");
       if (player == nil && [player currentItem] == nil) {
         NSLog(@"player status: %ld",(long)[[player currentItem] status ]);
-        [self treatPlayerObservers:player url:url];
+        
         [self initAVPlayer:playerId playerItem:playerItem url:url onReady: onReady];
+        [self observePlayerItem:playerItem playerId:playerId];
       } else if ([[player currentItem] status ] == AVPlayerItemStatusReadyToPlay) {
         onReady(playerId);
       } else {
-        NSLog(@"ENTERED 4");
         [self treatPlayerObservers:player url:url];
         [self disposePlayer];
         NSLog(@"player status: %ld",(long)[[player currentItem] status ]);
         NSLog(@"Trying restart music after duck");
         [self setUrl:latestUrl isLocal:latestIsLocal cookie:latestCookie playerId:latestPlayerId onReady:latestOnReady];
-//         [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": playerId, @"state": @(state)}];
       }
-//      AVPlayerItemStatusUnknown = 0,
-//      AVPlayerItemStatusReadyToPlay = 1,
-//      AVPlayerItemStatusFailed = 2
     }
   }
   @catch (NSException *exception) {
-    NSLog(@"ENTERED 5");
     NSLog(@"%@", exception.reason);
   }
   @finally {
@@ -649,9 +779,6 @@ VoidCallback latestOnReady = nil;
     [ player setVolume:volume ];
     [ player seekToTime:time ];
     [ player play];
-    [ playerInfo setObject:@true forKey:@"isPlaying" ];
-    int state = STATE_PLAYING;
-     [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": playerId, @"state": @(state)}];
   };
   
   NSLog(@"Volume: %f", volume);
@@ -738,6 +865,19 @@ VoidCallback latestOnReady = nil;
     NSString *name = currentItem[@"name"];
     NSString *author = currentItem[@"author"];
     NSString *coverUrl = currentItem[@"coverUrl"];
+  
+    [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = @{
+       MPMediaItemPropertyTitle: name,
+       MPMediaItemPropertyAlbumTitle: name,
+       MPMediaItemPropertyArtist: author,
+       MPMediaItemPropertyPlaybackDuration: [NSNumber numberWithInt:_duration],
+       MPNowPlayingInfoPropertyElapsedPlaybackTime: [NSNumber numberWithInt:position]
+    };
+    int durationInMillis = _duration*1000;
+    int positionInMillis = position*1000;
+
+    [_channel_player invokeMethod:@"audio.onCurrentPosition" arguments:@{@"playerId": playerId, @"position": @(positionInMillis), @"duration": @(durationInMillis)}];
+    
     dispatch_async(dispatch_get_global_queue(0,0), ^{
         NSData * data = [[NSData alloc] initWithContentsOfURL: [NSURL URLWithString: coverUrl]];
         if ( data == nil )
@@ -765,10 +905,6 @@ VoidCallback latestOnReady = nil;
         });
         data = nil;
     });
-    int durationInMillis = _duration*1000;
-    int positionInMillis = position*1000;
-
-    [_channel_player invokeMethod:@"audio.onCurrentPosition" arguments:@{@"playerId": playerId, @"position": @(positionInMillis), @"duration": @(durationInMillis)}];
     
     playerInfo = nil;
     player = nil;
@@ -878,19 +1014,36 @@ VoidCallback latestOnReady = nil;
       NSLog(@"errorLog: events: %@", [errorLog events]);
       NSLog(@"errorLog: extendedLogData: %@", [errorLog extendedLogData]);
     
+      [self disposePlayerItem:[player currentItem]];
       [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_FAILED)}];
     } else {
-      NSLog(@"ENTERED-2 3");
-      [self treatPlayerObservers:player url:latestUrl];
-      [self disposePlayer];
       NSLog(@"player status: %ld",(long)[[player currentItem] status ]);
       NSLog(@"Unknown Error: %@", [[player currentItem] error]);
       NSLog(@"Unknown PlayerError: %@", [player error]);
+      AVAsset *currentPlayerAsset = [[player currentItem] asset];
+      
+      if ([currentPlayerAsset isKindOfClass:AVURLAsset.class]) {
+       NSLog(@"Unknown Error.URL: %@", [(AVURLAsset *)currentPlayerAsset URL]);
+      }
       AVPlayerItemErrorLog *errorLog = [[player currentItem] errorLog];
       NSLog(@"Unknown errorLog: %@", errorLog);
       NSLog(@"Unknown errorLog: events: %@", [errorLog events]);
       NSLog(@"Unknown errorLog: extendedLogData: %@", [errorLog extendedLogData]);
+      
+      [self disposePlayerItem:[player currentItem]];
       [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_UNKNOWN)}];
+    }
+  } else if ([keyPath isEqualToString: @"playbackBufferEmpty"]) {
+    int state = STATE_BUFFERING;
+    [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
+  } else if ([keyPath isEqualToString: @"playbackLikelyToKeepUp"] || [keyPath isEqualToString: @"playbackBufferFull"]) {
+    NSMutableDictionary * playerInfo = players[_playerId];
+    NSNumber* newValue = [change objectForKey:NSKeyValueChangeNewKey];
+    BOOL shouldStartPlaySoon = [newValue boolValue];
+    if (shouldStartPlaySoon) {
+      [ playerInfo setObject:@true forKey:@"isPlaying" ];
+      int state = STATE_PLAYING;
+       [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
     }
   } else {
     // Any unrecognized context must belong to super
@@ -924,6 +1077,7 @@ VoidCallback latestOnReady = nil;
 }
 
 - (void)dealloc {
+  [self disposePlayerItem:latestPlayerItemObserved];
   [self disposePlayer];
   
   players = nil;
@@ -932,6 +1086,16 @@ VoidCallback latestOnReady = nil;
   currentResourceLoadingRequest = nil;
   currentResourceLoader = nil;
   serialQueue = nil;
+  timeobservers = nil;
+  alreadyInAudioSession = false;
+  isLoadingComplete = false;
+  latestUrl = nil;
+  latestIsLocal = NO;
+  latestCookie = nil;
+  latestPlayerId = nil;
+  latestOnReady = nil;
+  latestPlayerItemObserved = nil;
+  
   [[UIApplication sharedApplication] endReceivingRemoteControlEvents];
 }
 

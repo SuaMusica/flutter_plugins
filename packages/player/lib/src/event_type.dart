@@ -25,4 +25,6 @@ enum PlayerErrorType {
   FAILED,
   UNKNOWN,
   UNDEFINED,
+  FAILED_TO_PLAY,
+  FAILED_TO_PLAY_ERROR,
 }
