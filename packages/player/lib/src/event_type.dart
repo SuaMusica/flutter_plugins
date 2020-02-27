@@ -20,3 +20,11 @@ enum EventType {
   FINISHED_PLAYING,
   ERROR_OCCURED,
 }
+
+enum PlayerErrorType {
+  FAILED,
+  UNKNOWN,
+  UNDEFINED,
+  FAILED_TO_PLAY,
+  FAILED_TO_PLAY_ERROR,
+}
