@@ -13,9 +13,12 @@ import android.os.Bundle
 import android.os.PowerManager
 import android.os.ResultReceiver
 import android.os.AsyncTask
+import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.PlaybackStateCompat
 import androidx.core.app.NotificationManagerCompat
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.audio.AudioAttributes
+import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.source.hls.HlsMediaSource
@@ -35,6 +38,7 @@ class WrappedExoPlayer(val playerId: String,
                        val plugin: Plugin,
                        val handler: Handler,
                        override val cookie: String) : Player {
+    val TAG = "Player"
     override var volume = 1.0
     override val duration: Long
         get() = player.duration
@@ -48,6 +52,8 @@ class WrappedExoPlayer(val playerId: String,
 
     val notificationBuilder = NotificationBuilder(context)
     val notificationManager = NotificationManagerCompat.from(context)
+    val mediaSession = MediaSessionCompat(context, TAG);
+    private var mediaSessionConnector: MediaSessionConnector? = null
 
     private var wifiLock: WifiManager.WifiLock? = null
     private var wakeLock: PowerManager.WakeLock? = null
@@ -61,13 +67,33 @@ class WrappedExoPlayer(val playerId: String,
 
     private var previousState: Int = -1
 
-    private fun initializeService() {
+    init {
         wifiLock = (context.getSystemService(Context.WIFI_SERVICE) as WifiManager)
             .createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "wifiLock")
         wakeLock = (context.getSystemService(Context.POWER_SERVICE) as PowerManager)
             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ON_AFTER_RELEASE, "suamusica:wakeLock")
         wifiLock?.setReferenceCounted(false)
         wakeLock?.setReferenceCounted(false)
+
+        mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
+        mediaSession.setMediaButtonReceiver(null)
+
+        val stateBuilder = PlaybackStateCompat.Builder()
+            .setActions(
+                    PlaybackStateCompat.ACTION_PLAY or
+                            PlaybackStateCompat.ACTION_PAUSE or
+                            PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
+                            PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+                            PlaybackStateCompat.ACTION_PLAY_PAUSE)
+
+        mediaSession.setPlaybackState(stateBuilder.build())
+        mediaSession.setCallback(MediaSessionCallback())
+        mediaSession.isActive = true
+
+        mediaSessionConnector = MediaSessionConnector(mediaSession).also { connector ->
+            // Produces DataSource instances through which media data is loaded.
+            connector.setPlayer(player)
+        }        
     }
 
     private fun playerEventListener(): com.google.android.exoplayer2.Player.EventListener {
@@ -205,7 +231,7 @@ class WrappedExoPlayer(val playerId: String,
             player.playWhenReady = true
 
             AsyncTask.execute {
-                val notification = notificationBuilder.buildNotification(this.media!!)
+                val notification = notificationBuilder.buildNotification(this.mediaSession!!, this.media!!)
                 notification?.let {
                     notificationManager?.notify(NOW_PLAYING_NOTIFICATION, it)
                 }
@@ -223,10 +249,6 @@ class WrappedExoPlayer(val playerId: String,
     override fun pause() {
         performAndDisableTracking {
             player.playWhenReady = false
-
-            AsyncTask.execute {
-                notificationManager?.cancel(NOW_PLAYING_NOTIFICATION)
-            }
         }
     }
 
