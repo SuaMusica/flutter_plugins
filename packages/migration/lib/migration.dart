@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:migration/downloaded_content.dart';
-import 'package:migration/user_model.dart';
 
 class Migration {
   Migration._();
@@ -33,20 +32,13 @@ class Migration {
 
   final StreamController<List<DownloadedContent>> _downloadedStreamController =
       StreamController<List<DownloadedContent>>.broadcast();
-  final StreamController<User> _loggedUserStreamController =
-      StreamController<User>.broadcast();
 
   void dipose() {
     _downloadedStreamController.close();
   }
 
-  void disposeLoggedUserController() {
-    _loggedUserStreamController.close();
-  }
-
   Stream<List<DownloadedContent>> get downloadedContent =>
       _downloadedStreamController.stream;
-  Stream<User> get loggedUser => _loggedUserStreamController.stream;
 
   Future<int> getLegacyDownloadContent() async {
     final int result = await _channel.invokeMethod('requestDownloadedContent');
@@ -60,8 +52,12 @@ class Migration {
     return result;
   }
 
-  Future<int> requestLoggedUser() async {
-    final int result = await _channel.invokeMethod('requestLoggedUser');
+  Future<Map<dynamic, dynamic>> requestLoggedUser() async {
+    final result = await _channel.invokeMethod('requestLoggedUser');
+
+    if (result != null && result is Map<dynamic, dynamic>) {
+      return null;
+    }
 
     return result;
   }
@@ -83,19 +79,6 @@ class Migration {
           instance._downloadedStreamController.add(content);
         }
 
-        break;
-      case 'loggedUser':
-        if (instance != null &&
-            instance._downloadedStreamController != null &&
-            !instance._downloadedStreamController.isClosed &&
-            call.arguments != null &&
-            call.arguments is Map<dynamic, dynamic>) {
-          final content = (call.arguments as Map<dynamic, dynamic>);
-
-          instance._loggedUserStreamController.add(User.fromJson(content));
-        } else {
-          instance._loggedUserStreamController.addError(null);
-        }
         break;
 
       default:
