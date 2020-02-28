@@ -52,6 +52,21 @@ public class SwiftMigrationPlugin: NSObject, FlutterPlugin {
       print("Migration: Database was deleted: \(wasDeleted == 1)")
       result(wasDeleted)
       break
+    case "requestLoggedUser":
+      let users = LoggedUser.getAll() as! [LoggedUser]
+      if (users.isEmpty) {
+        SwiftMigrationPlugin.channel?.invokeMethod("loggedUser", arguments: null)
+        result(0)
+      } else {
+        let user = users[0]
+
+        SwiftMigrationPlugin.channel?.invokeMethod("loggedUser", arguments: [
+          "userid": user.userId,
+          "name": user.name,
+          "cover": user.pictureUrl,
+        ])
+        result(1)
+      }
 
     default:
         result(FlutterError(code: "-1", message: "Operation not supported", details: nil))
