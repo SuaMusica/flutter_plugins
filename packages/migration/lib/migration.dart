@@ -56,10 +56,10 @@ class Migration {
     final result = await _channel.invokeMethod('requestLoggedUser');
 
     if (result != null && result is Map<dynamic, dynamic>) {
-      return null;
+      return result;
     }
 
-    return result;
+    return null;
   }
 
   static Future<void> _doHandlePlatformCall(MethodCall call) async {
