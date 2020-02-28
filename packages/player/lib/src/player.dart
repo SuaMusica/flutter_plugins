@@ -484,8 +484,11 @@ class Player {
         _handleOnComplete(player);
         break;
       case 'audio.onError':
-        player.state = PlayerState.STOPPED;
-        _notifyPlayerErrorEvent(player, 'error');
+        player.state = PlayerState.ERROR;
+        final errorType = callArgs['errorType'] ?? 2;
+
+        _notifyPlayerErrorEvent(
+            player, 'error', PlayerErrorType.values[errorType]);
         break;
       case 'state.change':
         final state = callArgs['state'];
@@ -597,14 +600,17 @@ class Player {
             queuePosition: player._queue.index));
   }
 
-  static _notifyPlayerErrorEvent(Player player, String error) {
+  static _notifyPlayerErrorEvent(Player player, String error,
+      [PlayerErrorType errorType = PlayerErrorType.UNDEFINED]) {
     _addUsingPlayer(
-        player,
-        Event(
-            type: EventType.ERROR_OCCURED,
-            media: player._queue.current,
-            queuePosition: player._queue.index,
-            error: error));
+      player,
+      Event(
+          type: EventType.ERROR_OCCURED,
+          media: player._queue.current,
+          queuePosition: player._queue.index,
+          error: error,
+          errorType: errorType),
+    );
   }
 
   static _notifyPositionChangeEvent(
