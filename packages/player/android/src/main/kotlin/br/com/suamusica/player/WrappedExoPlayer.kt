@@ -223,6 +223,10 @@ class WrappedExoPlayer(val playerId: String,
     override fun pause() {
         performAndDisableTracking {
             player.playWhenReady = false
+
+            AsyncTask.execute {
+                notificationManager?.cancel(NOW_PLAYING_NOTIFICATION)
+            }
         }
     }
 
@@ -230,6 +234,10 @@ class WrappedExoPlayer(val playerId: String,
         performAndDisableTracking {
             player.playWhenReady = false
             channelManager.notifyPlayerStateChange(playerId, PlayerState.STOPPED)
+
+            AsyncTask.execute {
+                notificationManager?.cancel(NOW_PLAYING_NOTIFICATION)
+            }
         }
     }
 
