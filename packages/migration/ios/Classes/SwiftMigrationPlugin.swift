@@ -55,7 +55,6 @@ public class SwiftMigrationPlugin: NSObject, FlutterPlugin {
     case "requestLoggedUser":
       let users = LoggedUser.getAll() as! [LoggedUser]
       if (users.isEmpty) {
-        SwiftMigrationPlugin.channel?.invokeMethod("loggedUser", arguments: null)
         result(nil)
       } else {
         let user = users[0]
