@@ -30,15 +30,15 @@ class Migration {
     }
   }
 
-  final StreamController<List<DownloadedContent>> _streamController =
+  final StreamController<List<DownloadedContent>> _downloadedStreamController =
       StreamController<List<DownloadedContent>>.broadcast();
 
   void dipose() {
-    _streamController.close();
+    _downloadedStreamController.close();
   }
 
   Stream<List<DownloadedContent>> get downloadedContent =>
-      _streamController.stream;
+      _downloadedStreamController.stream;
 
   Future<int> getLegacyDownloadContent() async {
     final int result = await _channel.invokeMethod('requestDownloadedContent');
@@ -52,12 +52,22 @@ class Migration {
     return result;
   }
 
+  Future<Map<dynamic, dynamic>> requestLoggedUser() async {
+    final result = await _channel.invokeMethod('requestLoggedUser');
+
+    if (result != null && result is Map<dynamic, dynamic>) {
+      return result;
+    }
+
+    return null;
+  }
+
   static Future<void> _doHandlePlatformCall(MethodCall call) async {
     switch (call.method) {
       case 'downloadedContent':
         if (instance != null &&
-            instance._streamController != null &&
-            !instance._streamController.isClosed) {
+            instance._downloadedStreamController != null &&
+            !instance._downloadedStreamController.isClosed) {
           final content = (call.arguments as List<dynamic>)
               .where((item) => item is Map<dynamic, dynamic>)
               .map(
@@ -66,7 +76,7 @@ class Migration {
               )
               .toList();
 
-          instance._streamController.add(content);
+          instance._downloadedStreamController.add(content);
         }
 
         break;
