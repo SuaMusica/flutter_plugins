@@ -1,18 +1,15 @@
 package br.com.suamusica.player
 
+import android.app.PendingIntent
 import android.os.Handler
 import android.util.Log
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.media.AudioManager
 import android.net.Uri
 import android.net.wifi.WifiManager
-import android.os.Build
-import android.os.Bundle
 import android.os.PowerManager
-import android.os.ResultReceiver
 import android.os.AsyncTask
+import android.support.v4.media.MediaMetadataCompat
+import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import androidx.core.app.NotificationManagerCompat
@@ -50,9 +47,17 @@ class WrappedExoPlayer(val playerId: String,
 
     var media: Media? = null
 
+    private val mediaControllerCallback = MediaControllerCallback()
+
+    // Build a PendingIntent that can be used to launch the UI.
+    val sessionActivityPendingIntent =
+            context.packageManager?.getLaunchIntentForPackage(context.packageName)?.let { sessionIntent ->
+                PendingIntent.getActivity(this.context, 0, sessionIntent, 0)
+            }
     val notificationBuilder = NotificationBuilder(context)
     val notificationManager = NotificationManagerCompat.from(context)
-    val mediaSession = MediaSessionCompat(context, TAG);
+    private var mediaSession: MediaSessionCompat? = null
+    private var mediaController: MediaControllerCompat? = null
     private var mediaSessionConnector: MediaSessionConnector? = null
 
     private var wifiLock: WifiManager.WifiLock? = null
@@ -69,31 +74,46 @@ class WrappedExoPlayer(val playerId: String,
 
     init {
         wifiLock = (context.getSystemService(Context.WIFI_SERVICE) as WifiManager)
-            .createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "wifiLock")
+                .createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "wifiLock")
         wakeLock = (context.getSystemService(Context.POWER_SERVICE) as PowerManager)
-            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ON_AFTER_RELEASE, "suamusica:wakeLock")
+                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ON_AFTER_RELEASE, "suamusica:wakeLock")
         wifiLock?.setReferenceCounted(false)
         wakeLock?.setReferenceCounted(false)
 
-        mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
-        mediaSession.setMediaButtonReceiver(null)
+        // Create a new MediaSession.
+        mediaSession = mediaSession?.let { it } ?: MediaSessionCompat(this.context, "MusicService")
+                .apply {
+                    setSessionActivity(sessionActivityPendingIntent)
+                    isActive = true
+                }
 
-        val stateBuilder = PlaybackStateCompat.Builder()
-            .setActions(
-                    PlaybackStateCompat.ACTION_PLAY or
-                            PlaybackStateCompat.ACTION_PAUSE or
-                            PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
-                            PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
-                            PlaybackStateCompat.ACTION_PLAY_PAUSE)
+        mediaSession?.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
 
-        mediaSession.setPlaybackState(stateBuilder.build())
-        mediaSession.setCallback(MediaSessionCallback())
-        mediaSession.isActive = true
+        mediaSession?.let { mediaSession ->
+            val sessionToken = mediaSession.sessionToken
 
-        mediaSessionConnector = MediaSessionConnector(mediaSession).also { connector ->
-            // Produces DataSource instances through which media data is loaded.
-            connector.setPlayer(player)
-        }        
+            mediaSession.setCallback(MediaSessionCallback())
+            mediaSession.isActive = true
+
+            mediaController = MediaControllerCompat(this.context, sessionToken).also { mediaController ->
+                mediaController.registerCallback(mediaControllerCallback)
+
+                mediaSessionConnector = MediaSessionConnector(mediaSession).also { connector ->
+                    // Produces DataSource instances through which media data is loaded.
+                    connector.setPlayer(player)
+                }
+            }
+        }
+
+//        val stateBuilder = PlaybackStateCompat.Builder()
+//                .setActions(
+//                        PlaybackStateCompat.ACTION_PLAY or
+//                                PlaybackStateCompat.ACTION_PAUSE or
+//                                PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
+//                                PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+//                                PlaybackStateCompat.ACTION_PLAY_PAUSE)
+//
+//        mediaSession?.setPlaybackState(stateBuilder.build())
     }
 
     private fun playerEventListener(): com.google.android.exoplayer2.Player.EventListener {
@@ -146,7 +166,7 @@ class WrappedExoPlayer(val playerId: String,
                                     } else {
                                         channelManager.notifyPlayerStateChange(playerId, status)
                                     }
-                                    
+
                                 }
                             }
                             ExoPlayer.STATE_ENDED -> { // 4
@@ -338,6 +358,26 @@ class WrappedExoPlayer(val playerId: String,
         fun stopTracking(callable: () -> Unit) {
             shutdownTask = callable
             stopTracking()
+        }
+    }
+
+    private inner class MediaControllerCallback : MediaControllerCompat.Callback() {
+        private var latestId: String? = "!@#$%^&*"
+
+        override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
+            Log.d("MusicService",
+                    "onMetadataChanged $latestId equal?: ${metadata?.id} && ${metadata?.id != null} && ${metadata?.id?.isNotBlank()}")
+            if (latestId != metadata?.id && metadata?.id != null && metadata.id.isNotBlank()) {
+                latestId = metadata.id
+            }
+        }
+
+        override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
+            Log.d("MusicService", "onPlaybackStateChanged state: $state")
+        }
+
+        override fun onQueueChanged(queue: MutableList<MediaSessionCompat.QueueItem>?) {
+            Log.d("MusicService", "onQueueChanged queue: $queue")
         }
     }
 }

@@ -65,10 +65,15 @@ class NotificationBuilder(private val context: Context) {
         builder.addAction(skipToPreviousAction)
         ++playPauseIndex
         actions.add(1)
-        
+
         if (playbackState.isPlaying) {
+            Log.i("NotificationBuilder", "Player is playing...")
             builder.addAction(pauseAction)
         } else if (playbackState.isPlayEnabled) {
+            Log.i("NotificationBuilder", "Player is NOT playing...")
+            builder.addAction(playAction)
+        } else {
+            Log.i("NotificationBuilder", "ELSE")
             builder.addAction(playAction)
         }
         
