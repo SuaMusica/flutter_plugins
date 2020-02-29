@@ -22,10 +22,10 @@ class MusicService : BroadcastReceiver() {
             KeyEvent.KEYCODE_MEDIA_PAUSE -> {
                 Plugin.currentPlayer()?.pause()
             }
-            KeyEvent.KEYCODE_MEDIA_SKIP_FORWARD -> {
+            KeyEvent.KEYCODE_MEDIA_NEXT -> {
                 Plugin.next()
             }
-            KeyEvent.KEYCODE_MEDIA_SKIP_BACKWARD -> {
+            KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
                 Plugin.previous()
             }
             KeyEvent.KEYCODE_MEDIA_STOP -> {
