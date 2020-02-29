@@ -9,7 +9,7 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.PluginRegistry.Registrar
 
 
-class Plugin : MethodCallHandler {
+class Plugin private constructor(private val channel: MethodChannel, private val context: Context) : MethodCallHandler {
   companion object {
     // Argument names
     const val PLAYER_ID_ARGUMENT = "playerId"
@@ -38,24 +38,48 @@ class Plugin : MethodCallHandler {
 
     const val Ok = 1
 
+    private val players = HashMap<String, Player>()
+    private var channel: MethodChannel? = null
+
     @JvmStatic
     fun registerWith(registrar: Registrar) {
-      val channel = MethodChannel(registrar.messenger(), "smplayer")
-      channel.setMethodCallHandler(Plugin(channel, registrar.context()))
+      channel = MethodChannel(registrar.messenger(), "smplayer")
+      channel?.setMethodCallHandler(Plugin(channel!!, registrar.context()))
+    }
+
+    @JvmStatic
+    fun playerId(call: MethodCall): String =
+            if (call.hasArgument(PLAYER_ID_ARGUMENT)) call.argument(PLAYER_ID_ARGUMENT)!! else DEFAULT_PLAYER_ID
+
+    private fun getPlayer(playerId: String,
+                          context: Context,
+                          channel: MethodChannel,
+                          plugin: Plugin,
+                          handler: Handler,
+                          cookie: String?): Player {
+      if (!players.containsKey(playerId)) {
+        players.clear()
+        val player = WrappedExoPlayer(playerId, context, channel, plugin, handler, cookie!!)
+        players[playerId] = player
+      }
+      return players[playerId]!!
+    }
+
+    @JvmStatic
+    fun currentPlayer() : Player? = players.values.firstOrNull()
+
+    @JvmStatic
+    fun next() {
+      channel?.invokeMethod("commandCenter.onNext", emptyMap<String, String>())
+    }
+
+    @JvmStatic
+    fun previous() {
+      channel?.invokeMethod("commandCenter.onPrevious", emptyMap<String, String>())
     }
   }
 
-  private constructor(channel: MethodChannel, context: Context) {
-    this.channel = channel
-    this.context = context
-  }
-
   private val handler = Handler()
-  private var positionTracker: Runnable? = null
-  private val channel: MethodChannel
-  private val context: Context
-
-  private val players = HashMap<String, Player>()
 
   override fun onMethodCall(call: MethodCall, response: MethodChannel.Result) {
     try {
@@ -70,7 +94,7 @@ class Plugin : MethodCallHandler {
     val playerId = playerId(call)
     val cookie = call.argument<String>("cookie")
     Log.i("SMPlayer", "cookie: $cookie")
-    val player = getPlayer(playerId!!, cookie)
+    val player = getPlayer(playerId, context, channel, this, handler, cookie)
     when (call.method) {
       PLAY_METHOD -> {
         val name = call.argument<String>(NAME_ARGUMENT)!!
@@ -130,16 +154,5 @@ class Plugin : MethodCallHandler {
       }
     }
     response.success(Ok)
-  }
-
-  private fun playerId(call: MethodCall): String =
-          if (call.hasArgument(PLAYER_ID_ARGUMENT)) call.argument(PLAYER_ID_ARGUMENT)!! else DEFAULT_PLAYER_ID
-
-  private fun getPlayer(playerId: String, cookie: String?): Player {
-    if (!players.containsKey(playerId)) {
-      val player = WrappedExoPlayer(playerId, context, channel, this, handler, cookie!!)
-      players[playerId] = player
-    }
-    return players[playerId]!!
   }
 }

@@ -1,9 +1,13 @@
 package br.com.suamusica.player
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
+import android.app.Service
+import android.content.ComponentName
 import android.os.Handler
 import android.util.Log
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.net.wifi.WifiManager
 import android.os.PowerManager
@@ -13,6 +17,8 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
+import androidx.media.session.MediaButtonReceiver
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
@@ -72,6 +78,11 @@ class WrappedExoPlayer(val playerId: String,
 
     private var previousState: Int = -1
 
+    val player = ExoPlayerFactory.newSimpleInstance(context).apply {
+        setAudioAttributes(uAmpAudioAttributes, true)
+        addListener(playerEventListener())
+    }
+
     init {
         wifiLock = (context.getSystemService(Context.WIFI_SERVICE) as WifiManager)
                 .createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "wifiLock")
@@ -81,19 +92,18 @@ class WrappedExoPlayer(val playerId: String,
         wakeLock?.setReferenceCounted(false)
 
         // Create a new MediaSession.
-        mediaSession = mediaSession?.let { it } ?: MediaSessionCompat(this.context, "MusicService")
+        val mediaButtonReceiver = ComponentName(context, MediaButtonReceiver::class.java)
+        mediaSession = mediaSession?.let { it } ?: MediaSessionCompat(this.context, "MusicService", mediaButtonReceiver, null)
                 .apply {
                     setSessionActivity(sessionActivityPendingIntent)
                     isActive = true
+                    setCallback(MediaSessionCallback())
                 }
 
         mediaSession?.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
 
         mediaSession?.let { mediaSession ->
             val sessionToken = mediaSession.sessionToken
-
-            mediaSession.setCallback(MediaSessionCallback())
-            mediaSession.isActive = true
 
             mediaController = MediaControllerCompat(this.context, sessionToken).also { mediaController ->
                 mediaController.registerCallback(mediaControllerCallback)
@@ -208,11 +218,6 @@ class WrappedExoPlayer(val playerId: String,
         }
     }
 
-    val player = ExoPlayerFactory.newSimpleInstance(context).apply {
-        setAudioAttributes(uAmpAudioAttributes, true)
-        addListener(playerEventListener())
-    }
-
     override fun prepare(media: Media) {
         this.media = media
         val defaultHttpDataSourceFactory = DefaultHttpDataSourceFactory("mp.next")
@@ -276,10 +281,6 @@ class WrappedExoPlayer(val playerId: String,
         performAndDisableTracking {
             player.playWhenReady = false
             channelManager.notifyPlayerStateChange(playerId, PlayerState.STOPPED)
-
-            AsyncTask.execute {
-                notificationManager?.cancel(NOW_PLAYING_NOTIFICATION)
-            }
         }
     }
 
@@ -362,22 +363,64 @@ class WrappedExoPlayer(val playerId: String,
     }
 
     private inner class MediaControllerCallback : MediaControllerCompat.Callback() {
-        private var latestId: String? = "!@#$%^&*"
-
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
-            Log.d("MusicService",
-                    "onMetadataChanged $latestId equal?: ${metadata?.id} && ${metadata?.id != null} && ${metadata?.id?.isNotBlank()}")
-            if (latestId != metadata?.id && metadata?.id != null && metadata.id.isNotBlank()) {
-                latestId = metadata.id
-            }
+            Log.d("Player",
+                    "onMetadataChanged: metadata: $metadata")
         }
 
         override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
-            Log.d("MusicService", "onPlaybackStateChanged state: $state")
+            Log.d("Player", "onPlaybackStateChanged state: $state")
+            AsyncTask.execute {
+                updateNotification(state!!)
+            }
         }
 
         override fun onQueueChanged(queue: MutableList<MediaSessionCompat.QueueItem>?) {
-            Log.d("MusicService", "onQueueChanged queue: $queue")
+            Log.d("Player", "onQueueChanged queue: $queue")
+        }
+
+        private fun removeNowPlayingNotification() {
+            Log.d("Player", "removeNowPlayingNotification")
+            AsyncTask.execute {
+                notificationManager?.cancel(NOW_PLAYING_NOTIFICATION)
+            }
+        }
+
+        @SuppressLint("WakelockTimeout")
+        private fun updateNotification(state: PlaybackStateCompat) {
+            val updatedState = state.state
+            if (mediaController?.metadata == null || mediaSession == null) {
+                return
+            }
+
+
+            // Skip building a notification when state is "none".
+            val notification = if (updatedState != PlaybackStateCompat.STATE_NONE) {
+                mediaSession?.let { notificationBuilder.buildNotification(it, media!!) }
+            } else {
+                null
+            }
+
+            when (updatedState) {
+                PlaybackStateCompat.STATE_BUFFERING,
+                PlaybackStateCompat.STATE_PLAYING -> {
+                    /**
+                     * This may look strange, but the documentation for [Service.startForeground]
+                     * notes that "calling this method does *not* put the service in the started
+                     * state itself, even though the name sounds like it."
+                     */
+                    if (notification != null) {
+                        notificationManager.notify(NOW_PLAYING_NOTIFICATION, notification)
+                    }
+                }
+                else -> {
+                    if (notification != null) {
+                        Log.d("Player", "updateNotification notify 2")
+                        notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
+                    } else
+                        removeNowPlayingNotification()
+                }
+            }
         }
     }
 }

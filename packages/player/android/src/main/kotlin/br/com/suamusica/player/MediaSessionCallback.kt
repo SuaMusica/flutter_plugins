@@ -1,7 +1,8 @@
 package br.com.suamusica.player
 
 import android.content.Intent
-import android.support.v4.media.session.MediaSessionCompat
+import android.os.Bundle
+import android.os.ResultReceiver
 import android.support.v4.media.session.MediaSessionCompat.Callback
 import android.util.Log
 
@@ -36,4 +37,8 @@ class MediaSessionCallback(): Callback() {
         super.onPause()
     }
 
+    override fun onCommand(command: String?, extras: Bundle?, cb: ResultReceiver?) {
+        Log.i("Player", "onCommand()")
+        super.onCommand(command, extras, cb)
+    }
 }
