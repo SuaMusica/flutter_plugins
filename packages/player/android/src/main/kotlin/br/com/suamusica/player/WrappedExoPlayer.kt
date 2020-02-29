@@ -393,7 +393,6 @@ class WrappedExoPlayer(val playerId: String,
                 return
             }
 
-
             // Skip building a notification when state is "none".
             val notification = if (updatedState != PlaybackStateCompat.STATE_NONE) {
                 mediaSession?.let { notificationBuilder.buildNotification(it, media!!) }
@@ -402,6 +401,10 @@ class WrappedExoPlayer(val playerId: String,
             }
 
             when (updatedState) {
+                PlaybackStateCompat.STATE_NONE,
+                PlaybackStateCompat.STATE_STOPPED -> {
+                    removeNowPlayingNotification()
+                }
                 PlaybackStateCompat.STATE_BUFFERING,
                 PlaybackStateCompat.STATE_PLAYING -> {
                     /**
