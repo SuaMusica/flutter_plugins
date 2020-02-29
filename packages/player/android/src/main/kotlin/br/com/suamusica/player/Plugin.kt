@@ -38,6 +38,7 @@ class Plugin private constructor(private val channel: MethodChannel, private val
 
     const val Ok = 1
 
+    private var playerId : String? = null
     private val players = HashMap<String, Player>()
     private var channel: MethodChannel? = null
 
@@ -61,6 +62,7 @@ class Plugin private constructor(private val channel: MethodChannel, private val
         players.clear()
         val player = WrappedExoPlayer(playerId, context, channel, plugin, handler, cookie!!)
         players[playerId] = player
+        Plugin.playerId = playerId
       }
       return players[playerId]!!
     }
@@ -70,12 +72,12 @@ class Plugin private constructor(private val channel: MethodChannel, private val
 
     @JvmStatic
     fun next() {
-      channel?.invokeMethod("commandCenter.onNext", emptyMap<String, String>())
+      channel?.invokeMethod("commandCenter.onNext", mapOf("playerId" to playerId))
     }
 
     @JvmStatic
     fun previous() {
-      channel?.invokeMethod("commandCenter.onPrevious", emptyMap<String, String>())
+      channel?.invokeMethod("commandCenter.onPrevious", mapOf("playerId" to playerId))
     }
   }
 
