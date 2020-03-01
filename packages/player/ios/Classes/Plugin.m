@@ -66,6 +66,10 @@ NSString* latestCookie = nil;
 NSString* latestPlayerId = nil;
 VoidCallback latestOnReady = nil;
 AVPlayerItem* latestPlayerItemObserved = nil;
+id playId;
+id pauseId;
+id nextTrackId;
+id previousTrackId;
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
   @synchronized(self) {
@@ -88,42 +92,68 @@ AVPlayerItem* latestPlayerItemObserved = nil;
       playersCurrentItem = [[NSMutableDictionary alloc] init];
     
       [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
-      MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
+      [self configureRemoteCommandCenter];
 
-      [commandCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
-          if (_playerId != nil) {
-              [self resume:_playerId];
-              int state = STATE_PLAYING;
-              [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
-          }
-          return MPRemoteCommandHandlerStatusSuccess;
-      }];
-
-      [commandCenter.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
-          if (_playerId != nil) {
-              [self pause:_playerId];
-              int state = STATE_PAUSED;
-              [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
-          }
-          return MPRemoteCommandHandlerStatusSuccess;
-      }];
-
-      [commandCenter.nextTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
-          if (_playerId != nil) {
-              [_channel_player invokeMethod:@"commandCenter.onNext" arguments:@{@"playerId": _playerId}];
-          }
-          return MPRemoteCommandHandlerStatusSuccess;
-      }];
-
-      [commandCenter.previousTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
-          if (_playerId != nil) {
-              [_channel_player invokeMethod:@"commandCenter.onPrevious" arguments:@{@"playerId": _playerId}];
-          }
-          return MPRemoteCommandHandlerStatusSuccess;
-      }];
   }
   return self;
 }
+
+-(void)configureRemoteCommandCenter {
+    MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
+
+    playId = [commandCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+      if (_playerId != nil) {
+          [self resume:_playerId];
+          int state = STATE_PLAYING;
+          [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
+      }
+      return MPRemoteCommandHandlerStatusSuccess;
+    }];
+
+    pauseId = [commandCenter.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+      if (_playerId != nil) {
+          [self pause:_playerId];
+          int state = STATE_PAUSED;
+          [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
+      }
+      return MPRemoteCommandHandlerStatusSuccess;
+    }];
+
+    nextTrackId = [commandCenter.nextTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+      if (_playerId != nil) {
+          [_channel_player invokeMethod:@"commandCenter.onNext" arguments:@{@"playerId": _playerId}];
+      }
+      return MPRemoteCommandHandlerStatusSuccess;
+    }];
+    
+    previousTrackId = [commandCenter.previousTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+      if (_playerId != nil) {
+          [_channel_player invokeMethod:@"commandCenter.onPrevious" arguments:@{@"playerId": _playerId}];
+      }
+      return MPRemoteCommandHandlerStatusSuccess;
+    }];
+}
+
+-(void)enableRemoteCommandCenter {
+//    [self configureRemoteCommandCenter];
+//    MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
+//    commandCenter.playCommand.enabled = true;
+//    commandCenter.pauseCommand.enabled = true;
+//    commandCenter.nextTrackCommand.enabled = true;
+//    commandCenter.previousTrackCommand.enabled = true;
+}
+
+-(void)disableRemoteCommandCenter {
+//    MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
+//    [commandCenter.playCommand removeTarget:playId];
+//    [commandCenter.playCommand removeTarget:pauseId];
+//    [commandCenter.playCommand removeTarget:nextTrackId];
+//    [commandCenter.playCommand removeTarget:previousTrackId];
+    NSError *error = nil;
+    [[AVAudioSession sharedInstance] setActive:NO error:&error];
+    [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = NULL;
+}
+
 
 -(void)setCurrentResourceLoadingRequest: (AVAssetResourceLoadingRequest*) resourceLoadingRequest {
   NSLog(@"===> set.resourceLoading: %@", resourceLoadingRequest);
@@ -215,6 +245,7 @@ AVPlayerItem* latestPlayerItemObserved = nil;
                     NSString *url = call.arguments[@"url"];
                     NSString *cookie = call.arguments[@"cookie"];
                     int isLocal = [call.arguments[@"isLocal"]intValue];
+                    __weak typeof(self) weakSelf = self;
                     [ self setUrl:url
                           isLocal:isLocal
                           cookie:cookie
@@ -224,6 +255,7 @@ AVPlayerItem* latestPlayerItemObserved = nil;
                             NSMutableDictionary * playerInfo = players[playerId];
                             [ playerInfo setObject:@true forKey:@"isPlaying" ];
                             [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": playerId, @"state": @(state)}];
+                            [weakSelf enableRemoteCommandCenter];
                             result(@(1));
                           }
                     ];
@@ -854,6 +886,7 @@ AVPlayerItem* latestPlayerItemObserved = nil;
 
 -(void) onTimeInterval: (NSString *) playerId
                   time: (CMTime) time {
+    NSLog(@"onTimeInterval...");
     int position =  CMTimeGetSeconds(time);
     NSMutableDictionary * playerInfo = players[playerId];
     AVPlayer *player = playerInfo[@"player"];
@@ -966,16 +999,19 @@ AVPlayerItem* latestPlayerItemObserved = nil;
   NSLog(@"ios -> onSoundComplete...");
   NSMutableDictionary * playerInfo = players[playerId];
 
-  if (![playerInfo[@"isPlaying"] boolValue]) {
-    return;
-  }
-
-  [ self pause:playerId ];
-  [ self seek:playerId time:CMTimeMakeWithSeconds(0,1) ];
-
-  if ([ playerInfo[@"looping"] boolValue]) {
-    [ self resume:playerId ];
-  }
+//  if (![playerInfo[@"isPlaying"] boolValue]) {
+//    return;
+//  }
+//
+//  [ self pause:playerId ];
+//  [ self seek:playerId time:CMTimeMakeWithSeconds(0,1) ];
+//
+//  if ([ playerInfo[@"looping"] boolValue]) {
+//    [ self resume:playerId ];
+//  }
+  
+  NSLog(@"ios -> Disabling Remote Command Center");
+  [self disableRemoteCommandCenter];
 
   [ _channel_player invokeMethod:@"audio.onComplete" arguments:@{@"playerId": playerId}];
 }
@@ -1100,4 +1136,5 @@ AVPlayerItem* latestPlayerItemObserved = nil;
 }
 
 @end
+
 
