@@ -66,10 +66,6 @@ NSString* latestCookie = nil;
 NSString* latestPlayerId = nil;
 VoidCallback latestOnReady = nil;
 AVPlayerItem* latestPlayerItemObserved = nil;
-id playId;
-id pauseId;
-id nextTrackId;
-id previousTrackId;
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
   @synchronized(self) {
@@ -99,7 +95,7 @@ id previousTrackId;
     [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
     MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
 
-    playId = [commandCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+    [commandCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
       if (_playerId != nil) {
           [self resume:_playerId];
           int state = STATE_PLAYING;
@@ -108,7 +104,7 @@ id previousTrackId;
       return MPRemoteCommandHandlerStatusSuccess;
     }];
 
-    pauseId = [commandCenter.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+    [commandCenter.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
       if (_playerId != nil) {
           [self pause:_playerId];
           int state = STATE_PAUSED;
@@ -117,14 +113,14 @@ id previousTrackId;
       return MPRemoteCommandHandlerStatusSuccess;
     }];
 
-    nextTrackId = [commandCenter.nextTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+    [commandCenter.nextTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
       if (_playerId != nil) {
           [_channel_player invokeMethod:@"commandCenter.onNext" arguments:@{@"playerId": _playerId}];
       }
       return MPRemoteCommandHandlerStatusSuccess;
     }];
     
-    previousTrackId = [commandCenter.previousTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+    [commandCenter.previousTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
       if (_playerId != nil) {
           [_channel_player invokeMethod:@"commandCenter.onPrevious" arguments:@{@"playerId": _playerId}];
       }
