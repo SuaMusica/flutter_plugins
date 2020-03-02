@@ -98,6 +98,7 @@ id previousTrackId;
 }
 
 -(void)configureRemoteCommandCenter {
+    NSLog(@"MPRemote: Enabling Remote Command Center...");
     [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
     MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
 
@@ -134,27 +135,16 @@ id previousTrackId;
     }];
 }
 
--(void)enableRemoteCommandCenter {
-    [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
-//    [self configureRemoteCommandCenter];
-//    MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
-//    commandCenter.playCommand.enabled = true;
-//    commandCenter.pauseCommand.enabled = true;
-//    commandCenter.nextTrackCommand.enabled = true;
-//    commandCenter.previousTrackCommand.enabled = true;
-}
-
 -(void)disableRemoteCommandCenter:(NSString *) playerId {
+    NSLog(@"MPRemote: Disabling Remote Command Center...");
     [[UIApplication sharedApplication] endReceivingRemoteControlEvents];
     NSMutableDictionary * playerInfo = players[playerId];
     [playerInfo setObject:@false forKey:@"isPlaying"];
-    NSLog(@"onTimeInterval: DISABLE...");
+    NSLog(@"MPRemote: DISABLE...");
     //AVPlayer *player = playerInfo[@"player"];
     NSError *error;
     [[AVAudioSession sharedInstance] setActive:NO withOptions:AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation error:&error];
-    [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = @{
-       MPMediaItemPropertyMediaType: [NSNumber numberWithInt:0], // None
-    };
+    [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = NULL;
 }
 
 
@@ -223,7 +213,7 @@ id previousTrackId;
                   },
                 @"clean":
                   ^{
-//                    NSLog(@"clean");
+                    NSLog(@"MPRemote: CLEAN");
                     [self disableRemoteCommandCenter:playerId];
                   },                  
                 @"stop":
@@ -253,7 +243,6 @@ id previousTrackId;
                     NSString *url = call.arguments[@"url"];
                     NSString *cookie = call.arguments[@"cookie"];
                     int isLocal = [call.arguments[@"isLocal"]intValue];
-                    __weak typeof(self) weakSelf = self;
                     [ self setUrl:url
                           isLocal:isLocal
                           cookie:cookie
@@ -263,10 +252,10 @@ id previousTrackId;
                             NSMutableDictionary * playerInfo = players[playerId];
                             [ playerInfo setObject:@true forKey:@"isPlaying" ];
                             [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": playerId, @"state": @(state)}];
-                            [weakSelf enableRemoteCommandCenter];
                             result(@(1));
                           }
                     ];
+                    [self configureRemoteCommandCenter];
                   },
                 @"getDuration":
                     ^{
@@ -859,6 +848,7 @@ id previousTrackId;
          playerId:playerId
          onReady:latestOnReady
   ];
+  [self configureRemoteCommandCenter];
 }
 
 -(void) updateDuration: (NSString *) playerId
@@ -896,7 +886,7 @@ id previousTrackId;
                   time: (CMTime) time {
     NSMutableDictionary * playerInfo = players[playerId];
     if ([playerInfo[@"isPlaying"] boolValue]) {
-        NSLog(@"onTimeInterval: STATUS: PLAYING");
+        NSLog(@"MPRemote: STATUS: PLAYING");
         int position =  CMTimeGetSeconds(time);
         NSMutableDictionary * playerInfo = players[playerId];
         AVPlayer *player = playerInfo[@"player"];
@@ -946,9 +936,7 @@ id previousTrackId;
         playerInfo = nil;
         player = nil;
     } else {
-        NSLog(@"onTimeInterval: STATUS: NOT PLAYING");
-        [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = @{
-        };
+        NSLog(@"MPRemote: STATUS: NOT PLAYING");
     }
 }
 
@@ -969,6 +957,7 @@ id previousTrackId;
   [playerInfo setObject:@true forKey:@"isPlaying"];
   int state = STATE_PLAYING;
   [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": playerId, @"state": @(state)}];
+  [self configureRemoteCommandCenter];
 }
 
 -(void) setVolume: (float) volume
@@ -1006,7 +995,7 @@ id previousTrackId;
 
 -(void) onSoundComplete: (NSString *) playerId {
   NSLog(@"ios -> onSoundComplete...");
-  NSMutableDictionary * playerInfo = players[playerId];
+//  NSMutableDictionary * playerInfo = players[playerId];
 //  if (![playerInfo[@"isPlaying"] boolValue]) {
 //    return;
 //  }
