@@ -129,9 +129,10 @@ class Player {
     return Ok;
   }
 
-  int removeAll() {
-    executeCritialCode(() {
+  Future<int> removeAll() async {
+    executeCritialCode(() async {
       _queue.removeAll();
+      await _invokeMethod('clear');
     });
     return Ok;
   }
@@ -143,7 +144,7 @@ class Player {
     return Ok;
   }
 
-  int clear() => removeAll();
+  Future<int> clear() async => removeAll();
 
   Media get current => executeCritialCode(() => _queue.current);
 

@@ -91,7 +91,6 @@ id previousTrackId;
       players = [[NSMutableDictionary alloc] init];
       playersCurrentItem = [[NSMutableDictionary alloc] init];
     
-      [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
       [self configureRemoteCommandCenter];
 
   }
@@ -99,6 +98,7 @@ id previousTrackId;
 }
 
 -(void)configureRemoteCommandCenter {
+    [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
     MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
 
     playId = [commandCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
@@ -135,6 +135,7 @@ id previousTrackId;
 }
 
 -(void)enableRemoteCommandCenter {
+    [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
 //    [self configureRemoteCommandCenter];
 //    MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
 //    commandCenter.playCommand.enabled = true;
@@ -143,15 +144,17 @@ id previousTrackId;
 //    commandCenter.previousTrackCommand.enabled = true;
 }
 
--(void)disableRemoteCommandCenter {
-//    MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
-//    [commandCenter.playCommand removeTarget:playId];
-//    [commandCenter.playCommand removeTarget:pauseId];
-//    [commandCenter.playCommand removeTarget:nextTrackId];
-//    [commandCenter.playCommand removeTarget:previousTrackId];
-    NSError *error = nil;
-    [[AVAudioSession sharedInstance] setActive:NO error:&error];
-    [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = NULL;
+-(void)disableRemoteCommandCenter:(NSString *) playerId {
+    [[UIApplication sharedApplication] endReceivingRemoteControlEvents];
+    NSMutableDictionary * playerInfo = players[playerId];
+    [playerInfo setObject:@false forKey:@"isPlaying"];
+    NSLog(@"onTimeInterval: DISABLE...");
+    //AVPlayer *player = playerInfo[@"player"];
+    NSError *error;
+    [[AVAudioSession sharedInstance] setActive:NO withOptions:AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation error:&error];
+    [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = @{
+       MPMediaItemPropertyMediaType: [NSNumber numberWithInt:0], // None
+    };
 }
 
 
@@ -218,6 +221,11 @@ id previousTrackId;
 //                    NSLog(@"resume");
                     [self resume:playerId];
                   },
+                @"clean":
+                  ^{
+//                    NSLog(@"clean");
+                    [self disableRemoteCommandCenter:playerId];
+                  },                  
                 @"stop":
                   ^{
 //                    NSLog(@"stop");
@@ -886,61 +894,62 @@ id previousTrackId;
 
 -(void) onTimeInterval: (NSString *) playerId
                   time: (CMTime) time {
-    NSLog(@"onTimeInterval...");
-    int position =  CMTimeGetSeconds(time);
     NSMutableDictionary * playerInfo = players[playerId];
-    AVPlayer *player = playerInfo[@"player"];
-     
-    CMTime duration = [[[player currentItem]  asset] duration];
-    int _duration = CMTimeGetSeconds(duration);
+    if ([playerInfo[@"isPlaying"] boolValue]) {
+        NSLog(@"onTimeInterval: STATUS: PLAYING");
+        int position =  CMTimeGetSeconds(time);
+        NSMutableDictionary * playerInfo = players[playerId];
+        AVPlayer *player = playerInfo[@"player"];
+         
+        CMTime duration = [[[player currentItem]  asset] duration];
+        int _duration = CMTimeGetSeconds(duration);
 
-    NSDictionary *currentItem = playersCurrentItem[playerId];
-    NSString *name = currentItem[@"name"];
-    NSString *author = currentItem[@"author"];
-    NSString *coverUrl = currentItem[@"coverUrl"];
-  
-    [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = @{
-       MPMediaItemPropertyTitle: name,
-       MPMediaItemPropertyAlbumTitle: name,
-       MPMediaItemPropertyArtist: author,
-       MPMediaItemPropertyPlaybackDuration: [NSNumber numberWithInt:_duration],
-       MPNowPlayingInfoPropertyElapsedPlaybackTime: [NSNumber numberWithInt:position]
-    };
-    int durationInMillis = _duration*1000;
-    int positionInMillis = position*1000;
+        NSDictionary *currentItem = playersCurrentItem[playerId];
+        NSString *name = currentItem[@"name"];
+        NSString *author = currentItem[@"author"];
+        NSString *coverUrl = currentItem[@"coverUrl"];
+      
+        int durationInMillis = _duration*1000;
+        int positionInMillis = position*1000;
 
-    [_channel_player invokeMethod:@"audio.onCurrentPosition" arguments:@{@"playerId": playerId, @"position": @(positionInMillis), @"duration": @(durationInMillis)}];
-    
-    dispatch_async(dispatch_get_global_queue(0,0), ^{
-        NSData * data = [[NSData alloc] initWithContentsOfURL: [NSURL URLWithString: coverUrl]];
-        if ( data == nil )
-            return;
-        dispatch_async(dispatch_get_main_queue(), ^{
-            UIImage* image = [UIImage imageWithData: data];
-            MPMediaItemArtwork* art = nil;
-            if (@available(iOS 10.0, *)) {
-                art = [[MPMediaItemArtwork alloc] initWithBoundsSize:image.size requestHandler:^UIImage * _Nonnull(CGSize size) {
-                    return image;
-                }];
-            } else {
-                art = [[MPMediaItemArtwork alloc] initWithImage: image];
-            }
-            [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = @{
-                   MPMediaItemPropertyTitle: name,
-                   MPMediaItemPropertyAlbumTitle: name,
-                   MPMediaItemPropertyArtist: author,
-                   MPMediaItemPropertyArtwork: art,
-                   MPMediaItemPropertyPlaybackDuration: [NSNumber numberWithInt:_duration],
-                   MPNowPlayingInfoPropertyElapsedPlaybackTime: [NSNumber numberWithInt:position]
-                };
-            image = nil;
-            art = nil;
+        [_channel_player invokeMethod:@"audio.onCurrentPosition" arguments:@{@"playerId": playerId, @"position": @(positionInMillis), @"duration": @(durationInMillis)}];
+        
+        dispatch_async(dispatch_get_global_queue(0,0), ^{
+            NSData * data = [[NSData alloc] initWithContentsOfURL: [NSURL URLWithString: coverUrl]];
+            if ( data == nil )
+                return;
+            dispatch_async(dispatch_get_main_queue(), ^{
+                UIImage* image = [UIImage imageWithData: data];
+                MPMediaItemArtwork* art = nil;
+                if (@available(iOS 10.0, *)) {
+                    art = [[MPMediaItemArtwork alloc] initWithBoundsSize:image.size requestHandler:^UIImage * _Nonnull(CGSize size) {
+                        return image;
+                    }];
+                } else {
+                    art = [[MPMediaItemArtwork alloc] initWithImage: image];
+                }
+                [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = @{
+                       MPMediaItemPropertyMediaType: [NSNumber numberWithInt:1], // Audio
+                       MPMediaItemPropertyTitle: name,
+                       MPMediaItemPropertyAlbumTitle: name,
+                       MPMediaItemPropertyArtist: author,
+                       MPMediaItemPropertyArtwork: art,
+                       MPMediaItemPropertyPlaybackDuration: [NSNumber numberWithInt:_duration],
+                       MPNowPlayingInfoPropertyElapsedPlaybackTime: [NSNumber numberWithInt:position]
+                    };
+                image = nil;
+                art = nil;
+            });
+            data = nil;
         });
-        data = nil;
-    });
-    
-    playerInfo = nil;
-    player = nil;
+        
+        playerInfo = nil;
+        player = nil;
+    } else {
+        NSLog(@"onTimeInterval: STATUS: NOT PLAYING");
+        [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = @{
+        };
+    }
 }
 
 -(void) pause: (NSString *) playerId {
@@ -998,7 +1007,6 @@ id previousTrackId;
 -(void) onSoundComplete: (NSString *) playerId {
   NSLog(@"ios -> onSoundComplete...");
   NSMutableDictionary * playerInfo = players[playerId];
-
 //  if (![playerInfo[@"isPlaying"] boolValue]) {
 //    return;
 //  }
@@ -1011,7 +1019,7 @@ id previousTrackId;
 //  }
   
   NSLog(@"ios -> Disabling Remote Command Center");
-  [self disableRemoteCommandCenter];
+  [self disableRemoteCommandCenter:playerId];
 
   [ _channel_player invokeMethod:@"audio.onComplete" arguments:@{@"playerId": playerId}];
 }
@@ -1136,5 +1144,4 @@ id previousTrackId;
 }
 
 @end
-
 
