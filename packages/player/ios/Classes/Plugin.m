@@ -66,7 +66,10 @@ NSString* latestCookie = nil;
 NSString* latestPlayerId = nil;
 VoidCallback latestOnReady = nil;
 AVPlayerItem* latestPlayerItemObserved = nil;
-BOOL remoteCenterIsOn = FALSE;
+id playId;
+id pauseId;
+id nextTrackId;
+id previousTrackId;
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
   @synchronized(self) {
@@ -96,7 +99,7 @@ BOOL remoteCenterIsOn = FALSE;
     [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
     MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
 
-    [commandCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+    playId = [commandCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
       if (_playerId != nil) {
           [self resume:_playerId];
           int state = STATE_PLAYING;
@@ -105,7 +108,7 @@ BOOL remoteCenterIsOn = FALSE;
       return MPRemoteCommandHandlerStatusSuccess;
     }];
 
-    [commandCenter.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+    pauseId = [commandCenter.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
       if (_playerId != nil) {
           [self pause:_playerId];
           int state = STATE_PAUSED;
@@ -114,20 +117,19 @@ BOOL remoteCenterIsOn = FALSE;
       return MPRemoteCommandHandlerStatusSuccess;
     }];
 
-    [commandCenter.nextTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+    nextTrackId = [commandCenter.nextTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
       if (_playerId != nil) {
           [_channel_player invokeMethod:@"commandCenter.onNext" arguments:@{@"playerId": _playerId}];
       }
       return MPRemoteCommandHandlerStatusSuccess;
     }];
     
-    [commandCenter.previousTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+    previousTrackId = [commandCenter.previousTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
       if (_playerId != nil) {
           [_channel_player invokeMethod:@"commandCenter.onPrevious" arguments:@{@"playerId": _playerId}];
       }
       return MPRemoteCommandHandlerStatusSuccess;
     }];
-    remoteCenterIsOn = TRUE;
 }
 
 -(void)disableRemoteCommandCenter:(NSString *) playerId {
@@ -138,7 +140,6 @@ BOOL remoteCenterIsOn = FALSE;
     [[AVAudioSession sharedInstance] setActive:NO withOptions:AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation error:&error];
     [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = NULL;
     [[UIApplication sharedApplication] endReceivingRemoteControlEvents];
-    remoteCenterIsOn = FALSE;
     NSLog(@"Player: MPRemote: Disabled Remote Command Center! Done!");
 }
 
@@ -953,9 +954,6 @@ BOOL remoteCenterIsOn = FALSE;
   [playerInfo setObject:@true forKey:@"isPlaying"];
   int state = STATE_PLAYING;
   [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": playerId, @"state": @(state)}];
-  if (remoteCenterIsOn == FALSE) {
-    [self configureRemoteCommandCenter];
-  }
 }
 
 -(void) setVolume: (float) volume
