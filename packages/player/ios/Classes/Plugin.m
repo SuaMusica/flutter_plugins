@@ -66,6 +66,7 @@ NSString* latestCookie = nil;
 NSString* latestPlayerId = nil;
 VoidCallback latestOnReady = nil;
 AVPlayerItem* latestPlayerItemObserved = nil;
+BOOL remoteCenterIsOn = FALSE;
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
   @synchronized(self) {
@@ -126,6 +127,7 @@ AVPlayerItem* latestPlayerItemObserved = nil;
       }
       return MPRemoteCommandHandlerStatusSuccess;
     }];
+    remoteCenterIsOn = TRUE;
 }
 
 -(void)disableRemoteCommandCenter:(NSString *) playerId {
@@ -136,6 +138,7 @@ AVPlayerItem* latestPlayerItemObserved = nil;
     [[AVAudioSession sharedInstance] setActive:NO withOptions:AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation error:&error];
     [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = NULL;
     [[UIApplication sharedApplication] endReceivingRemoteControlEvents];
+    remoteCenterIsOn = FALSE;
     NSLog(@"Player: MPRemote: Disabled Remote Command Center! Done!");
 }
 
@@ -950,6 +953,9 @@ AVPlayerItem* latestPlayerItemObserved = nil;
   [playerInfo setObject:@true forKey:@"isPlaying"];
   int state = STATE_PLAYING;
   [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": playerId, @"state": @(state)}];
+  if (remoteCenterIsOn == FALSE) {
+    [self configureRemoteCommandCenter];
+  }
 }
 
 -(void) setVolume: (float) volume
