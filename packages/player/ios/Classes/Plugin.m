@@ -90,9 +90,6 @@ id previousTrackId;
       serialQueue = dispatch_queue_create("com.suamusica.player.queue", DISPATCH_QUEUE_SERIAL);
       players = [[NSMutableDictionary alloc] init];
       playersCurrentItem = [[NSMutableDictionary alloc] init];
-    
-      [self configureRemoteCommandCenter];
-
   }
   return self;
 }
@@ -137,14 +134,13 @@ id previousTrackId;
 
 -(void)disableRemoteCommandCenter:(NSString *) playerId {
     NSLog(@"MPRemote: Disabling Remote Command Center...");
-    [[UIApplication sharedApplication] endReceivingRemoteControlEvents];
     NSMutableDictionary * playerInfo = players[playerId];
     [playerInfo setObject:@false forKey:@"isPlaying"];
-    NSLog(@"MPRemote: DISABLE...");
-    //AVPlayer *player = playerInfo[@"player"];
     NSError *error;
     [[AVAudioSession sharedInstance] setActive:NO withOptions:AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation error:&error];
     [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = NULL;
+    [[UIApplication sharedApplication] endReceivingRemoteControlEvents];
+    NSLog(@"MPRemote: Disabled Remote Command Center! Done!");
 }
 
 
@@ -211,11 +207,11 @@ id previousTrackId;
 //                    NSLog(@"resume");
                     [self resume:playerId];
                   },
-                @"clean":
+                @"clear":
                   ^{
-                    NSLog(@"MPRemote: CLEAN");
+                    NSLog(@"MPRemote: clear");
                     [self disableRemoteCommandCenter:playerId];
-                  },                  
+                  },
                 @"stop":
                   ^{
 //                    NSLog(@"stop");
@@ -255,7 +251,6 @@ id previousTrackId;
                             result(@(1));
                           }
                     ];
-                    [self configureRemoteCommandCenter];
                   },
                 @"getDuration":
                     ^{
@@ -957,7 +952,6 @@ id previousTrackId;
   [playerInfo setObject:@true forKey:@"isPlaying"];
   int state = STATE_PLAYING;
   [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": playerId, @"state": @(state)}];
-  [self configureRemoteCommandCenter];
 }
 
 -(void) setVolume: (float) volume
