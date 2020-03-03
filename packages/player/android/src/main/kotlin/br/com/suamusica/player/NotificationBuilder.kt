@@ -52,22 +52,30 @@ class NotificationBuilder(private val context: Context) {
     private val stopPendingIntent =
             MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_STOP)
 
-    fun buildNotification(media: Media): Notification? {
+    fun buildNotification(mediaSession: MediaSessionCompat, media: Media): Notification? {
         if (shouldCreateNowPlayingChannel()) {
             createNowPlayingChannel()
         }
 
+        val controller = MediaControllerCompat(context, mediaSession.sessionToken)
+        val playbackState = controller.playbackState
         val builder = NotificationCompat.Builder(context, NOW_PLAYING_CHANNEL)
-
         val actions = mutableListOf(0)
         var playPauseIndex = 0
         builder.addAction(skipToPreviousAction)
         ++playPauseIndex
         actions.add(1)
-        
-        builder.addAction(pauseAction)
-        
-        //builder.addAction(playAction)
+
+        if (playbackState.isPlaying) {
+            Log.i("NotificationBuilder", "Player is playing...")
+            builder.addAction(pauseAction)
+        } else if (playbackState.isPlayEnabled) {
+            Log.i("NotificationBuilder", "Player is NOT playing...")
+            builder.addAction(playAction)
+        } else {
+            Log.i("NotificationBuilder", "ELSE")
+            builder.addAction(playAction)
+        }
         
         builder.addAction(skipToNextAction)
         actions.add(playPauseIndex + 1)

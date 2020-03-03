@@ -34,10 +34,11 @@ class _SMPlayerState extends State<SMPlayer> {
       var player = Player(
         cookieSigner: cookieSigner,
         autoPlay: false,
+        localMediaValidator: (m) async => m.url,
       );
       player.onEvent.listen((Event event) async {
-        print(
-            "Event: [${event.type}] [${event.media.author}-${event.media.name}] [${event.position}] [${event.duration}]");
+        // print(
+        //     "Event: [${event.type}] [${event.media.author}-${event.media.name}] [${event.position}] [${event.duration}]");
 
         switch (event.type) {
           case EventType.BEFORE_PLAY:
@@ -85,86 +86,40 @@ class _SMPlayerState extends State<SMPlayer> {
       });
 
       var media1 = Media(
-          id: 1,
-          albumId: 1,
-          name: "Track 1",
-          url:
-              "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
-          coverUrl:
-              "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
-          author: "Xand Avião",
-          isLocal: false,
-          isVerified: true,
-          shareUrl: "");
+        id: 1,
+        albumId: 1,
+        name: "Track 1",
+        url:
+            "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
+        coverUrl:
+            "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+        author: "Xand Avião",
+        isLocal: false,
+        isVerified: true,
+        shareUrl: "",
+        isSpot: false,
+        ownerId: 0,
+        playlistId: 0,
+      );
 
       var media2 = Media(
-          id: 2,
-          albumId: 1,
-          name: "Track 2",
-          url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
-          coverUrl:
-              "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
-          author: "Xand Avião",
-          isLocal: false,
-          isVerified: true,
-          shareUrl: "");
-
-      // var media3 = Media(
-      //     id: 3,
-      //     albumId: 1,
-      //     name: "Track 3",
-      //     url:
-      //         "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
-      //     coverUrl:
-      //         "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
-      //     author: "Xand Avião",
-      //     isLocal: false,
-      //     isVerified: true,
-      //     shareUrl: "");
-
-      // var media4 = Media(
-      //     id: 4,
-      //     albumId: 1,
-      //     name: "Track 4",
-      //     url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
-      //     coverUrl:
-      //         "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
-      //     author: "Xand Avião",
-      //     isLocal: false,
-      //     isVerified: true,
-      //     shareUrl: "");
-
-      // var media5 = Media(
-      //     id: 5,
-      //     albumId: 1,
-      //     name: "Track 5",
-      //     url:
-      //         "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
-      //     coverUrl:
-      //         "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
-      //     author: "Xand Avião",
-      //     isLocal: false,
-      //     isVerified: true,
-      //     shareUrl: "");
-
-      // var media6 = Media(
-      //     id: 6,
-      //     albumId: 1,
-      //     name: "Track 6",
-      //     url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
-      //     coverUrl:
-      //         "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
-      //     author: "Xand Avião",
-      //     isLocal: false,
-      //     isVerified: true,
-      //     shareUrl: "");
+        id: 2,
+        albumId: 1,
+        name: "Track 2",
+        url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
+        coverUrl:
+            "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+        author: "Xand Avião",
+        isLocal: false,
+        isVerified: true,
+        shareUrl: "",
+        isSpot: false,
+        ownerId: 0,
+        playlistId: 0,
+      );
 
       player.enqueue(media1);
       player.enqueue(media2);
-      // player.enqueue(media3);
-      // player.enqueue(media4);
-      // player.enqueue(media5);
-      // player.enqueue(media6);
 
       if (!mounted) return;
 

@@ -1,21 +1,27 @@
 package br.com.suamusica.player
 
+import android.annotation.SuppressLint
+import android.app.PendingIntent
+import android.app.Service
+import android.content.ComponentName
 import android.os.Handler
 import android.util.Log
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
-import android.media.AudioManager
 import android.net.Uri
 import android.net.wifi.WifiManager
-import android.os.Build
-import android.os.Bundle
 import android.os.PowerManager
-import android.os.ResultReceiver
 import android.os.AsyncTask
+import android.support.v4.media.MediaMetadataCompat
+import android.support.v4.media.session.MediaControllerCompat
+import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.PlaybackStateCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
+import androidx.media.session.MediaButtonReceiver
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.audio.AudioAttributes
+import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.source.hls.HlsMediaSource
@@ -35,6 +41,7 @@ class WrappedExoPlayer(val playerId: String,
                        val plugin: Plugin,
                        val handler: Handler,
                        override val cookie: String) : Player {
+    val TAG = "Player"
     override var volume = 1.0
     override val duration: Long
         get() = player.duration
@@ -46,8 +53,18 @@ class WrappedExoPlayer(val playerId: String,
 
     var media: Media? = null
 
+    private val mediaControllerCallback = MediaControllerCallback()
+
+    // Build a PendingIntent that can be used to launch the UI.
+    val sessionActivityPendingIntent =
+            context.packageManager?.getLaunchIntentForPackage(context.packageName)?.let { sessionIntent ->
+                PendingIntent.getActivity(this.context, 0, sessionIntent, 0)
+            }
     val notificationBuilder = NotificationBuilder(context)
     val notificationManager = NotificationManagerCompat.from(context)
+    private var mediaSession: MediaSessionCompat? = null
+    private var mediaController: MediaControllerCompat? = null
+    private var mediaSessionConnector: MediaSessionConnector? = null
 
     private var wifiLock: WifiManager.WifiLock? = null
     private var wakeLock: PowerManager.WakeLock? = null
@@ -61,13 +78,52 @@ class WrappedExoPlayer(val playerId: String,
 
     private var previousState: Int = -1
 
-    private fun initializeService() {
+    val player = ExoPlayerFactory.newSimpleInstance(context).apply {
+        setAudioAttributes(uAmpAudioAttributes, true)
+        addListener(playerEventListener())
+    }
+
+    init {
         wifiLock = (context.getSystemService(Context.WIFI_SERVICE) as WifiManager)
-            .createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "wifiLock")
+                .createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "wifiLock")
         wakeLock = (context.getSystemService(Context.POWER_SERVICE) as PowerManager)
-            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ON_AFTER_RELEASE, "suamusica:wakeLock")
+                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ON_AFTER_RELEASE, "suamusica:wakeLock")
         wifiLock?.setReferenceCounted(false)
         wakeLock?.setReferenceCounted(false)
+
+        // Create a new MediaSession.
+        val mediaButtonReceiver = ComponentName(context, MediaButtonReceiver::class.java)
+        mediaSession = mediaSession?.let { it } ?: MediaSessionCompat(this.context, "MusicService", mediaButtonReceiver, null)
+                .apply {
+                    setSessionActivity(sessionActivityPendingIntent)
+                    isActive = true
+                    setCallback(MediaSessionCallback())
+                }
+
+        mediaSession?.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
+
+        mediaSession?.let { mediaSession ->
+            val sessionToken = mediaSession.sessionToken
+
+            mediaController = MediaControllerCompat(this.context, sessionToken).also { mediaController ->
+                mediaController.registerCallback(mediaControllerCallback)
+
+                mediaSessionConnector = MediaSessionConnector(mediaSession).also { connector ->
+                    // Produces DataSource instances through which media data is loaded.
+                    connector.setPlayer(player)
+                }
+            }
+        }
+
+//        val stateBuilder = PlaybackStateCompat.Builder()
+//                .setActions(
+//                        PlaybackStateCompat.ACTION_PLAY or
+//                                PlaybackStateCompat.ACTION_PAUSE or
+//                                PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
+//                                PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+//                                PlaybackStateCompat.ACTION_PLAY_PAUSE)
+//
+//        mediaSession?.setPlaybackState(stateBuilder.build())
     }
 
     private fun playerEventListener(): com.google.android.exoplayer2.Player.EventListener {
@@ -120,7 +176,7 @@ class WrappedExoPlayer(val playerId: String,
                                     } else {
                                         channelManager.notifyPlayerStateChange(playerId, status)
                                     }
-                                    
+
                                 }
                             }
                             ExoPlayer.STATE_ENDED -> { // 4
@@ -162,11 +218,6 @@ class WrappedExoPlayer(val playerId: String,
         }
     }
 
-    val player = ExoPlayerFactory.newSimpleInstance(context).apply {
-        setAudioAttributes(uAmpAudioAttributes, true)
-        addListener(playerEventListener())
-    }
-
     override fun prepare(media: Media) {
         this.media = media
         val defaultHttpDataSourceFactory = DefaultHttpDataSourceFactory("mp.next")
@@ -205,7 +256,7 @@ class WrappedExoPlayer(val playerId: String,
             player.playWhenReady = true
 
             AsyncTask.execute {
-                val notification = notificationBuilder.buildNotification(this.media!!)
+                val notification = notificationBuilder.buildNotification(this.mediaSession!!, this.media!!)
                 notification?.let {
                     notificationManager?.notify(NOW_PLAYING_NOTIFICATION, it)
                 }
@@ -308,6 +359,71 @@ class WrappedExoPlayer(val playerId: String,
         fun stopTracking(callable: () -> Unit) {
             shutdownTask = callable
             stopTracking()
+        }
+    }
+
+    private inner class MediaControllerCallback : MediaControllerCompat.Callback() {
+        override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
+            Log.d("Player",
+                    "onMetadataChanged: metadata: $metadata")
+        }
+
+        override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
+            Log.d("Player", "onPlaybackStateChanged state: $state")
+            AsyncTask.execute {
+                updateNotification(state!!)
+            }
+        }
+
+        override fun onQueueChanged(queue: MutableList<MediaSessionCompat.QueueItem>?) {
+            Log.d("Player", "onQueueChanged queue: $queue")
+        }
+
+        private fun removeNowPlayingNotification() {
+            Log.d("Player", "removeNowPlayingNotification")
+            AsyncTask.execute {
+                notificationManager?.cancel(NOW_PLAYING_NOTIFICATION)
+            }
+        }
+
+        @SuppressLint("WakelockTimeout")
+        private fun updateNotification(state: PlaybackStateCompat) {
+            val updatedState = state.state
+            if (mediaController?.metadata == null || mediaSession == null) {
+                return
+            }
+
+            // Skip building a notification when state is "none".
+            val notification = if (updatedState != PlaybackStateCompat.STATE_NONE) {
+                mediaSession?.let { notificationBuilder.buildNotification(it, media!!) }
+            } else {
+                null
+            }
+
+            when (updatedState) {
+                PlaybackStateCompat.STATE_NONE,
+                PlaybackStateCompat.STATE_STOPPED -> {
+                    removeNowPlayingNotification()
+                }
+                PlaybackStateCompat.STATE_BUFFERING,
+                PlaybackStateCompat.STATE_PLAYING -> {
+                    /**
+                     * This may look strange, but the documentation for [Service.startForeground]
+                     * notes that "calling this method does *not* put the service in the started
+                     * state itself, even though the name sounds like it."
+                     */
+                    if (notification != null) {
+                        notificationManager.notify(NOW_PLAYING_NOTIFICATION, notification)
+                    }
+                }
+                else -> {
+                    if (notification != null) {
+                        Log.d("Player", "updateNotification notify 2")
+                        notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
+                    } else
+                        removeNowPlayingNotification()
+                }
+            }
         }
     }
 }
