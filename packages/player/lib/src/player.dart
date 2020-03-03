@@ -65,7 +65,8 @@ class Player {
     arguments ??= const {};
 
     return executeCritialCode(() {
-      Future<bool> requiresCookie = Future.value(method == 'play');
+      Future<bool> requiresCookie =
+          Future.value(true); // changing to always pass cookies
       return requiresCookie.then((requires) {
         Future<CookiesForCustomPolicy> cookies = Future.value(_cookies);
         if (requires) {
