@@ -39,7 +39,7 @@ class Plugin private constructor(private val channel: MethodChannel, private val
 
     const val Ok = 1
 
-    private var playerId : String? = null
+    var playerId : String? = null
     private val players = HashMap<String, Player>()
     private var channel: MethodChannel? = null
 
