@@ -244,10 +244,6 @@ id previousTrackId;
                           cookie:cookie
                           playerId:playerId
                           onReady:^(NSString * playerId) {
-                            int state = STATE_PLAYING;
-                            NSMutableDictionary * playerInfo = players[playerId];
-                            [ playerInfo setObject:@true forKey:@"isPlaying" ];
-                            [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": playerId, @"state": @(state)}];
                             result(@(1));
                           }
                     ];
@@ -608,12 +604,13 @@ id previousTrackId;
         [self observePlayerItem:playerItem playerId:playerId];
       } else if ([[player currentItem] status ] == AVPlayerItemStatusReadyToPlay) {
         onReady(playerId);
+      } else if ([[player currentItem] status ] == AVPlayerItemStatusFailed) {
+        NSLog(@"Player: FAILED STATUS. Notifying app that an error happened.");
+        [self disposePlayerItem:[player currentItem]];
+        [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_FAILED)}];
       } else {
-        [self treatPlayerObservers:player url:url];
-        [self disposePlayer];
         NSLog(@"Player: player status: %ld",(long)[[player currentItem] status ]);
-        NSLog(@"Player: Trying restart music after duck");
-        [self setUrl:latestUrl isLocal:latestIsLocal cookie:latestCookie playerId:latestPlayerId onReady:latestOnReady];
+        NSLog(@"Player: If status 0 wait player reload alone.");
       }
     }
   }
@@ -881,7 +878,6 @@ id previousTrackId;
                   time: (CMTime) time {
     NSMutableDictionary * playerInfo = players[playerId];
     if ([playerInfo[@"isPlaying"] boolValue]) {
-        NSLog(@"Player: MPRemote: STATUS: PLAYING");
         int position =  CMTimeGetSeconds(time);
         NSMutableDictionary * playerInfo = players[playerId];
         AVPlayer *player = playerInfo[@"player"];
@@ -995,18 +991,6 @@ id previousTrackId;
 
 -(void) onSoundComplete: (NSString *) playerId {
   NSLog(@"Player: ios -> onSoundComplete...");
-//  NSMutableDictionary * playerInfo = players[playerId];
-//  if (![playerInfo[@"isPlaying"] boolValue]) {
-//    return;
-//  }
-//
-//  [ self pause:playerId ];
-//  [ self seek:playerId time:CMTimeMakeWithSeconds(0,1) ];
-//
-//  if ([ playerInfo[@"looping"] boolValue]) {
-//    [ self resume:playerId ];
-//  }
-  
   NSLog(@"Player: ios -> Disabling Remote Command Center");
   [self disableRemoteCommandCenter:playerId];
 
@@ -1073,6 +1057,7 @@ id previousTrackId;
     NSMutableDictionary * playerInfo = players[_playerId];
     NSNumber* newValue = [change objectForKey:NSKeyValueChangeNewKey];
     BOOL shouldStartPlaySoon = [newValue boolValue];
+    NSLog(@"Player: observeValueForKeyPath: %@ -- shouldStartPlaySoon: %s", keyPath, shouldStartPlaySoon ? "YES": "NO");
     if (shouldStartPlaySoon) {
       [ playerInfo setObject:@true forKey:@"isPlaying" ];
       int state = STATE_PLAYING;
@@ -1133,4 +1118,3 @@ id previousTrackId;
 }
 
 @end
-
