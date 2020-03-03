@@ -60,7 +60,6 @@ class Plugin private constructor(private val channel: MethodChannel, private val
                           handler: Handler,
                           cookie: String?): Player {
       if (!players.containsKey(playerId)) {
-        players.clear()
         val player = WrappedExoPlayer(playerId, context, channel, plugin, handler, cookie!!)
         players[playerId] = player
         Plugin.playerId = playerId
@@ -96,7 +95,7 @@ class Plugin private constructor(private val channel: MethodChannel, private val
   private fun handleMethodCall(call: MethodCall, response: MethodChannel.Result) {
     val playerId = playerId(call)
     val cookie = call.argument<String>("cookie")
-    Log.i("SMPlayer", "cookie: $cookie")
+    Log.i("SMPlayer", "method: ${call.method} cookie: $cookie")
     val player = getPlayer(playerId, context, channel, this, handler, cookie)
     when (call.method) {
       PLAY_METHOD -> {
