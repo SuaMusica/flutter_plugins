@@ -35,8 +35,10 @@ class Player {
   final StreamController<Event> _eventStreamController =
       StreamController<Event>();
 
+  final String playerId;
   final Future<CookiesForCustomPolicy> Function() cookieSigner;
   final Future<String> Function(Media) localMediaValidator;
+  final bool autoPlay;
 
   Stream<Event> _stream;
 
@@ -47,15 +49,12 @@ class Player {
     return _stream;
   }
 
-  String playerId;
-  bool autoPlay;
-
   Player({
+    @required this.playerId,
     @required this.cookieSigner,
     @required this.localMediaValidator,
     this.autoPlay = false,
   }) {
-    playerId = _uuid.v4();
     players[playerId] = this;
   }
 
