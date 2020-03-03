@@ -59,7 +59,8 @@ class Plugin private constructor(private val channel: MethodChannel, private val
                           plugin: Plugin,
                           handler: Handler,
                           cookie: String?): Player {
-      if (!players.containsKey(playerId)) {
+      if (!players.containsKey(playerId) && cookie != null && cookie.length > 0) {
+        Log.i("SMPlayer", "setting player with cookie: cookie: $cookie")
         val player = WrappedExoPlayer(playerId, context, channel, plugin, handler, cookie!!)
         players[playerId] = player
         Plugin.playerId = playerId
@@ -97,65 +98,68 @@ class Plugin private constructor(private val channel: MethodChannel, private val
     val cookie = call.argument<String>("cookie")
     Log.i("SMPlayer", "method: ${call.method} cookie: $cookie")
     val player = getPlayer(playerId, context, channel, this, handler, cookie)
-    when (call.method) {
-      PLAY_METHOD -> {
-        val name = call.argument<String>(NAME_ARGUMENT)!!
-        val author = call.argument<String>(AUTHOR_ARGUMENT)!!
-        val url = call.argument<String>(URL_ARGUMENT)!!
-        val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
-        val volume = call.argument<Double>(VOLUME_ARGUMENT)!!
-        val position = call.argument<Int>(POSITION_ARGUMENT)
-        val stayAwake = call.argument<Boolean>(STAY_AWAKE_ARGUMENT)!!
-        val loadOnly = call.argument<Boolean>(LOAD_ONLY)!!
-        player.stayAwake = stayAwake
-        player.volume = volume
-        player.prepare(Media(name, author, url, coverUrl))
-        if (position != null) {
-          player.seek(position)
+    if (player!=null){
+      when (call.method) {
+        PLAY_METHOD -> {
+          val name = call.argument<String>(NAME_ARGUMENT)!!
+          val author = call.argument<String>(AUTHOR_ARGUMENT)!!
+          val url = call.argument<String>(URL_ARGUMENT)!!
+          val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
+          val volume = call.argument<Double>(VOLUME_ARGUMENT)!!
+          val position = call.argument<Int>(POSITION_ARGUMENT)
+          val stayAwake = call.argument<Boolean>(STAY_AWAKE_ARGUMENT)!!
+          val loadOnly = call.argument<Boolean>(LOAD_ONLY)!!
+          player.stayAwake = stayAwake
+          player.volume = volume
+          Log.i("SMPlayer", "before preapre: cookie: $cookie")
+          player.prepare(Media(name, author, url, coverUrl))
+          if (position != null) {
+            player.seek(position)
+          }
+          if (!loadOnly) {
+            player.play()
+          }
         }
-        if (!loadOnly) {
+        RESUME_METHOD -> {
           player.play()
         }
-      }
-      RESUME_METHOD -> {
-        player.play()
-      }
-      PAUSE_METHOD -> {
-        player.pause()
-      }
-      STOP_METHOD -> {
-        player.stop()
-      }
-      RELEASE_METHOD -> {
-        player.release()
-      }
-      SEEK_METHOD -> {
-        val position = call.argument<Int>(POSITION_ARGUMENT)!!
-        player.seek(position)
-      }
-      CLEAR_METHOD -> {
-        player.clear();
-      }
-      SET_VOLUME_METHOD -> {
-        val volume = call.argument<Double>(VOLUME_ARGUMENT)!!
-        player.volume = volume
-      }
-      GET_DURATION_METHOD -> {
-        response.success(player.duration)
-        return
-      }
-      GET_CURRENT_POSITION_METHOD -> {
-        response.success(player.currentPosition)
-        return
-      }
-      SET_RELEASE_MODE_METHOD -> {
-        val releaseModeName = call.argument<String>(RELEASE_MODE_ARGUMENT)
-        val releaseMode = ReleaseMode.valueOf(releaseModeName!!.substring("ReleaseMode.".length))
-        player.releaseMode = releaseMode
-      }
-      else -> {
-        response.notImplemented()
-        return
+        PAUSE_METHOD -> {
+          player.pause()
+        }
+        STOP_METHOD -> {
+          player.stop()
+        }
+        RELEASE_METHOD -> {
+          player.release()
+        }
+        SEEK_METHOD -> {
+          val position = call.argument<Int>(POSITION_ARGUMENT)!!
+          player.seek(position)
+        }
+        CLEAR_METHOD -> {
+          player.clear();
+        }
+        SET_VOLUME_METHOD -> {
+          val volume = call.argument<Double>(VOLUME_ARGUMENT)!!
+          player.volume = volume
+        }
+        GET_DURATION_METHOD -> {
+          response.success(player.duration)
+          return
+        }
+        GET_CURRENT_POSITION_METHOD -> {
+          response.success(player.currentPosition)
+          return
+        }
+        SET_RELEASE_MODE_METHOD -> {
+          val releaseModeName = call.argument<String>(RELEASE_MODE_ARGUMENT)
+          val releaseMode = ReleaseMode.valueOf(releaseModeName!!.substring("ReleaseMode.".length))
+          player.releaseMode = releaseMode
+        }
+        else -> {
+          response.notImplemented()
+          return
+        }
       }
     }
     response.success(Ok)
