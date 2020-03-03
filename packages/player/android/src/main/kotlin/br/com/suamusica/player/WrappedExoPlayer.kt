@@ -264,6 +264,10 @@ class WrappedExoPlayer(val playerId: String,
         }
     }
 
+    override fun clear() {
+        removeNowPlayingNotification();
+    }
+
     override fun seek(position: Int) {
         performAndEnableTracking {
             player.seekTo(position.toLong())
@@ -332,6 +336,13 @@ class WrappedExoPlayer(val playerId: String,
         }
     }
 
+    private fun removeNowPlayingNotification() {
+        Log.d("Player", "removeNowPlayingNotification")
+        AsyncTask.execute {
+            notificationManager?.cancel(NOW_PLAYING_NOTIFICATION)
+        }
+    }
+
     inner class ProgressTracker : Runnable {
         private val shutdownRequest = AtomicBoolean(false)
         private var shutdownTask: (() -> Unit)? = null
@@ -377,13 +388,6 @@ class WrappedExoPlayer(val playerId: String,
 
         override fun onQueueChanged(queue: MutableList<MediaSessionCompat.QueueItem>?) {
             Log.d("Player", "onQueueChanged queue: $queue")
-        }
-
-        private fun removeNowPlayingNotification() {
-            Log.d("Player", "removeNowPlayingNotification")
-            AsyncTask.execute {
-                notificationManager?.cancel(NOW_PLAYING_NOTIFICATION)
-            }
         }
 
         @SuppressLint("WakelockTimeout")
