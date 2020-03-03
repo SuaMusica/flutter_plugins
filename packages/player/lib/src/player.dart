@@ -138,7 +138,7 @@ class Player {
 
   Future<int> removeNotificaton() async {
     executeCritialCode(() async {
-      await _invokeMethod('clear');
+      await _invokeMethod('remove_notification');
     });
     return Ok;
   }

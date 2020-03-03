@@ -207,9 +207,9 @@ id previousTrackId;
                     NSLog(@"Player: resume");
                     [self resume:playerId];
                   },
-                @"clear":
+                @"remove_notification":
                   ^{
-                    NSLog(@"Player: clear");
+                    NSLog(@"Player: remove_notification");
                     [self disableRemoteCommandCenter:playerId];
                   },
                 @"stop":
