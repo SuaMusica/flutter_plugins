@@ -65,6 +65,8 @@ public class SwiftMigrationPlugin: NSObject, FlutterPlugin {
           "cover": user.pictureUrl,
         ])
       }
+      LoggedUser.truncate()
+      break
 
     default:
         result(FlutterError(code: "-1", message: "Operation not supported", details: nil))
