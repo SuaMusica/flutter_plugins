@@ -132,6 +132,12 @@ class Player {
   Future<int> removeAll() async {
     executeCritialCode(() async {
       _queue.removeAll();
+    });
+    return Ok;
+  }
+
+  Future<int> removeNotificaton() async {
+    executeCritialCode(() async {
       await _invokeMethod('clear');
     });
     return Ok;
