@@ -31,7 +31,7 @@ class Plugin private constructor(private val channel: MethodChannel, private val
     const val STOP_METHOD = "stop"
     const val RELEASE_METHOD = "release"
     const val SEEK_METHOD = "seek"
-    const val CLEAR_METHOD = "seek"
+    const val CLEAR_METHOD = "clear"
     const val SET_VOLUME_METHOD = "setVolume"
     const val GET_DURATION_METHOD = "getDuration"
     const val GET_CURRENT_POSITION_METHOD = "getCurrentPosition"
@@ -135,7 +135,7 @@ class Plugin private constructor(private val channel: MethodChannel, private val
         player.seek(position)
       }
       CLEAR_METHOD -> {
-        return
+        player.clear();
       }
       SET_VOLUME_METHOD -> {
         val volume = call.argument<Double>(VOLUME_ARGUMENT)!!

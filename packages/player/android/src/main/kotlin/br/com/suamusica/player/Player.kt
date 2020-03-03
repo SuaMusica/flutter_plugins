@@ -17,4 +17,5 @@ interface Player {
     fun pause()
     fun stop()
     fun release()
+    fun clear()
 }
