@@ -264,7 +264,7 @@ class WrappedExoPlayer(val playerId: String,
         }
     }
 
-    override fun clear() {
+    override fun removeNotification() {
         removeNowPlayingNotification();
     }
 

@@ -35,8 +35,10 @@ class Player {
   final StreamController<Event> _eventStreamController =
       StreamController<Event>();
 
+  final String playerId;
   final Future<CookiesForCustomPolicy> Function() cookieSigner;
   final Future<String> Function(Media) localMediaValidator;
+  final bool autoPlay;
 
   Stream<Event> _stream;
 
@@ -47,15 +49,12 @@ class Player {
     return _stream;
   }
 
-  String playerId;
-  bool autoPlay;
-
   Player({
+    @required this.playerId,
     @required this.cookieSigner,
     @required this.localMediaValidator,
     this.autoPlay = false,
   }) {
-    playerId = _uuid.v4();
     players[playerId] = this;
   }
 
@@ -66,7 +65,8 @@ class Player {
     arguments ??= const {};
 
     return executeCritialCode(() {
-      Future<bool> requiresCookie = Future.value(method == 'play');
+      Future<bool> requiresCookie =
+          Future.value(true); // changing to always pass cookies
       return requiresCookie.then((requires) {
         Future<CookiesForCustomPolicy> cookies = Future.value(_cookies);
         if (requires) {
@@ -132,7 +132,13 @@ class Player {
   Future<int> removeAll() async {
     executeCritialCode(() async {
       _queue.removeAll();
-      await _invokeMethod('clear');
+    });
+    return Ok;
+  }
+
+  Future<int> removeNotificaton() async {
+    executeCritialCode(() async {
+      await _invokeMethod('remove_notification');
     });
     return Ok;
   }
