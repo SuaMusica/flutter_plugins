@@ -553,6 +553,7 @@ id previousTrackId;
         NSURL *_url = [NSURL URLWithString: url];
         NSURL *_urlWildcard = [NSURL URLWithString: @"*.suamusica.com.br/*"];
         NSHTTPCookieStorage *cookiesStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
+        [cookiesStorage removeCookiesSinceDate:[NSDate dateWithTimeIntervalSince1970:0]];
 
         NSArray *cookiesItems = [cookie componentsSeparatedByString:@";"];
         for (NSString *cookieItem in cookiesItems) {
