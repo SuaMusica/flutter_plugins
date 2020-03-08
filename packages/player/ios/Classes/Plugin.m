@@ -898,17 +898,18 @@ id previousTrackId;
         
         dispatch_async(dispatch_get_global_queue(0,0), ^{
             NSData * data = [[NSData alloc] initWithContentsOfURL: [NSURL URLWithString: coverUrl]];
-            if ( data == nil )
-                return;
             dispatch_async(dispatch_get_main_queue(), ^{
-                UIImage* image = [UIImage imageWithData: data];
                 MPMediaItemArtwork* art = nil;
-                if (@available(iOS 10.0, *)) {
+                if (data != nil) {
+                  UIImage* image = [UIImage imageWithData: data];
+                  if (@available(iOS 10.0, *)) {
                     art = [[MPMediaItemArtwork alloc] initWithBoundsSize:image.size requestHandler:^UIImage * _Nonnull(CGSize size) {
                         return image;
                     }];
-                } else {
-                    art = [[MPMediaItemArtwork alloc] initWithImage: image];
+                  } else {
+                      art = [[MPMediaItemArtwork alloc] initWithImage: image];
+                  }
+                  image = nil;
                 }
                 [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = @{
                        MPMediaItemPropertyMediaType: [NSNumber numberWithInt:1], // Audio
@@ -919,7 +920,6 @@ id previousTrackId;
                        MPMediaItemPropertyPlaybackDuration: [NSNumber numberWithInt:_duration],
                        MPNowPlayingInfoPropertyElapsedPlaybackTime: [NSNumber numberWithInt:position]
                     };
-                image = nil;
                 art = nil;
             });
             data = nil;
