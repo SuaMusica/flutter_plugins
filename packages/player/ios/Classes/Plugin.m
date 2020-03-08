@@ -897,7 +897,14 @@ id previousTrackId;
         [_channel_player invokeMethod:@"audio.onCurrentPosition" arguments:@{@"playerId": playerId, @"position": @(positionInMillis), @"duration": @(durationInMillis)}];
         
         dispatch_async(dispatch_get_global_queue(0,0), ^{
-            NSData * data = [[NSData alloc] initWithContentsOfURL: [NSURL URLWithString: coverUrl]];
+            NSError *error = nil;
+            NSLog(@"Getting Conver %@", coverUrl);
+            NSData * data = [[NSData alloc] initWithContentsOfURL: [NSURL URLWithString: coverUrl]
+                                                          options:NSDataReadingMappedIfSafe
+                                                            error:&error];
+            if (error != nil) {
+                NSLog(@"Failed to get conver %@", error);
+            }
             dispatch_async(dispatch_get_main_queue(), ^{
                 MPMediaItemArtwork* art = nil;
                 if (data != nil) {
@@ -911,7 +918,8 @@ id previousTrackId;
                   }
                   image = nil;
                 }
-                [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = @{
+                if (art != nil) {
+                    [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = @{
                        MPMediaItemPropertyMediaType: [NSNumber numberWithInt:1], // Audio
                        MPMediaItemPropertyTitle: name,
                        MPMediaItemPropertyAlbumTitle: name,
@@ -920,7 +928,17 @@ id previousTrackId;
                        MPMediaItemPropertyPlaybackDuration: [NSNumber numberWithInt:_duration],
                        MPNowPlayingInfoPropertyElapsedPlaybackTime: [NSNumber numberWithInt:position]
                     };
-                art = nil;
+                    art = nil;
+                } else {
+                    [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = @{
+                       MPMediaItemPropertyMediaType: [NSNumber numberWithInt:1], // Audio
+                       MPMediaItemPropertyTitle: name,
+                       MPMediaItemPropertyAlbumTitle: name,
+                       MPMediaItemPropertyArtist: author,
+                       MPMediaItemPropertyPlaybackDuration: [NSNumber numberWithInt:_duration],
+                       MPNowPlayingInfoPropertyElapsedPlaybackTime: [NSNumber numberWithInt:position]
+                    };
+                }
             });
             data = nil;
         });
