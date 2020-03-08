@@ -898,12 +898,10 @@ id previousTrackId;
         
         dispatch_async(dispatch_get_global_queue(0,0), ^{
             NSError *error = nil;
-            NSLog(@"Getting Conver %@", coverUrl);
-            NSData * data = [[NSData alloc] initWithContentsOfURL: [NSURL URLWithString: coverUrl]
-                                                          options:NSDataReadingMappedIfSafe
-                                                            error:&error];
+            NSLog(@"Cover: Getting Conver %@", coverUrl);
+            NSData * data = [self getAlbumCover:coverUrl];
             if (error != nil) {
-                NSLog(@"Failed to get conver %@", error);
+                NSLog(@"Cover: Failed to get conver %@", error);
             }
             dispatch_async(dispatch_get_main_queue(), ^{
                 MPMediaItemArtwork* art = nil;
@@ -947,6 +945,68 @@ id previousTrackId;
         player = nil;
     } else {
         NSLog(@"Player: MPRemote: STATUS: NOT PLAYING");
+    }
+}
+
+-(void) saveAlbumConverToCache:(NSString *)coverUrl withData:(NSData *) data{
+    // Use GCD's background queue
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+        // Generate the file path
+        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+        NSString *documentsDirectory = [paths objectAtIndex:0];
+        NSString *dataPath = [documentsDirectory stringByAppendingPathComponent:coverUrl];
+        NSLog(@"Cover: Saving Cover Album to %@", dataPath);
+         // Save it into file system
+        [data writeToFile:dataPath atomically:YES];
+    });
+}
+
+-(NSData *) getAlbumCover:(NSString *)coverUrl {
+    NSLog(@"Cover: Get Album Cover %@", coverUrl);
+    NSData *data = [self getAlbumCoverFromCache:coverUrl];
+    if (data == nil) {
+        data = [self getAlbumCoverFromWeb:coverUrl];
+        if ( data == nil) {
+            return nil;
+        } else {
+            [self saveAlbumConverToCache:coverUrl withData:data];
+            return data;
+        }
+    } else {
+        return nil;
+    }
+}
+
+-(NSData *) getAlbumCoverFromCache:(NSString *) coverUrl {
+    NSLog(@"Cover: Get Album Cover %@ from Cache", coverUrl);
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+    NSString *documentsDirectory = [paths objectAtIndex:0];
+    NSString *dataPath = [documentsDirectory stringByAppendingPathComponent:coverUrl];
+    NSError *error;
+    NSData *data = [NSData dataWithContentsOfFile:dataPath
+            options:NSDataReadingMapped
+            error:&error];
+    if (error != nil) {
+        NSLog(@"Cover: Not found in");
+        return nil;
+    } else {
+        NSLog(@"Cover: Found it in");
+        return data;
+    }
+}
+-(NSData *) getAlbumCoverFromWeb:(NSString*) coverUrl {
+    NSLog(@"Cover: Get Album Cover %@ from Web", coverUrl);
+    NSError *error = nil;
+    NSLog(@"Cover: Getting Conver %@", coverUrl);
+    NSData *data = [[NSData alloc] initWithContentsOfURL: [NSURL URLWithString: coverUrl]
+                                                  options:NSDataReadingMappedIfSafe
+                                                    error:&error];
+    if(error == nil){
+        NSLog(@"Cover: Found it");
+        return data;
+    } else {
+        NSLog(@"Cover: Error: %@",[error localizedDescription]);
+        return nil;
     }
 }
 
