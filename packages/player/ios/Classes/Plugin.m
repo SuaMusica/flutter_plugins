@@ -899,7 +899,6 @@ id previousTrackId;
         
         dispatch_async(dispatch_get_global_queue(0,0), ^{
             NSError *error = nil;
-            NSLog(@"Cover: Getting Cover %@", coverUrl);
             NSData * data = [self getAlbumCover:coverUrl];
             if (error != nil) {
                 NSLog(@"Cover: Failed to get cover %@", error);
@@ -956,8 +955,8 @@ id previousTrackId;
         // Generate the file path
         NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
         NSString *documentsDirectory = [paths objectAtIndex:0];
-        NSString *dataPath = [documentsDirectory stringByAppendingPathComponent:coverUrl];
-        NSLog(@"Cover: Saving Cover Album to %@", dataPath);
+        NSString *dataPath = [documentsDirectory stringByAppendingPathComponent:[coverUrl MD5]];
+        NSLog(@"Cover: Saving Cover Album to %@ local cache", dataPath);
          // Save it into file system
         [data writeToFile:dataPath atomically:YES];
     });
@@ -975,7 +974,7 @@ id previousTrackId;
             return data;
         }
     } else {
-        return nil;
+        return data;
     }
 }
 
@@ -983,16 +982,17 @@ id previousTrackId;
     NSLog(@"Cover: Get Album Cover %@ from Cache", coverUrl);
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
     NSString *documentsDirectory = [paths objectAtIndex:0];
-    NSString *dataPath = [documentsDirectory stringByAppendingPathComponent:coverUrl];
+    NSString *dataPath = [documentsDirectory stringByAppendingPathComponent:[coverUrl MD5]];
+    NSLog(@"Looing for %@", dataPath);
     NSError *error;
     NSData *data = [NSData dataWithContentsOfFile:dataPath
             options:NSDataReadingMapped
             error:&error];
     if (error != nil) {
-        NSLog(@"Cover: Not found in");
+        NSLog(@"Cover: Not found in cache");
         return nil;
     } else {
-        NSLog(@"Cover: Found it in");
+        NSLog(@"Cover: Found it in cache");
         return data;
     }
 }
@@ -1004,10 +1004,10 @@ id previousTrackId;
                                                   options:NSDataReadingMappedIfSafe
                                                     error:&error];
     if(error == nil){
-        NSLog(@"Cover: Found it");
+        NSLog(@"Cover: Found it on the Web");
         return data;
     } else {
-        NSLog(@"Cover: Error: %@",[error localizedDescription]);
+        NSLog(@"Cover: Error: %@, not found on the web",[error localizedDescription]);
         return nil;
     }
 }
