@@ -1,4 +1,5 @@
 #import "Plugin.h"
+#import "NSString+MD5.h"
 
 #import <UIKit/UIKit.h>
 #import <AVKit/AVKit.h>
@@ -898,10 +899,10 @@ id previousTrackId;
         
         dispatch_async(dispatch_get_global_queue(0,0), ^{
             NSError *error = nil;
-            NSLog(@"Cover: Getting Conver %@", coverUrl);
+            NSLog(@"Cover: Getting Cover %@", coverUrl);
             NSData * data = [self getAlbumCover:coverUrl];
             if (error != nil) {
-                NSLog(@"Cover: Failed to get conver %@", error);
+                NSLog(@"Cover: Failed to get cover %@", error);
             }
             dispatch_async(dispatch_get_main_queue(), ^{
                 MPMediaItemArtwork* art = nil;
@@ -916,6 +917,7 @@ id previousTrackId;
                   }
                   image = nil;
                 }
+                NSMutableDictionary *nowPlaying = nil;
                 if (art != nil) {
                     [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = @{
                        MPMediaItemPropertyMediaType: [NSNumber numberWithInt:1], // Audio
@@ -948,7 +950,7 @@ id previousTrackId;
     }
 }
 
--(void) saveAlbumConverToCache:(NSString *)coverUrl withData:(NSData *) data{
+-(void) saveAlbumCoverToCache:(NSString *)coverUrl withData:(NSData *) data{
     // Use GCD's background queue
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
         // Generate the file path
@@ -969,7 +971,7 @@ id previousTrackId;
         if ( data == nil) {
             return nil;
         } else {
-            [self saveAlbumConverToCache:coverUrl withData:data];
+            [self saveAlbumCoverToCache:coverUrl withData:data];
             return data;
         }
     } else {
@@ -997,7 +999,7 @@ id previousTrackId;
 -(NSData *) getAlbumCoverFromWeb:(NSString*) coverUrl {
     NSLog(@"Cover: Get Album Cover %@ from Web", coverUrl);
     NSError *error = nil;
-    NSLog(@"Cover: Getting Conver %@", coverUrl);
+    NSLog(@"Cover: Getting Cover %@", coverUrl);
     NSData *data = [[NSData alloc] initWithContentsOfURL: [NSURL URLWithString: coverUrl]
                                                   options:NSDataReadingMappedIfSafe
                                                     error:&error];
