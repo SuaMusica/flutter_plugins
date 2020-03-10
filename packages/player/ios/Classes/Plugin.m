@@ -926,27 +926,17 @@ id previousTrackId;
                   }
                   image = nil;
                 }
-                NSMutableDictionary *nowPlaying = nil;
+                NSMutableDictionary *nowPlaying = [[NSMutableDictionary alloc] initWithDictionary:@{
+                   MPMediaItemPropertyMediaType: [NSNumber numberWithInt:1], // Audio
+                   MPMediaItemPropertyTitle: name,
+                   MPMediaItemPropertyAlbumTitle: name,
+                   MPMediaItemPropertyArtist: author,
+                   MPMediaItemPropertyPlaybackDuration: [NSNumber numberWithInt:_duration],
+                   MPNowPlayingInfoPropertyElapsedPlaybackTime: [NSNumber numberWithInt:position]
+                }];
                 if (art != nil) {
-                    [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = @{
-                       MPMediaItemPropertyMediaType: [NSNumber numberWithInt:1], // Audio
-                       MPMediaItemPropertyTitle: name,
-                       MPMediaItemPropertyAlbumTitle: name,
-                       MPMediaItemPropertyArtist: author,
-                       MPMediaItemPropertyArtwork: art,
-                       MPMediaItemPropertyPlaybackDuration: [NSNumber numberWithInt:_duration],
-                       MPNowPlayingInfoPropertyElapsedPlaybackTime: [NSNumber numberWithInt:position]
-                    };
+                    [nowPlaying setValue:art forKey:MPMediaItemPropertyArtwork];
                     art = nil;
-                } else {
-                    [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = @{
-                       MPMediaItemPropertyMediaType: [NSNumber numberWithInt:1], // Audio
-                       MPMediaItemPropertyTitle: name,
-                       MPMediaItemPropertyAlbumTitle: name,
-                       MPMediaItemPropertyArtist: author,
-                       MPMediaItemPropertyPlaybackDuration: [NSNumber numberWithInt:_duration],
-                       MPNowPlayingInfoPropertyElapsedPlaybackTime: [NSNumber numberWithInt:position]
-                    };
                 }
             });
             data = nil;
