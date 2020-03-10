@@ -101,7 +101,7 @@ class Player {
     bool respectSilence = false,
     bool stayAwake = false,
   }) async {
-    executeCritialCode(() {
+    executeCritialCode(() async {
       _queue.add(media);
     });
     return Ok;
@@ -114,14 +114,14 @@ class Player {
     bool respectSilence = false,
     bool stayAwake = false,
   }) async {
-    executeCritialCode(() {
+    executeCritialCode(() async {
       _queue.addAll(items);
     });
     return Ok;
   }
 
   Future<int> remove(Media media) async {
-    executeCritialCode(() {
+    executeCritialCode(() async {
       _queue.remove(media);
     });
     return Ok;
@@ -135,14 +135,12 @@ class Player {
   }
 
   Future<int> removeNotificaton() async {
-    executeCritialCode(() async {
-      await _invokeMethod('remove_notification');
-    });
+    await _invokeMethod('remove_notification');
     return Ok;
   }
 
   Future<int> reorder(int oldIndex, int newIndex) async {
-    executeCritialCode(() {
+    executeCritialCode(() async {
       _queue.reorder(oldIndex, newIndex);
     });
     return Ok;
@@ -191,60 +189,56 @@ class Player {
     bool respectSilence = false,
     bool stayAwake = false,
   }) async {
-    return executeCritialCode(() async {
-      volume ??= 1.0;
-      respectSilence ??= false;
-      stayAwake ??= false;
+    volume ??= 1.0;
+    respectSilence ??= false;
+    stayAwake ??= false;
 
-      final url = (await localMediaValidator(media)) ?? media.url;
-      final isLocal = !url.startsWith("http");
+    final url = (await localMediaValidator(media)) ?? media.url;
+    final isLocal = !url.startsWith("http");
 
-      // we need to update the value as it could have been
-      // downloading and is not downloaded
-      media.isLocal = isLocal;
-      media.url = url;
+    // we need to update the value as it could have been
+    // downloading and is not downloaded
+    media.isLocal = isLocal;
+    media.url = url;
 
-      if (autoPlay) {
-        _notifyBeforePlayEvent((loadOnly) => {});
+    if (autoPlay) {
+      _notifyBeforePlayEvent((loadOnly) => {});
 
-        return invokePlay(media, {
+      return invokePlay(media, {
+        'name': media.name,
+        'author': media.author,
+        'url': url,
+        'coverUrl': media.coverUrl,
+        'loadOnly': false,
+        'isLocal': isLocal,
+        'volume': volume,
+        'position': position?.inMilliseconds,
+        'respectSilence': respectSilence,
+        'stayAwake': stayAwake,
+      });
+    } else {
+      _notifyBeforePlayEvent((loadOnly) {
+        invokePlay(media, {
           'name': media.name,
           'author': media.author,
           'url': url,
           'coverUrl': media.coverUrl,
-          'loadOnly': false,
+          'loadOnly': loadOnly,
           'isLocal': isLocal,
           'volume': volume,
           'position': position?.inMilliseconds,
           'respectSilence': respectSilence,
           'stayAwake': stayAwake,
         });
-      } else {
-        _notifyBeforePlayEvent((loadOnly) {
-          invokePlay(media, {
-            'name': media.name,
-            'author': media.author,
-            'url': url,
-            'coverUrl': media.coverUrl,
-            'loadOnly': loadOnly,
-            'isLocal': isLocal,
-            'volume': volume,
-            'position': position?.inMilliseconds,
-            'respectSilence': respectSilence,
-            'stayAwake': stayAwake,
-          });
-        });
+      });
 
-        return Ok;
-      }
-    });
+      return Ok;
+    }
   }
 
   Future<int> invokePlay(Media media, Map<String, dynamic> args) async {
-    return executeCritialCode(() async {
-      final int result = await _invokeMethod('play', args);
-      return result;
-    });
+    final int result = await _invokeMethod('play', args);
+    return result;
   }
 
   Future<int> rewind() async {
@@ -255,13 +249,11 @@ class Player {
   }
 
   Future<int> _rewind(Media media) async {
-    return executeCritialCode(() async {
-      if (media == null) {
-        return NotOk;
-      }
-      _notifyRewind(media);
-      return seek(Duration(seconds: 0));
-    });
+    if (media == null) {
+      return NotOk;
+    }
+    _notifyRewind(media);
+    return _seek(Duration(seconds: 0));
   }
 
   Future<int> forward() async {
@@ -272,15 +264,13 @@ class Player {
   }
 
   Future<int> _forward(Media media) async {
-    return executeCritialCode(() async {
-      if (media == null) {
-        return NotOk;
-      }
-      final duration = Duration(milliseconds: await getDuration());
-      _notifyPositionChangeEvent(this, duration, duration);
-      _notifyForward(media);
-      return stop();
-    });
+    if (media == null) {
+      return NotOk;
+    }
+    final duration = Duration(milliseconds: await getDuration());
+    _notifyPositionChangeEvent(this, duration, duration);
+    _notifyForward(media);
+    return stop();
   }
 
   Future<int> previous() async {
@@ -407,18 +397,24 @@ class Player {
   }
 
   Future<void> shuffle() async {
-    return executeCritialCode(() {
+    return executeCritialCode(() async {
       _queue.shuffle();
     });
   }
 
   Future<void> unshuffle() async {
-    return executeCritialCode(() {
+    return executeCritialCode(() async {
       _queue.unshuffle();
     });
   }
 
   Future<int> seek(Duration position) {
+    return executeCritialCode(() async {
+      return _seek(position);
+    });
+  }
+
+  Future<int> _seek(Duration position) {
     return _invokeMethod('seek', {'position': position.inMilliseconds});
   }
 
@@ -427,11 +423,15 @@ class Player {
   }
 
   Future<int> getDuration() {
-    return _invokeMethod('getDuration');
+    return executeCritialCode(() async {
+      return _invokeMethod('getDuration');
+    });
   }
 
   Future<int> getCurrentPosition() async {
-    return _invokeMethod('getCurrentPosition');
+    return executeCritialCode(() async {
+      return _invokeMethod('getCurrentPosition');
+    });
   }
 
   static Future<void> platformCallHandler(MethodCall call) async {
