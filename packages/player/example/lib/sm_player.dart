@@ -157,7 +157,7 @@ class _SMPlayerState extends State<SMPlayer> {
     print("Player State: ${_player.state}");
 
     if (_player.state == PlayerState.IDLE && _player.current != null) {
-      int result = await _player.play(_player.current);
+      int result = await _player.play(await _player.current);
       if (result == Player.Ok) {
         Scaffold.of(context)
             .showSnackBar(SnackBar(content: Text('Audio is now playing!!!!')));
