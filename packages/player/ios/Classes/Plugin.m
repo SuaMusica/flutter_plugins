@@ -325,6 +325,7 @@ id previousTrackId;
 -(void) initAVPlayer:(NSString *)playerId playerItem:(AVPlayerItem *)playerItem url:(NSString *)url onReady:(VoidCallback) onReady {
   NSMutableDictionary * playerInfo = players[_playerId];
   AVPlayer *player = [[ AVPlayer alloc ] initWithPlayerItem: playerItem ];
+  player.allowsExternalPlayback = TRUE;
   NSMutableSet *observers = [[NSMutableSet alloc] init];
   
   [ playerInfo setObject:player forKey:@"player" ];
@@ -816,9 +817,10 @@ id previousTrackId;
   
   NSLog(@"Player: Volume: %f", volume);
   NSError *error = nil;
-  BOOL success = success = [[AVAudioSession sharedInstance]
-              setCategory: AVAudioSessionCategoryPlayback
-              error:&error];
+  BOOL success = [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayback withOptions:AVAudioSessionCategoryOptionMixWithOthers | AVAudioSessionCategoryOptionDuckOthers
+          error:&error];
+    
+  NSLog(@"Player: AVAudioSession setCategory error: %@", error);
   if (!success) {
     NSLog(@"Player: Error setting speaker: %@", error);
     [self stop:playerId];
@@ -829,6 +831,7 @@ id previousTrackId;
     return;
   } else {
     [[AVAudioSession sharedInstance] setActive:YES error:&error];
+    NSLog(@"Player: AVAudioSession setActive error: %@", [error localizedDescription]);
   }
   
   if (name == nil) {
@@ -1143,7 +1146,7 @@ id previousTrackId;
     if (shouldStartPlaySoon) {
       [ playerInfo setObject:@true forKey:@"isPlaying" ];
       int state = STATE_PLAYING;
-       [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
+      [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
     }
   } else {
     // Any unrecognized context must belong to super
