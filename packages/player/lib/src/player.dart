@@ -143,9 +143,9 @@ class Player {
     return Ok;
   }
 
-  int reorder(int oldIndex, int newIndex) {
+  int reorder(int oldIndex, int newIndex, [bool isShuffle = false]) {
     executeCritialCode(() {
-      _queue.reorder(oldIndex, newIndex);
+      _queue.reorder(oldIndex, newIndex, isShuffle);
     });
     return Ok;
   }

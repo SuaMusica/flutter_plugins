@@ -90,7 +90,7 @@ class Queue {
       var current = storage.elementAt(index);
       _shuffler.shuffle(storage);
       var currentIndex = storage.indexOf(current);
-      reorder(currentIndex, 0);
+      reorder(currentIndex, 0, true);
       print("After");
       for (var item in storage) {
         print(
@@ -171,25 +171,29 @@ class Queue {
     return next();
   }
 
-  void reorder(int oldIndex, int newIndex) {
+  void reorder(int oldIndex, int newIndex, [bool isShuffle = false]) {
     // first we reposition all the items
-    for (var i = 0; i < storage.length; ++i) {
-      final item = storage.elementAt(i);
-      item.position = i;
-    }
+    final playingItem = storage.elementAt(index);
+    print(playingItem);
+    var oldElement = items.elementAt(oldIndex);
+    items.removeAt(oldIndex);
+    items.insert(newIndex, oldElement);
 
-    //now we need to fix the position impacting by moving the
-    // currenty playing item to poistion 0
-    final playingItem = storage.elementAt(oldIndex);
-    final playingIndex = storage.indexOf(playingItem);
-    playingItem.position = 0;
-    for (var i = 0; i < playingIndex; ++i) {
-      final item = storage.elementAt(i);
-      item.position += 1;
+    // now we need to repostion based on Shuffle or not.
+    int position = 0;
+    if (!isShuffle) {
+      storage.elementAt(oldIndex).originalPosition = newIndex;
     }
-
+    storage.elementAt(oldIndex).position = newIndex;
     storage.sort((a, b) => a.position.compareTo(b.position));
 
+    for (var item in storage) {
+      item.position = position++;
+      if (!isShuffle) {
+        item.originalPosition = position++;
+      }
+    }
+    final playingIndex = storage.indexOf(playingItem);
     this.index = playingIndex;
   }
 }
