@@ -67,10 +67,6 @@ NSString* latestCookie = nil;
 NSString* latestPlayerId = nil;
 VoidCallback latestOnReady = nil;
 AVPlayerItem* latestPlayerItemObserved = nil;
-id playId;
-id pauseId;
-id nextTrackId;
-id previousTrackId;
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
   @synchronized(self) {
@@ -91,6 +87,7 @@ id previousTrackId;
       serialQueue = dispatch_queue_create("com.suamusica.player.queue", DISPATCH_QUEUE_SERIAL);
       players = [[NSMutableDictionary alloc] init];
       playersCurrentItem = [[NSMutableDictionary alloc] init];
+      [self configureRemoteCommandCenter];
   }
   return self;
 }
@@ -100,7 +97,7 @@ id previousTrackId;
     [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
     MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
 
-    playId = [commandCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+    [commandCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
       if (_playerId != nil) {
           [self resume:_playerId];
           int state = STATE_PLAYING;
@@ -109,7 +106,7 @@ id previousTrackId;
       return MPRemoteCommandHandlerStatusSuccess;
     }];
 
-    pauseId = [commandCenter.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+    [commandCenter.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
       if (_playerId != nil) {
           [self pause:_playerId];
           int state = STATE_PAUSED;
@@ -118,14 +115,14 @@ id previousTrackId;
       return MPRemoteCommandHandlerStatusSuccess;
     }];
 
-    nextTrackId = [commandCenter.nextTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+    [commandCenter.nextTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
       if (_playerId != nil) {
           [_channel_player invokeMethod:@"commandCenter.onNext" arguments:@{@"playerId": _playerId}];
       }
       return MPRemoteCommandHandlerStatusSuccess;
     }];
     
-    previousTrackId = [commandCenter.previousTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+    [commandCenter.previousTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
       if (_playerId != nil) {
           [_channel_player invokeMethod:@"commandCenter.onPrevious" arguments:@{@"playerId": _playerId}];
       }
@@ -816,9 +813,13 @@ id previousTrackId;
   };
   
   NSLog(@"Player: Volume: %f", volume);
+    
+  [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
+    
   NSError *error = nil;
-  BOOL success = [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayback withOptions:AVAudioSessionCategoryOptionMixWithOthers | AVAudioSessionCategoryOptionDuckOthers
-          error:&error];
+  BOOL success = [[AVAudioSession sharedInstance]
+        setCategory: AVAudioSessionCategoryPlayback
+        error:&error];
     
   NSLog(@"Player: AVAudioSession setCategory error: %@", error);
   if (!success) {
@@ -849,13 +850,12 @@ id previousTrackId;
   NSLog(@"Player: [SET_CURRENT_ITEM LOG] playerId=%@ name=%@ author=%@ url=%@ coverUrl=%@", playerId, name, author, url, coverUrl);
   [self setCurrentItem:playerId name:name author:author url:url coverUrl:coverUrl];
 
-  [ self setUrl:url
+  [self setUrl:url
          isLocal:isLocal
          cookie:cookie
          playerId:playerId
          onReady:latestOnReady
   ];
-  [self configureRemoteCommandCenter];
 }
 
 -(void) updateDuration: (NSString *) playerId
@@ -1077,7 +1077,6 @@ id previousTrackId;
 -(void) onSoundComplete: (NSString *) playerId {
   NSLog(@"Player: ios -> onSoundComplete...");
   NSLog(@"Player: ios -> Disabling Remote Command Center");
-  [self disableRemoteCommandCenter:playerId];
 
   [ _channel_player invokeMethod:@"audio.onComplete" arguments:@{@"playerId": playerId}];
 }
