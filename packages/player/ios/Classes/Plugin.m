@@ -606,7 +606,7 @@ id previousTrackId;
       [ playerInfo setObject:@false forKey:@"isPlaying" ];
       [ playerInfo setObject:url forKey:@"url" ];
     } else {
-      NSLog(@"Player: player or item is nil player: [%@] item: [%@]", player, item);
+      NSLog(@"Player: player or item is nil player: [%@] item: [%@]", player, [player currentItem]);
       if (player == nil && [player currentItem] == nil) {
         NSLog(@"Player: player status: %ld",(long)[[player currentItem] status ]);
         
