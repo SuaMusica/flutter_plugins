@@ -1,4 +1,5 @@
 #import "Plugin.h"
+#import "NSString+MD5.h"
 
 #import <UIKit/UIKit.h>
 #import <AVKit/AVKit.h>
@@ -897,20 +898,27 @@ id previousTrackId;
         [_channel_player invokeMethod:@"audio.onCurrentPosition" arguments:@{@"playerId": playerId, @"position": @(positionInMillis), @"duration": @(durationInMillis)}];
         
         dispatch_async(dispatch_get_global_queue(0,0), ^{
-            NSData * data = [[NSData alloc] initWithContentsOfURL: [NSURL URLWithString: coverUrl]];
-            if ( data == nil )
-                return;
+            NSError *error = nil;
+            NSData * data = [self getAlbumCover:coverUrl];
+            if (error != nil) {
+                NSLog(@"Cover: Failed to get cover %@", error);
+            }
             dispatch_async(dispatch_get_main_queue(), ^{
-                UIImage* image = [UIImage imageWithData: data];
                 MPMediaItemArtwork* art = nil;
-                if (@available(iOS 10.0, *)) {
+                if (data != nil) {
+                  UIImage* image = [UIImage imageWithData: data];
+                  if (@available(iOS 10.0, *)) {
                     art = [[MPMediaItemArtwork alloc] initWithBoundsSize:image.size requestHandler:^UIImage * _Nonnull(CGSize size) {
                         return image;
                     }];
-                } else {
-                    art = [[MPMediaItemArtwork alloc] initWithImage: image];
+                  } else {
+                      art = [[MPMediaItemArtwork alloc] initWithImage: image];
+                  }
+                  image = nil;
                 }
-                [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = @{
+                NSMutableDictionary *nowPlaying = nil;
+                if (art != nil) {
+                    [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = @{
                        MPMediaItemPropertyMediaType: [NSNumber numberWithInt:1], // Audio
                        MPMediaItemPropertyTitle: name,
                        MPMediaItemPropertyAlbumTitle: name,
@@ -919,8 +927,17 @@ id previousTrackId;
                        MPMediaItemPropertyPlaybackDuration: [NSNumber numberWithInt:_duration],
                        MPNowPlayingInfoPropertyElapsedPlaybackTime: [NSNumber numberWithInt:position]
                     };
-                image = nil;
-                art = nil;
+                    art = nil;
+                } else {
+                    [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = @{
+                       MPMediaItemPropertyMediaType: [NSNumber numberWithInt:1], // Audio
+                       MPMediaItemPropertyTitle: name,
+                       MPMediaItemPropertyAlbumTitle: name,
+                       MPMediaItemPropertyArtist: author,
+                       MPMediaItemPropertyPlaybackDuration: [NSNumber numberWithInt:_duration],
+                       MPNowPlayingInfoPropertyElapsedPlaybackTime: [NSNumber numberWithInt:position]
+                    };
+                }
             });
             data = nil;
         });
@@ -929,6 +946,69 @@ id previousTrackId;
         player = nil;
     } else {
         NSLog(@"Player: MPRemote: STATUS: NOT PLAYING");
+    }
+}
+
+-(void) saveAlbumCoverToCache:(NSString *)coverUrl withData:(NSData *) data{
+    // Use GCD's background queue
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+        // Generate the file path
+        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+        NSString *documentsDirectory = [paths objectAtIndex:0];
+        NSString *dataPath = [documentsDirectory stringByAppendingPathComponent:[coverUrl MD5]];
+        NSLog(@"Cover: Saving Cover Album to %@ local cache", dataPath);
+         // Save it into file system
+        [data writeToFile:dataPath atomically:YES];
+    });
+}
+
+-(NSData *) getAlbumCover:(NSString *)coverUrl {
+    NSLog(@"Cover: Get Album Cover %@", coverUrl);
+    NSData *data = [self getAlbumCoverFromCache:coverUrl];
+    if (data == nil) {
+        data = [self getAlbumCoverFromWeb:coverUrl];
+        if ( data == nil) {
+            return nil;
+        } else {
+            [self saveAlbumCoverToCache:coverUrl withData:data];
+            return data;
+        }
+    } else {
+        return data;
+    }
+}
+
+-(NSData *) getAlbumCoverFromCache:(NSString *) coverUrl {
+    NSLog(@"Cover: Get Album Cover %@ from Cache", coverUrl);
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+    NSString *documentsDirectory = [paths objectAtIndex:0];
+    NSString *dataPath = [documentsDirectory stringByAppendingPathComponent:[coverUrl MD5]];
+    NSLog(@"Looing for %@", dataPath);
+    NSError *error;
+    NSData *data = [NSData dataWithContentsOfFile:dataPath
+            options:NSDataReadingMapped
+            error:&error];
+    if (error != nil) {
+        NSLog(@"Cover: Not found in cache");
+        return nil;
+    } else {
+        NSLog(@"Cover: Found it in cache");
+        return data;
+    }
+}
+-(NSData *) getAlbumCoverFromWeb:(NSString*) coverUrl {
+    NSLog(@"Cover: Get Album Cover %@ from Web", coverUrl);
+    NSError *error = nil;
+    NSLog(@"Cover: Getting Cover %@", coverUrl);
+    NSData *data = [[NSData alloc] initWithContentsOfURL: [NSURL URLWithString: coverUrl]
+                                                  options:NSDataReadingMappedIfSafe
+                                                    error:&error];
+    if(error == nil){
+        NSLog(@"Cover: Found it on the Web");
+        return data;
+    } else {
+        NSLog(@"Cover: Error: %@, not found on the web",[error localizedDescription]);
+        return nil;
     }
 }
 

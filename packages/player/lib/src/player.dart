@@ -64,7 +64,7 @@ class Player {
   ]) async {
     arguments ??= const {};
 
-    return executeCritialCode(() {
+    return executeCriticalCode(() {
       Future<bool> requiresCookie =
           Future.value(true); // changing to always pass cookies
       return requiresCookie.then((requires) {
@@ -103,7 +103,7 @@ class Player {
     bool respectSilence = false,
     bool stayAwake = false,
   }) {
-    executeCritialCode(() {
+    executeCriticalCode(() {
       _queue.add(media);
     });
     return Ok;
@@ -116,35 +116,35 @@ class Player {
     bool respectSilence = false,
     bool stayAwake = false,
   }) {
-    executeCritialCode(() {
+    executeCriticalCode(() {
       _queue.addAll(items);
     });
     return Ok;
   }
 
   int remove(Media media) {
-    executeCritialCode(() {
+    executeCriticalCode(() {
       _queue.remove(media);
     });
     return Ok;
   }
 
   Future<int> removeAll() async {
-    executeCritialCode(() async {
+    executeCriticalCode(() async {
       _queue.removeAll();
     });
     return Ok;
   }
 
   Future<int> removeNotificaton() async {
-    executeCritialCode(() async {
+    executeCriticalCode(() async {
       await _invokeMethod('remove_notification');
     });
     return Ok;
   }
 
   int reorder(int oldIndex, int newIndex, [bool isShuffle = false]) {
-    executeCritialCode(() {
+    executeCriticalCode(() {
       _queue.reorder(oldIndex, newIndex, isShuffle);
     });
     return Ok;
@@ -152,14 +152,14 @@ class Player {
 
   Future<int> clear() async => removeAll();
 
-  Media get current => executeCritialCode(() => _queue.current);
+  Media get current => executeCriticalCode(() => _queue.current);
 
-  List<Media> get items => executeCritialCode(() => _queue.items);
-  int get queuePosition => executeCritialCode(() => _queue.index);
+  List<Media> get items => executeCriticalCode(() => _queue.items);
+  int get queuePosition => executeCriticalCode(() => _queue.index);
 
-  int get size => executeCritialCode(() => _queue.size);
+  int get size => executeCriticalCode(() => _queue.size);
 
-  Media get top => executeCritialCode(() => _queue.top);
+  Media get top => executeCriticalCode(() => _queue.top);
 
   Future<int> play(
     Media media, {
@@ -168,7 +168,7 @@ class Player {
     bool respectSilence = false,
     bool stayAwake = false,
   }) async {
-    return executeCritialCode(() {
+    return executeCriticalCode(() {
       _queue.play(media);
       _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
       return _doPlay(_queue.current);
@@ -182,7 +182,7 @@ class Player {
     bool respectSilence = false,
     bool stayAwake = false,
   }) async {
-    return executeCritialCode(() {
+    return executeCriticalCode(() {
       final media = _queue.move(pos);
       _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
       return _doPlay(media);
@@ -196,7 +196,7 @@ class Player {
     bool respectSilence = false,
     bool stayAwake = false,
   }) async {
-    return executeCritialCode(() async {
+    return executeCriticalCode(() async {
       volume ??= 1.0;
       respectSilence ??= false;
       stayAwake ??= false;
@@ -246,21 +246,21 @@ class Player {
   }
 
   Future<int> invokePlay(Media media, Map<String, dynamic> args) async {
-    return executeCritialCode(() async {
+    return executeCriticalCode(() async {
       final int result = await _invokeMethod('play', args);
       return result;
     });
   }
 
   Future<int> rewind() async {
-    return executeCritialCode(() {
+    return executeCriticalCode(() {
       var media = _queue.rewind();
       return _rewind(media);
     });
   }
 
   Future<int> _rewind(Media media) async {
-    return executeCritialCode(() {
+    return executeCriticalCode(() {
       if (media == null) {
         return NotOk;
       }
@@ -270,14 +270,14 @@ class Player {
   }
 
   Future<int> forward() async {
-    return executeCritialCode(() {
+    return executeCriticalCode(() {
       var media = _queue.current;
       return _forward(media);
     });
   }
 
   Future<int> _forward(Media media) async {
-    return executeCritialCode(() async {
+    return executeCriticalCode(() async {
       if (media == null) {
         return NotOk;
       }
@@ -289,7 +289,7 @@ class Player {
   }
 
   Future<int> previous() async {
-    return executeCritialCode(() {
+    return executeCriticalCode(() {
       final current = _queue.current;
       var previous = _queue.previous();
       if (previous == null) {
@@ -310,7 +310,7 @@ class Player {
   }
 
   Future<int> _doNext(bool shallNotify) async {
-    return executeCritialCode(() {
+    return executeCriticalCode(() {
       final current = _queue.current;
       Media next;
 
@@ -363,7 +363,7 @@ class Player {
   }
 
   Future<int> pause() async {
-    return executeCritialCode(() async {
+    return executeCriticalCode(() async {
       _notifyPlayerStatusChangeEvent(EventType.PAUSE_REQUEST);
       final int result = await _invokeMethod('pause');
       return result;
@@ -371,7 +371,7 @@ class Player {
   }
 
   Future<int> stop() async {
-    return executeCritialCode(() async {
+    return executeCriticalCode(() async {
       _notifyPlayerStatusChangeEvent(EventType.STOP_REQUESTED);
       final int result = await _invokeMethod('stop');
 
@@ -385,7 +385,7 @@ class Player {
   }
 
   Future<int> resume() async {
-    return executeCritialCode(() async {
+    return executeCriticalCode(() async {
       _notifyPlayerStatusChangeEvent(EventType.RESUME_REQUESTED);
       final int result = await _invokeMethod('resume');
 
@@ -398,7 +398,7 @@ class Player {
   }
 
   Future<int> release() async {
-    return executeCritialCode(() async {
+    return executeCriticalCode(() async {
       _notifyPlayerStatusChangeEvent(EventType.RELEASE_REQUESTED);
       final int result = await _invokeMethod('release');
 
@@ -412,13 +412,13 @@ class Player {
   }
 
   void shuffle() {
-    return executeCritialCode(() {
+    return executeCriticalCode(() {
       _queue.shuffle();
     });
   }
 
   void unshuffle() {
-    return executeCritialCode(() {
+    return executeCriticalCode(() {
       _queue.unshuffle();
     });
   }
@@ -659,7 +659,7 @@ class Player {
     await Future.wait(futures);
   }
 
-  T executeCritialCode<T>(T Function() action) {
+  T executeCriticalCode<T>(T Function() action) {
     mutex.acquire();
     try {
       return action();
