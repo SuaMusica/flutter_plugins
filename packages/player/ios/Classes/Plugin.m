@@ -926,7 +926,7 @@ id previousTrackId;
                   }
                   image = nil;
                 }
-                NSMutableDictionary *nowPlaying = [[NSMutableDictionary alloc] initWithDictionary:@{
+                NSMutableDictionary *nowPlayingInfo = [[NSMutableDictionary alloc] initWithDictionary:@{
                    MPMediaItemPropertyMediaType: [NSNumber numberWithInt:1], // Audio
                    MPMediaItemPropertyTitle: name,
                    MPMediaItemPropertyAlbumTitle: name,
@@ -935,9 +935,10 @@ id previousTrackId;
                    MPNowPlayingInfoPropertyElapsedPlaybackTime: [NSNumber numberWithInt:position]
                 }];
                 if (art != nil) {
-                    [nowPlaying setValue:art forKey:MPMediaItemPropertyArtwork];
+                    [nowPlayingInfo setValue:art forKey:MPMediaItemPropertyArtwork];
                     art = nil;
                 }
+                [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = nowPlayingInfo;
             });
             data = nil;
         });
