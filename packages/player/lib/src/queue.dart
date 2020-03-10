@@ -171,27 +171,31 @@ class Queue {
 
   void reorder(int oldIndex, int newIndex, [bool isShuffle = false]) {
     // first we reposition all the items
-    final playingItem = storage.elementAt(index);
-
-    var oldElement = items.elementAt(oldIndex);
-    items.removeAt(oldIndex);
-    items.insert(newIndex, oldElement);
+    final playingItem = storage.elementAt(index); // 0
+    print(storage);
 
     // now we need to repostion based on Shuffle or not.
-    int position = 0;
+    if (newIndex > oldIndex) {
+      for (int i = oldIndex + 1; i <= newIndex; i++) {
+        if (!isShuffle) {
+          storage.elementAt(i).originalPosition--;
+        }
+        storage.elementAt(i).position--;
+      }
+    } else {
+      for (int i = newIndex; i < oldIndex; i++) {
+        if (!isShuffle) {
+          storage.elementAt(i).originalPosition++;
+        }
+        storage.elementAt(i).position++;
+      }
+    }
+    storage.elementAt(oldIndex).position = newIndex;
     if (!isShuffle) {
       storage.elementAt(oldIndex).originalPosition = newIndex;
     }
-    storage.elementAt(oldIndex).position = newIndex;
     storage.sort((a, b) => a.position.compareTo(b.position));
-
-    for (var item in storage) {
-      item.position = position++;
-      if (!isShuffle) {
-        item.originalPosition = position++;
-      }
-    }
-
+    print(storage);
     final playingIndex = storage.indexOf(playingItem);
     this.index = playingIndex;
   }
