@@ -541,11 +541,15 @@ id previousTrackId;
 
   @try {
     if (!playerInfo || ![url isEqualToString:playerInfo[@"url"]]) {
+      NSLog(@"Player: Loading new URL");
       if (isLocal) {
+        NSLog(@"Player: Item is Local");
         playerItem = [ [ AVPlayerItem alloc ] initWithURL:[ NSURL fileURLWithPath:url ]];
       } else {
+        NSLog(@"Player: Item is Remote");
         NSURLComponents *components = [NSURLComponents componentsWithURL:[NSURL URLWithString:url] resolvingAgainstBaseURL:YES];
         if ([components.path rangeOfString: m3u8Ext].location != NSNotFound) {
+          NSLog(@"Player: Item is m3u8");
           components.scheme = customPlaylistScheme;
           url = components.URL.absoluteString;
           NSLog(@"Player: newUrl: %@", url);
@@ -585,26 +589,31 @@ id previousTrackId;
       }
 
       if (playerInfo[@"url"]) {
+        NSLog(@"Player: Replacing item");
         @autoreleasepool {
           [self observePlayerItem:playerItem playerId:playerId];
           [ player replaceCurrentItemWithPlayerItem: playerItem ];
         }
       } else {
+        NSLog(@"Player: Initing AVPPlayer");
         [self observePlayerItem:playerItem playerId:playerId];
         [self initAVPlayer:playerId playerItem:playerItem url:url onReady: onReady];
       }
+      NSLog(@"Player: Resuming");
       [self resume:playerId];
       int state = STATE_BUFFERING;
       [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": playerId, @"state": @(state)}];
       [ playerInfo setObject:@false forKey:@"isPlaying" ];
       [ playerInfo setObject:url forKey:@"url" ];
     } else {
+      NSLog(@"Player: player or item is nil player: [%@] item: [%@]", player, [player currentItem]);
       if (player == nil && [player currentItem] == nil) {
         NSLog(@"Player: player status: %ld",(long)[[player currentItem] status ]);
         
         [self initAVPlayer:playerId playerItem:playerItem url:url onReady: onReady];
         [self observePlayerItem:playerItem playerId:playerId];
       } else if ([[player currentItem] status ] == AVPlayerItemStatusReadyToPlay) {
+        NSLog(@"Player: item ready to play");
         onReady(playerId);
       } else if ([[player currentItem] status ] == AVPlayerItemStatusFailed) {
         NSLog(@"Player: FAILED STATUS. Notifying app that an error happened.");
@@ -797,6 +806,7 @@ id previousTrackId;
   latestCookie = cookie;
   latestPlayerId = playerId;
   latestOnReady = ^(NSString * playerId) {
+    NSLog(@"Player: Inside OnReady");
     NSMutableDictionary * playerInfo = players[playerId];
     AVPlayer *player = playerInfo[@"player"];
     [ player setVolume:volume ];
@@ -916,28 +926,19 @@ id previousTrackId;
                   }
                   image = nil;
                 }
-                NSMutableDictionary *nowPlaying = nil;
+                NSMutableDictionary *nowPlayingInfo = [[NSMutableDictionary alloc] initWithDictionary:@{
+                   MPMediaItemPropertyMediaType: [NSNumber numberWithInt:1], // Audio
+                   MPMediaItemPropertyTitle: name,
+                   MPMediaItemPropertyAlbumTitle: name,
+                   MPMediaItemPropertyArtist: author,
+                   MPMediaItemPropertyPlaybackDuration: [NSNumber numberWithInt:_duration],
+                   MPNowPlayingInfoPropertyElapsedPlaybackTime: [NSNumber numberWithInt:position]
+                }];
                 if (art != nil) {
-                    [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = @{
-                       MPMediaItemPropertyMediaType: [NSNumber numberWithInt:1], // Audio
-                       MPMediaItemPropertyTitle: name,
-                       MPMediaItemPropertyAlbumTitle: name,
-                       MPMediaItemPropertyArtist: author,
-                       MPMediaItemPropertyArtwork: art,
-                       MPMediaItemPropertyPlaybackDuration: [NSNumber numberWithInt:_duration],
-                       MPNowPlayingInfoPropertyElapsedPlaybackTime: [NSNumber numberWithInt:position]
-                    };
+                    [nowPlayingInfo setValue:art forKey:MPMediaItemPropertyArtwork];
                     art = nil;
-                } else {
-                    [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = @{
-                       MPMediaItemPropertyMediaType: [NSNumber numberWithInt:1], // Audio
-                       MPMediaItemPropertyTitle: name,
-                       MPMediaItemPropertyAlbumTitle: name,
-                       MPMediaItemPropertyArtist: author,
-                       MPMediaItemPropertyPlaybackDuration: [NSNumber numberWithInt:_duration],
-                       MPNowPlayingInfoPropertyElapsedPlaybackTime: [NSNumber numberWithInt:position]
-                    };
                 }
+                [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = nowPlayingInfo;
             });
             data = nil;
         });
@@ -983,7 +984,7 @@ id previousTrackId;
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
     NSString *documentsDirectory = [paths objectAtIndex:0];
     NSString *dataPath = [documentsDirectory stringByAppendingPathComponent:[coverUrl MD5]];
-    NSLog(@"Looing for %@", dataPath);
+    NSLog(@"Looking for %@", dataPath);
     NSError *error;
     NSData *data = [NSData dataWithContentsOfFile:dataPath
             options:NSDataReadingMapped
