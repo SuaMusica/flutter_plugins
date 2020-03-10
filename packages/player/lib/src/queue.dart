@@ -21,9 +21,7 @@ class Queue {
   }
 
   List<Media> get items {
-    return storage.length > 0
-        ? List<Media>.unmodifiable((storage.map((i) => i.item).toList()))
-        : [];
+    return storage.length > 0 ? storage.map((i) => i.item).toList() : [];
   }
 
   int get size => storage.length;
@@ -174,7 +172,7 @@ class Queue {
   void reorder(int oldIndex, int newIndex, [bool isShuffle = false]) {
     // first we reposition all the items
     final playingItem = storage.elementAt(index);
-    print(playingItem);
+
     var oldElement = items.elementAt(oldIndex);
     items.removeAt(oldIndex);
     items.insert(newIndex, oldElement);
@@ -193,6 +191,7 @@ class Queue {
         item.originalPosition = position++;
       }
     }
+
     final playingIndex = storage.indexOf(playingItem);
     this.index = playingIndex;
   }
