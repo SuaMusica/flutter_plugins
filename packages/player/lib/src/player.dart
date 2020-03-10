@@ -531,7 +531,7 @@ class Player {
     _add(Event(type: type, media: _queue.current, queuePosition: _queue.index));
   }
 
-  _notifyBeforePlayEvent(Function(bool) operation) async {
+  _notifyBeforePlayEvent(Function(bool) operation) {
     _add(BeforePlayEvent(
         media: _queue.current,
         queuePosition: _queue.index,
