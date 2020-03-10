@@ -62,34 +62,32 @@ class Player {
   ]) async {
     arguments ??= const {};
 
-    return executeCritialCode(() {
-      Future<bool> requiresCookie =
-          Future.value(true); // changing to always pass cookies
-      return requiresCookie.then((requires) {
-        Future<CookiesForCustomPolicy> cookies = Future.value(_cookies);
+    Future<bool> requiresCookie =
+        Future.value(true); // changing to always pass cookies
+    return requiresCookie.then((requires) {
+      Future<CookiesForCustomPolicy> cookies = Future.value(_cookies);
+      if (requires) {
+        if (_cookies == null || !_cookies.isValid()) {
+          cookies = (() async => await cookieSigner())();
+        }
+      }
+
+      return cookies.then((cookies) {
+        String cookie = "";
+        // we need to save it in order to reuse if it is still valid
         if (requires) {
-          if (_cookies == null || !_cookies.isValid()) {
-            cookies = (() async => await cookieSigner())();
-          }
+          _cookies = cookies;
+          cookie =
+              "${cookies.policy.key}=${cookies.policy.value};${cookies.signature.key}=${cookies.signature.value};${cookies.keyPairId.key}=${cookies.keyPairId.value}";
         }
 
-        return cookies.then((cookies) {
-          String cookie = "";
-          // we need to save it in order to reuse if it is still valid
-          if (requires) {
-            _cookies = cookies;
-            cookie =
-                "${cookies.policy.key}=${cookies.policy.value};${cookies.signature.key}=${cookies.signature.value};${cookies.keyPairId.key}=${cookies.keyPairId.value}";
-          }
+        final Map<String, dynamic> withPlayerId = Map.of(arguments)
+          ..['playerId'] = playerId
+          ..['cookie'] = cookie;
 
-          final Map<String, dynamic> withPlayerId = Map.of(arguments)
-            ..['playerId'] = playerId
-            ..['cookie'] = cookie;
-
-          return _channel
-              .invokeMethod(method, withPlayerId)
-              .then((result) => (result as int));
-        });
+        return _channel
+            .invokeMethod(method, withPlayerId)
+            .then((result) => (result as int));
       });
     });
   }
@@ -101,9 +99,7 @@ class Player {
     bool respectSilence = false,
     bool stayAwake = false,
   }) async {
-    executeCritialCode(() async {
-      _queue.add(media);
-    });
+    _queue.add(media);
     return Ok;
   }
 
@@ -114,23 +110,17 @@ class Player {
     bool respectSilence = false,
     bool stayAwake = false,
   }) async {
-    executeCritialCode(() async {
-      _queue.addAll(items);
-    });
+    _queue.addAll(items);
     return Ok;
   }
 
   Future<int> remove(Media media) async {
-    executeCritialCode(() async {
-      _queue.remove(media);
-    });
+    _queue.remove(media);
     return Ok;
   }
 
   Future<int> removeAll() async {
-    executeCritialCode(() async {
-      _queue.removeAll();
-    });
+    _queue.removeAll();
     return Ok;
   }
 
@@ -140,9 +130,7 @@ class Player {
   }
 
   Future<int> reorder(int oldIndex, int newIndex) async {
-    executeCritialCode(() async {
-      _queue.reorder(oldIndex, newIndex);
-    });
+    _queue.reorder(oldIndex, newIndex);
     return Ok;
   }
 
@@ -161,11 +149,9 @@ class Player {
     bool respectSilence = false,
     bool stayAwake = false,
   }) async {
-    return executeCritialCode(() {
-      _queue.play(media);
-      _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
-      return _doPlay(_queue.current);
-    });
+    _queue.play(media);
+    _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
+    return _doPlay(_queue.current);
   }
 
   Future<int> playFromQueue(
@@ -175,11 +161,9 @@ class Player {
     bool respectSilence = false,
     bool stayAwake = false,
   }) async {
-    return executeCritialCode(() {
-      final media = _queue.move(pos);
-      _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
-      return _doPlay(media);
-    });
+    final media = _queue.move(pos);
+    _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
+    return _doPlay(media);
   }
 
   Future<int> _doPlay(
@@ -242,10 +226,8 @@ class Player {
   }
 
   Future<int> rewind() async {
-    return executeCritialCode(() {
-      var media = _queue.rewind();
-      return _rewind(media);
-    });
+    var media = _queue.rewind();
+    return _rewind(media);
   }
 
   Future<int> _rewind(Media media) async {
@@ -253,14 +235,12 @@ class Player {
       return NotOk;
     }
     _notifyRewind(media);
-    return _seek(Duration(seconds: 0));
+    return seek(Duration(seconds: 0));
   }
 
   Future<int> forward() async {
-    return executeCritialCode(() {
-      var media = _queue.current;
-      return _forward(media);
-    });
+    var media = _queue.current;
+    return _forward(media);
   }
 
   Future<int> _forward(Media media) async {
@@ -274,20 +254,18 @@ class Player {
   }
 
   Future<int> previous() async {
-    return executeCritialCode(() async {
-      final current = _queue.current;
-      var previous = _queue.previous();
-      if (previous == null) {
-        return NotOk;
-      }
+    final current = _queue.current;
+    var previous = _queue.previous();
+    if (previous == null) {
+      return NotOk;
+    }
 
-      if (previous == current) {
-        return _rewind(current);
-      } else {
-        _notifyChangeToPrevious(previous);
-        return _doPlay(previous);
-      }
-    });
+    if (previous == current) {
+      return _rewind(current);
+    } else {
+      _notifyChangeToPrevious(previous);
+      return _doPlay(previous);
+    }
   }
 
   Future<int> next() async {
@@ -295,126 +273,106 @@ class Player {
   }
 
   Future<int> _doNext(bool shallNotify) async {
-    return executeCritialCode(() async {
-      final current = _queue.current;
-      Media next;
+    final current = _queue.current;
+    Media next;
 
-      // first case, nothing has yet played
-      // therefore, we need to play the first
-      // track on the key and treat this as a
-      // play method invocation
-      if (current == null) {
-        next = _queue.next();
-        if (next == null) {
-          // nothing to play
+    // first case, nothing has yet played
+    // therefore, we need to play the first
+    // track on the key and treat this as a
+    // play method invocation
+    if (current == null) {
+      next = _queue.next();
+      if (next == null) {
+        // nothing to play
+        return NotOk;
+      }
+      // notice that in this case
+      // we do not emit the NEXT event
+      // we only play the track
+      return _doPlay(next);
+    }
+
+    if (repeatMode == RepeatMode.TRACK) {
+      return rewind();
+    } else {
+      next = _queue.next();
+      if (next == null) {
+        if (current == null) {
           return NotOk;
         }
-        // notice that in this case
-        // we do not emit the NEXT event
-        // we only play the track
-        return _doPlay(next);
-      }
 
-      if (repeatMode == RepeatMode.TRACK) {
-        return rewind();
-      } else {
-        next = _queue.next();
-        if (next == null) {
-          if (current == null) {
+        if ((state == PlayerState.PLAYING || state == PlayerState.PAUSED) &&
+            repeatMode == RepeatMode.NONE) {
+          return _forward(current);
+        } else {
+          if (repeatMode == RepeatMode.NONE) {
+            return NotOk;
+          } else if (repeatMode == RepeatMode.QUEUE) {
+            next = _queue.restart();
+          } else {
+            // this should not happen!
             return NotOk;
           }
-
-          if ((state == PlayerState.PLAYING || state == PlayerState.PAUSED) &&
-              repeatMode == RepeatMode.NONE) {
-            return _forward(current);
-          } else {
-            if (repeatMode == RepeatMode.NONE) {
-              return NotOk;
-            } else if (repeatMode == RepeatMode.QUEUE) {
-              next = _queue.restart();
-            } else {
-              // this should not happen!
-              return NotOk;
-            }
-          }
         }
-
-        if (shallNotify) {
-          _notifyChangeToNext(next);
-        }
-        return _doPlay(next);
       }
-    });
+
+      if (shallNotify) {
+        _notifyChangeToNext(next);
+      }
+      return _doPlay(next);
+    }
   }
 
   Future<int> pause() async {
-    return executeCritialCode(() async {
-      _notifyPlayerStatusChangeEvent(EventType.PAUSE_REQUEST);
-      final int result = await _invokeMethod('pause');
-      return result;
-    });
+    _notifyPlayerStatusChangeEvent(EventType.PAUSE_REQUEST);
+    final int result = await _invokeMethod('pause');
+    return result;
   }
 
   Future<int> stop() async {
-    return executeCritialCode(() async {
-      _notifyPlayerStatusChangeEvent(EventType.STOP_REQUESTED);
-      final int result = await _invokeMethod('stop');
+    _notifyPlayerStatusChangeEvent(EventType.STOP_REQUESTED);
+    final int result = await _invokeMethod('stop');
 
-      if (result == Ok) {
-        state = PlayerState.STOPPED;
-        _notifyPlayerStatusChangeEvent(EventType.STOPPED);
-      }
+    if (result == Ok) {
+      state = PlayerState.STOPPED;
+      _notifyPlayerStatusChangeEvent(EventType.STOPPED);
+    }
 
-      return result;
-    });
+    return result;
   }
 
   Future<int> resume() async {
-    return executeCritialCode(() async {
-      _notifyPlayerStatusChangeEvent(EventType.RESUME_REQUESTED);
-      final int result = await _invokeMethod('resume');
+    _notifyPlayerStatusChangeEvent(EventType.RESUME_REQUESTED);
+    final int result = await _invokeMethod('resume');
 
-      if (result == Ok) {
-        _notifyPlayerStatusChangeEvent(EventType.RESUMED);
-      }
+    if (result == Ok) {
+      _notifyPlayerStatusChangeEvent(EventType.RESUMED);
+    }
 
-      return result;
-    });
+    return result;
   }
 
   Future<int> release() async {
-    return executeCritialCode(() async {
-      _notifyPlayerStatusChangeEvent(EventType.RELEASE_REQUESTED);
-      final int result = await _invokeMethod('release');
+    _notifyPlayerStatusChangeEvent(EventType.RELEASE_REQUESTED);
+    final int result = await _invokeMethod('release');
 
-      if (result == Ok) {
-        state = PlayerState.STOPPED;
-        _notifyPlayerStatusChangeEvent(EventType.RELEASED);
-      }
+    if (result == Ok) {
+      state = PlayerState.STOPPED;
+      _notifyPlayerStatusChangeEvent(EventType.RELEASED);
+    }
 
-      return result;
-    });
+    return result;
   }
 
   Future<void> shuffle() async {
-    return executeCritialCode(() async {
-      _queue.shuffle();
-    });
+    _queue.shuffle();
   }
 
   Future<void> unshuffle() async {
-    return executeCritialCode(() async {
-      _queue.unshuffle();
-    });
+    _queue.unshuffle();
   }
 
   Future<int> seek(Duration position) {
-    return executeCritialCode(() async {
-      return _seek(position);
-    });
-  }
-
-  Future<int> _seek(Duration position) {
     return _invokeMethod('seek', {'position': position.inMilliseconds});
   }
 
@@ -423,15 +381,11 @@ class Player {
   }
 
   Future<int> getDuration() {
-    return executeCritialCode(() async {
-      return _invokeMethod('getDuration');
-    });
+    return _invokeMethod('getDuration');
   }
 
   Future<int> getCurrentPosition() async {
-    return executeCritialCode(() async {
-      return _invokeMethod('getCurrentPosition');
-    });
+    return _invokeMethod('getCurrentPosition');
   }
 
   static Future<void> platformCallHandler(MethodCall call) async {
@@ -652,14 +606,5 @@ class Player {
       futures.add(_eventStreamController.close());
     }
     await Future.wait(futures);
-  }
-
-  Future<T> executeCritialCode<T>(Future<T> Function() action) async {
-    await mutex.acquire();
-    try {
-      return await action();
-    } finally {
-      mutex.release();
-    }
   }
 }
