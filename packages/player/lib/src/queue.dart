@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:smplayer/src/media.dart';
 import 'package:smplayer/src/queue_item.dart';
 import 'package:smplayer/src/shuffler.dart';
@@ -23,7 +21,9 @@ class Queue {
   }
 
   List<Media> get items {
-    return storage.length > 0 ? storage.map((i) => i.item).toList() : [];
+    return storage.length > 0
+        ? List<Media>.unmodifiable((storage.map((i) => i.item).toList()))
+        : [];
   }
 
   int get size => storage.length;
@@ -165,10 +165,8 @@ class Queue {
   }
 
   void reorder(int oldIndex, int newIndex, [bool isShuffle = false]) {
-    // first we reposition all the items
-    print(isShuffle);
     final playingItem = storage.elementAt(index);
-    // now we need to repostion based on Shuffle or not.
+
     if (newIndex > oldIndex) {
       for (int i = oldIndex + 1; i <= newIndex; i++) {
         if (!isShuffle) {
@@ -184,10 +182,13 @@ class Queue {
         storage.elementAt(i).position++;
       }
     }
+
     storage.elementAt(oldIndex).position = newIndex;
+
     if (!isShuffle) {
       storage.elementAt(oldIndex).originalPosition = newIndex;
     }
+
     storage.sort((a, b) => a.position.compareTo(b.position));
     final playingIndex = storage.indexOf(playingItem);
     this.index = playingIndex;
