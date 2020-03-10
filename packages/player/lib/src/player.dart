@@ -129,8 +129,9 @@ class Player {
     return Ok;
   }
 
-  Future<int> reorder(int oldIndex, int newIndex) async {
-    _queue.reorder(oldIndex, newIndex);
+  Future<int> reorder(int oldIndex, int newIndex,
+      [bool isShuffle = false]) async {
+    _queue.reorder(oldIndex, newIndex, isShuffle);
     return Ok;
   }
 
