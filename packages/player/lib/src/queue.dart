@@ -82,20 +82,13 @@ class Queue {
 
   shuffle() {
     if (storage.length > 2) {
-      print("Before");
-      for (var item in storage) {
-        print(
-            "pos: ${item.position} orig: ${item.originalPosition} name: ${item.item.name}");
-      }
       var current = storage.elementAt(index);
       _shuffler.shuffle(storage);
-      var currentIndex = storage.indexOf(current);
-      reorder(currentIndex, 0);
-      print("After");
-      for (var item in storage) {
-        print(
-            "pos: ${item.position} orig: ${item.originalPosition} name: ${item.item.name}");
+      for (var i = 0; i < storage.length; ++i) {
+        storage.elementAt(i).position = i;
       }
+      var currentIndex = storage.indexOf(current);
+      reorder(currentIndex, 0, true);
       this.index = 0;
     }
   }
@@ -171,25 +164,33 @@ class Queue {
     return next();
   }
 
-  void reorder(int oldIndex, int newIndex) {
-    // first we reposition all the items
-    for (var i = 0; i < storage.length; ++i) {
-      final item = storage.elementAt(i);
-      item.position = i;
+  void reorder(int oldIndex, int newIndex, [bool isShuffle = false]) {
+    final playingItem = storage.elementAt(index);
+
+    if (newIndex > oldIndex) {
+      for (int i = oldIndex + 1; i <= newIndex; i++) {
+        if (!isShuffle) {
+          storage.elementAt(i).originalPosition--;
+        }
+        storage.elementAt(i).position--;
+      }
+    } else {
+      for (int i = newIndex; i < oldIndex; i++) {
+        if (!isShuffle) {
+          storage.elementAt(i).originalPosition++;
+        }
+        storage.elementAt(i).position++;
+      }
     }
 
-    //now we need to fix the position impacting by moving the
-    // currenty playing item to poistion 0
-    final playingItem = storage.elementAt(oldIndex);
-    final playingIndex = storage.indexOf(playingItem);
-    playingItem.position = 0;
-    for (var i = 0; i < playingIndex; ++i) {
-      final item = storage.elementAt(i);
-      item.position += 1;
+    storage.elementAt(oldIndex).position = newIndex;
+
+    if (!isShuffle) {
+      storage.elementAt(oldIndex).originalPosition = newIndex;
     }
 
     storage.sort((a, b) => a.position.compareTo(b.position));
-
+    final playingIndex = storage.indexOf(playingItem);
     this.index = playingIndex;
   }
 }
