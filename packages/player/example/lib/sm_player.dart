@@ -257,151 +257,147 @@ class _SMPlayerState extends State<SMPlayer> {
   Widget build(BuildContext context) {
     final List<int> colorCodes = <int>[600, 500, 100];
 
-    return FutureBuilder(
-      future: _player.items,
-      builder: (context, snapshot) => Container(
-        padding: EdgeInsets.only(top: 8.0, bottom: 0.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: <Widget>[
-            Stack(children: <Widget>[
-              Wrap(
-                direction: Axis.horizontal,
-                children: <Widget>[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      Padding(
-                        padding: EdgeInsets.only(left: 20.0),
-                        child: Text(positionText,
-                            style: TextStyle(fontSize: 14.0)),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.only(right: 20.0),
-                        child: Text(durationText,
-                            style: TextStyle(fontSize: 14.0)),
-                      )
-                    ],
-                  ),
-                ],
-              ),
-              duration == null
-                  ? Container()
-                  : Container(
-                      width: double.infinity,
-                      margin: EdgeInsets.only(top: 5.0),
-                      child: SliderTheme(
-                          data: SliderTheme.of(context).copyWith(
-                            trackHeight: 2.0,
-                            thumbShape: const RoundSliderThumbShape(
-                                enabledThumbRadius: 7.0),
-                            showValueIndicator: ShowValueIndicator.always,
-                          ),
-                          child: Slider(
-                            activeColor: AppColors.redPink,
-                            inactiveColor: AppColors.inactiveColor,
-                            min: 0.0,
-                            max: duration.inMilliseconds.toDouble(),
-                            value: position?.inMilliseconds?.toDouble() ?? 0.0,
-                            onChanged: (double value) {
-                              seek(value);
-                            },
-                          ))),
-            ]),
-            Row(
-              children: [
-                Container(
-                  margin: EdgeInsets.only(left: 8),
-                  child: Material(
-                      borderRadius: BorderRadius.circular(25.0),
-                      clipBehavior: Clip.hardEdge,
-                      child: IconButton(
-                        iconSize: 25,
-                        icon: SvgPicture.asset(UIData.btPlayerSuffle,
-                            color: _shuffled
-                                ? AppColors.darkPink
-                                : AppColors.primary),
-                        onPressed: shuffleOrUnshuffle,
-                      )),
-                ),
-                Expanded(
-                    child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+    return Container(
+      padding: EdgeInsets.only(top: 8.0, bottom: 0.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: <Widget>[
+          Stack(children: <Widget>[
+            Wrap(
+              direction: Axis.horizontal,
+              children: <Widget>[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
-                    Container(
-                      margin: EdgeInsets.only(left: 8, right: 8),
-                      child: Material(
-                          borderRadius: BorderRadius.circular(40.0),
-                          clipBehavior: Clip.hardEdge,
-                          child: IconButton(
-                              onPressed: previous,
-                              iconSize: 40,
-                              icon: Container(
-                                child:
-                                    SvgPicture.asset(UIData.btPlayerPrevious),
-                              ))),
+                    Padding(
+                      padding: EdgeInsets.only(left: 20.0),
+                      child:
+                          Text(positionText, style: TextStyle(fontSize: 14.0)),
                     ),
-                    Material(
-                        borderRadius: BorderRadius.circular(58.0),
-                        clipBehavior: Clip.hardEdge,
-                        child: IconButton(
-                          iconSize: 58,
-                          icon: _player.state == PlayerState.PLAYING
-                              ? SvgPicture.asset(UIData.btPlayerPause)
-                              : SvgPicture.asset(UIData.btPlayerPlay),
-                          onPressed: playOrPause,
-                        )),
-                    Container(
-                      margin: EdgeInsets.only(left: 8, right: 8),
-                      child: Material(
-                          borderRadius: BorderRadius.circular(40.0),
-                          clipBehavior: Clip.hardEdge,
-                          child: IconButton(
-                              onPressed: next,
-                              iconSize: 40,
-                              icon: Container(
-                                child: SvgPicture.asset(UIData.btPlayerNext),
-                              ))),
-                    ),
+                    Padding(
+                      padding: EdgeInsets.only(right: 20.0),
+                      child:
+                          Text(durationText, style: TextStyle(fontSize: 14.0)),
+                    )
                   ],
-                )),
-                Container(
-                  margin: EdgeInsets.only(right: 8),
-                  child: Material(
-                      borderRadius: BorderRadius.circular(25.0),
-                      clipBehavior: Clip.hardEdge,
-                      child: IconButton(
-                        iconSize: 25,
-                        icon: SvgPicture.asset(UIData.btPlayerRepeat,
-                            color: _repeatModeToColor()),
-                        onPressed: _changeRepeatMode,
-                      )),
                 ),
               ],
             ),
-            SizedBox(height: 30),
-            Text(mediaLabel),
-            SizedBox(height: 30),
-            Expanded(
-                child: SizedBox(
-              height: 200,
-              child: ListView.separated(
-                padding: const EdgeInsets.all(8.0),
-                itemCount: snapshot.data.length,
-                itemBuilder: (BuildContext context, int index) {
-                  var media = snapshot.data[index];
-                  return Container(
-                    height: 50,
-                    color: Colors.blue[colorCodes[index % 3]],
-                    child: Center(child: Text('${media.id} - ${media.name}')),
-                  );
-                },
-                separatorBuilder: (BuildContext context, int index) =>
-                    const Divider(),
+            duration == null
+                ? Container()
+                : Container(
+                    width: double.infinity,
+                    margin: EdgeInsets.only(top: 5.0),
+                    child: SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          trackHeight: 2.0,
+                          thumbShape: const RoundSliderThumbShape(
+                              enabledThumbRadius: 7.0),
+                          showValueIndicator: ShowValueIndicator.always,
+                        ),
+                        child: Slider(
+                          activeColor: AppColors.redPink,
+                          inactiveColor: AppColors.inactiveColor,
+                          min: 0.0,
+                          max: duration.inMilliseconds.toDouble(),
+                          value: position?.inMilliseconds?.toDouble() ?? 0.0,
+                          onChanged: (double value) {
+                            seek(value);
+                          },
+                        ))),
+          ]),
+          Row(
+            children: [
+              Container(
+                margin: EdgeInsets.only(left: 8),
+                child: Material(
+                    borderRadius: BorderRadius.circular(25.0),
+                    clipBehavior: Clip.hardEdge,
+                    child: IconButton(
+                      iconSize: 25,
+                      icon: SvgPicture.asset(UIData.btPlayerSuffle,
+                          color: _shuffled
+                              ? AppColors.darkPink
+                              : AppColors.primary),
+                      onPressed: shuffleOrUnshuffle,
+                    )),
               ),
-            ))
-          ],
-        ),
+              Expanded(
+                  child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Container(
+                    margin: EdgeInsets.only(left: 8, right: 8),
+                    child: Material(
+                        borderRadius: BorderRadius.circular(40.0),
+                        clipBehavior: Clip.hardEdge,
+                        child: IconButton(
+                            onPressed: previous,
+                            iconSize: 40,
+                            icon: Container(
+                              child: SvgPicture.asset(UIData.btPlayerPrevious),
+                            ))),
+                  ),
+                  Material(
+                      borderRadius: BorderRadius.circular(58.0),
+                      clipBehavior: Clip.hardEdge,
+                      child: IconButton(
+                        iconSize: 58,
+                        icon: _player.state == PlayerState.PLAYING
+                            ? SvgPicture.asset(UIData.btPlayerPause)
+                            : SvgPicture.asset(UIData.btPlayerPlay),
+                        onPressed: playOrPause,
+                      )),
+                  Container(
+                    margin: EdgeInsets.only(left: 8, right: 8),
+                    child: Material(
+                        borderRadius: BorderRadius.circular(40.0),
+                        clipBehavior: Clip.hardEdge,
+                        child: IconButton(
+                            onPressed: next,
+                            iconSize: 40,
+                            icon: Container(
+                              child: SvgPicture.asset(UIData.btPlayerNext),
+                            ))),
+                  ),
+                ],
+              )),
+              Container(
+                margin: EdgeInsets.only(right: 8),
+                child: Material(
+                    borderRadius: BorderRadius.circular(25.0),
+                    clipBehavior: Clip.hardEdge,
+                    child: IconButton(
+                      iconSize: 25,
+                      icon: SvgPicture.asset(UIData.btPlayerRepeat,
+                          color: _repeatModeToColor()),
+                      onPressed: _changeRepeatMode,
+                    )),
+              ),
+            ],
+          ),
+          SizedBox(height: 30),
+          Text(mediaLabel),
+          SizedBox(height: 30),
+          Expanded(
+              child: SizedBox(
+            height: 200,
+            child: ListView.separated(
+              padding: const EdgeInsets.all(8.0),
+              itemCount: _player.items.length,
+              itemBuilder: (BuildContext context, int index) {
+                var media = _player.items[index];
+                return Container(
+                  height: 50,
+                  color: Colors.blue[colorCodes[index % 3]],
+                  child: Center(child: Text('${media.id} - ${media.name}')),
+                );
+              },
+              separatorBuilder: (BuildContext context, int index) =>
+                  const Divider(),
+            ),
+          ))
+        ],
       ),
     );
   }

@@ -151,22 +151,22 @@ class Player {
 
   Future<int> clear() async => removeAll();
 
-  Future<Media> get current async =>
-      await executeCritialCode(() => _queue.current);
-  // Media get current => _queue.current;
+  // Future<Media> get current async =>
+  //     await executeCritialCode(() => _queue.current);
+  Media get current => _queue.current;
 
-  Future<List<Media>> get items async =>
-      await executeCritialCode(() => _queue.items);
-  // List<Media> get items => _queue.items;
-  Future<int> get queuePosition async =>
-      await executeCritialCode(() => _queue.index);
-  // int get queuePosition => _queue.index;
+  // Future<List<Media>> get items async =>
+  //     await executeCritialCode(() => _queue.items);
+  List<Media> get items => _queue.items;
+  // Future<int> get queuePosition async =>
+  //     await executeCritialCode(() => _queue.index);
+  int get queuePosition => _queue.index;
 
-  Future<int> get size async => await executeCritialCode(() => _queue.size);
-  // int get size => _queue.size;
+  // Future<int> get size async => await executeCritialCode(() => _queue.size);
+  int get size => _queue.size;
 
-  Future<Media> get top async => await executeCritialCode(() => _queue.top);
-  // Media get top => _queue.top;
+  // Future<Media> get top async => await executeCritialCode(() => _queue.top);
+  Media get top => _queue.top;
 
   Future<int> play(
     Media media, {
@@ -666,12 +666,12 @@ class Player {
     await Future.wait(futures);
   }
 
-  Future<T> executeCritialCode<T>(T Function() action) async {
-    await mutex.acquire();
-    try {
-      return action();
-    } finally {
-      mutex.release();
-    }
-  }
+  // Future<T> executeCritialCode<T>(T Function() action) async {
+  //   await mutex.acquire();
+  //   try {
+  //     return action();
+  //   } finally {
+  //     mutex.release();
+  //   }
+  // }
 }
