@@ -32,18 +32,18 @@ class Media {
   }) : super();
 
   Map<String, dynamic> toJson() => {
-        'id': id,
+        // 'id': id,
         'name': name,
-        'ownerId': ownerId,
-        'albumId': albumId,
-        'author': author,
-        'url': url,
-        'is_local': isLocal,
-        'cover_url': coverUrl,
-        'is_verified': isVerified,
-        'shared_url': shareUrl,
-        'playlist_id': playlistId,
-        'is_spot': isSpot,
+        // 'ownerId': ownerId,
+        // 'albumId': albumId,
+        // 'author': author,
+        // 'url': url,
+        // 'is_local': isLocal,
+        // 'cover_url': coverUrl,
+        // 'is_verified': isVerified,
+        // 'shared_url': shareUrl,
+        // 'playlist_id': playlistId,
+        // 'is_spot': isSpot,
       };
 
   @override
