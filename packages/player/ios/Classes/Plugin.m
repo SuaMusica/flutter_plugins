@@ -612,6 +612,10 @@ AVPlayerItem* latestPlayerItemObserved = nil;
         [self observePlayerItem:playerItem playerId:playerId];
       } else if ([[player currentItem] status ] == AVPlayerItemStatusReadyToPlay) {
         NSLog(@"Player: item ready to play");
+        [self observePlayerItem:[player currentItem] playerId:playerId];
+        [ playerInfo setObject:@true forKey:@"isPlaying" ];
+        int state = STATE_PLAYING;
+        [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
         onReady(playerId);
       } else if ([[player currentItem] status ] == AVPlayerItemStatusFailed) {
         NSLog(@"Player: FAILED STATUS. Notifying app that an error happened.");
