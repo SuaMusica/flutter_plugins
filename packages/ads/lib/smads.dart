@@ -45,6 +45,10 @@ class SMAds {
     print(param);
   }
 
+  void dispose() {
+    _eventStreamController.close();
+  }
+
   static Future<void> platformCallHandler(MethodCall call) async {
     try {
       _doHandlePlatformCall(call);

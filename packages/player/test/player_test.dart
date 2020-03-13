@@ -22,6 +22,7 @@ void main() {
 
   final media1 = Media(
       id: 1,
+      albumId: 2,
       name: "O Bebe",
       url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
       coverUrl:
@@ -29,10 +30,13 @@ void main() {
       author: "Xand Avião",
       isLocal: false,
       isVerified: true,
+      ownerId: 2,
       shareUrl: "");
 
   final media2 = Media(
       id: 2,
+      albumId: 2,
+      ownerId: 2,
       name: "Solteiro Largado",
       url:
           "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
@@ -45,6 +49,8 @@ void main() {
 
   final media3 = Media(
       id: 3,
+      ownerId: 2,
+      albumId: 2,
       name: "Borrachinha",
       url: "https://android.suamusica.com.br/373377/2238511/05+Borrachinha.mp3",
       coverUrl:
@@ -365,7 +371,12 @@ void main() {
   });
 }
 
-Player createPlayer() => Player(cookieSigner: cookieSigner, autoPlay: false);
+Player createPlayer() => Player(
+      cookieSigner: cookieSigner,
+      autoPlay: false,
+      playerId: "smplayer",
+      localMediaValidator: null,
+    );
 
 Future<CookiesForCustomPolicy> cookieSigner() async {
   DateTime expiresOn = DateTime.now().add(Duration(hours: 12));
