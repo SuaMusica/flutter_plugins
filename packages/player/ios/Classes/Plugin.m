@@ -67,6 +67,10 @@ NSString* latestCookie = nil;
 NSString* latestPlayerId = nil;
 VoidCallback latestOnReady = nil;
 AVPlayerItem* latestPlayerItemObserved = nil;
+id playId;
+id pauseId;
+id nextTrackId;
+id previousTrackId;
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
   @synchronized(self) {
@@ -97,7 +101,7 @@ AVPlayerItem* latestPlayerItemObserved = nil;
     [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
     MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
 
-    [commandCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+    playId = [commandCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
       if (_playerId != nil) {
           [self resume:_playerId];
           int state = STATE_PLAYING;
@@ -105,8 +109,9 @@ AVPlayerItem* latestPlayerItemObserved = nil;
       }
       return MPRemoteCommandHandlerStatusSuccess;
     }];
+    commandCenter.playCommand.enabled = TRUE;
 
-    [commandCenter.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+    pauseId = [commandCenter.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
       if (_playerId != nil) {
           [self pause:_playerId];
           int state = STATE_PAUSED;
@@ -114,20 +119,23 @@ AVPlayerItem* latestPlayerItemObserved = nil;
       }
       return MPRemoteCommandHandlerStatusSuccess;
     }];
+    commandCenter.pauseCommand.enabled = TRUE;
 
-    [commandCenter.nextTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+    nextTrackId = [commandCenter.nextTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
       if (_playerId != nil) {
           [_channel_player invokeMethod:@"commandCenter.onNext" arguments:@{@"playerId": _playerId}];
       }
       return MPRemoteCommandHandlerStatusSuccess;
     }];
+    commandCenter.nextTrackCommand.enabled = TRUE;
     
-    [commandCenter.previousTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+    previousTrackId =[commandCenter.previousTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
       if (_playerId != nil) {
           [_channel_player invokeMethod:@"commandCenter.onPrevious" arguments:@{@"playerId": _playerId}];
       }
       return MPRemoteCommandHandlerStatusSuccess;
     }];
+    commandCenter.previousTrackCommand.enabled = TRUE;
 }
 
 -(void)disableRemoteCommandCenter:(NSString *) playerId {
@@ -138,6 +146,16 @@ AVPlayerItem* latestPlayerItemObserved = nil;
     [[AVAudioSession sharedInstance] setActive:NO withOptions:AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation error:&error];
     [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = NULL;
     [[UIApplication sharedApplication] endReceivingRemoteControlEvents];
+    MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
+    commandCenter.playCommand.enabled = FALSE;
+    [commandCenter.playCommand removeTarget:playId];
+    commandCenter.pauseCommand.enabled = FALSE;
+    [commandCenter.pauseCommand removeTarget:pauseId];
+    commandCenter.previousTrackCommand.enabled = FALSE;
+    [commandCenter.nextTrackCommand removeTarget:nextTrackId];
+    [commandCenter.previousTrackCommand removeTarget:previousTrackId];
+    commandCenter.nextTrackCommand.enabled = FALSE;
+
     NSLog(@"Player: MPRemote: Disabled Remote Command Center! Done!");
 }
 
@@ -818,8 +836,9 @@ AVPlayerItem* latestPlayerItemObserved = nil;
   
   NSLog(@"Player: Volume: %f", volume);
     
-  [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
-    
+//  [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
+  [self configureRemoteCommandCenter];
+  
   NSError *error = nil;
   BOOL success = [[AVAudioSession sharedInstance]
         setCategory: AVAudioSessionCategoryPlayback
