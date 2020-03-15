@@ -86,10 +86,15 @@ class Screen {
         guard let complete = receiveLockCompleteNotification else {
             // If we don't receive lockComplete notification, wait 0.3s.
             // If nothing happens in 0.3s, then make sure we don't receive lockComplete, and refresh lock status.
-            waitForLockCompleteNotificationTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false, block: { _ in
-                self.receiveLockCompleteNotification = false
-                self.changeIsLockedIfNeeded()
-            })
+            
+            if #available(iOS 10.0, *) {
+                waitForLockCompleteNotificationTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false, block: { _ in
+                    self.receiveLockCompleteNotification = false
+                    self.changeIsLockedIfNeeded()
+                })
+            } else {
+                // Fallback on earlier versions
+            }
             return
         }
         
