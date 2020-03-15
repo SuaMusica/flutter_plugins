@@ -42,6 +42,10 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
         self.screen.addNotificationObservers()
     }
 
+    fileprivate func onComplete() {
+        SwiftSmadsPlugin.channel?.invokeMethod("onComplete", arguments: [String: String]())
+    }
+    
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "load":
@@ -59,21 +63,24 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                         }
                         
                         if (self.screen.status == .unlocked) {
-                            if (Network.reachability.isReachable) {
+                            if (Network.reachability.isReachable) {                                
                                 let adsViewController:AdsViewController = AdsViewController.instantiateFromNib()
                                 adsViewController.setup(
                                     channel: SwiftSmadsPlugin.channel,
                                     adUrl: adUrl,
                                     contentUrl: contentUrl,
+                                    screen: self.screen,
                                     args: args)
                                 adsViewController.modalPresentationStyle = .fullScreen
                                 let rootViewController = UIApplication.shared.keyWindow?.rootViewController
                                 rootViewController?.present(adsViewController, animated: false, completion: nil)
                                 result(1)
                             } else {
+                                self.onComplete()
                                 result(-1)
                             }
                         } else {
+                            self.onComplete()
                             result(-2)
                         }
                         

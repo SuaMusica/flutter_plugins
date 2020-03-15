@@ -2,6 +2,7 @@ import AVFoundation
 import GoogleInteractiveMediaAds
 import UIKit
 import PureLayout
+import MediaPlayer
 
 class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
     var channel: FlutterMethodChannel?
@@ -12,9 +13,11 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     var adsManager: IMAAdsManager?
     var adUrl: String!
     var contentUrl: String!
+    var screen: Screen!
     var args: [String: Any]!
     var active: Bool = true
     var playing: Bool = false
+    var isRemoteControlOn = false
     
     @IBOutlet weak var totalProgress: UILabel!
     @IBOutlet weak var currentProgress: UILabel!
@@ -79,10 +82,11 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             }) { (isCompleted) in }
     }
     
-    func setup(channel: FlutterMethodChannel?, adUrl: String?, contentUrl: String?, args: [String: Any]?) {
+    func setup(channel: FlutterMethodChannel?, adUrl: String?, contentUrl: String?, screen: Screen, args: [String: Any]?) {
         self.channel = channel
         self.adUrl = adUrl
         self.contentUrl = contentUrl
+        self.screen = screen
         self.args = args
     }
     
@@ -102,6 +106,11 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         // Create a player layer for the player.
         playerLayer = AVPlayerLayer(player: contentPlayer)
         
+        let commandCenter = MPRemoteCommandCenter.shared()
+        self.isRemoteControlOn = commandCenter.previousTrackCommand.isEnabled
+        commandCenter.previousTrackCommand.isEnabled = false;
+        commandCenter.nextTrackCommand.isEnabled = false;
+
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback)
         } catch(let error) {
@@ -157,6 +166,17 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         adsLoader?.delegate = self
     }
     
+    fileprivate func onComplete() {
+        let commandCenter = MPRemoteCommandCenter.shared()
+        if (self.isRemoteControlOn) {
+            commandCenter.previousTrackCommand.isEnabled = true;
+            commandCenter.nextTrackCommand.isEnabled = true;
+        }
+        
+        // we need to notify that the ad was played
+        self.channel?.invokeMethod("onComplete", arguments: [String: String]())
+    }
+    
     func requestAds() {
         if (self.active) {
             // Create ad display container for ad rendering.
@@ -170,8 +190,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             
             adsLoader?.requestAds(with: request)
         } else {
-            // If the screen is not active we shall not play the AD
-            self.channel?.invokeMethod("onComplete", arguments: [String: String]())
+            onComplete()
         }
     }
     
@@ -207,7 +226,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         }
         contentPlayer?.play()
 
-        self.channel?.invokeMethod("onComplete", arguments: [String: String]())
+        onComplete()
         
         let code = AdsViewController.toErrorCode(error: adErrorData?.adError)
         let message = adErrorData?.adError?.message ?? "unknown"
@@ -232,7 +251,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             print("Got a CLICKED event")
         case IMAAdEventType.COMPLETE:
             print("Got a COMPLETE event")
-            self.channel?.invokeMethod("onComplete", arguments: [String: String]())
+            onComplete()
             adsManager.destroy()
             
             self.adsManager = nil
@@ -257,7 +276,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             self.setPlaying()
         case IMAAdEventType.SKIPPED:
             print("Got a SKIPPED event")
-            self.channel?.invokeMethod("onComplete", arguments: [String: String]())
+            onComplete()
             adsManager.destroy()
             
             self.adsManager = nil
@@ -325,7 +344,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         }
         contentPlayer?.play()
 
-        self.channel?.invokeMethod("onComplete", arguments: [String: String]())
+        onComplete()
 
         let args = [
             "type" : "ERROR",

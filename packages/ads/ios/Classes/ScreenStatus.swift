@@ -1,5 +1,6 @@
 import Foundation
 import SystemConfiguration
+import MediaPlayer
 
 struct NotificationName {
     // Listen to CFNotification, and convert to Notification
@@ -102,7 +103,7 @@ class Screen {
         self.status = complete ? Status.locked : Status.unlocked
         
         print("Screen status changed from \(oldStat) to \(self.status)" )
-
+        
         // When we determined lockState and lockComplete notification is received or not.
         // We can update the device lock status by 'complete' value.
         NotificationCenter.default.post(
