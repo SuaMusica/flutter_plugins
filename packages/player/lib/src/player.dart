@@ -129,6 +129,16 @@ class Player {
     return Ok;
   }
 
+  Future<int> disableNotificatonBeforeAd() async {
+    await _invokeMethod('disable_remote_center_before_ad');
+    return Ok;
+  }
+
+  Future<int> enableNotificatonAfterAd() async {
+    await _invokeMethod('enable_remote_center_after_ad');
+    return Ok;
+  }
+
   Future<int> reorder(int oldIndex, int newIndex,
       [bool isShuffle = false]) async {
     _queue.reorder(oldIndex, newIndex, isShuffle);
@@ -264,12 +274,14 @@ class Player {
     if (previous == current) {
       return _rewind(current);
     } else {
+      await disableNotificatonBeforeAd();
       _notifyChangeToPrevious(previous);
       return _doPlay(previous);
     }
   }
 
   Future<int> next() async {
+    await disableNotificatonBeforeAd();
     return _doNext(true);
   }
 
