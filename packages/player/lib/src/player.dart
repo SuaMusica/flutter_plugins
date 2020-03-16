@@ -194,7 +194,7 @@ class Player {
     // we need to disable the notifications
     // notice that once the play start
     // the notifications will return
-    await disableNotificatonBeforeAd();
+    // await disableNotificatonBeforeAd();
 
     if (autoPlay) {
       _notifyBeforePlayEvent((loadOnly) => {});
