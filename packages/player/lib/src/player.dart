@@ -129,6 +129,11 @@ class Player {
     return Ok;
   }
 
+  Future<int> disableNotificatonBeforeAd() async {
+    await _invokeMethod('disable_remote_center_before_ad');
+    return Ok;
+  }
+
   Future<int> reorder(int oldIndex, int newIndex,
       [bool isShuffle = false]) async {
     _queue.reorder(oldIndex, newIndex, isShuffle);
@@ -185,6 +190,11 @@ class Player {
     // downloading and is not downloaded
     media.isLocal = isLocal;
     media.url = url;
+
+    // we need to disable the notifications
+    // notice that once the play start
+    // the notifications will return
+    await disableNotificatonBeforeAd();
 
     if (autoPlay) {
       _notifyBeforePlayEvent((loadOnly) => {});

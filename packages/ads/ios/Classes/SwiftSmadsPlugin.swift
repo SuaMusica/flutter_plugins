@@ -3,6 +3,7 @@ import UIKit
 
 public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
     static var channel: FlutterMethodChannel?
+    private var screen: Screen
 
     fileprivate static func verifyNetworkAccess() {
         do {
@@ -37,8 +38,14 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
 
     init(channel: FlutterMethodChannel) {
         SwiftSmadsPlugin.channel = channel
+        self.screen = Screen()
+        self.screen.addNotificationObservers()
     }
 
+    fileprivate func onComplete() {
+        SwiftSmadsPlugin.channel?.invokeMethod("onComplete", arguments: [String: String]())
+    }
+    
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "load":
@@ -55,20 +62,28 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                             SwiftSmadsPlugin.verifyNetworkAccess()
                         }
                         
-                        if (Network.reachability.isReachable) {
-                            let adsViewController:AdsViewController = AdsViewController.instantiateFromNib()
-                            adsViewController.setup(
-                                channel: SwiftSmadsPlugin.channel,
-                                adUrl: adUrl,
-                                contentUrl: contentUrl,
-                                args: args)
-                            adsViewController.modalPresentationStyle = .fullScreen
-                            let rootViewController = UIApplication.shared.keyWindow?.rootViewController
-                            rootViewController?.present(adsViewController, animated: false, completion: nil)
-                            result(1)
+                        if (self.screen.status == .unlocked) {
+                            if (Network.reachability.isReachable) {                                
+                                let adsViewController:AdsViewController = AdsViewController.instantiateFromNib()
+                                adsViewController.setup(
+                                    channel: SwiftSmadsPlugin.channel,
+                                    adUrl: adUrl,
+                                    contentUrl: contentUrl,
+                                    screen: self.screen,
+                                    args: args)
+                                adsViewController.modalPresentationStyle = .fullScreen
+                                let rootViewController = UIApplication.shared.keyWindow?.rootViewController
+                                rootViewController?.present(adsViewController, animated: false, completion: nil)
+                                result(1)
+                            } else {
+                                self.onComplete()
+                                result(-1)
+                            }
                         } else {
-                            result(0)
+                            self.onComplete()
+                            result(-2)
                         }
+                        
                     }
                 } catch {
                     result(0)

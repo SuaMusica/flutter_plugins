@@ -2,6 +2,7 @@ import AVFoundation
 import GoogleInteractiveMediaAds
 import UIKit
 import PureLayout
+import MediaPlayer
 
 class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
     var channel: FlutterMethodChannel?
@@ -12,9 +13,12 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     var adsManager: IMAAdsManager?
     var adUrl: String!
     var contentUrl: String!
+    var screen: Screen!
     var args: [String: Any]!
     var active: Bool = true
     var playing: Bool = false
+    var isRemoteControlOn = false
+    var sentOnComplete = false
     
     @IBOutlet weak var totalProgress: UILabel!
     @IBOutlet weak var currentProgress: UILabel!
@@ -79,10 +83,11 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             }) { (isCompleted) in }
     }
     
-    func setup(channel: FlutterMethodChannel?, adUrl: String?, contentUrl: String?, args: [String: Any]?) {
+    func setup(channel: FlutterMethodChannel?, adUrl: String?, contentUrl: String?, screen: Screen, args: [String: Any]?) {
         self.channel = channel
         self.adUrl = adUrl
         self.contentUrl = contentUrl
+        self.screen = screen
         self.args = args
     }
     
@@ -102,6 +107,11 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         // Create a player layer for the player.
         playerLayer = AVPlayerLayer(player: contentPlayer)
         
+        let commandCenter = MPRemoteCommandCenter.shared()
+        self.isRemoteControlOn = commandCenter.previousTrackCommand.isEnabled
+        commandCenter.previousTrackCommand.isEnabled = false;
+        commandCenter.nextTrackCommand.isEnabled = false;
+
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback)
         } catch(let error) {
@@ -110,16 +120,17 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         
         // Size, position, and display the AVPlayer.
         playerLayer?.frame = videoViewUnwraped.layer.bounds
-       videoViewUnwraped.layer.addSublayer(playerLayer!)
+        videoViewUnwraped.layer.addSublayer(playerLayer!)
         
         // Set up our content playhead and contentComplete callback.
         contentPlayhead = IMAAVPlayerContentPlayhead(avPlayer: contentPlayer)
+        
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(AdsViewController.contentDidFinishPlaying(_:)),
             name: NSNotification.Name.AVPlayerItemDidPlayToEndTime,
-            object: contentPlayer?.currentItem);
-
+            object: contentPlayhead!.player.currentItem);
+        
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(AdsViewController.applicationDidBecomeActive(notification:)),
@@ -146,15 +157,31 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     }
     
     @objc func contentDidFinishPlaying(_ notification: Notification) {
+        print("AD: Got a contentDidFinishPlaying")
         // Make sure we don't call contentComplete as a result of an ad completing.
         if (notification.object as! AVPlayerItem) == contentPlayer?.currentItem {
             adsLoader?.contentComplete()
+            self.onComplete()
         }
     }
     
     func setUpAdsLoader() {
         adsLoader = IMAAdsLoader(settings: nil)
         adsLoader?.delegate = self
+    }
+    
+    fileprivate func onComplete() {
+        if (!self.sentOnComplete) {
+            self.sentOnComplete = true
+            let commandCenter = MPRemoteCommandCenter.shared()
+            if (self.isRemoteControlOn) {
+                commandCenter.previousTrackCommand.isEnabled = true;
+                commandCenter.nextTrackCommand.isEnabled = true;
+            }
+            
+            // we need to notify that the ad was played
+            self.channel?.invokeMethod("onComplete", arguments: [String: String]())
+        }
     }
     
     func requestAds() {
@@ -170,8 +197,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             
             adsLoader?.requestAds(with: request)
         } else {
-            // If the screen is not active we shall not play the AD
-            self.channel?.invokeMethod("onComplete", arguments: [String: String]())
+            onComplete()
         }
     }
     
@@ -207,7 +233,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         }
         contentPlayer?.play()
 
-        self.channel?.invokeMethod("onComplete", arguments: [String: String]())
+        onComplete()
         
         let code = AdsViewController.toErrorCode(error: adErrorData?.adError)
         let message = adErrorData?.adError?.message ?? "unknown"
@@ -227,63 +253,63 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     func adsManager(_ adsManager: IMAAdsManager!, didReceive event: IMAAdEvent!) {
         switch event.type {
         case IMAAdEventType.ALL_ADS_COMPLETED:
-            print("Got a ALL_ADS_COMPLETED event")
+            print("AD: Got a ALL_ADS_COMPLETED event")
         case IMAAdEventType.CLICKED:
-            print("Got a CLICKED event")
+            print("AD: Got a CLICKED event")
         case IMAAdEventType.COMPLETE:
-            print("Got a COMPLETE event")
-            self.channel?.invokeMethod("onComplete", arguments: [String: String]())
+            print("AD: Got a COMPLETE event")
+            onComplete()
             adsManager.destroy()
             
             self.adsManager = nil
             self.adsLoader = nil
             self.dismiss(animated: false, completion: nil)
         case IMAAdEventType.CUEPOINTS_CHANGED:
-            print("Got a CUEPOINTS_CHANGED event")
+            print("AD: Got a CUEPOINTS_CHANGED event")
         case IMAAdEventType.FIRST_QUARTILE:
-            print("Got a FIRST_QUARTILE event")
+            print("AD: Got a FIRST_QUARTILE event")
         case IMAAdEventType.LOG:
-            print("Got a LOG event")
+            print("AD: Got a LOG event")
         case IMAAdEventType.AD_BREAK_READY:
-            print("Got a AD_BREAK_READY event")
+            print("AD: Got a AD_BREAK_READY event")
         case IMAAdEventType.MIDPOINT:
-            print("Got a MIDPOINT event")
+            print("AD: Got a MIDPOINT event")
         case IMAAdEventType.PAUSE:
-            print("Got a PAUSE event")
-            
+            print("AD: Got a PAUSE event")
+            print("MYMP: PAUSED CLICKED")
             self.setPaused()
         case IMAAdEventType.RESUME:
-            print("Got a RESUME event")
+            print("AD: Got a RESUME event")
+            print("MYMP: RESUME CLICKED")
             self.setPlaying()
         case IMAAdEventType.SKIPPED:
-            print("Got a SKIPPED event")
-            self.channel?.invokeMethod("onComplete", arguments: [String: String]())
+            print("AD: Got a SKIPPED event")
+            onComplete()
             adsManager.destroy()
             
             self.adsManager = nil
             self.adsLoader = nil
             self.dismiss(animated: false, completion: nil)
         case IMAAdEventType.STARTED:
-            print("Got a STARTED event")
-            
+            print("AD: Got a STARTED event")
             self.setPlaying()
         case IMAAdEventType.TAPPED:
-            print("Got a TAPPED event")
+            print("AD: Got a TAPPED event")
         case IMAAdEventType.THIRD_QUARTILE:
-            print("Got a THIRD_QUARTILE event")
+            print("AD: Got a THIRD_QUARTILE event")
         case IMAAdEventType.LOADED:
-            print("Got a LOADED event")
+            print("AD: Got a LOADED event")
             adsManager.start()
         case IMAAdEventType.AD_BREAK_STARTED:
-            print("Got a AD_BREAK_STARTED event")
+            print("AD: Got a AD_BREAK_STARTED event")
         case IMAAdEventType.AD_BREAK_ENDED:
-            print("Got a AD_BREAK_ENDED event")
+            print("AD: Got a AD_BREAK_ENDED event")
         case IMAAdEventType.AD_PERIOD_STARTED:
-            print("Got a AD_PERIOD_STARTED event")
+            print("AD: Got a AD_PERIOD_STARTED event")
         case IMAAdEventType.AD_PERIOD_ENDED:
-            print("Got a AD_PERIOD_ENDED event")
+            print("AD: Got a AD_PERIOD_ENDED event")
         default:
-            print("Got an unknown event")
+            print("AD: Got an unknown event")
         }
         
         let type = AdsViewController.toEventType(event: event)
@@ -315,6 +341,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     }
     
     func adsManager(_ adsManager: IMAAdsManager!, didReceive error: IMAAdError!) {
+        print("AD: didReceive error")
         let code = AdsViewController.toErrorCode(error: error)
         let message = error?.message ?? "unknown"
 
@@ -325,7 +352,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         }
         contentPlayer?.play()
 
-        self.channel?.invokeMethod("onComplete", arguments: [String: String]())
+        onComplete()
 
         let args = [
             "type" : "ERROR",
@@ -338,11 +365,14 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     }
     
     func adsManager(_ adsManager: IMAAdsManager!, adDidProgressToTime mediaTime: TimeInterval, totalTime: TimeInterval) {
-        
         let progress = Float(mediaTime/totalTime)
         currentProgress?.text = formatTimeInterval(mediaTime)
         totalProgress?.text = formatTimeInterval(totalTime)
         progressSlider?.value = progress
+        
+        if (progress == 1.0) {
+            onComplete()
+        }
     }
     
     func formatTimeInterval(_ time: TimeInterval) -> String {
@@ -356,14 +386,16 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     
     func adsManagerDidRequestContentPause(_ adsManager: IMAAdsManager!) {
         // The SDK is going to play ads, so pause the content.
+        print("AD: adsManagerDidRequestContentPause")
         contentPlayer?.pause()
     }
     
     func adsManagerDidRequestContentResume(_ adsManager: IMAAdsManager!) {
         // The SDK is done playing ads (at least for now), so resume the content.
+        print("AD: adsManagerDidRequestContentResumev")
         contentPlayer?.play()
     }
-
+    
     func getAdTagUrl() -> String {
         var url: String = self.adUrl
 
