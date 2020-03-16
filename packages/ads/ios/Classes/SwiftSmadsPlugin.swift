@@ -62,7 +62,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                             SwiftSmadsPlugin.verifyNetworkAccess()
                         }
                         
-                        if (self.screen.status == .unlocked) {
+//                        if (self.screen.status == .unlocked) {
                             if (Network.reachability.isReachable) {                                
                                 let adsViewController:AdsViewController = AdsViewController.instantiateFromNib()
                                 adsViewController.setup(
@@ -79,10 +79,10 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                                 self.onComplete()
                                 result(-1)
                             }
-                        } else {
-                            self.onComplete()
-                            result(-2)
-                        }
+//                        } else {
+//                            self.onComplete()
+//                            result(-2)
+//                        }
                         
                     }
                 } catch {

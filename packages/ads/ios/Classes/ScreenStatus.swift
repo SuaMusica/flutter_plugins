@@ -18,27 +18,27 @@ enum Status: String {
 
 class Screen {
     func addNotificationObservers() {
-        let lockCompleteString = "com.apple.springboard.lockcomplete"
-        let lockString = "com.apple.springboard.lockstate"
+        //let lockCompleteString = "com.apple.springboard.lockcomplete"
+        //let lockString = "com.apple.springboard.lockstate"
 
         // Listen to CFNotification, post Notification accordingly.
-        CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(),
-                                        nil,
-                                        { (_, _, _, _, _) in
-                                            NotificationCenter.default.post(name: NotificationName.lockComplete, object: nil)
-                                        },
-                                        lockCompleteString as CFString,
-                                        nil,
-                                        CFNotificationSuspensionBehavior.deliverImmediately)
+        // CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(),
+        //                                 nil,
+        //                                 { (_, _, _, _, _) in
+        //                                     NotificationCenter.default.post(name: NotificationName.lockComplete, object: nil)
+        //                                 },
+        //                                 lockCompleteString as CFString,
+        //                                 nil,
+        //                                 CFNotificationSuspensionBehavior.deliverImmediately)
 
-        CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(),
-                                        nil,
-                                        { (_, _, _, _, _) in
-                                            NotificationCenter.default.post(name: NotificationName.lockState, object: nil)
-                                        },
-                                        lockString as CFString,
-                                        nil,
-                                        CFNotificationSuspensionBehavior.deliverImmediately)
+        // CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(),
+        //                                 nil,
+        //                                 { (_, _, _, _, _) in
+        //                                     NotificationCenter.default.post(name: NotificationName.lockState, object: nil)
+        //                                 },
+        //                                 lockString as CFString,
+        //                                 nil,
+        //                                 CFNotificationSuspensionBehavior.deliverImmediately)
 
         // Listen to Notification and handle.
         NotificationCenter.default.addObserver(self,
