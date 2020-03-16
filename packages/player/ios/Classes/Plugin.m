@@ -91,7 +91,6 @@ id previousTrackId;
       serialQueue = dispatch_queue_create("com.suamusica.player.queue", DISPATCH_QUEUE_SERIAL);
       players = [[NSMutableDictionary alloc] init];
       playersCurrentItem = [[NSMutableDictionary alloc] init];
-      [self configureRemoteCommandCenter];
   }
   return self;
 }
@@ -157,6 +156,22 @@ id previousTrackId;
     commandCenter.nextTrackCommand.enabled = FALSE;
 
     NSLog(@"Player: MPRemote: Disabled Remote Command Center! Done!");
+}
+
+-(void)disableRemoteCommandCenterBeforeAd:(NSString *) playerId {
+    NSLog(@"Player: MPRemote: Disabling Remote Command Center before Ad...");
+    [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = NULL;
+    MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
+    commandCenter.playCommand.enabled = FALSE;
+    [commandCenter.playCommand removeTarget:playId];
+    commandCenter.pauseCommand.enabled = FALSE;
+    [commandCenter.pauseCommand removeTarget:pauseId];
+    commandCenter.previousTrackCommand.enabled = FALSE;
+    [commandCenter.nextTrackCommand removeTarget:nextTrackId];
+    [commandCenter.previousTrackCommand removeTarget:previousTrackId];
+    commandCenter.nextTrackCommand.enabled = FALSE;
+
+    NSLog(@"Player: MPRemote: Disabled Remote Command Center before Ad! Done!");
 }
 
 
@@ -228,6 +243,11 @@ id previousTrackId;
                     NSLog(@"Player: remove_notification");
                     [self disableRemoteCommandCenter:playerId];
                   },
+                @"disable_remote_center_before_ad":
+                ^{
+                  NSLog(@"Player: remove_notification");
+                  [self disableRemoteCommandCenterBeforeAd:playerId];
+                },
                 @"stop":
                   ^{
                     NSLog(@"Player: stop");

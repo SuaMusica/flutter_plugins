@@ -36,6 +36,7 @@ class Plugin private constructor(private val channel: MethodChannel, private val
     const val GET_DURATION_METHOD = "getDuration"
     const val GET_CURRENT_POSITION_METHOD = "getCurrentPosition"
     const val SET_RELEASE_MODE_METHOD = "setReleaseMode"
+    const val DISABLE_REMOTE_CENTER_BEFORE_AD = "disable_remote_center_before_ad"
 
     const val Ok = 1
 
@@ -155,6 +156,9 @@ class Plugin private constructor(private val channel: MethodChannel, private val
           val releaseModeName = call.argument<String>(RELEASE_MODE_ARGUMENT)
           val releaseMode = ReleaseMode.valueOf(releaseModeName!!.substring("ReleaseMode.".length))
           player.releaseMode = releaseMode
+        }
+        DISABLE_REMOTE_CENTER_BEFORE_AD -> {
+          // no operation required on Android
         }
         else -> {
           response.notImplemented()
