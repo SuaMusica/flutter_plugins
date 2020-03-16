@@ -245,7 +245,7 @@ id previousTrackId;
                   },
                 @"disable_remote_center_before_ad":
                 ^{
-                  NSLog(@"Player: remove_notification");
+                  NSLog(@"Player: disable_remote_center_before_ad");
                   [self disableRemoteCommandCenterBeforeAd:playerId];
                 },
                 @"stop":
@@ -1003,14 +1003,14 @@ id previousTrackId;
         NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
         NSString *documentsDirectory = [paths objectAtIndex:0];
         NSString *dataPath = [documentsDirectory stringByAppendingPathComponent:[coverUrl MD5]];
-        NSLog(@"Cover: Saving Cover Album to %@ local cache", dataPath);
+//        NSLog(@"Cover: Saving Cover Album to %@ local cache", dataPath);
          // Save it into file system
         [data writeToFile:dataPath atomically:YES];
     });
 }
 
 -(NSData *) getAlbumCover:(NSString *)coverUrl {
-    NSLog(@"Cover: Get Album Cover %@", coverUrl);
+//    NSLog(@"Cover: Get Album Cover %@", coverUrl);
     NSData *data = [self getAlbumCoverFromCache:coverUrl];
     if (data == nil) {
         data = [self getAlbumCoverFromWeb:coverUrl];
@@ -1026,35 +1026,35 @@ id previousTrackId;
 }
 
 -(NSData *) getAlbumCoverFromCache:(NSString *) coverUrl {
-    NSLog(@"Cover: Get Album Cover %@ from Cache", coverUrl);
+//    NSLog(@"Cover: Get Album Cover %@ from Cache", coverUrl);
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
     NSString *documentsDirectory = [paths objectAtIndex:0];
     NSString *dataPath = [documentsDirectory stringByAppendingPathComponent:[coverUrl MD5]];
-    NSLog(@"Looking for %@", dataPath);
+//    NSLog(@"Looking for %@", dataPath);
     NSError *error;
     NSData *data = [NSData dataWithContentsOfFile:dataPath
             options:NSDataReadingMapped
             error:&error];
     if (error != nil) {
-        NSLog(@"Cover: Not found in cache");
+//        NSLog(@"Cover: Not found in cache");
         return nil;
     } else {
-        NSLog(@"Cover: Found it in cache");
+//        NSLog(@"Cover: Found it in cache");
         return data;
     }
 }
 -(NSData *) getAlbumCoverFromWeb:(NSString*) coverUrl {
-    NSLog(@"Cover: Get Album Cover %@ from Web", coverUrl);
+//    NSLog(@"Cover: Get Album Cover %@ from Web", coverUrl);
     NSError *error = nil;
-    NSLog(@"Cover: Getting Cover %@", coverUrl);
+//    NSLog(@"Cover: Getting Cover %@", coverUrl);
     NSData *data = [[NSData alloc] initWithContentsOfURL: [NSURL URLWithString: coverUrl]
                                                   options:NSDataReadingMappedIfSafe
                                                     error:&error];
     if(error == nil){
-        NSLog(@"Cover: Found it on the Web");
+//        NSLog(@"Cover: Found it on the Web");
         return data;
     } else {
-        NSLog(@"Cover: Error: %@, not found on the web",[error localizedDescription]);
+//        NSLog(@"Cover: Error: %@, not found on the web",[error localizedDescription]);
         return nil;
     }
 }
