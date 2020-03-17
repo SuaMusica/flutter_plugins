@@ -4,6 +4,8 @@ import UIKit
 public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
     static var channel: FlutterMethodChannel?
     private var screen: Screen
+    static let NoConnectivity = -1;
+    static let ScreenIsLocked = -2;
 
     fileprivate static func verifyNetworkAccess() {
         do {
@@ -46,6 +48,11 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
         SwiftSmadsPlugin.channel?.invokeMethod("onComplete", arguments: [String: String]())
     }
     
+    fileprivate func onError(code: Int) {
+        let arguments = ["error": code]
+        SwiftSmadsPlugin.channel?.invokeMethod("onError", arguments: arguments)
+    }
+    
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "load":
@@ -62,7 +69,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                             SwiftSmadsPlugin.verifyNetworkAccess()
                         }
                         
-//                        if (self.screen.status == .unlocked) {
+                        if (self.screen.status == .unlocked) {
                             if (Network.reachability.isReachable) {                                
                                 let adsViewController:AdsViewController = AdsViewController.instantiateFromNib()
                                 adsViewController.setup(
@@ -76,13 +83,13 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                                 rootViewController?.present(adsViewController, animated: false, completion: nil)
                                 result(1)
                             } else {
-                                self.onComplete()
-                                result(-1)
+                                self.onError(code: SwiftSmadsPlugin.NoConnectivity)
+                                result(SwiftSmadsPlugin.NoConnectivity)
                             }
-//                        } else {
-//                            self.onComplete()
-//                            result(-2)
-//                        }
+                        } else {
+                            self.onError(code: SwiftSmadsPlugin.ScreenIsLocked)
+                            result(SwiftSmadsPlugin.ScreenIsLocked)
+                        }
                         
                     }
                 } catch {

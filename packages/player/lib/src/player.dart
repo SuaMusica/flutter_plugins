@@ -129,8 +129,13 @@ class Player {
     return Ok;
   }
 
-  Future<int> disableNotificatonBeforeAd() async {
-    await _invokeMethod('disable_remote_center_before_ad');
+  Future<int> disableNotificatonCommands() async {
+    await _invokeMethod('disable_notification_commands');
+    return Ok;
+  }
+
+  Future<int> enableNotificatonCommands() async {
+    await _invokeMethod('enable_notification_commands');
     return Ok;
   }
 
