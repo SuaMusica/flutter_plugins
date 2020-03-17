@@ -19,6 +19,7 @@ class SMAds {
 
   static SMAds lastAd;
   Function onComplete;
+  Function onError;
 
   final StreamController<AdEvent> _eventStreamController =
       StreamController<AdEvent>();
@@ -32,8 +33,13 @@ class SMAds {
     return _stream;
   }
 
-  Future<int> load(Map<String, dynamic> args, Function onComplete) async {
+  Future<int> load(
+    Map<String, dynamic> args, {
+    Function onComplete,
+    Function onError,
+  }) async {
     this.onComplete = onComplete;
+    this.onError = onError;
     SMAds.lastAd = this;
     args["__URL__"] = adUrl;
     args["__CONTENT__"] = contentUrl;
@@ -75,6 +81,13 @@ class SMAds {
       case 'onComplete':
         if (lastAd != null && lastAd.onComplete != null) {
           lastAd.onComplete();
+        }
+
+        break;
+
+      case 'onError':
+        if (lastAd != null && lastAd.onError != null) {
+          lastAd.onError();
         }
 
         break;

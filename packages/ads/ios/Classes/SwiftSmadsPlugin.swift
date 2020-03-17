@@ -46,6 +46,10 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
         SwiftSmadsPlugin.channel?.invokeMethod("onComplete", arguments: [String: String]())
     }
     
+    fileprivate func onError() {
+        SwiftSmadsPlugin.channel?.invokeMethod("onError", arguments: [String: String]())
+    }
+    
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "load":
@@ -76,7 +80,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                                 rootViewController?.present(adsViewController, animated: false, completion: nil)
                                 result(1)
                             } else {
-                                self.onComplete()
+                                self.onError()
                                 result(-1)
                             }
 //                        } else {

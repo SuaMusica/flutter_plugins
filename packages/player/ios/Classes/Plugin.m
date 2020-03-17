@@ -91,6 +91,7 @@ id previousTrackId;
       serialQueue = dispatch_queue_create("com.suamusica.player.queue", DISPATCH_QUEUE_SERIAL);
       players = [[NSMutableDictionary alloc] init];
       playersCurrentItem = [[NSMutableDictionary alloc] init];
+      [self configureRemoteCommandCenter];
   }
   return self;
 }
@@ -101,37 +102,69 @@ id previousTrackId;
     MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
 
     playId = [commandCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+        NSLog(@"Player: Remote Command Play: START");
       if (_playerId != nil) {
-          [self resume:_playerId];
-          int state = STATE_PLAYING;
-          [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
+          NSMutableDictionary * playerInfo = players[_playerId];
+          if ([playerInfo[@"areNotificationCommandsEnabled"] boolValue]) {
+              NSLog(@"Player: Remote Command Play: Enabled");
+              [self resume:_playerId];
+              int state = STATE_PLAYING;
+              [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
+          } else {
+              NSLog(@"Player: Remote Command Play: Disabled");
+          }
       }
+      NSLog(@"Player: Remote Command Play: END");
       return MPRemoteCommandHandlerStatusSuccess;
     }];
     commandCenter.playCommand.enabled = TRUE;
 
     pauseId = [commandCenter.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+      NSLog(@"Player: Remote Command Pause: SART");
       if (_playerId != nil) {
-          [self pause:_playerId];
-          int state = STATE_PAUSED;
-          [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
+          NSMutableDictionary * playerInfo = players[_playerId];
+          if ([playerInfo[@"areNotificationCommandsEnabled"] boolValue]) {
+              NSLog(@"Player: Remote Command Pause: Enabled");
+              [self pause:_playerId];
+              int state = STATE_PAUSED;
+              [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
+          } else {
+              NSLog(@"Player: Remote Command Pause: Disabled");
+          }
       }
+      NSLog(@"Player: Remote Command Pause: END");
       return MPRemoteCommandHandlerStatusSuccess;
     }];
     commandCenter.pauseCommand.enabled = TRUE;
 
     nextTrackId = [commandCenter.nextTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+      NSLog(@"Player: Remote Command Next: START");
       if (_playerId != nil) {
-          [_channel_player invokeMethod:@"commandCenter.onNext" arguments:@{@"playerId": _playerId}];
+          NSMutableDictionary * playerInfo = players[_playerId];
+          if ([playerInfo[@"areNotificationCommandsEnabled"] boolValue]) {
+              NSLog(@"Player: Remote Command Next: Enabled");
+              [_channel_player invokeMethod:@"commandCenter.onNext" arguments:@{@"playerId": _playerId}];
+          } else {
+            NSLog(@"Player: Remote Command Next: Disabled");
+          }
       }
+      NSLog(@"Player: Remote Command Next: END");
       return MPRemoteCommandHandlerStatusSuccess;
     }];
     commandCenter.nextTrackCommand.enabled = TRUE;
     
     previousTrackId =[commandCenter.previousTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+      NSLog(@"Player: Remote Command Previous: START");
       if (_playerId != nil) {
-          [_channel_player invokeMethod:@"commandCenter.onPrevious" arguments:@{@"playerId": _playerId}];
+          NSMutableDictionary * playerInfo = players[_playerId];
+          if ([playerInfo[@"areNotificationCommandsEnabled"] boolValue]) {
+              NSLog(@"Player: Remote Command Previous: Enabled");
+              [_channel_player invokeMethod:@"commandCenter.onPrevious" arguments:@{@"playerId": _playerId}];
+          } else {
+            NSLog(@"Player: Remote Command Previous: Disabled");
+          }
       }
+      NSLog(@"Player: Remote Command Previous: END");
       return MPRemoteCommandHandlerStatusSuccess;
     }];
     commandCenter.previousTrackCommand.enabled = TRUE;
@@ -158,20 +191,18 @@ id previousTrackId;
     NSLog(@"Player: MPRemote: Disabled Remote Command Center! Done!");
 }
 
--(void)disableRemoteCommandCenterBeforeAd:(NSString *) playerId {
-    NSLog(@"Player: MPRemote: Disabling Remote Command Center before Ad...");
-    [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = NULL;
-    MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
-    commandCenter.playCommand.enabled = FALSE;
-    [commandCenter.playCommand removeTarget:playId];
-    commandCenter.pauseCommand.enabled = FALSE;
-    [commandCenter.pauseCommand removeTarget:pauseId];
-    commandCenter.previousTrackCommand.enabled = FALSE;
-    [commandCenter.nextTrackCommand removeTarget:nextTrackId];
-    [commandCenter.previousTrackCommand removeTarget:previousTrackId];
-    commandCenter.nextTrackCommand.enabled = FALSE;
+-(void)disableNotificationCommands:(NSString *) playerId {
+    NSLog(@"Player: MPRemote: Disabling Remote Command Center...");
+    NSMutableDictionary * playerInfo = players[playerId];
+    [playerInfo setValue:@false forKey:@"areNotificationCommandsEnabled"];
+    NSLog(@"Player: MPRemote: Disabled Remote Command Center! Done!");
+}
 
-    NSLog(@"Player: MPRemote: Disabled Remote Command Center before Ad! Done!");
+-(void)enableNotificationCommands:(NSString *) playerId {
+    NSLog(@"Player: MPRemote: Disabling Remote Command Center...");
+    NSMutableDictionary * playerInfo = players[playerId];
+    [playerInfo setValue:@true forKey:@"areNotificationCommandsEnabled"];
+    NSLog(@"Player: MPRemote: Disabled Remote Command Center! Done!");
 }
 
 
@@ -243,10 +274,15 @@ id previousTrackId;
                     NSLog(@"Player: remove_notification");
                     [self disableRemoteCommandCenter:playerId];
                   },
-                @"disable_remote_center_before_ad":
+                @"disable_notification_commands":
                 ^{
-                  NSLog(@"Player: disable_remote_center_before_ad");
-                  [self disableRemoteCommandCenterBeforeAd:playerId];
+                  NSLog(@"Player: disable_notification_commands");
+                  [self disableNotificationCommands:playerId];
+                },
+                @"enable_notification_commands":
+                ^{
+                  NSLog(@"Player: enable_notification_commands");
+                  [self enableNotificationCommands:playerId];
                 },
                 @"stop":
                   ^{
