@@ -13,13 +13,14 @@ class SMAds {
   final adUrl;
   final contentUrl;
   static const Ok = 1;
-  static const NotOk = -1;
+  static const NoConnectivity = -1;
+  static const ScreenIsLocked = -2;
   static final MethodChannel _channel = const MethodChannel('smads')
     ..setMethodCallHandler(platformCallHandler);
 
   static SMAds lastAd;
   Function onComplete;
-  Function onError;
+  Function(int) onError;
 
   final StreamController<AdEvent> _eventStreamController =
       StreamController<AdEvent>();
@@ -36,7 +37,7 @@ class SMAds {
   Future<int> load(
     Map<String, dynamic> args, {
     Function onComplete,
-    Function onError,
+    Function(int) onError,
   }) async {
     this.onComplete = onComplete;
     this.onError = onError;
@@ -87,7 +88,8 @@ class SMAds {
 
       case 'onError':
         if (lastAd != null && lastAd.onError != null) {
-          lastAd.onError();
+          final error = callArgs["error"] as int;
+          lastAd.onError(error);
         }
 
         break;
