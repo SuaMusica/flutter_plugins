@@ -192,17 +192,17 @@ id previousTrackId;
 }
 
 -(void)disableNotificationCommands:(NSString *) playerId {
-    NSLog(@"Player: MPRemote: Disabling Remote Command Center...");
+    NSLog(@"Player: MPRemote: Disabling Remote Commands: START");
     NSMutableDictionary * playerInfo = players[playerId];
     [playerInfo setValue:@false forKey:@"areNotificationCommandsEnabled"];
-    NSLog(@"Player: MPRemote: Disabled Remote Command Center! Done!");
+    NSLog(@"Player: MPRemote: Disabled Remote Commands: END");
 }
 
 -(void)enableNotificationCommands:(NSString *) playerId {
-    NSLog(@"Player: MPRemote: Disabling Remote Command Center...");
+    NSLog(@"Player: MPRemote: Enabling Remote Commands: START");
     NSMutableDictionary * playerInfo = players[playerId];
     [playerInfo setValue:@true forKey:@"areNotificationCommandsEnabled"];
-    NSLog(@"Player: MPRemote: Disabled Remote Command Center! Done!");
+    NSLog(@"Player: MPRemote: Enabling Remote Commands: END");
 }
 
 
