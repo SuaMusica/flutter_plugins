@@ -8,6 +8,8 @@
 #import <Foundation/Foundation.h>
 #include <AudioToolbox/AudioToolbox.h>
 
+@import AFNetworking;
+
 static NSString *const CHANNEL_NAME = @"smplayer";
 static NSString *redirectScheme = @"rdtp";
 static NSString *customPlaylistScheme = @"cplp";
@@ -94,6 +96,32 @@ id previousTrackId;
       [self configureRemoteCommandCenter];
   }
   return self;
+}
+
+-(void)configureReachabilityCheck {
+    [[AFNetworkReachabilityManager sharedManager] setReachabilityStatusChangeBlock:^(AFNetworkReachabilityStatus status) {
+          NSLog(@"Reachability: %@", AFStringFromNetworkReachabilityStatus(status));
+                  
+        switch (status) {
+            case AFNetworkReachabilityStatusUnknown:
+                
+                break;
+            case AFNetworkReachabilityStatusNotReachable:
+                
+                break;
+          
+            case AFNetworkReachabilityStatusReachableViaWWAN:
+                    
+                break;
+            
+            case AFNetworkReachabilityStatusReachableViaWiFi:
+                
+                break;
+
+        }
+    }];
+
+    [[AFNetworkReachabilityManager sharedManager] startMonitoring];
 }
 
 -(void)configureRemoteCommandCenter {
@@ -1280,6 +1308,8 @@ id previousTrackId;
   latestPlayerId = nil;
   latestOnReady = nil;
   latestPlayerItemObserved = nil;
+    
+  [[AFNetworkReachabilityManager sharedManager] stopMonitoring];
   
   [[UIApplication sharedApplication] endReceivingRemoteControlEvents];
 }
