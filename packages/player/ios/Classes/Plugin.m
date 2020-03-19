@@ -362,7 +362,11 @@ id previousTrackId;
 -(void) initPlayerInfo: (NSString *) playerId {
   NSMutableDictionary * playerInfo = players[playerId];
   if (!playerInfo) {
-    players[playerId] = [@{@"isPlaying": @false, @"volume": @(1.0), @"looping": @(false)} mutableCopy];
+    players[playerId] = [@{@"isPlaying": @false,
+                           @"volume": @(1.0),
+                           @"looping": @(false),
+                           @"areNotificationCommandsEnabled": @(true),
+    } mutableCopy];
     _playerId = playerId;
   }
 }
