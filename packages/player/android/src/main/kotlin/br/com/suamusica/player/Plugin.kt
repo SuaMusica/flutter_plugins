@@ -36,7 +36,10 @@ class Plugin private constructor(private val channel: MethodChannel, private val
     const val GET_DURATION_METHOD = "getDuration"
     const val GET_CURRENT_POSITION_METHOD = "getCurrentPosition"
     const val SET_RELEASE_MODE_METHOD = "setReleaseMode"
-    const val DISABLE_REMOTE_CENTER_BEFORE_AD = "disable_remote_center_before_ad"
+    const val CAN_PLAY = "can_play"
+    const val REMOVE_NOTIFICATION = "remove_notification"
+    const val DISABLE_NOTIFICATION_COMMANDS = "disable_notification_commands"
+    const val ENABLE_NOTIFICATION_COMMANDS = "enable_notification_commands"
 
     const val Ok = 1
 
@@ -157,7 +160,16 @@ class Plugin private constructor(private val channel: MethodChannel, private val
           val releaseMode = ReleaseMode.valueOf(releaseModeName!!.substring("ReleaseMode.".length))
           player.releaseMode = releaseMode
         }
-        DISABLE_REMOTE_CENTER_BEFORE_AD -> {
+        REMOVE_NOTIFICATION -> {
+          // no operation required on Android
+        }
+        DISABLE_NOTIFICATION_COMMANDS -> {
+
+        }
+        ENABLE_NOTIFICATION_COMMANDS -> {
+
+        }
+        CAN_PLAY -> {
           // no operation required on Android
         }
         else -> {

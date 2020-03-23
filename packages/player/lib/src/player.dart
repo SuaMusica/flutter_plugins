@@ -270,22 +270,40 @@ class Player {
   }
 
   Future<int> previous() async {
-    final current = _queue.current;
-    var previous = _queue.previous();
-    if (previous == null) {
-      return NotOk;
-    }
+    Media media = _queue.possiblePrevious();
+    if (media != null) {
+      final url = (await localMediaValidator(media)) ?? media.url;
+      final isLocal = !url.startsWith("http");
+      if (await _canPlay(url, isLocal)) {
+        final current = _queue.current;
+        var previous = _queue.previous();
+        if (previous == null) {
+          return NotOk;
+        }
 
-    if (previous == current) {
-      return _rewind(current);
+        if (previous == current) {
+          return _rewind(current);
+        } else {
+          _notifyChangeToPrevious(previous);
+          return _doPlay(previous);
+        }
+      }
     } else {
-      _notifyChangeToPrevious(previous);
-      return _doPlay(previous);
+      return NotOk;
     }
   }
 
   Future<int> next() async {
-    return _doNext(true);
+    final media = _queue.possibleNext(repeatMode);
+    if (media != null) {
+      final url = (await localMediaValidator(media)) ?? media.url;
+      final isLocal = !url.startsWith("http");
+      if (await _canPlay(url, isLocal)) {
+        return _doNext(true);
+      } else {
+        return NotOk;
+      }
+    }
   }
 
   Future<int> _doNext(bool shallNotify) async {
@@ -622,5 +640,13 @@ class Player {
       futures.add(_eventStreamController.close());
     }
     await Future.wait(futures);
+  }
+
+  Future<bool> _canPlay(String url, bool isLocal) async {
+    return await _invokeMethod('can_play', {
+          'url': url,
+          'isLocal': isLocal,
+        }) ==
+        Ok;
   }
 }
