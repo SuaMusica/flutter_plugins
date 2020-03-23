@@ -220,7 +220,9 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         
         // Create ads rendering settings and tell the SDK to use the in-app browser.
         let adsRenderingSettings = IMAAdsRenderingSettings()
-        adsRenderingSettings.webOpenerPresentingController = self
+        
+        // Commenting this line to open the click in safari Until Apple fixes the Bug!
+        // adsRenderingSettings.webOpenerPresentingController = self
         
         // Initialize the ads manager.
         adsManager?.initialize(with: adsRenderingSettings)
