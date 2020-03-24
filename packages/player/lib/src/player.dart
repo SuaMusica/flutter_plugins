@@ -92,6 +92,16 @@ class Player {
     });
   }
 
+  Future<bool> canPlay(Media media) async {
+    if (media != null) {
+      final url = (await localMediaValidator(media)) ?? media.url;
+      final isLocal = !url.startsWith("http");
+      return await _canPlay(url, isLocal);
+    } else {
+      return false;
+    }
+  }
+
   Future<int> enqueue(
     Media media, {
     double volume = 1.0,
@@ -172,9 +182,18 @@ class Player {
     bool respectSilence = false,
     bool stayAwake = false,
   }) async {
-    final media = _queue.move(pos);
-    _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
-    return _doPlay(media);
+    Media media = _queue.item(pos);
+    if (media != null) {
+      final url = (await localMediaValidator(media)) ?? media.url;
+      final isLocal = !url.startsWith("http");
+      if (await _canPlay(url, isLocal)) {
+        final media = _queue.move(pos);
+        _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
+        return _doPlay(media);
+      }
+    } else {
+      return NotOk;
+    }
   }
 
   Future<int> _doPlay(
@@ -195,11 +214,6 @@ class Player {
     // downloading and is not downloaded
     media.isLocal = isLocal;
     media.url = url;
-
-    // we need to disable the notifications
-    // notice that once the play start
-    // the notifications will return
-    // await disableNotificatonBeforeAd();
 
     if (autoPlay) {
       _notifyBeforePlayEvent((loadOnly) => {});

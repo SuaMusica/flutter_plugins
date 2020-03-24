@@ -204,6 +204,16 @@ class Queue {
     }
   }
 
+  Media item(int pos) {
+    if (storage.length == 0) {
+      return null;
+    } else if (storage.length > 0 && pos <= storage.length - 1) {
+      return storage.elementAt(pos).item;
+    } else {
+      return null;
+    }
+  }
+
   Media restart() {
     index = -1;
     return next();
