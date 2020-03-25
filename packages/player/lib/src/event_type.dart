@@ -19,6 +19,7 @@ enum EventType {
   NEXT,
   FINISHED_PLAYING,
   ERROR_OCCURED,
+  NETWORK_CHANGE,
 }
 
 enum PlayerErrorType {
