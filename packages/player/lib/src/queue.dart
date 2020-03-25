@@ -2,6 +2,7 @@ import 'package:smplayer/src/media.dart';
 import 'package:smplayer/src/queue_item.dart';
 import 'package:smplayer/src/shuffler.dart';
 import 'package:smplayer/src/simple_shuffle.dart';
+import 'package:smplayer/src/repeat_mode.dart';
 
 class Queue {
   var index = -1;
@@ -136,11 +137,55 @@ class Queue {
     }
   }
 
+  Media possiblePrevious() {
+    assert(index >= 0);
+    final now = DateTime.now();
+    if (_lastPrevious == null) {
+      return storage.elementAt(index).item;
+    } else {
+      final diff = now.difference(_lastPrevious).inMilliseconds;
+      if (diff < 1000) {
+        var workIndex = index;
+        if (index > 0) {
+          --workIndex;
+        }
+        return storage.elementAt(workIndex).item;
+      } else {
+        return storage.elementAt(index).item;
+      }
+    }
+  }
+
   Media next() {
     if (storage.length == 0) {
       throw AssertionError("Queue is empty");
     } else if (storage.length > 0 && index < storage.length - 1) {
       var media = storage.elementAt(++index).item;
+      return media;
+    } else {
+      return null;
+    }
+  }
+
+  Media possibleNext(RepeatMode repeatMode) {
+    if (repeatMode == RepeatMode.NONE) {
+      return _next();
+    } else if (repeatMode == RepeatMode.QUEUE) {
+      if (storage.length - 1 == index) {
+        return storage.elementAt(0).item;
+      } else {
+        return _next();
+      }
+    } else if (repeatMode == RepeatMode.TRACK) {
+      return storage.length != 0 ? storage.elementAt(index).item : null;
+    }
+  }
+
+  Media _next() {
+    if (storage.length == 0) {
+      return null;
+    } else if (storage.length > 0 && index < storage.length - 1) {
+      var media = storage.elementAt(index + 1).item;
       return media;
     } else {
       return null;
@@ -154,6 +199,16 @@ class Queue {
       var media = storage.elementAt(pos).item;
       index = pos;
       return media;
+    } else {
+      return null;
+    }
+  }
+
+  Media item(int pos) {
+    if (storage.length == 0) {
+      return null;
+    } else if (storage.length > 0 && pos <= storage.length - 1) {
+      return storage.elementAt(pos).item;
     } else {
       return null;
     }
