@@ -190,6 +190,8 @@ class Player {
         final media = _queue.move(pos);
         _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
         return _doPlay(media);
+      } else {
+        return NotOk;
       }
     } else {
       return NotOk;
@@ -301,6 +303,8 @@ class Player {
           _notifyChangeToPrevious(previous);
           return _doPlay(previous);
         }
+      } else {
+        return NotOk;
       }
     } else {
       return NotOk;
@@ -317,6 +321,8 @@ class Player {
       } else {
         return NotOk;
       }
+    } else {
+      return null;
     }
   }
 

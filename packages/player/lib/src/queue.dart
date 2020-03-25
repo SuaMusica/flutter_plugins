@@ -178,6 +178,8 @@ class Queue {
       }
     } else if (repeatMode == RepeatMode.TRACK) {
       return storage.length != 0 ? storage.elementAt(index).item : null;
+    } else {
+      return null;
     }
   }
 
