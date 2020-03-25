@@ -27,4 +27,5 @@ enum PlayerErrorType {
   UNDEFINED,
   FAILED_TO_PLAY,
   FAILED_TO_PLAY_ERROR,
+  NETWORK_ERROR,
 }
