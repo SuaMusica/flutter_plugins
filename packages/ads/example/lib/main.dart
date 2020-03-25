@@ -51,9 +51,15 @@ class _MyAppState extends State<MyApp> {
                   child: Text('Load'),
                   color: Colors.blueAccent,
                   onPressed: () async {
-                    await ads.load({"gender": "female", "age": 45}, () {
-                      print("Ad display have been completed!");
-                    });
+                    await ads.load(
+                      {"gender": "female", "age": 45},
+                      onComplete: () {
+                        print("Ad display have been completed!");
+                      },
+                      onError: (error) {
+                        print("error!");
+                      },
+                    );
                   })
             ],
           ),
