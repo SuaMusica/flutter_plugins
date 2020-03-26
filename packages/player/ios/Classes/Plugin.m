@@ -528,22 +528,22 @@ BOOL isConnected = true;
     [playerItem addObserver:self
                           forKeyPath:@"player.currentItem.status"
                           options:NSKeyValueObservingOptionNew
-                          context:(void*)playerId];
+                          context:nil];
     
     [playerItem addObserver:self
                           forKeyPath:@"playbackBufferEmpty"
                           options:NSKeyValueObservingOptionNew
-                          context:(void*)playerId];
+                          context:nil];
     
     [playerItem addObserver:self
                           forKeyPath:@"playbackLikelyToKeepUp"
                           options:NSKeyValueObservingOptionNew
-                          context:(void*)playerId];
+                          context:nil];
     
     [playerItem addObserver:self
                           forKeyPath:@"playbackBufferFull"
                           options:NSKeyValueObservingOptionNew
-                          context:(void*)playerId];
+                          context:nil];
     
     NSMutableSet *observers = [[NSMutableSet alloc] init];
       
@@ -651,7 +651,7 @@ BOOL isConnected = true;
 -(void)disposePlayerItem:(AVPlayerItem *)playerItem {
   if (latestPlayerItemObserved == playerItem) {
     @try {
-      [playerItem removeObserver:self forKeyPath:@"player.currentItem.status" context:(void*)_playerId];
+      [playerItem removeObserver:self forKeyPath:@"player.currentItem.status" context:nil];
     } @catch (NSException * __unused exception) {}
     @try {
       [playerItem removeObserver:self forKeyPath:@"playbackLikelyToKeepUp" context:nil];
@@ -1276,20 +1276,19 @@ BOOL isConnected = true;
                       context:(void *)context {
   NSLog(@"Player: observeValueForKeyPath: %@", keyPath);
   if ([keyPath isEqualToString: @"player.currentItem.status"]) {
-    NSString *playerId = (__bridge NSString*)context;
-    NSMutableDictionary * playerInfo = players[playerId];
+    NSMutableDictionary * playerInfo = players[_playerId];
     AVPlayer *player = playerInfo[@"player"];
 
     NSLog(@"Player: player status: %ld",(long)[[player currentItem] status ]);
 
     // Do something with the status...
     if ([[player currentItem] status ] == AVPlayerItemStatusReadyToPlay) {
-      [self updateDuration:playerId];
+      [self updateDuration:_playerId];
 
       VoidCallback onReady = playerInfo[@"onReady"];
       if (onReady != nil) {
         [playerInfo removeObjectForKey:@"onReady"];
-        onReady(playerId);
+        onReady(_playerId);
       }
     } else if ([[player currentItem] status ] == AVPlayerItemStatusFailed) {
       AVAsset *currentPlayerAsset = [[player currentItem] asset];
@@ -1305,7 +1304,7 @@ BOOL isConnected = true;
       NSLog(@"Player: errorLog: extendedLogData: %@", [errorLog extendedLogData]);
     
       [self disposePlayerItem:[player currentItem]];
-      [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_FAILED)}];
+      [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": _playerId, @"errorType": @(PLAYER_ERROR_FAILED)}];
     } else {
       NSLog(@"Player: player status: %ld",(long)[[player currentItem] status ]);
       NSLog(@"Player: Unknown Error: %@", [[player currentItem] error]);
@@ -1321,16 +1320,15 @@ BOOL isConnected = true;
       NSLog(@"Player: Unknown errorLog: extendedLogData: %@", [errorLog extendedLogData]);
       
       [self disposePlayerItem:[player currentItem]];
-      [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_UNKNOWN)}];
+      [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": _playerId, @"errorType": @(PLAYER_ERROR_UNKNOWN)}];
     }
   } else if ([keyPath isEqualToString: @"playbackBufferEmpty"]) {
-      NSString *playerId = (__bridge NSString*)context;
-      NSMutableDictionary * playerInfo = players[playerId];
+      NSMutableDictionary * playerInfo = players[_playerId];
       
       if ([playerInfo[@"isPlaying"] boolValue] && !isConnected && !notifiedBufferEmptyWithNoConnection) {
           notifiedBufferEmptyWithNoConnection = true;
-          [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_NETWORK_ERROR)}];
-          [self pause:playerId];
+          [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": _playerId, @"errorType": @(PLAYER_ERROR_NETWORK_ERROR)}];
+          [self pause:_playerId];
       } else {
           int state = STATE_BUFFERING;
           [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
@@ -1402,3 +1400,4 @@ BOOL isConnected = true;
 }
 
 @end
+
