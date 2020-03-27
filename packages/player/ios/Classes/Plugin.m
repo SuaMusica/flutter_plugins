@@ -513,9 +513,35 @@ BOOL isConnected = true;
     
     [self setUrl:latestUrl isLocal:latestIsLocal cookie:latestCookie playerId:latestPlayerId onReady:latestOnReady];
   }];
+
+  AVAudioSession *aSession = [AVAudioSession sharedInstance];
+  id interruptionObserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVAudioSessionInterruptionNotification
+        object: aSession
+        queue: NSOperationQueue.mainQueue
+    usingBlock:^(NSNotification* notification){
+      NSDictionary *dict = notification.userInfo;
+      NSLog(@"Player: AVAudioSessionInterruptionNotification received. UserInfo: %@", dict);
+      NSNumber *interruptionType = [[notification userInfo] objectForKey:AVAudioSessionInterruptionTypeKey];
+      NSNumber *interruptionOption = [[notification userInfo] objectForKey:AVAudioSessionInterruptionOptionKey];
+
+      switch (interruptionType.unsignedIntegerValue) {
+          case AVAudioSessionInterruptionTypeBegan:{
+            [self pause:_playerId];
+          } break;
+          case AVAudioSessionInterruptionTypeEnded:{
+              if (interruptionOption.unsignedIntegerValue == AVAudioSessionInterruptionOptionShouldResume) {
+                  [self resume:_playerId];
+              }
+          } break;
+          default:
+              break;
+      }
+    }];
+    
   [observers addObject:avlostobserver];
   [observers addObject:avrouteobserver];
   [observers addObject:avrestartobserver];
+  [observers addObject:interruptionObserver];
     
   // is sound ready
   [playerInfo setObject:onReady forKey:@"onReady"];
