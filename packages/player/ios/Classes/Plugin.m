@@ -28,6 +28,7 @@ static int const STATE_PAUSED = 3;
 static int const STATE_STOPPED = 4;
 static int const STATE_COMPLETED = 5;
 static int const STATE_ERROR = 6;
+static int const STATE_SEEK_END = 7;
 
 static int Ok = 1;
 
@@ -588,6 +589,8 @@ BOOL isConnected = true;
     usingBlock:^(NSNotification* note){
       NSMutableDictionary * playerInfo = players[_playerId];
       [playerInfo setValue:@(false) forKey:@"isSeeking"];
+      int state = STATE_SEEK_END;   
+      [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
       NSLog(@"Player: AVPlayerItemTimeJumpedNotification: %@", [note object]);
     }];
     id failedEndTimeObserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVPlayerItemFailedToPlayToEndTimeNotification

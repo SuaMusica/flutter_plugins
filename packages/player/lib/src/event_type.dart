@@ -20,6 +20,8 @@ enum EventType {
   FINISHED_PLAYING,
   ERROR_OCCURED,
   NETWORK_CHANGE,
+  SEEK_START,
+  SEEK_END,
 }
 
 enum PlayerErrorType {
