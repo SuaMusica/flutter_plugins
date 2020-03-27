@@ -6,4 +6,5 @@ enum PlayerState {
   STOPPED,
   COMPLETED,
   ERROR,
+  SEEK_END,
 }

@@ -427,6 +427,7 @@ class Player {
   }
 
   Future<int> seek(Duration position) {
+    _notifyPlayerStateChangeEvent(this, EventType.SEEK_START);
     return _invokeMethod('seek', {'position': position.inMilliseconds});
   }
 
@@ -522,6 +523,10 @@ class Player {
 
           case PlayerState.STOPPED:
             _notifyPlayerStateChangeEvent(player, EventType.STOP_REQUESTED);
+            break;
+
+          case PlayerState.SEEK_END:
+            _notifyPlayerStateChangeEvent(player, EventType.SEEK_END);
             break;
 
           case PlayerState.COMPLETED:

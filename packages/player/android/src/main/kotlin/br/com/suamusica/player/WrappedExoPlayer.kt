@@ -214,6 +214,7 @@ class WrappedExoPlayer(val playerId: String,
 
             override fun onSeekProcessed() {
                 // Log.i("MusicService", "onSeekProcessed")
+                channelManager.notifyPlayerStateChange(playerId, PlayerState.SEEK_END)
             }
         }
     }
