@@ -435,6 +435,7 @@ BOOL isConnected = true;
                            @"volume": @(1.0),
                            @"looping": @(false),
                            @"areNotificationCommandsEnabled": @(true),
+                           @"isSeeking": @(false),
     } mutableCopy];
     _playerId = playerId;
   }
@@ -481,7 +482,7 @@ BOOL isConnected = true;
   [ playerInfo setObject:url forKey:@"url" ];
   [ playerInfo setObject:observers forKey:@"observers"];
   
-  CMTime interval = CMTimeMakeWithSeconds(0.2, NSEC_PER_SEC);
+  CMTime interval = CMTimeMakeWithSeconds(0.9, NSEC_PER_SEC);
   id timeObserver = [player  addPeriodicTimeObserverForInterval: interval queue: nil usingBlock:^(CMTime time){
     [self onTimeInterval:playerId time:time];
   }];
@@ -559,6 +560,8 @@ BOOL isConnected = true;
         object: playerItem
         queue: nil
     usingBlock:^(NSNotification* note){
+      NSMutableDictionary * playerInfo = players[_playerId];
+      [playerInfo setValue:@(false) forKey:@"isSeeking"];
       NSLog(@"Player: AVPlayerItemTimeJumpedNotification: %@", [note object]);
     }];
     id failedEndTimeObserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVPlayerItemFailedToPlayToEndTimeNotification
@@ -1068,10 +1071,9 @@ BOOL isConnected = true;
 
 -(void) onTimeInterval: (NSString *) playerId
                   time: (CMTime) time {
-    NSMutableDictionary * playerInfo = players[playerId];
-    if ([playerInfo[@"isPlaying"] boolValue]) {
+    NSMutableDictionary * playerInfo = players[_playerId];
+    if (![playerInfo[@"isSeeking"] boolValue]) {
         int position =  CMTimeGetSeconds(time);
-        NSMutableDictionary * playerInfo = players[playerId];
         AVPlayer *player = playerInfo[@"player"];
          
         CMTime duration = [[[player currentItem]  asset] duration];
@@ -1126,7 +1128,7 @@ BOOL isConnected = true;
         playerInfo = nil;
         player = nil;
     } else {
-        NSLog(@"Player: MPRemote: STATUS: NOT PLAYING");
+        NSLog(@"Player: Seeking...");
     }
 }
 
@@ -1258,8 +1260,10 @@ BOOL isConnected = true;
   }
   NSLog(@"Player: seek");
   NSMutableDictionary * playerInfo = players[playerId];
+  [playerInfo setValue:@(true) forKey:@"isSeeking"];
   AVPlayer *player = playerInfo[@"player"];
   [[player currentItem] seekToTime:time];
+  [self onTimeInterval:playerId time:time];
   return Ok;
 }
 
@@ -1335,10 +1339,11 @@ BOOL isConnected = true;
       }
   } else if ([keyPath isEqualToString: @"playbackLikelyToKeepUp"] || [keyPath isEqualToString: @"playbackBufferFull"]) {
     NSMutableDictionary * playerInfo = players[_playerId];
+    AVPlayer *player = playerInfo[@"player"];
     NSNumber* newValue = [change objectForKey:NSKeyValueChangeNewKey];
     BOOL shouldStartPlaySoon = [newValue boolValue];
-    NSLog(@"Player: observeValueForKeyPath: %@ -- shouldStartPlaySoon: %s", keyPath, shouldStartPlaySoon ? "YES": "NO");
-    if (shouldStartPlaySoon) {
+    NSLog(@"Player: observeValueForKeyPath: %@ -- shouldStartPlaySoon: %s player.rate = %.2f", keyPath, shouldStartPlaySoon ? "YES": "NO", player.rate);
+    if (shouldStartPlaySoon && player.rate != 0) {
       [ playerInfo setObject:@true forKey:@"isPlaying" ];
       int state = STATE_PLAYING;
       [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
