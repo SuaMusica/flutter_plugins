@@ -1157,7 +1157,7 @@ BOOL isConnected = true;
         playerInfo = nil;
         player = nil;
     } else {
-        NSLog(@"Player: Seeking...");
+        NSLog(@"Player: onTimeInterval skipped... reason: seeking");
     }
 }
 
