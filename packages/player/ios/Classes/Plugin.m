@@ -1157,7 +1157,7 @@ BOOL isConnected = true;
         playerInfo = nil;
         player = nil;
     } else {
-        NSLog(@"Player: Seeking...");
+        NSLog(@"Player: onTimeInterval skipped... reason: seeking");
     }
 }
 
@@ -1357,14 +1357,20 @@ BOOL isConnected = true;
     }
   } else if ([keyPath isEqualToString: @"playbackBufferEmpty"]) {
       NSMutableDictionary * playerInfo = players[_playerId];
+      AVPlayer *player = playerInfo[@"player"];
       
       if ([playerInfo[@"isPlaying"] boolValue] && !isConnected && !notifiedBufferEmptyWithNoConnection) {
           notifiedBufferEmptyWithNoConnection = true;
           [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": _playerId, @"errorType": @(PLAYER_ERROR_NETWORK_ERROR)}];
           [self pause:_playerId];
       } else {
-          int state = STATE_BUFFERING;
-          [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
+          if (player.rate != 0) {
+              int state = STATE_BUFFERING;
+              [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
+          } else {
+              int state = STATE_PAUSED;
+              [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
+          }
       }
   } else if ([keyPath isEqualToString: @"playbackLikelyToKeepUp"] || [keyPath isEqualToString: @"playbackBufferFull"]) {
     NSMutableDictionary * playerInfo = players[_playerId];
