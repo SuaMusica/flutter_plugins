@@ -42,6 +42,8 @@ static int const PLAYER_ERROR_NETWORK_ERROR = 5;
 static NSMutableDictionary * players;
 static NSMutableDictionary * playersCurrentItem;
 
+BOOL tooglePausePressed = false;
+
 NSString *DEFAULT_COVER = @"https://images.suamusica.com.br/gaMy5pP78bm6VZhPZCs4vw0TdEw=/500x500/imgs/cd_cover.png";
 
 BOOL notifiedBufferEmptyWithNoConnection = false;
@@ -186,21 +188,28 @@ BOOL isConnected = true;
     commandCenter.pauseCommand.enabled = TRUE;
     
     togglePlayPauseId = [commandCenter.togglePlayPauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
-      NSLog(@"Player: Remote Command TooglePlayPause: SART");
+      NSLog(@"Player: Remote Command TooglePlayPause: START");
       if (_playerId != nil) {
           NSMutableDictionary * playerInfo = players[_playerId];
           if ([playerInfo[@"areNotificationCommandsEnabled"] boolValue]) {
-              AVPlayer *player = playerInfo[@"player"];
-              if (player.rate == 0.0) {
-                  [self resume:_playerId];
+              if (!tooglePausePressed) {
+                  tooglePausePressed = true;
               } else {
-                  [self pause:_playerId];
+                  tooglePausePressed = false;
+              }
+              if (tooglePausePressed) {
+                  AVPlayer *player = playerInfo[@"player"];
+                  if (player.rate == 0.0) {
+                      [self resume:_playerId];
+                  } else {
+                      [self pause:_playerId];
+                  }
               }
           } else {
               NSLog(@"Player: Remote Command TooglePlayPause: Disabled");
           }
       }
-      NSLog(@"Player: Remote Command Pause: END");
+      NSLog(@"Player: Remote Command TooglePlayPause: END");
       return MPRemoteCommandHandlerStatusSuccess;
     }];
     commandCenter.togglePlayPauseCommand.enabled = TRUE;
