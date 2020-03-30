@@ -42,6 +42,8 @@ static int const PLAYER_ERROR_NETWORK_ERROR = 5;
 static NSMutableDictionary * players;
 static NSMutableDictionary * playersCurrentItem;
 
+NSString *DEFAULT_COVER = @"https://images.suamusica.com.br/gaMy5pP78bm6VZhPZCs4vw0TdEw=/500x500/imgs/cd_cover.png";
+
 BOOL notifiedBufferEmptyWithNoConnection = false;
 
 @interface Plugin()
@@ -181,6 +183,26 @@ BOOL isConnected = true;
       return MPRemoteCommandHandlerStatusSuccess;
     }];
     commandCenter.pauseCommand.enabled = TRUE;
+    
+    pauseId = [commandCenter.togglePlayPauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+      NSLog(@"Player: Remote Command Pause: SART");
+      if (_playerId != nil) {
+          NSMutableDictionary * playerInfo = players[_playerId];
+          if ([playerInfo[@"areNotificationCommandsEnabled"] boolValue]) {
+              AVPlayer *player = playerInfo[@"player"];
+              if (player.rate == 0.0) {
+                  [self resume:_playerId];
+              } else {
+                  [self pause:_playerId];
+              }
+          } else {
+              NSLog(@"Player: Remote Command Pause: Disabled");
+          }
+      }
+      NSLog(@"Player: Remote Command Pause: END");
+      return MPRemoteCommandHandlerStatusSuccess;
+    }];
+    commandCenter.togglePlayPauseCommand.enabled = TRUE;
 
     nextTrackId = [commandCenter.nextTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
       NSLog(@"Player: Remote Command Next: START");
@@ -309,6 +331,9 @@ BOOL isConnected = true;
                         result(0);
                     if (call.arguments[@"respectSilence"] == nil)
                         result(0);
+                    if (coverUrl == nil || ![coverUrl hasPrefix:@"http"]) {
+                        coverUrl = DEFAULT_COVER;
+                    }
                     int isLocal = [call.arguments[@"isLocal"]intValue] ;
                     float volume = (float)[call.arguments[@"volume"] doubleValue] ;
                     int milliseconds = call.arguments[@"position"] == [NSNull null] ? 0.0 : [call.arguments[@"position"] intValue] ;
@@ -1053,7 +1078,7 @@ BOOL isConnected = true;
   }
 
   if (coverUrl == nil) {
-    coverUrl = @"unknown";
+    coverUrl = DEFAULT_COVER;
   }
 
   NSLog(@"Player: [SET_CURRENT_ITEM LOG] playerId=%@ name=%@ author=%@ url=%@ coverUrl=%@", playerId, name, author, url, coverUrl);
@@ -1175,6 +1200,9 @@ BOOL isConnected = true;
 }
 
 -(NSData *) getAlbumCover:(NSString *)coverUrl {
+    if (coverUrl == nil || ![coverUrl hasPrefix:@"http"]) {
+        coverUrl = DEFAULT_COVER;
+    }
 //    NSLog(@"Cover: Get Album Cover %@", coverUrl);
     NSData *data = [self getAlbumCoverFromCache:coverUrl];
     if (data == nil) {
