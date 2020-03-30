@@ -529,9 +529,20 @@ BOOL isConnected = true;
   id avrouteobserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVAudioSessionRouteChangeNotification
       object: nil
       queue: NSOperationQueue.mainQueue
-  usingBlock:^(NSNotification* note){
-    NSDictionary *dict = note.userInfo;
+  usingBlock:^(NSNotification* notification){
+    NSDictionary *dict = notification.userInfo;
     NSLog(@"Player: AVAudioSessionRouteChangeNotification received. UserInfo: %@", dict);
+    NSNumber *reason = [[notification userInfo] objectForKey:AVAudioSessionRouteChangeReasonKey];
+
+    switch (reason.unsignedIntegerValue) {
+      case AVAudioSessionRouteChangeReasonOldDeviceUnavailable:{
+        [self pause:_playerId];
+      } break;
+      default:
+          break;
+    }
+
+      
   }];
   id avlostobserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVAudioSessionMediaServicesWereLostNotification
       object: nil
