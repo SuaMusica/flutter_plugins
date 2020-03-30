@@ -81,6 +81,7 @@ id playId;
 id pauseId;
 id nextTrackId;
 id previousTrackId;
+id togglePlayPauseId;
 BOOL isConnected = true;
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
@@ -184,8 +185,8 @@ BOOL isConnected = true;
     }];
     commandCenter.pauseCommand.enabled = TRUE;
     
-    pauseId = [commandCenter.togglePlayPauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
-      NSLog(@"Player: Remote Command Pause: SART");
+    togglePlayPauseId = [commandCenter.togglePlayPauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+      NSLog(@"Player: Remote Command TooglePlayPause: SART");
       if (_playerId != nil) {
           NSMutableDictionary * playerInfo = players[_playerId];
           if ([playerInfo[@"areNotificationCommandsEnabled"] boolValue]) {
@@ -196,7 +197,7 @@ BOOL isConnected = true;
                   [self pause:_playerId];
               }
           } else {
-              NSLog(@"Player: Remote Command Pause: Disabled");
+              NSLog(@"Player: Remote Command TooglePlayPause: Disabled");
           }
       }
       NSLog(@"Player: Remote Command Pause: END");
@@ -254,6 +255,8 @@ BOOL isConnected = true;
     [commandCenter.nextTrackCommand removeTarget:nextTrackId];
     [commandCenter.previousTrackCommand removeTarget:previousTrackId];
     commandCenter.nextTrackCommand.enabled = FALSE;
+    [commandCenter.togglePlayPauseCommand removeTarget:togglePlayPauseId];
+    commandCenter.togglePlayPauseCommand.enabled = FALSE;
 
     NSLog(@"Player: MPRemote: Disabled Remote Command Center! Done!");
 }
