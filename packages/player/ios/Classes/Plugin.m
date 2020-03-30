@@ -42,6 +42,10 @@ static int const PLAYER_ERROR_NETWORK_ERROR = 5;
 static NSMutableDictionary * players;
 static NSMutableDictionary * playersCurrentItem;
 
+BOOL tooglePausePressed = false;
+
+NSString *DEFAULT_COVER = @"https://images.suamusica.com.br/gaMy5pP78bm6VZhPZCs4vw0TdEw=/500x500/imgs/cd_cover.png";
+
 BOOL notifiedBufferEmptyWithNoConnection = false;
 
 @interface Plugin()
@@ -79,6 +83,7 @@ id playId;
 id pauseId;
 id nextTrackId;
 id previousTrackId;
+id togglePlayPauseId;
 BOOL isConnected = true;
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
@@ -181,6 +186,33 @@ BOOL isConnected = true;
       return MPRemoteCommandHandlerStatusSuccess;
     }];
     commandCenter.pauseCommand.enabled = TRUE;
+    
+    togglePlayPauseId = [commandCenter.togglePlayPauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+      NSLog(@"Player: Remote Command TooglePlayPause: START");
+      if (_playerId != nil) {
+          NSMutableDictionary * playerInfo = players[_playerId];
+          if ([playerInfo[@"areNotificationCommandsEnabled"] boolValue]) {
+              if (!tooglePausePressed) {
+                  tooglePausePressed = true;
+              } else {
+                  tooglePausePressed = false;
+              }
+              if (tooglePausePressed) {
+                  AVPlayer *player = playerInfo[@"player"];
+                  if (player.rate == 0.0) {
+                      [self resume:_playerId];
+                  } else {
+                      [self pause:_playerId];
+                  }
+              }
+          } else {
+              NSLog(@"Player: Remote Command TooglePlayPause: Disabled");
+          }
+      }
+      NSLog(@"Player: Remote Command TooglePlayPause: END");
+      return MPRemoteCommandHandlerStatusSuccess;
+    }];
+    commandCenter.togglePlayPauseCommand.enabled = TRUE;
 
     nextTrackId = [commandCenter.nextTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
       NSLog(@"Player: Remote Command Next: START");
@@ -232,6 +264,8 @@ BOOL isConnected = true;
     [commandCenter.nextTrackCommand removeTarget:nextTrackId];
     [commandCenter.previousTrackCommand removeTarget:previousTrackId];
     commandCenter.nextTrackCommand.enabled = FALSE;
+    [commandCenter.togglePlayPauseCommand removeTarget:togglePlayPauseId];
+    commandCenter.togglePlayPauseCommand.enabled = FALSE;
 
     NSLog(@"Player: MPRemote: Disabled Remote Command Center! Done!");
 }
@@ -309,6 +343,9 @@ BOOL isConnected = true;
                         result(0);
                     if (call.arguments[@"respectSilence"] == nil)
                         result(0);
+                    if (coverUrl == nil || ![coverUrl hasPrefix:@"http"]) {
+                        coverUrl = DEFAULT_COVER;
+                    }
                     int isLocal = [call.arguments[@"isLocal"]intValue] ;
                     float volume = (float)[call.arguments[@"volume"] doubleValue] ;
                     int milliseconds = call.arguments[@"position"] == [NSNull null] ? 0.0 : [call.arguments[@"position"] intValue] ;
@@ -492,9 +529,20 @@ BOOL isConnected = true;
   id avrouteobserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVAudioSessionRouteChangeNotification
       object: nil
       queue: NSOperationQueue.mainQueue
-  usingBlock:^(NSNotification* note){
-    NSDictionary *dict = note.userInfo;
+  usingBlock:^(NSNotification* notification){
+    NSDictionary *dict = notification.userInfo;
     NSLog(@"Player: AVAudioSessionRouteChangeNotification received. UserInfo: %@", dict);
+    NSNumber *reason = [[notification userInfo] objectForKey:AVAudioSessionRouteChangeReasonKey];
+
+    switch (reason.unsignedIntegerValue) {
+      case AVAudioSessionRouteChangeReasonOldDeviceUnavailable:{
+        [self pause:_playerId];
+      } break;
+      default:
+          break;
+    }
+
+      
   }];
   id avlostobserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVAudioSessionMediaServicesWereLostNotification
       object: nil
@@ -1053,7 +1101,7 @@ BOOL isConnected = true;
   }
 
   if (coverUrl == nil) {
-    coverUrl = @"unknown";
+    coverUrl = DEFAULT_COVER;
   }
 
   NSLog(@"Player: [SET_CURRENT_ITEM LOG] playerId=%@ name=%@ author=%@ url=%@ coverUrl=%@", playerId, name, author, url, coverUrl);
@@ -1175,6 +1223,9 @@ BOOL isConnected = true;
 }
 
 -(NSData *) getAlbumCover:(NSString *)coverUrl {
+    if (coverUrl == nil || ![coverUrl hasPrefix:@"http"]) {
+        coverUrl = DEFAULT_COVER;
+    }
 //    NSLog(@"Cover: Get Album Cover %@", coverUrl);
     NSData *data = [self getAlbumCoverFromCache:coverUrl];
     if (data == nil) {
