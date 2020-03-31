@@ -346,35 +346,36 @@ class Player {
       return _doPlay(next);
     }
 
-    if (repeatMode == RepeatMode.TRACK) {
-      return rewind();
-    } else {
-      next = _queue.next();
-      if (next == null) {
-        if (current == null) {
+    next = _queue.next();
+    if (next == null) {
+      if (current == null) {
+        return NotOk;
+      }
+
+      if ((state == PlayerState.PLAYING || state == PlayerState.PAUSED) &&
+          repeatMode == RepeatMode.NONE) {
+        return _forward(current);
+      } else {
+        if (repeatMode == RepeatMode.NONE) {
+          return NotOk;
+        } else if (repeatMode == RepeatMode.QUEUE) {
+          next = _queue.restart();
+        } else if (repeatMode == RepeatMode.TRACK) {
+          repeatMode = RepeatMode.QUEUE;
+          next = _queue.restart();
+        } else {
+          // this should not happen!
           return NotOk;
         }
-
-        if ((state == PlayerState.PLAYING || state == PlayerState.PAUSED) &&
-            repeatMode == RepeatMode.NONE) {
-          return _forward(current);
-        } else {
-          if (repeatMode == RepeatMode.NONE) {
-            return NotOk;
-          } else if (repeatMode == RepeatMode.QUEUE) {
-            next = _queue.restart();
-          } else {
-            // this should not happen!
-            return NotOk;
-          }
-        }
       }
-
-      if (shallNotify) {
-        _notifyChangeToNext(next);
-      }
-      return _doPlay(next);
     }
+    if (repeatMode == RepeatMode.TRACK) {
+      repeatMode = RepeatMode.QUEUE;
+    }
+    if (shallNotify) {
+      _notifyChangeToNext(next);
+    }
+    return _doPlay(next);
   }
 
   Future<int> pause() async {
