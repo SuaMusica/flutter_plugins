@@ -1055,7 +1055,12 @@ BOOL isConnected = true;
       [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_NETWORK_ERROR)}];
       return -1;
   }
-  
+  if (!@available(iOS 11,*)) {
+    url = [url stringByReplacingOccurrencesOfString:@".m3u8"
+                                     withString:@".mp3"];
+    url = [url stringByReplacingOccurrencesOfString:@"stream/"
+                                     withString:@""];
+  }
   latestUrl = url;
   latestIsLocal = isLocal;
   latestCookie = cookie;
@@ -1160,7 +1165,12 @@ BOOL isConnected = true;
         NSString *name = currentItem[@"name"];
         NSString *author = currentItem[@"author"];
         NSString *coverUrl = currentItem[@"coverUrl"];
-      
+        if (name == nil || author == nil  || coverUrl == nil){
+            name = @"Sua Musica";
+            author = @"Sua Musica";
+            coverUrl = DEFAULT_COVER;
+        }
+
         int durationInMillis = _duration*1000;
         int positionInMillis = position*1000;
 
@@ -1429,6 +1439,11 @@ BOOL isConnected = true;
     NSNumber* newValue = [change objectForKey:NSKeyValueChangeNewKey];
     BOOL shouldStartPlaySoon = [newValue boolValue];
     NSLog(@"Player: observeValueForKeyPath: %@ -- shouldStartPlaySoon: %s player.rate = %.2f", keyPath, shouldStartPlaySoon ? "YES": "NO", player.rate);
+    if (!@available(iOS 11,*) && shouldStartPlaySoon && player.rate ==0) {
+      player.rate = 1.0;
+      // [player play]
+      // [self resume:_playerId];
+    }
     if (shouldStartPlaySoon && player.rate != 0) {
       [ playerInfo setObject:@true forKey:@"isPlaying" ];
       int state = STATE_PLAYING;
