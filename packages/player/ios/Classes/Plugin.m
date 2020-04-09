@@ -79,11 +79,11 @@ NSString* latestCookie = nil;
 NSString* latestPlayerId = nil;
 VoidCallback latestOnReady = nil;
 AVPlayerItem* latestPlayerItemObserved = nil;
-id playId;
-id pauseId;
-id nextTrackId;
-id previousTrackId;
-id togglePlayPauseId;
+id playId = nil;
+id pauseId = nil;
+id nextTrackId = nil;
+id previousTrackId = nil;
+id togglePlayPauseId = nil;
 BOOL isConnected = true;
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
@@ -100,6 +100,8 @@ BOOL isConnected = true;
 }
 
 - (id)init {
+    NSLog(@"Player: INIT!");
+
   self = [super init];
   if (self) {
       serialQueue = dispatch_queue_create("com.suamusica.player.queue", DISPATCH_QUEUE_SERIAL);
@@ -151,6 +153,9 @@ BOOL isConnected = true;
     [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
     MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
 
+    if (playId != nil) {
+        [commandCenter.playCommand removeTarget:playId];
+    }
     playId = [commandCenter.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
         NSLog(@"Player: Remote Command Play: START");
       if (_playerId != nil) {
@@ -168,7 +173,9 @@ BOOL isConnected = true;
       return MPRemoteCommandHandlerStatusSuccess;
     }];
     commandCenter.playCommand.enabled = TRUE;
-
+    if (pauseId != nil) {
+        [commandCenter.pauseCommand removeTarget:pauseId];
+    }
     pauseId = [commandCenter.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
       NSLog(@"Player: Remote Command Pause: SART");
       if (_playerId != nil) {
@@ -186,7 +193,9 @@ BOOL isConnected = true;
       return MPRemoteCommandHandlerStatusSuccess;
     }];
     commandCenter.pauseCommand.enabled = TRUE;
-    
+    if (togglePlayPauseId != nil) {
+        [commandCenter.togglePlayPauseCommand removeTarget:togglePlayPauseId];
+    }
     togglePlayPauseId = [commandCenter.togglePlayPauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
       NSLog(@"Player: Remote Command TooglePlayPause: START");
       if (_playerId != nil) {
@@ -213,7 +222,9 @@ BOOL isConnected = true;
       return MPRemoteCommandHandlerStatusSuccess;
     }];
     commandCenter.togglePlayPauseCommand.enabled = TRUE;
-
+    if (nextTrackId != nil) {
+        [commandCenter.nextTrackCommand removeTarget:nextTrackId];
+    }
     nextTrackId = [commandCenter.nextTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
       NSLog(@"Player: Remote Command Next: START");
       if (_playerId != nil) {
@@ -229,7 +240,9 @@ BOOL isConnected = true;
       return MPRemoteCommandHandlerStatusSuccess;
     }];
     commandCenter.nextTrackCommand.enabled = TRUE;
-    
+    if (previousTrackId != nil) {
+        [commandCenter.previousTrackCommand removeTarget:previousTrackId];
+    }
     previousTrackId =[commandCenter.previousTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
       NSLog(@"Player: Remote Command Previous: START");
       if (_playerId != nil) {
@@ -599,6 +612,8 @@ BOOL isConnected = true;
 -(void)observePlayerItem:(AVPlayerItem *)playerItem playerId:(NSString *)playerId {
   if (latestPlayerItemObserved != playerItem) {
     if (latestPlayerItemObserved != nil) {
+        NSLog(@"Player: latestPlayerItemObserved");
+
       [self disposePlayerItem:latestPlayerItemObserved];
     }
     [playerItem addObserver:self
@@ -637,7 +652,7 @@ BOOL isConnected = true;
     usingBlock:^(NSNotification* note){
       NSMutableDictionary * playerInfo = players[_playerId];
       [playerInfo setValue:@(false) forKey:@"isSeeking"];
-      int state = STATE_SEEK_END;   
+      int state = STATE_SEEK_END;
       [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
       NSLog(@"Player: AVPlayerItemTimeJumpedNotification: %@", [note object]);
     }];
@@ -730,18 +745,26 @@ BOOL isConnected = true;
 
 -(void)disposePlayerItem:(AVPlayerItem *)playerItem {
   if (latestPlayerItemObserved == playerItem) {
+      NSLog(@"Player: disposing Player Items");
+
     @try {
       [playerItem removeObserver:self forKeyPath:@"player.currentItem.status" context:nil];
-    } @catch (NSException * __unused exception) {}
+    } @catch (NSException * __unused exception) {
+        
+        NSLog(@"Player: failed dispose player.currentItem.status %@", exception);
+    }
     @try {
       [playerItem removeObserver:self forKeyPath:@"playbackLikelyToKeepUp" context:nil];
-    } @catch (NSException * __unused exception) {}
+    } @catch (NSException * __unused exception) {        NSLog(@"Player: failed dispose playbackLikelyToKeepUp %@", exception);
+}
     @try {
       [playerItem removeObserver:self forKeyPath:@"playbackBufferFull" context:nil];
-    } @catch (NSException * __unused exception) {}
+    } @catch (NSException * __unused exception) {        NSLog(@"Player: failed dispose playbackBufferFull %@", exception);
+}
     @try {
       [playerItem removeObserver:self forKeyPath:@"playbackBufferEmpty" context:nil];
-    } @catch (NSException * __unused exception) {}
+    } @catch (NSException * __unused exception) {        NSLog(@"Player: failed dispose playbackBufferEmpty %@", exception);
+}
     
     NSMutableDictionary * playerInfo = players[_playerId];
     NSMutableSet *observers = playerInfo[@"observers_player_item"];
@@ -757,14 +780,20 @@ BOOL isConnected = true;
 - (void)treatPlayerObservers:(AVPlayer *)player url:(NSString *)url {
   NSMutableDictionary * playerInfo = players[_playerId];
   NSMutableSet *observers = playerInfo[@"observers"];
+    NSLog(@"Player: entered treatPlayerObservers ");
+
   @try {
     [[player currentItem] removeObserver:self forKeyPath:@"player.currentItem.status" ];
-  } @catch (NSException * __unused exception) {}
+  } @catch (NSException * __unused exception) {
+      NSLog(@"Player: failed dispose player.currentItem.status %@", exception);
+
+  }
 
   for (id ob in observers) {
     @try {
       [ [ NSNotificationCenter defaultCenter ] removeObserver:ob ];
-    } @catch (NSException * __unused exception) {}
+    } @catch (NSException * __unused exception) {      NSLog(@"Player: failed dispose generic %@", exception);
+}
   }
   [ observers removeAllObjects ];
 }
@@ -1481,6 +1510,7 @@ BOOL isConnected = true;
 }
 
 - (void)dealloc {
+  NSLog(@"Player: DEALLOC:");
   [self disposePlayerItem:latestPlayerItemObserved];
   [self disposePlayer];
   
