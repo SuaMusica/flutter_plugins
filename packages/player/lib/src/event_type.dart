@@ -22,6 +22,7 @@ enum EventType {
   NETWORK_CHANGE,
   SEEK_START,
   SEEK_END,
+  BUFFER_EMPTY,
 }
 
 enum PlayerErrorType {
