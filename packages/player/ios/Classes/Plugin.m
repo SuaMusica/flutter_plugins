@@ -312,12 +312,16 @@ BOOL isConnected = true;
                   if (call.arguments[@"isLocal"] == nil)
                       result(0);
                   int isLocal = [call.arguments[@"isLocal"]intValue] ;
-                  if (!isConnected && !isLocal) {
-                      [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_NETWORK_ERROR)}];
-                      result(@(-1));
-                  } else {
-                      result(@(Ok));
+                  if (false) {
+                      // we decided to disable this check
+                      if (!isConnected && !isLocal) {
+                          [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_NETWORK_ERROR)}];
+                          result(@(-1));
+                      } else {
+                          result(@(Ok));
+                      }
                   }
+                  result(@(Ok));
                 },
                 @"play":
                   ^{
@@ -1040,6 +1044,19 @@ BOOL isConnected = true;
     [loadingRequest finishLoadingWithError:[NSError errorWithDomain: NSURLErrorDomain code:error userInfo: nil]];
 }
 
+-(int) ensureConnected: (NSString*) playerId
+               isLocal: (int) isLocal
+{
+    if (false) {
+      // we decided to remove this
+      if (!isConnected && !isLocal) {
+          [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_NETWORK_ERROR)}];
+          return -1;
+      }
+    }
+    return Ok;
+}
+
 -(int) play: (NSString*) playerId
         name: (NSString*) name
       author: (NSString*) author
@@ -1051,10 +1068,10 @@ BOOL isConnected = true;
         time: (CMTime) time
       isNotification: (bool) respectSilence
 {
-  if (!isConnected && !isLocal) {
-      [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_NETWORK_ERROR)}];
-      return -1;
+  if ([self ensureConnected:playerId isLocal:isLocal] == -1) {
+        return -1;
   }
+    
   if (!@available(iOS 11,*)) {
     url = [url stringByReplacingOccurrencesOfString:@".m3u8"
                                      withString:@".mp3"];
@@ -1298,9 +1315,8 @@ BOOL isConnected = true;
 }
 
 -(int) resume: (NSString *) playerId {
-  if (!isConnected && !latestIsLocal) {
-    [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_NETWORK_ERROR)}];
-    return -1;
+  if ([self ensureConnected:playerId isLocal:latestIsLocal] == -1) {
+        return -1;
   }
     
   NSLog(@"Player: resume");
@@ -1344,9 +1360,8 @@ BOOL isConnected = true;
 
 -(int) seek: (NSString *) playerId
         time: (CMTime) time {
-  if (!isConnected && !latestIsLocal) {
-      [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_NETWORK_ERROR)}];
-      return -1;
+  if ([self ensureConnected:playerId isLocal:latestIsLocal] == -1) {
+          return -1;
   }
   NSLog(@"Player: seek");
   NSMutableDictionary * playerInfo = players[playerId];
