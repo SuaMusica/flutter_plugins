@@ -85,6 +85,19 @@ id nextTrackId = nil;
 id previousTrackId = nil;
 id togglePlayPauseId = nil;
 BOOL isConnected = true;
+BOOL stopTryingToReconnect = false;
+NSString *lastName = nil;
+NSString *lastAuthor = nil;
+NSString *lastUrl = nil;
+NSString *lastCoverUrl = nil;
+NSString *lastCookie = nil;
+float lastVolume = 1.0;
+CMTime lastTime;
+BOOL lastRespectSilence;
+
+
+//int ret = [self play:playerId name:name author:author url:url coverUrl:coverUrl cookie:cookie isLocal:isLocal volume:volume time:time isNotification:respectSilence];
+
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
   @synchronized(self) {
@@ -134,7 +147,19 @@ BOOL isConnected = true;
             case AFNetworkReachabilityStatusReachableViaWWAN:
             case AFNetworkReachabilityStatusReachableViaWiFi:
                 isConnected = true;
+                NSMutableDictionary * playerInfo = players[_playerId];
                 networkStatus = @"CONNECTED";
+                if ([playerInfo[@"failedToStartPlaying"] boolValue]) {
+                    // we did not even manage to start playing
+                    // or in this case download the .m3u8 file
+                    // so let's try everything again
+                    [self play:_playerId name:lastName author:lastAuthor url:lastUrl coverUrl:lastCoverUrl cookie:lastCookie isLocal:false volume:lastVolume time:lastTime isNotification:lastRespectSilence];
+                } else if (stopTryingToReconnect) {
+                    // we manage to start playing
+                    // the AVPlayer retried several times
+                    // but it stoped
+                    [self play:_playerId name:lastName author:lastAuthor url:lastUrl coverUrl:lastCoverUrl cookie:lastCookie isLocal:false volume:lastVolume time:lastTime isNotification:lastRespectSilence];
+                }
                 break;
         }
         
@@ -321,7 +346,7 @@ BOOL isConnected = true;
                   if (call.arguments[@"isLocal"] == nil)
                       result(0);
                   int isLocal = [call.arguments[@"isLocal"]intValue] ;
-                  if (false) {
+#ifdef ENABLE_PLAYER_NETWORK_ERROR
                       // we decided to disable this check
                       if (!isConnected && !isLocal) {
                           [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_NETWORK_ERROR)}];
@@ -329,7 +354,7 @@ BOOL isConnected = true;
                       } else {
                           result(@(Ok));
                       }
-                  }
+#endif
                   result(@(Ok));
                 },
                 @"play":
@@ -368,6 +393,14 @@ BOOL isConnected = true;
 //                    NSLog(@"isLocal: %d %@", isLocal, call.arguments[@"isLocal"] );
 //                    NSLog(@"volume: %f %@", volume, call.arguments[@"volume"] );
 //                    NSLog(@"position: %d %@", milliseconds, call.arguments[@"positions"] );
+                      lastName = name;
+                      lastAuthor = author;
+                      lastUrl = url;
+                      lastCoverUrl = coverUrl;
+                      lastCookie = cookie;
+                      lastVolume = volume;
+                      lastTime = time;
+                      lastRespectSilence = respectSilence;
                     int ret = [self play:playerId name:name author:author url:url coverUrl:coverUrl cookie:cookie isLocal:isLocal volume:volume time:time isNotification:respectSilence];
                     result(@(ret));
                   },
@@ -487,6 +520,7 @@ BOOL isConnected = true;
                            @"looping": @(false),
                            @"areNotificationCommandsEnabled": @(true),
                            @"isSeeking": @(false),
+                           @"failedToStartPlaying": @(false),
     } mutableCopy];
     _playerId = playerId;
   }
@@ -546,6 +580,24 @@ BOOL isConnected = true;
     NSDictionary *dict = notification.userInfo;
     NSLog(@"Player: AVAudioSessionRouteChangeNotification received. UserInfo: %@", dict);
     NSNumber *reason = [[notification userInfo] objectForKey:AVAudioSessionRouteChangeReasonKey];
+      
+    AVAudioSession *session = [AVAudioSession sharedInstance];
+    AVAudioSessionRouteDescription *routeDescription = [session currentRoute];
+      
+    NSLog(@"Current Routes : %@", routeDescription);
+
+    if (routeDescription)
+      {
+          NSArray *outputs = [routeDescription outputs];
+
+          if (outputs && [outputs count] > 0)
+          {
+              AVAudioSessionPortDescription *portDescription = [outputs objectAtIndex:0];
+              NSString *portType = [portDescription portType];
+
+              NSLog(@"dataSourceName : %@ %@", portType, portDescription);
+          }
+    }
 
     switch (reason.unsignedIntegerValue) {
       case AVAudioSessionRouteChangeReasonOldDeviceUnavailable:{
@@ -665,10 +717,13 @@ BOOL isConnected = true;
             NSLog(@"Player: AVPlayerItemFailedToPlayToEndTimeNotification: %@", [note object]);
             [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_FAILED)}];
         } else {
+            stopTryingToReconnect = true;
+            notifiedBufferEmptyWithNoConnection = true;
+#ifdef ENABLE_PLAYER_NETWORK_ERROR
             if (!notifiedBufferEmptyWithNoConnection) {
-                notifiedBufferEmptyWithNoConnection = true;
                 [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_NETWORK_ERROR)}];
             }
+#endif
         }
     }];
     id stalledObserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVPlayerItemPlaybackStalledNotification
@@ -694,11 +749,15 @@ BOOL isConnected = true;
         AVPlayerItemErrorLog *errorLog = [playerItem errorLog];
         NSLog(@"Player: AVPlayerItemNewErrorLogEntryNotification: %@", errorLog);
         
+#ifdef ENABLE_PLAYER_NETWORK_ERROR
+        // we decided to remove this
         if (!notifiedBufferEmptyWithNoConnection) {
             [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_NETWORK_ERROR)}];
             notifiedBufferEmptyWithNoConnection = true;
         }
         [self pause:_playerId];
+#endif
+        
     }];
     if (@available(iOS 13.0, *)) {
       id selectionDidChangeObserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVPlayerItemMediaSelectionDidChangeNotification
@@ -902,6 +961,7 @@ BOOL isConnected = true;
       }
     }
     notifiedBufferEmptyWithNoConnection = false;
+    stopTryingToReconnect = false;
     return Ok;
   }
 
@@ -1065,20 +1125,22 @@ BOOL isConnected = true;
 
 - (void) reportError:(AVAssetResourceLoadingRequest *) loadingRequest withErrorCode:(int) error
 {
+  NSMutableDictionary * playerInfo = players[_playerId];
+  [playerInfo setValue:@(true) forKey:@"failedToStartPlaying"];
   NSLog(@"Player: reportError.error: %d",error);
-    [loadingRequest finishLoadingWithError:[NSError errorWithDomain: NSURLErrorDomain code:error userInfo: nil]];
+  [loadingRequest finishLoadingWithError:[NSError errorWithDomain: NSURLErrorDomain code:error userInfo: nil]];
 }
 
 -(int) ensureConnected: (NSString*) playerId
                isLocal: (int) isLocal
 {
-    if (false) {
+#ifdef ENABLE_PLAYER_NETWORK_ERROR
       // we decided to remove this
       if (!isConnected && !isLocal) {
           [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_NETWORK_ERROR)}];
           return -1;
       }
-    }
+#endif
     return Ok;
 }
 
@@ -1199,6 +1261,9 @@ BOOL isConnected = true;
     if (![playerInfo[@"isSeeking"] boolValue]) {
         int position =  CMTimeGetSeconds(time);
         AVPlayer *player = playerInfo[@"player"];
+        
+        // let us save it
+        lastTime = time;
          
         CMTime duration = [[[player currentItem]  asset] duration];
         int _duration = CMTimeGetSeconds(duration);
@@ -1459,13 +1524,15 @@ BOOL isConnected = true;
   } else if ([keyPath isEqualToString: @"playbackBufferEmpty"]) {
       NSMutableDictionary * playerInfo = players[_playerId];
       AVPlayer *player = playerInfo[@"player"];
-      
-      if (false && [playerInfo[@"isPlaying"] boolValue] && !isConnected && !notifiedBufferEmptyWithNoConnection) {
+
+#ifdef ENABLE_PLAYER_NETWORK_ERROR
+      if ([playerInfo[@"isPlaying"] boolValue] && !isConnected && !notifiedBufferEmptyWithNoConnection) {
           // we decided to remote this
           notifiedBufferEmptyWithNoConnection = true;
           [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": _playerId, @"errorType": @(PLAYER_ERROR_NETWORK_ERROR)}];
           [self pause:_playerId];
       } else {
+#endif
           if (player.rate != 0) {
               int state = STATE_BUFFERING;
               [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
@@ -1473,7 +1540,9 @@ BOOL isConnected = true;
               int state = STATE_PAUSED;
               [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
           }
+#ifdef ENABLE_PLAYER_NETWORK_ERROR
       }
+#endif
   } else if ([keyPath isEqualToString: @"playbackLikelyToKeepUp"] || [keyPath isEqualToString: @"playbackBufferFull"]) {
     NSMutableDictionary * playerInfo = players[_playerId];
     AVPlayer *player = playerInfo[@"player"];
