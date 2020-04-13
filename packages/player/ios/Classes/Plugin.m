@@ -127,10 +127,6 @@ BOOL isConnected = true;
             case AFNetworkReachabilityStatusUnknown:
             case AFNetworkReachabilityStatusNotReachable:
             {
-//                NSMutableDictionary * playerInfo = players[_playerId];
-//                if ([playerInfo[@"isPlaying"] boolValue]) {
-//                    [self pause:_playerId];
-//                }
                 isConnected = false;
                 networkStatus = @"DISCONNECTED";
                 break;
@@ -1464,7 +1460,8 @@ BOOL isConnected = true;
       NSMutableDictionary * playerInfo = players[_playerId];
       AVPlayer *player = playerInfo[@"player"];
       
-      if ([playerInfo[@"isPlaying"] boolValue] && !isConnected && !notifiedBufferEmptyWithNoConnection) {
+      if (false && [playerInfo[@"isPlaying"] boolValue] && !isConnected && !notifiedBufferEmptyWithNoConnection) {
+          // we decided to remote this
           notifiedBufferEmptyWithNoConnection = true;
           [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": _playerId, @"errorType": @(PLAYER_ERROR_NETWORK_ERROR)}];
           [self pause:_playerId];
