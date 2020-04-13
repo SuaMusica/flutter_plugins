@@ -96,9 +96,6 @@ CMTime lastTime;
 BOOL lastRespectSilence;
 
 
-//int ret = [self play:playerId name:name author:author url:url coverUrl:coverUrl cookie:cookie isLocal:isLocal volume:volume time:time isNotification:respectSilence];
-
-
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
   @synchronized(self) {
     if (instance == nil) {
