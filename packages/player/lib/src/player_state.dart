@@ -7,4 +7,5 @@ enum PlayerState {
   COMPLETED,
   ERROR,
   SEEK_END,
+  BUFFER_EMPTY,
 }

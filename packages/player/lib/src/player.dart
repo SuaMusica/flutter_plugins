@@ -530,6 +530,10 @@ class Player {
             _notifyPlayerStateChangeEvent(player, EventType.SEEK_END);
             break;
 
+          case PlayerState.BUFFER_EMPTY:
+            _notifyPlayerStateChangeEvent(player, EventType.BUFFER_EMPTY);
+            break;
+
           case PlayerState.COMPLETED:
             _handleOnComplete(player);
             break;

@@ -29,6 +29,7 @@ static int const STATE_STOPPED = 4;
 static int const STATE_COMPLETED = 5;
 static int const STATE_ERROR = 6;
 static int const STATE_SEEK_END = 7;
+static int const STATE_BUFFER_EMPTY = 8;
 
 static int Ok = 1;
 
@@ -1504,7 +1505,7 @@ BOOL lastRespectSilence;
       } else {
 #endif
           if (player.rate != 0) {
-              int state = STATE_BUFFERING;
+              int state = isConnected ? STATE_BUFFER_EMPTY : STATE_BUFFERING;
               [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
           } else {
               int state = STATE_PAUSED;
