@@ -8,5 +8,6 @@ enum class PlayerState {
     STOPPED,
     COMPLETED,
     ERROR,
-    SEEK_END
+    SEEK_END,
+    BUFFER_EMPTY
 }
