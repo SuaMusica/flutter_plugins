@@ -42,8 +42,6 @@ static int const PLAYER_ERROR_NETWORK_ERROR = 5;
 static NSMutableDictionary * players;
 static NSMutableDictionary * playersCurrentItem;
 
-BOOL tooglePausePressed = false;
-
 NSString *DEFAULT_COVER = @"https://images.suamusica.com.br/gaMy5pP78bm6VZhPZCs4vw0TdEw=/500x500/imgs/cd_cover.png";
 
 BOOL notifiedBufferEmptyWithNoConnection = false;
@@ -219,19 +217,12 @@ BOOL lastRespectSilence;
       if (_playerId != nil) {
           NSMutableDictionary * playerInfo = players[_playerId];
           if ([playerInfo[@"areNotificationCommandsEnabled"] boolValue]) {
-              if (!tooglePausePressed) {
-                  tooglePausePressed = true;
-              } else {
-                  tooglePausePressed = false;
-              }
-              if (tooglePausePressed) {
                   AVPlayer *player = playerInfo[@"player"];
                   if (player.rate == 0.0) {
                       [self resume:_playerId];
                   } else {
                       [self pause:_playerId];
                   }
-              }
           } else {
               NSLog(@"Player: Remote Command TooglePlayPause: Disabled");
           }
@@ -578,24 +569,6 @@ BOOL lastRespectSilence;
     NSLog(@"Player: AVAudioSessionRouteChangeNotification received. UserInfo: %@", dict);
     NSNumber *reason = [[notification userInfo] objectForKey:AVAudioSessionRouteChangeReasonKey];
       
-    AVAudioSession *session = [AVAudioSession sharedInstance];
-    AVAudioSessionRouteDescription *routeDescription = [session currentRoute];
-      
-    NSLog(@"Current Routes : %@", routeDescription);
-
-    if (routeDescription)
-      {
-          NSArray *outputs = [routeDescription outputs];
-
-          if (outputs && [outputs count] > 0)
-          {
-              AVAudioSessionPortDescription *portDescription = [outputs objectAtIndex:0];
-              NSString *portType = [portDescription portType];
-
-              NSLog(@"dataSourceName : %@ %@", portType, portDescription);
-          }
-    }
-
     switch (reason.unsignedIntegerValue) {
       case AVAudioSessionRouteChangeReasonOldDeviceUnavailable:{
         [self pause:_playerId];
