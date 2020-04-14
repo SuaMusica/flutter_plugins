@@ -639,8 +639,10 @@ BOOL lastRespectSilence;
 
       [self disposePlayerItem:latestPlayerItemObserved];
     }
+      
+    
     [playerItem addObserver:self
-                          forKeyPath:@"player.currentItem.status"
+                          forKeyPath:@"status"
                           options:NSKeyValueObservingOptionNew
                           context:nil];
     
@@ -775,26 +777,28 @@ BOOL lastRespectSilence;
 
 -(void)disposePlayerItem:(AVPlayerItem *)playerItem {
   if (latestPlayerItemObserved == playerItem) {
-      NSLog(@"Player: disposing Player Items");
+    NSLog(@"Player: disposing Player Items : START");
 
     @try {
-      [playerItem removeObserver:self forKeyPath:@"player.currentItem.status" context:nil];
+      [playerItem removeObserver:self forKeyPath:@"status" context:nil];
     } @catch (NSException * __unused exception) {
-        
-        NSLog(@"Player: failed dispose player.currentItem.status %@", exception);
+        NSLog(@"Player: failed dispose status %@", exception);
     }
     @try {
       [playerItem removeObserver:self forKeyPath:@"playbackLikelyToKeepUp" context:nil];
-    } @catch (NSException * __unused exception) {        NSLog(@"Player: failed dispose playbackLikelyToKeepUp %@", exception);
-}
+    } @catch (NSException * __unused exception) {
+        NSLog(@"Player: failed dispose playbackLikelyToKeepUp %@", exception);
+    }
     @try {
       [playerItem removeObserver:self forKeyPath:@"playbackBufferFull" context:nil];
-    } @catch (NSException * __unused exception) {        NSLog(@"Player: failed dispose playbackBufferFull %@", exception);
-}
+    } @catch (NSException * __unused exception) {
+        NSLog(@"Player: failed dispose playbackBufferFull %@", exception);
+    }
     @try {
       [playerItem removeObserver:self forKeyPath:@"playbackBufferEmpty" context:nil];
-    } @catch (NSException * __unused exception) {        NSLog(@"Player: failed dispose playbackBufferEmpty %@", exception);
-}
+    } @catch (NSException * __unused exception) {
+        NSLog(@"Player: failed dispose playbackBufferEmpty %@", exception);
+    }
     
     NSMutableDictionary * playerInfo = players[_playerId];
     NSMutableSet *observers = playerInfo[@"observers_player_item"];
@@ -802,8 +806,11 @@ BOOL lastRespectSilence;
     for (id ob in observers) {
       @try {
         [ [ NSNotificationCenter defaultCenter ] removeObserver:ob ];
-      } @catch (NSException * __unused exception) {}
+      } @catch (NSException * __unused exception) {
+        NSLog(@"Player: failed remove removeObserver %@ : %@", ob, exception);
+      }
     }
+    NSLog(@"Player: disposing Player Items : END");
   }
 }
 
@@ -813,10 +820,9 @@ BOOL lastRespectSilence;
     NSLog(@"Player: entered treatPlayerObservers ");
 
   @try {
-    [[player currentItem] removeObserver:self forKeyPath:@"player.currentItem.status" ];
+    [[player currentItem] removeObserver:self forKeyPath:@"status" ];
   } @catch (NSException * __unused exception) {
-      NSLog(@"Player: failed dispose player.currentItem.status %@", exception);
-
+      NSLog(@"Player: failed dispose status %@", exception);
   }
 
   for (id ob in observers) {
@@ -896,6 +902,11 @@ BOOL lastRespectSilence;
         @autoreleasepool {
           [self observePlayerItem:playerItem playerId:playerId];
           [ player replaceCurrentItemWithPlayerItem: playerItem ];
+          @try {
+              [ player replaceCurrentItemWithPlayerItem: playerItem ];
+          } @catch (NSException * __unused exception) {
+                NSLog(@"Player: failed to replaceCurrentItemWithPlayerItem %@", exception);
+          }
         }
       } else {
         NSLog(@"Player: Initing AVPPlayer");
@@ -937,7 +948,7 @@ BOOL lastRespectSilence;
   }
 
   @catch (NSException *exception) {
-    NSLog(@"Player: %@", exception.reason);
+    NSLog(@"Player: Exception on setUrl: %@", exception);
   }
   @finally {
     NSLog(@"Player: Finally condition");
@@ -1445,10 +1456,10 @@ BOOL lastRespectSilence;
                        change:(NSDictionary *)change
                       context:(void *)context {
   NSLog(@"Player: observeValueForKeyPath: %@", keyPath);
-  if ([keyPath isEqualToString: @"player.currentItem.status"]) {
+  if ([keyPath isEqualToString: @"status"]) {
     NSMutableDictionary * playerInfo = players[_playerId];
     AVPlayer *player = playerInfo[@"player"];
-
+      
     NSLog(@"Player: player status: %ld",(long)[[player currentItem] status ]);
 
     // Do something with the status...
