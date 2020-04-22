@@ -102,6 +102,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             print("ERROR: videoView NOT FOUND")
             return
         }
+        self.videoView.showLoading()
         contentPlayer = AVPlayer(url: contentUrl)
         
         // Create a player layer for the player.
