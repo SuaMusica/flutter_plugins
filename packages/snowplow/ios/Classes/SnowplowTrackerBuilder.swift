@@ -20,7 +20,7 @@ class SnowplowTrackerBuilder: NSObject, SPRequestCallback {
             builder!.setEmitter(emitter)
             builder!.setAppId(self.kAppId)
             builder!.setTrackerNamespace(self.kNamespace)
-            builder!.setBase64Encoded(false)
+            // builder!.setBase64Encoded(false)
             builder!.setLifecycleEvents(true)
             builder!.setInstallEvents(true)
             builder!.setSessionContext(true)
