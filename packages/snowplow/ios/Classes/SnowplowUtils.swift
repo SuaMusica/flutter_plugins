@@ -1,4 +1,5 @@
 import Foundation
+import SnowplowTracker
 
 class SnowplowUtils {
     static func trackScreenViewWithTracker(with tracker: SPTracker, andScreenName screenName: String) {
@@ -23,7 +24,7 @@ class SnowplowUtils {
         var contexts: [SPSelfDescribingJson] = []
         contexts.append(eventData!)
         let event = SPUnstructured.build({ (builder : SPUnstructuredBuilder?) -> Void in
-            builder!.setEventData(eventData)
+            builder!.setEventData(eventData ?? SPSelfDescribingJson(schema: customSchema, andData: data))
             builder!.setContexts(NSMutableArray(array: contexts))
         })
         tracker.trackUnstructuredEvent(event)

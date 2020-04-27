@@ -15,6 +15,8 @@ public class SnowplowTrackerBuilder {
         subject.setUserId("0");
         return Tracker.init(new Tracker.TrackerBuilder(emitter, "sm", "1", context).subject(subject)
                 .sessionContext(true).mobileContext(true).applicationContext(true)
+                .screenContext(true)
+
                 .installTracking(true).applicationCrash(true).lifecycleEvents(true).build());
     }
 

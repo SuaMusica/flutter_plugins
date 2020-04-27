@@ -1,4 +1,5 @@
 import Foundation
+import SnowplowTracker
 
 class SnowplowTrackerBuilder: NSObject, SPRequestCallback {    
     let kNamespace = "sm"
@@ -22,7 +23,8 @@ class SnowplowTrackerBuilder: NSObject, SPRequestCallback {
             builder!.setTrackerNamespace(self.kNamespace)
             // builder!.setBase64Encoded(false)
             builder!.setLifecycleEvents(true)
-            builder!.setInstallEvents(true)
+            builder!.setInstallEvent(true)
+            builder!.setScreenContext(true)
             builder!.setSessionContext(true)
             builder!.setApplicationContext(true)
             builder!.setSubject(subject)
