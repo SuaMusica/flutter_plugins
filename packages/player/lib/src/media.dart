@@ -7,6 +7,7 @@ class Media {
   final String name;
   final int ownerId;
   final int albumId;
+  final String albumTitle;
   final String author;
   String url;
   bool isLocal;
@@ -23,6 +24,7 @@ class Media {
     @required this.author,
     @required this.url,
     @required this.albumId,
+    @required this.albumTitle,
     this.isLocal,
     @required this.coverUrl,
     this.isVerified,
@@ -36,6 +38,7 @@ class Media {
         'name': name,
         'ownerId': ownerId,
         'albumId': albumId,
+        'albumTitle': albumTitle,
         'author': author,
         'url': url,
         'is_local': isLocal,
@@ -56,6 +59,7 @@ class Media {
           runtimeType == other.runtimeType &&
           id == other.id &&
           albumId == other.albumId &&
+          albumTitle == other.albumTitle &&
           name == other.name &&
           ownerId == other.ownerId &&
           author == other.author &&
@@ -72,6 +76,7 @@ class Media {
         id,
         name,
         albumId,
+        albumTitle,
         ownerId,
         author,
         url,
