@@ -7,6 +7,7 @@ import 'package:smplayer/src/queue.dart';
 void main() {
   final media1 = Media(
       id: 1,
+      albumTitle: "Album",
       albumId: 2,
       ownerId: 2,
       name: "O Bebe",
@@ -20,6 +21,7 @@ void main() {
 
   final media2 = Media(
       id: 2,
+      albumTitle: "Album",
       albumId: 2,
       ownerId: 2,
       name: "Solteiro Largado",
@@ -34,6 +36,7 @@ void main() {
 
   final media3 = Media(
       id: 3,
+      albumTitle: "Album",
       albumId: 2,
       ownerId: 2,
       name: "Borrachinha",

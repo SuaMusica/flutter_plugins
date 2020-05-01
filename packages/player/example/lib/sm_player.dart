@@ -88,6 +88,7 @@ class _SMPlayerState extends State<SMPlayer> {
 
       var media1 = Media(
         id: 1,
+        albumTitle: "Album",
         albumId: 1,
         name: "Track 1",
         url:
@@ -105,6 +106,7 @@ class _SMPlayerState extends State<SMPlayer> {
 
       var media2 = Media(
         id: 2,
+        albumTitle: "Album",
         albumId: 1,
         name: "Track 2",
         url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",

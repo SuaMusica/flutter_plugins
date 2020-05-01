@@ -22,6 +22,7 @@ void main() {
 
   final media1 = Media(
       id: 1,
+      albumTitle: "Album",
       albumId: 2,
       name: "O Bebe",
       url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
@@ -35,6 +36,7 @@ void main() {
 
   final media2 = Media(
       id: 2,
+      albumTitle: "Album",
       albumId: 2,
       ownerId: 2,
       name: "Solteiro Largado",
@@ -49,6 +51,7 @@ void main() {
 
   final media3 = Media(
       id: 3,
+      albumTitle: "Album",
       ownerId: 2,
       albumId: 2,
       name: "Borrachinha",
