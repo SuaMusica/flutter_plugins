@@ -32,6 +32,7 @@ static int const STATE_SEEK_END = 7;
 static int const STATE_BUFFER_EMPTY = 8;
 
 static int Ok = 1;
+static int NotOk = -1;
 
 static int const PLAYER_ERROR_FAILED = 0;
 static int const PLAYER_ERROR_UNKNOWN = 1;
@@ -167,6 +168,7 @@ BOOL lastRespectSilence;
 
 -(void)configureRemoteCommandCenter {
     NSLog(@"Player: MPRemote: Enabling Remote Command Center...");
+    [[UIApplication sharedApplication] endReceivingRemoteControlEvents];
     [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
     MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
 
@@ -275,7 +277,7 @@ BOOL lastRespectSilence;
     NSMutableDictionary * playerInfo = players[playerId];
     [playerInfo setObject:@false forKey:@"isPlaying"];
     NSError *error;
-    [[AVAudioSession sharedInstance] setActive:NO withOptions:AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation error:&error];
+    [[AVAudioSession sharedInstance] setActive:NO error:&error];
     [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = NULL;
     [[UIApplication sharedApplication] endReceivingRemoteControlEvents];
     MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
@@ -1126,6 +1128,24 @@ BOOL lastRespectSilence;
     return Ok;
 }
 
+-(int) configureAudioSession: (NSString *) playerId
+{
+    NSError *error = nil;
+    BOOL success = [[AVAudioSession sharedInstance]
+          setCategory: AVAudioSessionCategoryPlayback
+          error:&error];
+      
+    NSLog(@"Player: AVAudioSession setCategory error: %@", error);
+    if (!success) {
+      NSLog(@"Player: Error setting speaker: %@", error);
+      return NotOk;
+    }
+    [[AVAudioSession sharedInstance] setActive:YES error:&error];
+    NSLog(@"Player: AVAudioSession setActive error: %@", [error localizedDescription]);
+    
+    return Ok;
+}
+
 -(int) play: (NSString*) playerId
         name: (NSString*) name
       author: (NSString*) author
@@ -1162,25 +1182,15 @@ BOOL lastRespectSilence;
   
   NSLog(@"Player: Volume: %f", volume);
     
-//  [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
   [self configureRemoteCommandCenter];
   
   NSError *error = nil;
-  BOOL success = [[AVAudioSession sharedInstance]
-        setCategory: AVAudioSessionCategoryPlayback
-        error:&error];
-    
-  NSLog(@"Player: AVAudioSession setCategory error: %@", error);
-  if (!success) {
-    NSLog(@"Player: Error setting speaker: %@", error);
+  if ([self configureAudioSession:playerId] != Ok) {
     [self stop:playerId];
     [[AVAudioSession sharedInstance] setActive:NO error:&error];
     [self disposePlayer];
     NSLog(@"Player: Trying restart music after duck");
     return [self setUrl:latestUrl isLocal:latestIsLocal cookie:latestCookie playerId:latestPlayerId onReady:latestOnReady];
-  } else {
-    [[AVAudioSession sharedInstance] setActive:YES error:&error];
-    NSLog(@"Player: AVAudioSession setActive error: %@", [error localizedDescription]);
   }
   
   if (name == nil) {
@@ -1392,6 +1402,10 @@ BOOL lastRespectSilence;
   }
     
   NSLog(@"Player: resume");
+
+  [self configureRemoteCommandCenter];
+  [self configureAudioSession:playerId];
+    
   NSMutableDictionary * playerInfo = players[playerId];
   AVPlayer *player = playerInfo[@"player"];
   [player play];
@@ -1446,8 +1460,6 @@ BOOL lastRespectSilence;
 
 -(void) onSoundComplete: (NSString *) playerId {
   NSLog(@"Player: ios -> onSoundComplete...");
-  NSLog(@"Player: ios -> Disabling Remote Command Center");
-
   [ _channel_player invokeMethod:@"audio.onComplete" arguments:@{@"playerId": playerId}];
 }
 
