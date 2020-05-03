@@ -24,8 +24,8 @@ extension String {
 @objc public class CoverCenter : NSObject {
     private static let defaultCover = "https://images.suamusica.com.br/gaMy5pP78bm6VZhPZCs4vw0TdEw=/500x500/imgs/cd_cover.png"
     
-    @objc static public func get(item: PlaylistItem) -> MPMediaItemArtwork? {
-        return getCover(url: item.coverUrl ?? defaultCover)
+    @objc static public func get(item: PlaylistItem?) -> MPMediaItemArtwork? {
+        return getCover(url: item?.coverUrl ?? defaultCover)
     }
     
     static private func getCover(url: String) -> MPMediaItemArtwork? {

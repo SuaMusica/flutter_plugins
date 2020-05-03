@@ -129,6 +129,7 @@ PlaylistItem *currentItem = nil;
       playersCurrentItem = [[NSMutableDictionary alloc] init];
       [self configureRemoteCommandCenter];
       [self configureReachabilityCheck];
+      [ScreenCenter addNotificationObservers];
   }
   return self;
 }
@@ -178,7 +179,11 @@ PlaylistItem *currentItem = nil;
 
 -(void)configureRemoteCommandCenter {
     NSLog(@"Player: MPRemote: Enabling Remote Command Center...");
-    [[UIApplication sharedApplication] endReceivingRemoteControlEvents];
+    if ([ScreenCenter isUnlocked]) {
+        NSLog(@"Player: Ending Remote Controel Events");
+        [[UIApplication sharedApplication] endReceivingRemoteControlEvents];
+    }
+    NSLog(@"Player: Starting Remote Controel Events");
     [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
     MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
 
@@ -955,14 +960,8 @@ PlaylistItem *currentItem = nil;
     }
     notifiedBufferEmptyWithNoConnection = false;
     stopTryingToReconnect = false;
-      
-    dispatch_async(dispatch_get_main_queue(), ^{
-      [NowPlayingCenter setWithItem:currentItem index:0 count:1];
-      MPMediaItemArtwork* art = [CoverCenter getWithItem:currentItem];
-      if (art != nil) {
-          [NowPlayingCenter updateWithArt:art];
-      }
-    });
+    
+    [NowPlayingCenter setWithItem:currentItem];
       
     return Ok;
   }
@@ -1316,6 +1315,9 @@ PlaylistItem *currentItem = nil;
   [playerInfo setObject:@true forKey:@"isPlaying"];
   int state = STATE_PLAYING;
   [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": playerId, @"state": @(state)}];
+
+  [NowPlayingCenter setWithItem:currentItem];
+
   return Ok;
 }
 

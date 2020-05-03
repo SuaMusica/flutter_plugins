@@ -20,9 +20,9 @@ import MediaPlayer
             }
         } else {
             do {
-                /*if #available(iOS 12, *) {
+                if #available(iOS 12, *) {
                     try audioSession.setCategory(.playback, mode: .default, policy: .longFormAudio)
-                } else */ if #available(iOS 11, *) {
+                } else if #available(iOS 11, *) {
                     let audioSessionCategory: AVAudioSession.CategoryOptions = [.allowBluetooth, .interruptSpokenAudioAndMixWithOthers, .allowAirPlay, .allowBluetoothA2DP]
                     try audioSession.setCategory(.playback, mode: .default, options: audioSessionCategory)
                 } else if #available(iOS 10, *) {
