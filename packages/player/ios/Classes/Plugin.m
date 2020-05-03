@@ -561,7 +561,7 @@ PlaylistItem *currentItem = nil;
     } else {
         // Fallback on earlier versions
     }
-  player.allowsExternalPlayback = TRUE;
+  player.allowsExternalPlayback = FALSE;
   NSMutableSet *observers = [[NSMutableSet alloc] init];
   
   [ playerInfo setObject:player forKey:@"player" ];
