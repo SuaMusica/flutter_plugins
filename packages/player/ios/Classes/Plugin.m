@@ -1,3 +1,12 @@
+#if __has_include(<smplayer/smplayer-Swift.h>)
+#import <smplayer/smplayer-Swift.h>
+#else
+// Support project import fallback if the generated compatibility header
+// is not copied when this plugin is created as a library.
+// https://forums.swift.org/t/swift-static-libraries-dont-copy-generated-objective-c-header/19816
+#import "smplayer-Swift.h"
+#endif
+
 #import "Plugin.h"
 #import "NSString+MD5.h"
 
@@ -95,6 +104,7 @@ float lastVolume = 1.0;
 CMTime lastTime;
 BOOL lastRespectSilence;
 
+PlaylistItem *currentItem = nil;
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
   @synchronized(self) {
@@ -126,13 +136,13 @@ BOOL lastRespectSilence;
 -(void)configureReachabilityCheck {
     [[AFNetworkReachabilityManager sharedManager] setReachabilityStatusChangeBlock:^(AFNetworkReachabilityStatus status) {
         NSLog(@"Reachability: %@", AFStringFromNetworkReachabilityStatus(status));
-        
+
         if (_playerId == nil || players == nil) {
             return;
         }
-        
+
         NSString *networkStatus = @"CONNECTED";
-                  
+
         switch (status) {
             case AFNetworkReachabilityStatusUnknown:
             case AFNetworkReachabilityStatusNotReachable:
@@ -159,7 +169,7 @@ BOOL lastRespectSilence;
                 }
                 break;
         }
-        
+
         [_channel_player invokeMethod:@"network.onChange" arguments:@{@"playerId": _playerId, @"status": networkStatus}];
     }];
 
@@ -277,7 +287,7 @@ BOOL lastRespectSilence;
     NSMutableDictionary * playerInfo = players[playerId];
     [playerInfo setObject:@false forKey:@"isPlaying"];
     NSError *error;
-    [[AVAudioSession sharedInstance] setActive:NO error:&error];
+    [AudioSessionManager inactivateSession];
     [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = NULL;
     [[UIApplication sharedApplication] endReceivingRemoteControlEvents];
     MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
@@ -380,18 +390,18 @@ BOOL lastRespectSilence;
                     int milliseconds = call.arguments[@"position"] == [NSNull null] ? 0.0 : [call.arguments[@"position"] intValue] ;
                     bool respectSilence = [call.arguments[@"respectSilence"]boolValue] ;
                     CMTime time = CMTimeMakeWithSeconds(milliseconds / 1000,NSEC_PER_SEC);
-//                    NSLog(@"cookie: %@", cookie);
-//                    NSLog(@"isLocal: %d %@", isLocal, call.arguments[@"isLocal"] );
-//                    NSLog(@"volume: %f %@", volume, call.arguments[@"volume"] );
-//                    NSLog(@"position: %d %@", milliseconds, call.arguments[@"positions"] );
-                      lastName = name;
-                      lastAuthor = author;
-                      lastUrl = url;
-                      lastCoverUrl = coverUrl;
-                      lastCookie = cookie;
-                      lastVolume = volume;
-                      lastTime = time;
-                      lastRespectSilence = respectSilence;
+                      
+                    currentItem = [[PlaylistItem alloc] initWithTitle:name artist:author url:url coverUrl:coverUrl];
+                      
+                    lastName = name;
+                    lastAuthor = author;
+                    lastUrl = url;
+                    lastCoverUrl = coverUrl;
+                    lastCookie = cookie;
+                    lastVolume = volume;
+                    lastTime = time;
+                    lastRespectSilence = respectSilence;
+
                     int ret = [self play:playerId name:name author:author url:url coverUrl:coverUrl cookie:cookie isLocal:isLocal volume:volume time:time isNotification:respectSilence];
                     result(@(ret));
                   },
@@ -563,7 +573,7 @@ BOOL lastRespectSilence;
     [self onTimeInterval:playerId time:time];
   }];
   [timeobservers addObject:@{@"player":player, @"observer":timeObserver}];
-  
+      
   id avrouteobserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVAudioSessionRouteChangeNotification
       object: nil
       queue: NSOperationQueue.mainQueue
@@ -597,7 +607,6 @@ BOOL lastRespectSilence;
     NSLog(@"Player: AVAudioSessionMediaServicesWereResetNotification received. UserInfo: %@", dict);
     NSLog(@"Player: Player Error: %lu", (unsigned long)[player hash]);
     [self disposePlayer];
-    
     [self setUrl:latestUrl isLocal:latestIsLocal cookie:latestCookie playerId:latestPlayerId onReady:latestOnReady];
   }];
 
@@ -946,6 +955,15 @@ BOOL lastRespectSilence;
     }
     notifiedBufferEmptyWithNoConnection = false;
     stopTryingToReconnect = false;
+      
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [NowPlayingCenter setWithItem:currentItem index:0 count:1];
+      MPMediaItemArtwork* art = [CoverCenter getWithItem:currentItem];
+      if (art != nil) {
+          [NowPlayingCenter updateWithArt:art];
+      }
+    });
+      
     return Ok;
   }
 
@@ -1130,20 +1148,7 @@ BOOL lastRespectSilence;
 
 -(int) configureAudioSession: (NSString *) playerId
 {
-    NSError *error = nil;
-    BOOL success = [[AVAudioSession sharedInstance]
-          setCategory: AVAudioSessionCategoryPlayback
-          error:&error];
-      
-    NSLog(@"Player: AVAudioSession setCategory error: %@", error);
-    if (!success) {
-      NSLog(@"Player: Error setting speaker: %@", error);
-      return NotOk;
-    }
-    [[AVAudioSession sharedInstance] setActive:YES error:&error];
-    NSLog(@"Player: AVAudioSession setActive error: %@", [error localizedDescription]);
-    
-    return Ok;
+    return [AudioSessionManager activeSession] ? Ok : NotOk;
 }
 
 -(int) play: (NSString*) playerId
@@ -1183,14 +1188,9 @@ BOOL lastRespectSilence;
   NSLog(@"Player: Volume: %f", volume);
     
   [self configureRemoteCommandCenter];
-  
-  NSError *error = nil;
   if ([self configureAudioSession:playerId] != Ok) {
-    [self stop:playerId];
-    [[AVAudioSession sharedInstance] setActive:NO error:&error];
-    [self disposePlayer];
-    NSLog(@"Player: Trying restart music after duck");
-    return [self setUrl:latestUrl isLocal:latestIsLocal cookie:latestCookie playerId:latestPlayerId onReady:latestOnReady];
+      [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": _playerId, @"errorType": @(PLAYER_ERROR_FAILED)}];
+      return NotOk;
   }
   
   if (name == nil) {
@@ -1276,111 +1276,15 @@ BOOL lastRespectSilence;
         [_channel_player invokeMethod:@"audio.onCurrentPosition" arguments:@{@"playerId": playerId, @"position": @(positionInMillis), @"duration": @(durationInMillis)}];
         
         dispatch_async(dispatch_get_global_queue(0,0), ^{
-            NSError *error = nil;
-            NSData * data = [self getAlbumCover:coverUrl];
-            if (error != nil) {
-                NSLog(@"Cover: Failed to get cover %@", error);
-            }
             dispatch_async(dispatch_get_main_queue(), ^{
-                MPMediaItemArtwork* art = nil;
-                if (data != nil) {
-                  UIImage* image = [UIImage imageWithData: data];
-                  if (@available(iOS 10.0, *)) {
-                    art = [[MPMediaItemArtwork alloc] initWithBoundsSize:image.size requestHandler:^UIImage * _Nonnull(CGSize size) {
-                        return image;
-                    }];
-                  } else {
-                      art = [[MPMediaItemArtwork alloc] initWithImage: image];
-                  }
-                  image = nil;
-                }
-                NSMutableDictionary *nowPlayingInfo = [[NSMutableDictionary alloc] initWithDictionary:@{
-                   MPMediaItemPropertyMediaType: [NSNumber numberWithInt:1], // Audio
-                   MPMediaItemPropertyTitle: name,
-                   MPMediaItemPropertyAlbumTitle: name,
-                   MPMediaItemPropertyArtist: author,
-                   MPMediaItemPropertyPlaybackDuration: [NSNumber numberWithInt:_duration],
-                   MPNowPlayingInfoPropertyElapsedPlaybackTime: [NSNumber numberWithInt:position]
-                }];
-                if (art != nil) {
-                    [nowPlayingInfo setValue:art forKey:MPMediaItemPropertyArtwork];
-                    art = nil;
-                }
-                [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = nowPlayingInfo;
+                [NowPlayingCenter updateWithRate:1.0 position:position duration:_duration];
             });
-            data = nil;
         });
         
         playerInfo = nil;
         player = nil;
     } else {
         NSLog(@"Player: onTimeInterval skipped... reason: seeking");
-    }
-}
-
--(void) saveAlbumCoverToCache:(NSString *)coverUrl withData:(NSData *) data{
-    // Use GCD's background queue
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
-        // Generate the file path
-        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
-        NSString *documentsDirectory = [paths objectAtIndex:0];
-        NSString *dataPath = [documentsDirectory stringByAppendingPathComponent:[coverUrl MD5]];
-//        NSLog(@"Cover: Saving Cover Album to %@ local cache", dataPath);
-         // Save it into file system
-        [data writeToFile:dataPath atomically:YES];
-    });
-}
-
--(NSData *) getAlbumCover:(NSString *)coverUrl {
-    if (coverUrl == nil || ![coverUrl hasPrefix:@"http"]) {
-        coverUrl = DEFAULT_COVER;
-    }
-//    NSLog(@"Cover: Get Album Cover %@", coverUrl);
-    NSData *data = [self getAlbumCoverFromCache:coverUrl];
-    if (data == nil) {
-        data = [self getAlbumCoverFromWeb:coverUrl];
-        if ( data == nil) {
-            return nil;
-        } else {
-            [self saveAlbumCoverToCache:coverUrl withData:data];
-            return data;
-        }
-    } else {
-        return data;
-    }
-}
-
--(NSData *) getAlbumCoverFromCache:(NSString *) coverUrl {
-//    NSLog(@"Cover: Get Album Cover %@ from Cache", coverUrl);
-    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
-    NSString *documentsDirectory = [paths objectAtIndex:0];
-    NSString *dataPath = [documentsDirectory stringByAppendingPathComponent:[coverUrl MD5]];
-//    NSLog(@"Looking for %@", dataPath);
-    NSError *error;
-    NSData *data = [NSData dataWithContentsOfFile:dataPath
-            options:NSDataReadingMapped
-            error:&error];
-    if (error != nil) {
-//        NSLog(@"Cover: Not found in cache");
-        return nil;
-    } else {
-//        NSLog(@"Cover: Found it in cache");
-        return data;
-    }
-}
--(NSData *) getAlbumCoverFromWeb:(NSString*) coverUrl {
-//    NSLog(@"Cover: Get Album Cover %@ from Web", coverUrl);
-    NSError *error = nil;
-//    NSLog(@"Cover: Getting Cover %@", coverUrl);
-    NSData *data = [[NSData alloc] initWithContentsOfURL: [NSURL URLWithString: coverUrl]
-                                                  options:NSDataReadingMappedIfSafe
-                                                    error:&error];
-    if(error == nil){
-//        NSLog(@"Cover: Found it on the Web");
-        return data;
-    } else {
-//        NSLog(@"Cover: Error: %@, not found on the web",[error localizedDescription]);
-        return nil;
     }
 }
 
