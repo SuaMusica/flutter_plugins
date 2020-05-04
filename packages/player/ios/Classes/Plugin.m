@@ -179,10 +179,14 @@ PlaylistItem *currentItem = nil;
 
 -(void)configureRemoteCommandCenter {
     NSLog(@"Player: MPRemote: Enabling Remote Command Center...");
-    if ([ScreenCenter isUnlocked]) {
-        NSLog(@"Player: Ending Remote Controel Events");
-        [[UIApplication sharedApplication] endReceivingRemoteControlEvents];
-    }
+    // TODO: Review this
+    // For now I will keep it disabled
+    //if ([ScreenCenter isUnlocked] && false) {
+    //    NSLog(@"Player: Ending Remote Controel Events");
+    //    [[UIApplication sharedApplication] endReceivingRemoteControlEvents];
+    //
+    
+}
     NSLog(@"Player: Starting Remote Controel Events");
     [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
     MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
