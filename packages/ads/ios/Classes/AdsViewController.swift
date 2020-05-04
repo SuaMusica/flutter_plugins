@@ -426,8 +426,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             code = "VAST_TRAFFICKING_ERROR"
         case IMAErrorCode.VAST_LOAD_TIMEOUT:
             code = "VAST_LOAD_TIMEOUT"
-        case IMAErrorCode.VAST_TOO_MANY_REDIRECTS:
-            code = "VAST_TOO_MANY_REDIRECTS"
         case IMAErrorCode.VAST_INVALID_URL:
             code = "VAST_INVALID_URL"
         case IMAErrorCode.VIDEO_PLAY_ERROR:
@@ -460,8 +458,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             code = "INVALID_ARGUMENTS"
         case IMAErrorCode.API_ERROR:
             code = "API_ERROR"
-        case IMAErrorCode.IOS_RUNTIME_TOO_OLD:
-            code = "IOS_RUNTIME_TOO_OLD"
         case IMAErrorCode.VIDEO_ELEMENT_USED:
             code = "VIDEO_ELEMENT_USED"
         case IMAErrorCode.VIDEO_ELEMENT_REQUIRED:
