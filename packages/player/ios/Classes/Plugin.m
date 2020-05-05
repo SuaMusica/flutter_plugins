@@ -185,8 +185,7 @@ PlaylistItem *currentItem = nil;
     //    NSLog(@"Player: Ending Remote Controel Events");
     //    [[UIApplication sharedApplication] endReceivingRemoteControlEvents];
     //
-    
-}
+    //}
     NSLog(@"Player: Starting Remote Controel Events");
     [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
     MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
