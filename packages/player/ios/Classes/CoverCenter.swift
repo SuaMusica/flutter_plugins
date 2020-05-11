@@ -25,17 +25,17 @@ extension String {
     private static let defaultCover = "https://images.suamusica.com.br/gaMy5pP78bm6VZhPZCs4vw0TdEw=/500x500/imgs/cd_cover.png"
     
     @objc static public func get(item: PlaylistItem?) -> MPMediaItemArtwork? {
-        return getCover(url: item?.coverUrl ?? defaultCover)
+        return getCover(item: item, url: item?.coverUrl ?? defaultCover)
     }
     
-    static private func getCover(url: String) -> MPMediaItemArtwork? {
-        var data = getCoverFromCache(url: url)
+    static private func getCover(item: PlaylistItem?, url: String) -> MPMediaItemArtwork? {
+        var data = getCoverFromCache(item: item, url: url)
         if (data == nil) {
             data = getCoverFromWeb(url: url)
             if data == nil {
                 return nil
             } else {
-                saveToLocalCache(url: url, data: data!)
+                saveToLocalCache(item: item, url: url, data: data!)
             }
         }
         
@@ -51,8 +51,8 @@ extension String {
         return art
     }
     
-    static private func getCoverFromCache(url: String) -> NSData? {
-        let coverPath = getCoverPath(url)
+    static private func getCoverFromCache(item: PlaylistItem?, url: String) -> NSData? {
+        let coverPath = getCoverPath(item: item, url: url)
         do {
             let data = try NSData.init(contentsOfFile: coverPath, options: NSData.ReadingOptions.mappedRead)
             print("Player: Cover: Got cover from cache!")
@@ -73,17 +73,17 @@ extension String {
         }
     }
     
-    static private func saveToLocalCache(url: String, data: NSData) {
+    static private func saveToLocalCache(item: PlaylistItem?, url: String, data: NSData) {
         DispatchQueue.global().async {
             do {
-                try data.write(toFile: getCoverPath(url), options: NSData.WritingOptions.atomic)
+                try data.write(toFile: getCoverPath(item: item, url: url), options: NSData.WritingOptions.atomic)
             } catch let error as NSError {
                 print("Player: Cover: Failed to save to local cache: \(error.localizedDescription)")
             }
         }
     }
     
-    static private func getCoverPath(_ url: String) -> String {
+    static private func getCoverPath(item: PlaylistItem?, url: String) -> String {
         let paths = NSSearchPathForDirectoriesInDomains(FileManager.SearchPathDirectory.cachesDirectory, FileManager.SearchPathDomainMask.userDomainMask, true)
         let documentDirectory = paths[0]
         if !FileManager.default.fileExists(atPath: documentDirectory) {
@@ -93,7 +93,10 @@ extension String {
                 print("Player: Cover: Failed to create directory \(error.localizedDescription)");
             }
         }
-        let coverPath = "\(documentDirectory)/\(url.md5())"
+        let albumId = item?.albumId ?? "0"
+        let index = url.lastIndex(of: ".")
+        let fileExt = url.suffix(from: index!)
+        let coverPath = "\(documentDirectory)/\(albumId)\(fileExt)"
         return coverPath
     }
 }

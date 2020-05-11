@@ -369,11 +369,14 @@ PlaylistItem *currentItem = nil;
                 @"play":
                   ^{
                     NSLog(@"Player: play!");
+                    NSString *albumId = call.arguments[@"albumId"];
                     NSString *name = call.arguments[@"name"];
                     NSString *author = call.arguments[@"author"];
                     NSString *url = call.arguments[@"url"];
                     NSString *coverUrl = call.arguments[@"coverUrl"];
                     NSString *cookie = call.arguments[@"cookie"];
+                    if (albumId == nil)
+                        result(0);
                     if (name == nil)
                         result(0);
                     if (author == nil)
@@ -399,7 +402,7 @@ PlaylistItem *currentItem = nil;
                     bool respectSilence = [call.arguments[@"respectSilence"]boolValue] ;
                     CMTime time = CMTimeMakeWithSeconds(milliseconds / 1000,NSEC_PER_SEC);
                       
-                    currentItem = [[PlaylistItem alloc] initWithTitle:name artist:author url:url coverUrl:coverUrl];
+                    currentItem = [[PlaylistItem alloc] initWithAlbumId:albumId title:name artist:author url:url coverUrl:coverUrl];
                       
                     lastName = name;
                     lastAuthor = author;
