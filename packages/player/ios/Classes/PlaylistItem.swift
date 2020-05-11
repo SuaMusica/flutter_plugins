@@ -3,6 +3,8 @@ import AVFoundation
 @objc public class PlaylistItem : NSObject {
     @objc public let error: Error?
     
+    @objc public let albumId: String
+    
     @objc public let title: String
     
     @objc public let artist: String
@@ -13,7 +15,8 @@ import AVFoundation
     
     @objc public let duration: CMTime
     
-    @objc public init(title: String, artist: String, url: String, coverUrl: String) {
+    @objc public init(albumId: String, title: String, artist: String, url: String, coverUrl: String) {
+        self.albumId = albumId
         self.title = title
         self.artist = artist
         self.url = url
