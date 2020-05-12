@@ -81,6 +81,7 @@ BOOL isLoadingComplete = false;
 AVAssetResourceLoadingRequest* currentResourceLoadingRequest = nil;
 AVAssetResourceLoader* currentResourceLoader = nil;
 dispatch_queue_t serialQueue = nil;
+dispatch_queue_t playerQueue = nil;
 
 NSString* latestUrl = nil;
 bool latestIsLocal = NO;
@@ -125,6 +126,7 @@ PlaylistItem *currentItem = nil;
   self = [super init];
   if (self) {
       serialQueue = dispatch_queue_create("com.suamusica.player.queue", DISPATCH_QUEUE_SERIAL);
+      playerQueue = dispatch_queue_create("com.suamusica.player.playerQueue", DISPATCH_QUEUE_SERIAL);
       players = [[NSMutableDictionary alloc] init];
       playersCurrentItem = [[NSMutableDictionary alloc] init];
       [self configureRemoteCommandCenter];
@@ -413,8 +415,13 @@ PlaylistItem *currentItem = nil;
                     lastTime = time;
                     lastRespectSilence = respectSilence;
 
-                    int ret = [self play:playerId name:name author:author url:url coverUrl:coverUrl cookie:cookie isLocal:isLocal volume:volume time:time isNotification:respectSilence];
-                    result(@(ret));
+                      dispatch_async (playerQueue,  ^{
+                          [self play:playerId name:name author:author url:url coverUrl:coverUrl cookie:cookie isLocal:isLocal volume:volume time:time isNotification:respectSilence];
+                      });
+
+//                    int ret = [self play:playerId name:name author:author url:url coverUrl:coverUrl cookie:cookie isLocal:isLocal volume:volume time:time isNotification:respectSilence];
+//                    result(@(ret));
+                      result(@(Ok));
                   },
                 @"pause":
                   ^{
@@ -868,7 +875,7 @@ PlaylistItem *currentItem = nil;
   NSMutableDictionary * playerInfo = players[playerId];
   AVPlayer *player = playerInfo[@"player"];
   
-  AVPlayerItem *playerItem;
+  __block AVPlayerItem *playerItem;
 
   @try {
     if (!playerInfo || ![url isEqualToString:playerInfo[@"url"]]) {
@@ -916,58 +923,81 @@ PlaylistItem *currentItem = nil;
         currentResourceLoader = [asset resourceLoader];
         [[asset resourceLoader] setDelegate:(id)self queue:serialQueue];
 
-        playerItem = [AVPlayerItem playerItemWithAsset:asset];
+        NSArray *keys = @[@"playable"];
+        [asset loadValuesAsynchronouslyForKeys:keys completionHandler:^() {
+            NSError *error = nil;
+            AVKeyValueStatus status = [asset statusOfValueForKey:@"playable" error:&error];
+            switch (status) {
+                case AVKeyValueStatusLoaded:
+                    playerItem = [AVPlayerItem playerItemWithAsset:asset];
+                    break;
+                
+                case AVKeyValueStatusUnknown:
+                case AVKeyValueStatusFailed:
+                case AVKeyValueStatusCancelled:
+                    playerItem = nil;
+                    break;
+                    
+                default:
+                    break;
+            }
+            
+            if (playerItem == nil) {
+                [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_FAILED)}];
+            }
+            
+            if (playerInfo[@"url"]) {
+                NSLog(@"Player: Replacing item");
+                @autoreleasepool {
+                  [self observePlayerItem:playerItem playerId:playerId];
+                  [ player replaceCurrentItemWithPlayerItem: playerItem ];
+                  @try {
+                      [ player replaceCurrentItemWithPlayerItem: playerItem ];
+                  } @catch (NSException * __unused exception) {
+                        NSLog(@"Player: failed to replaceCurrentItemWithPlayerItem %@", exception);
+                  }
+                }
+              } else {
+                NSLog(@"Player: Initing AVPPlayer");
+                [self observePlayerItem:playerItem playerId:playerId];
+                [self initAVPlayer:playerId playerItem:playerItem url:url onReady: onReady];
+              }
+              NSLog(@"Player: Resuming");
+              [self resume:playerId];
+              int state = STATE_BUFFERING;
+              [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": playerId, @"state": @(state)}];
+              [ playerInfo setObject:@false forKey:@"isPlaying" ];
+              [ playerInfo setObject:url forKey:@"url" ];
+                
+              notifiedBufferEmptyWithNoConnection = false;
+              stopTryingToReconnect = false;
+            
+              [NowPlayingCenter setWithItem:currentItem];
+        }];
       }
-
-      if (playerInfo[@"url"]) {
-        NSLog(@"Player: Replacing item");
-        @autoreleasepool {
-          [self observePlayerItem:playerItem playerId:playerId];
-          [ player replaceCurrentItemWithPlayerItem: playerItem ];
-          @try {
-              [ player replaceCurrentItemWithPlayerItem: playerItem ];
-          } @catch (NSException * __unused exception) {
-                NSLog(@"Player: failed to replaceCurrentItemWithPlayerItem %@", exception);
-          }
-        }
-      } else {
-        NSLog(@"Player: Initing AVPPlayer");
-        [self observePlayerItem:playerItem playerId:playerId];
-        [self initAVPlayer:playerId playerItem:playerItem url:url onReady: onReady];
-      }
-      NSLog(@"Player: Resuming");
-      [self resume:playerId];
-      int state = STATE_BUFFERING;
-      [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": playerId, @"state": @(state)}];
-      [ playerInfo setObject:@false forKey:@"isPlaying" ];
-      [ playerInfo setObject:url forKey:@"url" ];
     } else {
-      NSLog(@"Player: player or item is nil player: [%@] item: [%@]", player, [player currentItem]);
-      if (player == nil && [player currentItem] == nil) {
-        NSLog(@"Player: player status: %ld",(long)[[player currentItem] status ]);
-        
-        [self initAVPlayer:playerId playerItem:playerItem url:url onReady: onReady];
-        [self observePlayerItem:playerItem playerId:playerId];
-      } else if ([[player currentItem] status ] == AVPlayerItemStatusReadyToPlay) {
-        NSLog(@"Player: item ready to play");
-        [self observePlayerItem:[player currentItem] playerId:playerId];
-        [ playerInfo setObject:@true forKey:@"isPlaying" ];
-        int state = STATE_PLAYING;
-        [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
-        onReady(playerId);
-      } else if ([[player currentItem] status ] == AVPlayerItemStatusFailed) {
-        NSLog(@"Player: FAILED STATUS. Notifying app that an error happened.");
-        [self disposePlayerItem:[player currentItem]];
-        [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_FAILED)}];
-      } else {
-        NSLog(@"Player: player status: %ld",(long)[[player currentItem] status ]);
-        NSLog(@"Player: If status 0 wait player reload alone.");
-      }
+          NSLog(@"Player: player or item is nil player: [%@] item: [%@]", player, [player currentItem]);
+          if (player == nil && [player currentItem] == nil) {
+            NSLog(@"Player: player status: %ld",(long)[[player currentItem] status ]);
+            
+            [self initAVPlayer:playerId playerItem:playerItem url:url onReady: onReady];
+            [self observePlayerItem:playerItem playerId:playerId];
+          } else if ([[player currentItem] status ] == AVPlayerItemStatusReadyToPlay) {
+            NSLog(@"Player: item ready to play");
+            [self observePlayerItem:[player currentItem] playerId:playerId];
+            [ playerInfo setObject:@true forKey:@"isPlaying" ];
+            int state = STATE_PLAYING;
+            [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
+            onReady(playerId);
+          } else if ([[player currentItem] status ] == AVPlayerItemStatusFailed) {
+            NSLog(@"Player: FAILED STATUS. Notifying app that an error happened.");
+            [self disposePlayerItem:[player currentItem]];
+            [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_FAILED)}];
+          } else {
+            NSLog(@"Player: player status: %ld",(long)[[player currentItem] status ]);
+            NSLog(@"Player: If status 0 wait player reload alone.");
+          }
     }
-    notifiedBufferEmptyWithNoConnection = false;
-    stopTryingToReconnect = false;
-    
-    [NowPlayingCenter setWithItem:currentItem];
       
     return Ok;
   }
@@ -1213,12 +1243,15 @@ PlaylistItem *currentItem = nil;
   NSLog(@"Player: [SET_CURRENT_ITEM LOG] playerId=%@ name=%@ author=%@ url=%@ coverUrl=%@", playerId, name, author, url, coverUrl);
   [self setCurrentItem:playerId name:name author:author url:url coverUrl:coverUrl];
 
-  return [self setUrl:url
-         isLocal:isLocal
-         cookie:cookie
-         playerId:playerId
-         onReady:latestOnReady
-  ];
+
+  [self setUrl:url
+      isLocal:isLocal
+      cookie:cookie
+      playerId:playerId
+      onReady:latestOnReady];
+    
+  return Ok;
+  
 }
 
 -(void) updateDuration: (NSString *) playerId
@@ -1507,6 +1540,7 @@ PlaylistItem *currentItem = nil;
   currentResourceLoadingRequest = nil;
   currentResourceLoader = nil;
   serialQueue = nil;
+  playerQueue = nil;
   timeobservers = nil;
   alreadyInAudioSession = false;
   isLoadingComplete = false;
