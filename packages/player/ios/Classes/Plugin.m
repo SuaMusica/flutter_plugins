@@ -1366,7 +1366,7 @@ isNotification: (bool) respectSilence
     return Ok;
 }
 
--(int) doPause:(NSString *) playerId {
+-(void) doPause:(NSString *) playerId {
     NSMutableDictionary * playerInfo = players[playerId];
     AVPlayer *player = playerInfo[@"player"];
     
