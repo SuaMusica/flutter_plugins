@@ -115,9 +115,16 @@ PlaylistItem *currentItem = nil;
                                              methodChannelWithName:CHANNEL_NAME
                                              binaryMessenger:[registrar messenger]];
             [registrar addMethodCallDelegate:instance channel:channel];
+            [Plugin saveDefaultCover:registrar];
             _channel_player = channel;
         }
     }
+}
+
++(void) saveDefaultCover:(NSObject<FlutterPluginRegistrar>*)registrar {
+    NSString *defaultCoverAssetKey = [registrar lookupKeyForAsset:@"assets/cd_cover.png"];
+    NSString *defaultCoverPath = [[NSBundle mainBundle] pathForResource:defaultCoverAssetKey ofType:nil];
+    [CoverCenter saveDefaultCoverWithPath:defaultCoverPath];
 }
 
 - (id)init {
