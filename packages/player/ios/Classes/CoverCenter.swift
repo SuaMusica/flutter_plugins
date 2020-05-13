@@ -84,8 +84,9 @@ extension String {
     }
     
     static private func getCoverPath(item: PlaylistItem?, url: String) -> String {
-        let paths = NSSearchPathForDirectoriesInDomains(FileManager.SearchPathDirectory.cachesDirectory, FileManager.SearchPathDomainMask.userDomainMask, true)
-        let documentDirectory = paths[0]
+        let paths = NSSearchPathForDirectoriesInDomains(FileManager.SearchPathDirectory.documentDirectory, FileManager.SearchPathDomainMask.userDomainMask, true)
+        let albumName = cleanString(str: item?.albumName ?? "")
+        let documentDirectory = "\(paths[0])/Music/\(albumName)"
         if !FileManager.default.fileExists(atPath: documentDirectory) {
             do {
                 try FileManager.default.createDirectory(atPath: documentDirectory, withIntermediateDirectories: true, attributes: nil)
@@ -98,5 +99,15 @@ extension String {
         let fileExt = url.suffix(from: index!)
         let coverPath = "\(documentDirectory)/\(albumId)\(fileExt)"
         return coverPath
+    }
+    
+    static private func cleanString(str: String) -> String {
+        let regex = try! NSRegularExpression(pattern: "(?:|[^\\w\\sà-ÿÀ-Ÿ-_])+", options: NSRegularExpression.Options.caseInsensitive)
+        let range = NSMakeRange(0, str.count)
+        let tmp = str.replacingOccurrences(of: "&", with: "e", options: .literal, range: nil)
+        return regex.stringByReplacingMatches(in: tmp, options: [], range: range, withTemplate: "")
+        
+        
+        
     }
 }
