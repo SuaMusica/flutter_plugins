@@ -222,6 +222,7 @@ class Player {
 
       return invokePlay(media, {
         'albumId': media.albumId?.toString() ?? "0",
+        'albumTitle': media.albumTitle ?? "",
         'name': media.name,
         'author': media.author,
         'url': url,
@@ -237,6 +238,7 @@ class Player {
       _notifyBeforePlayEvent((loadOnly) {
         invokePlay(media, {
           'albumId': media.albumId.toString() ?? "0",
+          'albumTitle': media.albumTitle ?? "",
           'name': media.name,
           'author': media.author,
           'url': url,
