@@ -889,6 +889,10 @@ PlaylistItem *currentItem = nil;
     NSMutableDictionary * playerInfo = players[playerId];
     AVPlayer *player = playerInfo[@"player"];
     
+    if (player != nil && player.rate != 0) {
+        [self doPause:playerId];
+    }
+    
     __block AVPlayerItem *playerItem;
     
     @try {
@@ -1356,11 +1360,18 @@ isNotification: (bool) respectSilence
     NSMutableDictionary * playerInfo = players[playerId];
     AVPlayer *player = playerInfo[@"player"];
     
-    [ player pause ];
-    [playerInfo setObject:@false forKey:@"isPlaying"];
+    [self doPause:playerId];
     int state = STATE_PAUSED;
     [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": playerId, @"state": @(state)}];
     return Ok;
+}
+
+-(int) doPause:(NSString *) playerId {
+    NSMutableDictionary * playerInfo = players[playerId];
+    AVPlayer *player = playerInfo[@"player"];
+    
+    [ player pause ];
+    [playerInfo setObject:@false forKey:@"isPlaying"];
 }
 
 -(int) resume: (NSString *) playerId {
