@@ -34,6 +34,7 @@ public class MigrationPlugin private constructor(private val channel: MethodChan
     const val REQUEST_LOGGED_USER = "requestLoggedUser"
   
     const val Ok = 1
+    const val NotOk = 0
 
     @JvmStatic
     fun registerWith(registrar: Registrar) {
@@ -64,9 +65,9 @@ public class MigrationPlugin private constructor(private val channel: MethodChan
 
           channel.invokeMethod("downloadedContent", downloads)
           if (downloads.isEmpty()) {
-            response.success(0)
+            response.success(NotOk)
           } else {
-            response.success(1)
+            response.success(Ok)
           }
         } ?: run {
           response.error("DatabaseNotFound", "Banco de dados não encontrado.", null)
