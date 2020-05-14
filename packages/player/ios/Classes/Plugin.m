@@ -578,19 +578,31 @@ PlaylistItem *currentItem = nil;
     return url;
 }
 
+
+-(void) configurePlayer:(NSString *)playerId url:(NSString *)url {
+    NSMutableDictionary * playerInfo = players[playerId];
+    AVPlayer *player = playerInfo[@"player"];
+    if (@available(iOS 10.0, *)) {
+        if ([url rangeOfString: m3u8Ext].location != NSNotFound) {
+            player.automaticallyWaitsToMinimizeStalling = TRUE;
+        } else{
+            player.automaticallyWaitsToMinimizeStalling = FALSE;
+            [player playImmediatelyAtRate:0.01];
+        }
+    }
+    
+
+}
+
 -(void) initAVPlayer:(NSString *)playerId playerItem:(AVPlayerItem *)playerItem url:(NSString *)url onReady:(VoidCallback) onReady {
     NSMutableDictionary * playerInfo = players[_playerId];
     __block AVPlayer *player = nil;
     
     dispatch_async (playerQueue,  ^{
-        player = [[ AVPlayer alloc ] initWithPlayerItem: playerItem ];
-        if (@available(iOS 10.0, *)) {
-            player.automaticallyWaitsToMinimizeStalling = TRUE;
-        } else {
-            // Fallback on earlier versions
-        }
+        player = [[ AVPlayer alloc ] init];
+        [self configurePlayer: playerId url:url];
         player.allowsExternalPlayback = FALSE;
-        
+        [player replaceCurrentItemWithPlayerItem:playerItem];
         NSMutableSet *observers = [[NSMutableSet alloc] init];
         
         [ playerInfo setObject:player forKey:@"player" ];
@@ -888,7 +900,7 @@ PlaylistItem *currentItem = nil;
     
     NSMutableDictionary * playerInfo = players[playerId];
     AVPlayer *player = playerInfo[@"player"];
-    
+    [self configurePlayer: playerId url:url];
     if (player != nil && player.rate != 0) {
         [self doPause:playerId];
     }
@@ -1499,15 +1511,6 @@ isNotification: (bool) respectSilence
     } else if ([keyPath isEqualToString: @"playbackBufferEmpty"]) {
         NSMutableDictionary * playerInfo = players[_playerId];
         AVPlayer *player = playerInfo[@"player"];
-        
-#ifdef ENABLE_PLAYER_NETWORK_ERROR
-        if ([playerInfo[@"isPlaying"] boolValue] && !isConnected && !notifiedBufferEmptyWithNoConnection) {
-            // we decided to remote this
-            notifiedBufferEmptyWithNoConnection = true;
-            [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": _playerId, @"errorType": @(PLAYER_ERROR_NETWORK_ERROR)}];
-            [self pause:_playerId];
-        } else {
-#endif
             if (player.rate != 0) {
                 int state = isConnected ? STATE_BUFFER_EMPTY : STATE_BUFFERING;
                 [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
@@ -1515,9 +1518,6 @@ isNotification: (bool) respectSilence
                 int state = STATE_PAUSED;
                 [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
             }
-#ifdef ENABLE_PLAYER_NETWORK_ERROR
-        }
-#endif
     } else if ([keyPath isEqualToString: @"playbackLikelyToKeepUp"] || [keyPath isEqualToString: @"playbackBufferFull"]) {
         NSMutableDictionary * playerInfo = players[_playerId];
         AVPlayer *player = playerInfo[@"player"];
