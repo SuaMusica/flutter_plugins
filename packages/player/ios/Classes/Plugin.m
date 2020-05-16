@@ -601,7 +601,13 @@ PlaylistItem *currentItem = nil;
     dispatch_async (playerQueue,  ^{
         player = [[ AVPlayer alloc ] init];
         [self configurePlayer: playerId url:url];
-        player.allowsExternalPlayback = FALSE;
+        
+        if (@available(iOS 11.0, *)) {
+            player.allowsExternalPlayback = FALSE;
+        } else {
+            player.allowsExternalPlayback = TRUE;
+        }
+        
         [player replaceCurrentItemWithPlayerItem:playerItem];
         NSMutableSet *observers = [[NSMutableSet alloc] init];
         
