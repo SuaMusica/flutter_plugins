@@ -1,6 +1,8 @@
 import Foundation
 import MediaPlayer
 import CommonCrypto
+import SDWebImage
+import SDWebImageWebPCoder
 
 extension String {
     func md5() -> String {
@@ -22,13 +24,20 @@ extension String {
 }
 
 @objc public class CoverCenter : NSObject {
-    private static let defaultCover = "https://images.suamusica.com.br/gaMy5pP78bm6VZhPZCs4vw0TdEw=/500x500/imgs/cd_cover.png"
+    private let defaultCover = "https://images.suamusica.com.br/gaMy5pP78bm6VZhPZCs4vw0TdEw=/500x500/imgs/cd_cover.png"
     
-    @objc static public func get(item: PlaylistItem?) -> MPMediaItemArtwork? {
+    @objc public static let shared = CoverCenter()
+    
+    private override init() {
+        SDImageCodersManager.shared.addCoder(SDImageWebPCoder.shared)
+    }
+    
+    
+    @objc public func get(item: PlaylistItem?) -> MPMediaItemArtwork? {
         return getCover(item: item, url: item?.coverUrl ?? defaultCover)
     }
     
-    @objc static public func saveDefaultCover(path: String) {
+    @objc public func saveDefaultCover(path: String) {
         let fileName = getCoverPath(albumId: "0", url: path)
         if !FileManager.default.fileExists(atPath: fileName) {
             do {
@@ -40,7 +49,7 @@ extension String {
         }
     }
     
-    static private func getCover(item: PlaylistItem?, url: String) -> MPMediaItemArtwork? {
+    private func getCover(item: PlaylistItem?, url: String) -> MPMediaItemArtwork? {
         var data = getCoverFromCache(albumId: item?.albumId ?? "0", url: url)
         if (data == nil) {
             data = getCoverFromWeb(url: url)
@@ -51,6 +60,33 @@ extension String {
             }
         }
         
+        let image = self.toUIImage(data: Data.init(referencing: data!), url: url)
+        var art: MPMediaItemArtwork? = nil
+        if (image != nil) {
+            if #available(iOS 10.0, *) {
+                art = MPMediaItemArtwork.init(boundsSize: image!.size, requestHandler: { (size) -> UIImage in
+                    return image!
+                })
+            } else {
+                art = MPMediaItemArtwork.init(image: image!)
+            }
+        } else {
+            art = getDefaultCover()
+        }
+        return art
+    }
+    
+    private func toUIImage(data: Data, url: String) -> UIImage? {
+        let fileExt = self.fileExt(url: url)
+        if (fileExt.hasPrefix(".webp")) {
+            return SDImageWebPCoder.shared.decodedImage(with: data, options: nil)
+        } else {
+            return UIImage.init(data: data)
+        }
+    }
+    
+    private func getDefaultCover() -> MPMediaItemArtwork? {
+        let data = getCoverFromCache(albumId: "0", url: defaultCover)
         let image = UIImage.init(data: Data.init(referencing: data!))
         var art: MPMediaItemArtwork? = nil
         if #available(iOS 10.0, *) {
@@ -63,7 +99,7 @@ extension String {
         return art
     }
     
-    static private func getCoverFromCache(albumId: String, url: String) -> NSData? {
+    private func getCoverFromCache(albumId: String, url: String) -> NSData? {
         let coverPath = getCoverPath(albumId: albumId, url: url)
         do {
             let data = try NSData.init(contentsOfFile: coverPath, options: NSData.ReadingOptions.mappedRead)
@@ -75,7 +111,7 @@ extension String {
         }
     }
     
-    static private func getCoverFromWeb(url: String) -> NSData? {
+    private func getCoverFromWeb(url: String) -> NSData? {
         do {
             let data = try NSData.init(contentsOf: URL.init(string: url)!, options: Data.ReadingOptions.mappedIfSafe)
             return data
@@ -85,17 +121,17 @@ extension String {
         }
     }
     
-    static private func saveToLocalCache(item: PlaylistItem?, url: String, data: NSData) {
+    private func saveToLocalCache(item: PlaylistItem?, url: String, data: NSData) {
         DispatchQueue.global().async {
             do {
-                try data.write(toFile: getCoverPath(albumId: item?.albumId ?? "0", url: url), options: NSData.WritingOptions.atomic)
+                try data.write(toFile: self.getCoverPath(albumId: item?.albumId ?? "0", url: url), options: NSData.WritingOptions.atomic)
             } catch let error as NSError {
                 print("Player: Cover: Failed to save to local cache: \(error.localizedDescription)")
             }
         }
     }
     
-    static private func getCoverPath(albumId: String, url: String) -> String {
+    private func getCoverPath(albumId: String, url: String) -> String {
         let paths = NSSearchPathForDirectoriesInDomains(FileManager.SearchPathDirectory.applicationSupportDirectory, FileManager.SearchPathDomainMask.userDomainMask, true)
         let documentDirectory = "\(paths[0])/covers"
         if !FileManager.default.fileExists(atPath: documentDirectory) {
@@ -105,9 +141,17 @@ extension String {
                 print("Player: Cover: Failed to create directory \(error.localizedDescription)");
             }
         }
-        let index = url.lastIndex(of: ".")
-        let fileExt = url.suffix(from: index!)
+        var fileExt = self.fileExt(url: url)
+        if (fileExt.hasPrefix(".webp")) {
+            fileExt = ".webp"
+        }
         let coverPath = "\(documentDirectory)/\(albumId)\(fileExt)"
         return coverPath
+    }
+    
+    private func fileExt(url: String) -> String {
+        let index = url.lastIndex(of: ".")
+        let fileExt = url.suffix(from: index!)
+        return "\(fileExt)"
     }
 }
