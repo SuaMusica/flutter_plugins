@@ -18,7 +18,7 @@ import MediaPlayer
                 nowPlayingInfo[MPMediaItemPropertyTitle] = currentItem.title
                 nowPlayingInfo[MPMediaItemPropertyArtist] = currentItem.artist
                 
-                let art = CoverCenter.get(item: item)
+                let art = CoverCenter.shared.get(item: item)
                 if art != nil {
                     nowPlayingInfo[MPMediaItemPropertyArtwork] = art
                 }

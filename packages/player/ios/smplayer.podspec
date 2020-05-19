@@ -17,6 +17,8 @@ A new flutter plugin project.
   s.public_header_files = 'Classes/**/*.h'
   s.dependency 'Flutter'
   s.dependency 'AFNetworking'
+  s.dependency 'SDWebImage'
+  s.dependency 'SDWebImageWebPCoder'
   s.platform = :ios, '9.0'
   s.ios.deployment_target = '9.0'
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'VALID_ARCHS[sdk=iphonesimulator*]' => 'x86_64' }
