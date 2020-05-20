@@ -14,8 +14,8 @@ import MediaPlayer
             if #available(iOS 12, *) {
                 try audioSession.setCategory(.playback, mode: .default, policy: .longFormAudio)
             } else if #available(iOS 10, *) {
-                let audioSessionCategory: AVAudioSession.CategoryOptions = [.allowBluetooth, .interruptSpokenAudioAndMixWithOthers, .allowAirPlay, .allowBluetoothA2DP]
-                try audioSession.setCategory(.playAndRecord, mode: .default, options: audioSessionCategory)
+                let audioSessionCategory: AVAudioSession.CategoryOptions = [.interruptSpokenAudioAndMixWithOthers, .allowAirPlay, .allowBluetoothA2DP]
+                try audioSession.setCategory(.playback, mode: .default, options: audioSessionCategory)
             } else {
                 // Workaround until https://forums.swift.org/t/using-methods-marked-unavailable-in-swift-4-2/14949 isn't fixed
                 audioSession.perform(NSSelectorFromString("setCategory:error:"), with: AVAudioSession.Category.playback)

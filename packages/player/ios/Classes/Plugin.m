@@ -95,6 +95,7 @@ id nextTrackId = nil;
 id previousTrackId = nil;
 id togglePlayPauseId = nil;
 BOOL isConnected = true;
+BOOL alreadyhasEnded = false;
 BOOL stopTryingToReconnect = false;
 NSString *lastName = nil;
 NSString *lastAuthor = nil;
@@ -587,7 +588,7 @@ PlaylistItem *currentItem = nil;
             player.automaticallyWaitsToMinimizeStalling = TRUE;
         } else{
             player.automaticallyWaitsToMinimizeStalling = FALSE;
-            [player playImmediatelyAtRate:0.01];
+            [player playImmediatelyAtRate:1];
         }
     }
     
@@ -696,6 +697,7 @@ PlaylistItem *currentItem = nil;
         }
         
         
+        alreadyhasEnded = false;
         [playerItem addObserver:self
                      forKeyPath:@"status"
                         options:NSKeyValueObservingOptionNew
@@ -901,9 +903,6 @@ PlaylistItem *currentItem = nil;
     NSMutableDictionary * playerInfo = players[playerId];
     AVPlayer *player = playerInfo[@"player"];
     [self configurePlayer: playerId url:url];
-    if (player != nil && player.rate != 0) {
-        [self doPause:playerId];
-    }
     
     __block AVPlayerItem *playerItem;
     
@@ -1241,6 +1240,7 @@ isNotification: (bool) respectSilence
     if ([self ensureConnected:playerId isLocal:isLocal] == -1) {
         return -1;
     }
+    [AudioSessionManager inactivateSession];
     
     if (!@available(iOS 11,*)) {
         url = [url stringByReplacingOccurrencesOfString:@".m3u8"
@@ -1453,7 +1453,10 @@ isNotification: (bool) respectSilence
 
 -(void) onSoundComplete: (NSString *) playerId {
     NSLog(@"Player: ios -> onSoundComplete...");
-    [ _channel_player invokeMethod:@"audio.onComplete" arguments:@{@"playerId": playerId}];
+    if(!alreadyhasEnded){
+        alreadyhasEnded = true;
+        [ _channel_player invokeMethod:@"audio.onComplete" arguments:@{@"playerId": playerId}];
+    }
 }
 
 -(void)observeValueForKeyPath:(NSString *)keyPath
@@ -1511,13 +1514,13 @@ isNotification: (bool) respectSilence
     } else if ([keyPath isEqualToString: @"playbackBufferEmpty"]) {
         NSMutableDictionary * playerInfo = players[_playerId];
         AVPlayer *player = playerInfo[@"player"];
-            if (player.rate != 0) {
-                int state = isConnected ? STATE_BUFFER_EMPTY : STATE_BUFFERING;
-                [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
-            } else {
-                int state = STATE_PAUSED;
-                [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
-            }
+        if (player.rate != 0) {
+            int state = isConnected ? STATE_BUFFER_EMPTY : STATE_BUFFERING;
+            [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
+        } else {
+            int state = STATE_PAUSED;
+            [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
+        }
     } else if ([keyPath isEqualToString: @"playbackLikelyToKeepUp"] || [keyPath isEqualToString: @"playbackBufferFull"]) {
         NSMutableDictionary * playerInfo = players[_playerId];
         AVPlayer *player = playerInfo[@"player"];
