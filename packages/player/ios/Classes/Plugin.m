@@ -1518,6 +1518,7 @@ isNotification: (bool) respectSilence
             int state = isConnected ? STATE_BUFFER_EMPTY : STATE_BUFFERING;
             [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
         } else {
+            NSLog(@"Player: playbackBufferEmpty rate == 0");
             int state = STATE_PAUSED;
             [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
         }
@@ -1527,7 +1528,7 @@ isNotification: (bool) respectSilence
         NSNumber* newValue = [change objectForKey:NSKeyValueChangeNewKey];
         BOOL shouldStartPlaySoon = [newValue boolValue];
         NSLog(@"Player: observeValueForKeyPath: %@ -- shouldStartPlaySoon: %s player.rate = %.2f", keyPath, shouldStartPlaySoon ? "YES": "NO", player.rate);
-        if (!@available(iOS 11,*) && shouldStartPlaySoon && player.rate ==0) {
+        if (shouldStartPlaySoon && player.rate == 0) {
             player.rate = 1.0;
             // [player play]
             // [self resume:_playerId];
