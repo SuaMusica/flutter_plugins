@@ -96,6 +96,7 @@ id previousTrackId = nil;
 id togglePlayPauseId = nil;
 BOOL isConnected = true;
 BOOL alreadyhasEnded = false;
+BOOL shouldAutoStart = false;
 BOOL stopTryingToReconnect = false;
 NSString *lastName = nil;
 NSString *lastAuthor = nil;
@@ -408,7 +409,7 @@ PlaylistItem *currentItem = nil;
                     result(0);
                 if (call.arguments[@"respectSilence"] == nil)
                     result(0);
-                if (coverUrl == nil || ![coverUrl hasPrefix:@"http"]) {
+                if (coverUrl == nil) {
                     coverUrl = DEFAULT_COVER;
                 }
                 int isLocal = [call.arguments[@"isLocal"]intValue] ;
@@ -698,6 +699,7 @@ PlaylistItem *currentItem = nil;
         
         
         alreadyhasEnded = false;
+        shouldAutoStart = true;
         [playerItem addObserver:self
                      forKeyPath:@"status"
                         options:NSKeyValueObservingOptionNew
@@ -1527,8 +1529,8 @@ isNotification: (bool) respectSilence
         AVPlayer *player = playerInfo[@"player"];
         NSNumber* newValue = [change objectForKey:NSKeyValueChangeNewKey];
         BOOL shouldStartPlaySoon = [newValue boolValue];
-        NSLog(@"Player: observeValueForKeyPath: %@ -- shouldStartPlaySoon: %s player.rate = %.2f", keyPath, shouldStartPlaySoon ? "YES": "NO", player.rate);
-        if (shouldStartPlaySoon && player.rate == 0) {
+        NSLog(@"Player: observeValueForKeyPath: %@ -- shouldStartPlaySoon: %s player.rate = %.2f shouldAutoStart = %s", keyPath, shouldStartPlaySoon ? "YES": "NO", player.rate, shouldAutoStart ? "YES": "NO");
+        if (shouldStartPlaySoon && player.rate == 0 && shouldAutoStart) {
             player.rate = 1.0;
             // [player play]
             // [self resume:_playerId];
@@ -1538,6 +1540,7 @@ isNotification: (bool) respectSilence
             int state = STATE_PLAYING;
             [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": _playerId, @"state": @(state)}];
         }
+        shouldAutoStart = false;
     } else {
         // Any unrecognized context must belong to super
         [super observeValueForKeyPath:keyPath
