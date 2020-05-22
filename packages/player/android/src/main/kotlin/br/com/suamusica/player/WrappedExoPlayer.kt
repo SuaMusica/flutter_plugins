@@ -1,5 +1,7 @@
 package br.com.suamusica.player
 
+import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
+
 import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.app.Service
@@ -118,16 +120,6 @@ class WrappedExoPlayer(
                 }
             }
         }
-
-//        val stateBuilder = PlaybackStateCompat.Builder()
-//                .setActions(
-//                        PlaybackStateCompat.ACTION_PLAY or
-//                                PlaybackStateCompat.ACTION_PAUSE or
-//                                PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
-//                                PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
-//                                PlaybackStateCompat.ACTION_PLAY_PAUSE)
-//
-//        mediaSession?.setPlaybackState(stateBuilder.build())
     }
 
     private fun playerEventListener(): com.google.android.exoplayer2.Player.EventListener {
@@ -229,11 +221,16 @@ class WrappedExoPlayer(
         defaultHttpDataSourceFactory.defaultRequestProperties.set("Cookie", cookie)
         val dataSourceFactory = DefaultDataSourceFactory(context, null, defaultHttpDataSourceFactory)
 
-        val uri = Uri.parse(media.url)
+        var url = media.url
+        Log.i("MusicService", "Player: URL: $url")
+        val uri = Uri.parse(url)
+
 
         @C.ContentType val type = Util.inferContentType(uri)
+        Log.i("MusicService", "Player: Type: $type HLS: ${C.TYPE_HLS}")
         val source = when (type) {
             C.TYPE_HLS -> HlsMediaSource.Factory(dataSourceFactory)
+                .setPlaylistParserFactory(SMHlsPlaylistParserFactory())
                 .setAllowChunklessPreparation(true)
                 .createMediaSource(uri)
             C.TYPE_OTHER -> {
