@@ -290,6 +290,16 @@ class WrappedExoPlayer(
         }
     }
 
+    override fun next() {
+        Log.i("SMPlayer", "channel: $channel playerId: $playerId")
+        val ret = channel?.invokeMethod("commandCenter.onNext", mapOf("playerId" to playerId))
+        Log.i("SMPlayer", "channel: $channel playerId: $playerId ret: $ret")
+    }
+
+    override fun previous() {
+        channel?.invokeMethod("commandCenter.onPrevious", mapOf("playerId" to playerId))
+    }
+
     override fun release() {
         performAndDisableTracking {
             player.playWhenReady = false

@@ -550,9 +550,11 @@ class Player {
 
         break;
       case 'commandCenter.onNext':
+        print("Player : Command Center : Got a next request");
         player.next();
         break;
       case 'commandCenter.onPrevious':
+        print("Player : Command Center : Got a previous request");
         player.previous();
         break;
       default:
@@ -649,9 +651,7 @@ class Player {
   }
 
   static void _log(String param) {
-    if (logEnabled) {
-      print(param);
-    }
+    print(param);
   }
 
   void _add(Event event) {

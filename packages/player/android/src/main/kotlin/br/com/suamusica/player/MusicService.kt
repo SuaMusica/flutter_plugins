@@ -23,10 +23,12 @@ class MusicService : BroadcastReceiver() {
                 Plugin.currentPlayer()?.pause()
             }
             KeyEvent.KEYCODE_MEDIA_NEXT -> {
-                Plugin.next()
+                Log.i("Player", "Player: Key Code : Next")
+                Plugin.currentPlayer()?.next()
             }
             KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
-                Plugin.previous()
+                Log.i("Player", "Player: Key Code : Previous")
+                Plugin.currentPlayer()?.previous()
             }
             KeyEvent.KEYCODE_MEDIA_STOP -> {
                 Plugin.currentPlayer()?.stop()
