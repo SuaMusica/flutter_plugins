@@ -729,7 +729,7 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
                     }
                 }
 
-                line = line.replace(" ", "+");
+                line = URLEncoder.encode(line, "utf-8");
 
                 Log.i("MediaService", "Player : Parser : Line 3: " + replaceVariableReferences(line, variableDefinitions));
 
