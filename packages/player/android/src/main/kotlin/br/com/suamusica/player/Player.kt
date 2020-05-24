@@ -18,4 +18,6 @@ interface Player {
     fun stop()
     fun release()
     fun removeNotification()
+    fun next()
+    fun previous()
 }

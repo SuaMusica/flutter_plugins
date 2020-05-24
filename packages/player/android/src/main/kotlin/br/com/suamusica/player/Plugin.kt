@@ -74,16 +74,6 @@ class Plugin private constructor(private val channel: MethodChannel, private val
 
     @JvmStatic
     fun currentPlayer() : Player? = players.values.firstOrNull()
-
-    @JvmStatic
-    fun next() {
-      channel?.invokeMethod("commandCenter.onNext", mapOf("playerId" to playerId))
-    }
-
-    @JvmStatic
-    fun previous() {
-      channel?.invokeMethod("commandCenter.onPrevious", mapOf("playerId" to playerId))
-    }
   }
 
   private val handler = Handler()
