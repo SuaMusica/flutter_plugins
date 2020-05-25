@@ -11,7 +11,7 @@ import MediaPlayer
     @objc public static func activeSession() -> Bool {
         let audioSession = AVAudioSession.sharedInstance()
         do {
-            if #available(iOS 12, *) {
+            if #available(iOS 11, *) {
                 try audioSession.setCategory(.playback, mode: .default, policy: .longFormAudio)
             } else if #available(iOS 10, *) {
                 let audioSessionCategory: AVAudioSession.CategoryOptions = [.interruptSpokenAudioAndMixWithOthers, .allowAirPlay, .allowBluetoothA2DP]
