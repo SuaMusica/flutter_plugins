@@ -94,12 +94,12 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     func setUpContentPlayer() {
         // Load AVPlayer with path to our content.
         guard let contentUrl = URL(string: self.contentUrl) else {
-            print("ERROR: please use a valid URL for the content URL")
+            print("AD: ERROR: please use a valid URL for the content URL")
             return
         }
         
         guard let videoViewUnwraped = self.videoView else {
-            print("ERROR: videoView NOT FOUND")
+            print("AD: ERROR: videoView NOT FOUND")
             return
         }
         self.videoView.showLoading()
@@ -116,7 +116,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback)
         } catch(let error) {
-            print(error.localizedDescription)
+            print("AD: \(error.localizedDescription)")
         }
         
         // Size, position, and display the AVPlayer.
@@ -167,6 +167,8 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     }
     
     func setUpAdsLoader() {
+        let adsSetting = IMASettings()
+        adsSetting.enableDebugMode = true
         adsLoader = IMAAdsLoader(settings: nil)
         adsLoader?.delegate = self
     }
@@ -196,6 +198,8 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
                 contentPlayhead: contentPlayhead,
                 userContext: nil)
             
+            request?.vastLoadTimeout = 30000
+            
             adsLoader?.requestAds(with: request)
         } else {
             onComplete()
@@ -221,6 +225,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         
         // Create ads rendering settings and tell the SDK to use the in-app browser.
         let adsRenderingSettings = IMAAdsRenderingSettings()
+        adsRenderingSettings.loadVideoTimeout = 300
         
         // Commenting this line to open the click in safari Until Apple fixes the Bug!
         // adsRenderingSettings.webOpenerPresentingController = self
@@ -232,7 +237,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     func adsLoader(_ loader: IMAAdsLoader!, failedWith adErrorData: IMAAdLoadingErrorData!) {
         if (adErrorData != nil && adErrorData.adError != nil) {
             let message = adErrorData?.adError?.message ?? "unknown"
-            print("Error loading ads: \(message)")
+            print("AD: Error loading ads: \(message)")
         }
         contentPlayer?.play()
 
@@ -283,7 +288,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             self.setPaused()
         case IMAAdEventType.RESUME:
             print("AD: Got a RESUME event")
-            print("MYMP: RESUME CLICKED")
             self.setPlaying()
         case IMAAdEventType.SKIPPED:
             print("AD: Got a SKIPPED event")
@@ -302,6 +306,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             print("AD: Got a THIRD_QUARTILE event")
         case IMAAdEventType.LOADED:
             print("AD: Got a LOADED event")
+//            print("AD: event: \(event!) data: \(String(describing: event?.adData))")
             adsManager.start()
         case IMAAdEventType.AD_BREAK_STARTED:
             print("AD: Got a AD_BREAK_STARTED event")
@@ -351,7 +356,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         // Something went wrong with the ads manager after ads were loaded.
         // Log the error and play the content.
         if (error != nil) {
-            print("AdsManager error: \(message)")
+            print("AD: AdsManager code: \(code) error: \(message)")
         }
         contentPlayer?.play()
 
@@ -395,23 +400,26 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     
     func adsManagerDidRequestContentResume(_ adsManager: IMAAdsManager!) {
         // The SDK is done playing ads (at least for now), so resume the content.
-        print("AD: adsManagerDidRequestContentResumev")
+        print("AD: adsManagerDidRequestContentResume")
         contentPlayer?.play()
     }
     
     func getAdTagUrl() -> String {
         var url: String = self.adUrl
 
-        url += "platform%3Dios%26Domain%3Dsuamusica"
-
-        for (key, value) in self.args {
-            if (key.starts(with: "__")) {
-                continue
+        if (url.hasSuffix("cust_params=")) {
+            url += "platform%3Dios%26Domain%3Dsuamusica"
+            
+            for (key, value) in self.args {
+                if (key.starts(with: "__")) {
+                    continue
+                }
+                url += "%26\(key)%3D\(value)"
             }
-            url += "%26\(key)%3D\(value)"
         }
 
-        print("Using AD URL: \(url)")
+        print("AD: Using AD URL: \(url)")
+
 
         return url
     }
