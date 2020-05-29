@@ -358,7 +358,14 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             print("AD: Got a THIRD_QUARTILE event")
         case IMAAdEventType.LOADED:
             print("AD: Got a LOADED event")
-//            print("AD: event: \(event!) data: \(String(describing: event?.adData))")
+            let contentType = event?.ad?.contentType ?? "video"
+            if (contentType.hasPrefix("audio")) {
+                videoView.isHidden = true
+                companionView.isHidden = false
+            } else {
+                videoView.isHidden = false
+                companionView.isHidden = true
+            }
             adsManager.start()
         case IMAAdEventType.AD_BREAK_STARTED:
             print("AD: Got a AD_BREAK_STARTED event")

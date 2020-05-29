@@ -173,7 +173,6 @@
                 </view>
                 <view hidden="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="UwV-s9-Jdz" userLabel="companionView">
                     <rect key="frame" x="70.5" y="247" width="273" height="227"/>
-                    <color key="backgroundColor" red="0.66666666669999997" green="0.66666666669999997" blue="0.66666666669999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                     <constraints>
                         <constraint firstAttribute="width" secondItem="UwV-s9-Jdz" secondAttribute="height" multiplier="30:25" id="r2e-nc-TnZ"/>
                     </constraints>
