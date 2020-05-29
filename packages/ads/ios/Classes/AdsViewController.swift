@@ -191,8 +191,8 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     func setUpCompanions() {
       companionSlot = IMACompanionAdSlot(
         view: companionView,
-        width: Int(companionView.frame.size.width),
-        height: Int(companionView.frame.size.height))
+        width: 300,
+        height: 250)
     }
 
     @objc func applicationDidBecomeActive(notification: NSNotification) {
@@ -221,6 +221,9 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         settings.enableBackgroundPlayback = true
         adsLoader = IMAAdsLoader(settings: settings)
         adsLoader?.delegate = self
+        if (companionView != nil) {
+            setUpCompanions()
+        }
     }
     
     fileprivate func onComplete() {
