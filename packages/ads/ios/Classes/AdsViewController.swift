@@ -280,7 +280,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         adsRenderingSettings.loadVideoTimeout = 300
         
         // Commenting this line to open the click in safari Until Apple fixes the Bug!
-        adsRenderingSettings.webOpenerPresentingController = self
+//        adsRenderingSettings.webOpenerPresentingController = self
         
         // Initialize the ads manager.
         adsManager?.initialize(with: adsRenderingSettings)
