@@ -21,6 +21,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     var pictureInPictureController: AVPictureInPictureController?
     var pictureInPictureProxy: IMAPictureInPictureProxy?
     
+    var isVideo: Bool = true
     var adUrl: String!
     var contentUrl: String!
     var screen: Screen!
@@ -195,7 +196,8 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         height: 250)
     }
 
-    @objc func applicationDidBecomeActive(notification: NSNotification) {
+    @objc func applicationDidBecomeActive(notification: NSNotification) {        print("AD: applicationDidBecomeActive")
+
         let oldStatus = self.active
         self.active = true
         if (!oldStatus) {
@@ -204,7 +206,12 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     }
 
     @objc func applicationDidEnterBackground(notification: NSNotification) {
+        print("AD: applicationDidEnterBackground")
+        if (isVideo) {
+            adsManager?.pause()
+        }
         self.active = false
+        
     }
     
     @objc func contentDidFinishPlaying(_ notification: Notification) {
@@ -360,9 +367,11 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             print("AD: Got a LOADED event")
             let contentType = event?.ad?.contentType ?? "video"
             if (contentType.hasPrefix("audio")) {
+                isVideo = false
                 videoView.isHidden = true
                 companionView.isHidden = false
             } else {
+                isVideo = true
                 videoView.isHidden = false
                 companionView.isHidden = true
             }
@@ -465,7 +474,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     
     func getAdTagUrl() -> String {
         var url: String = self.adUrl
-
         if (url.hasSuffix("cust_params=")) {
             url += "platform%3Dios%26Domain%3Dsuamusica"
             
@@ -474,12 +482,9 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
                     continue
                 }
                 url += "%26\(key)%3D\(value)"
-            }
+            }      
         }
-
         print("AD: Using AD URL: \(url)")
-
-
         return url
     }
     
