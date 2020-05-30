@@ -169,11 +169,10 @@ class Player {
     Duration position,
     bool respectSilence = false,
     bool stayAwake = false,
-    bool overrideAutoPlay,
   }) async {
     _queue.play(media);
     _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
-    return _doPlay(_queue.current, overrideAutoPlay: overrideAutoPlay);
+    return _doPlay(_queue.current);
   }
 
   Future<int> playFromQueue(
@@ -205,12 +204,10 @@ class Player {
     Duration position,
     bool respectSilence = false,
     bool stayAwake = false,
-    bool overrideAutoPlay,
   }) async {
     volume ??= 1.0;
     respectSilence ??= false;
     stayAwake ??= false;
-    final shouldAutoPlay = overrideAutoPlay ?? autoPlay;
     final url = (await localMediaValidator(media)) ?? media.url;
     final isLocal = !url.startsWith("http");
 
@@ -219,7 +216,7 @@ class Player {
     media.isLocal = isLocal;
     media.url = url;
 
-    if (shouldAutoPlay) {
+    if (autoPlay) {
       _notifyBeforePlayEvent((loadOnly) => {});
 
       return invokePlay(media, {
