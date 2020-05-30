@@ -23,6 +23,7 @@ class Migration {
   }
 
   static Future<void> platformCallHandler(MethodCall call) async {
+    _log('Method Call: $call');
     try {
       _doHandlePlatformCall(call);
     } catch (ex) {
@@ -43,7 +44,7 @@ class Migration {
   Future<int> getLegacyDownloadContent() async {
     final int result = await _channel.invokeMethod('requestDownloadedContent');
 
-    return result;
+    return result ?? 0;
   }
 
   Future<int> deleteOldDatabase() async {
@@ -54,11 +55,9 @@ class Migration {
 
   Future<Map<dynamic, dynamic>> requestLoggedUser() async {
     final result = await _channel.invokeMethod('requestLoggedUser');
-
     if (result != null && result is Map<dynamic, dynamic>) {
       return result;
     }
-
     return null;
   }
 
