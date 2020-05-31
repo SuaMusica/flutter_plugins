@@ -4,13 +4,24 @@ import UIKit
 import PureLayout
 import MediaPlayer
 
-class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
+class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDelegate, AVPictureInPictureControllerDelegate {
     var channel: FlutterMethodChannel?
+    
+    // Video objects
     var contentPlayer: AVPlayer?
-    var playerLayer: AVPlayerLayer?
+    var contentPlayerLayer: AVPlayerLayer?
+    
+    // IMA objects
     var contentPlayhead: IMAAVPlayerContentPlayhead?
     var adsLoader: IMAAdsLoader?
     var adsManager: IMAAdsManager?
+    var companionSlot: IMACompanionAdSlot?
+    
+    // PiP objects.
+    var pictureInPictureController: AVPictureInPictureController?
+    var pictureInPictureProxy: IMAPictureInPictureProxy?
+    
+    var isVideo: Bool = true
     var adUrl: String!
     var contentUrl: String!
     var screen: Screen!
@@ -26,6 +37,8 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     @IBOutlet weak var whyListenAdView: UIView!
     @IBOutlet weak var playPauseButton: UIButton!
     @IBOutlet weak var videoView: UIView!
+    @IBOutlet weak var companionView: UIView!
+    @IBOutlet weak var pictureInPictureButton: UIButton!
     
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
@@ -53,6 +66,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         
         setUpContentPlayer()
         setUpAdsLoader()
+        setupAudioSession()
     }
         
     override func viewDidAppear(_ animated: Bool) {
@@ -91,40 +105,58 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         self.args = args
     }
     
+    func setupAudioSession() {
+        do {
+            try AVAudioSession.sharedInstance().setActive(true)
+            if #available(iOS 10.0, *) {
+                try AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback, options: [])
+            } else {
+                try AVAudioSession.sharedInstance().setCategory(.playback, options: [])
+            }
+        } catch(let error) {
+            print("AD: \(error.localizedDescription)")
+        }
+    }
+    
     func setUpContentPlayer() {
         // Load AVPlayer with path to our content.
         guard let contentUrl = URL(string: self.contentUrl) else {
-            print("ERROR: please use a valid URL for the content URL")
+            print("AD: ERROR: please use a valid URL for the content URL")
             return
         }
         
         guard let videoViewUnwraped = self.videoView else {
-            print("ERROR: videoView NOT FOUND")
+            print("AD: ERROR: videoView NOT FOUND")
             return
         }
         self.videoView.showLoading()
         contentPlayer = AVPlayer(url: contentUrl)
         
         // Create a player layer for the player.
-        playerLayer = AVPlayerLayer(player: contentPlayer)
+        contentPlayerLayer = AVPlayerLayer(player: contentPlayer)
         
         let commandCenter = MPRemoteCommandCenter.shared()
         self.isRemoteControlOn = commandCenter.previousTrackCommand.isEnabled
         commandCenter.previousTrackCommand.isEnabled = false;
         commandCenter.nextTrackCommand.isEnabled = false;
 
-        do {
-            try AVAudioSession.sharedInstance().setCategory(.playback)
-        } catch(let error) {
-            print(error.localizedDescription)
-        }
-        
         // Size, position, and display the AVPlayer.
-        playerLayer?.frame = videoViewUnwraped.layer.bounds
-        videoViewUnwraped.layer.addSublayer(playerLayer!)
+        contentPlayerLayer?.frame = videoViewUnwraped.layer.bounds
+        videoViewUnwraped.layer.addSublayer(contentPlayerLayer!)
         
         // Set up our content playhead and contentComplete callback.
         contentPlayhead = IMAAVPlayerContentPlayhead(avPlayer: contentPlayer)
+        
+        // Set ourselves up for PiP.
+        pictureInPictureProxy = IMAPictureInPictureProxy(avPictureInPictureControllerDelegate: self)
+        pictureInPictureController = AVPictureInPictureController(playerLayer: contentPlayerLayer!)
+        if pictureInPictureController != nil {
+          pictureInPictureController!.delegate = pictureInPictureProxy
+        }
+        if !AVPictureInPictureController.isPictureInPictureSupported() && pictureInPictureButton != nil
+        {
+          pictureInPictureButton.isHidden = true
+        }
         
         NotificationCenter.default.addObserver(
             self,
@@ -144,8 +176,28 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             name: UIApplication.didEnterBackgroundNotification,
             object: nil);
     }
+    
+    // Initialize ad display container.
+    func createAdDisplayContainer() -> IMAAdDisplayContainer {
+      // Create our AdDisplayContainer. Initialize it with our videoView as the container. This
+      // will result in ads being displayed over our content video.
+      if companionView != nil {
+        return IMAAdDisplayContainer(adContainer: videoView, companionSlots: [companionSlot!])
+      } else {
+        return IMAAdDisplayContainer(adContainer: videoView, companionSlots: nil)
+      }
+    }
 
-    @objc func applicationDidBecomeActive(notification: NSNotification) {
+    // Register companion slots.
+    func setUpCompanions() {
+      companionSlot = IMACompanionAdSlot(
+        view: companionView,
+        width: 300,
+        height: 250)
+    }
+
+    @objc func applicationDidBecomeActive(notification: NSNotification) {        print("AD: applicationDidBecomeActive")
+
         let oldStatus = self.active
         self.active = true
         if (!oldStatus) {
@@ -154,7 +206,12 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     }
 
     @objc func applicationDidEnterBackground(notification: NSNotification) {
+        print("AD: applicationDidEnterBackground")
+        if (isVideo) {
+            adsManager?.pause()
+        }
         self.active = false
+        
     }
     
     @objc func contentDidFinishPlaying(_ notification: Notification) {
@@ -167,8 +224,13 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     }
     
     func setUpAdsLoader() {
-        adsLoader = IMAAdsLoader(settings: nil)
+        let settings = IMASettings()
+        settings.enableBackgroundPlayback = true
+        adsLoader = IMAAdsLoader(settings: settings)
         adsLoader?.delegate = self
+        if (companionView != nil) {
+            setUpCompanions()
+        }
     }
     
     fileprivate func onComplete() {
@@ -187,14 +249,15 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     
     func requestAds() {
         if (self.active) {
-            // Create ad display container for ad rendering.
-            let adDisplayContainer = IMAAdDisplayContainer(adContainer: videoView, companionSlots: nil)
             // Create an ad request with our ad tag, display container, and optional user context.
             let request = IMAAdsRequest(
                 adTagUrl: getAdTagUrl(),
-                adDisplayContainer: adDisplayContainer,
-                contentPlayhead: contentPlayhead,
+                adDisplayContainer: createAdDisplayContainer(),
+                avPlayerVideoDisplay: IMAAVPlayerVideoDisplay(avPlayer: contentPlayer),
+                pictureInPictureProxy: pictureInPictureProxy,
                 userContext: nil)
+            
+            request?.vastLoadTimeout = 30000
             
             adsLoader?.requestAds(with: request)
         } else {
@@ -221,9 +284,10 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         
         // Create ads rendering settings and tell the SDK to use the in-app browser.
         let adsRenderingSettings = IMAAdsRenderingSettings()
+        adsRenderingSettings.loadVideoTimeout = 300
         
         // Commenting this line to open the click in safari Until Apple fixes the Bug!
-        // adsRenderingSettings.webOpenerPresentingController = self
+//        adsRenderingSettings.webOpenerPresentingController = self
         
         // Initialize the ads manager.
         adsManager?.initialize(with: adsRenderingSettings)
@@ -232,7 +296,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     func adsLoader(_ loader: IMAAdsLoader!, failedWith adErrorData: IMAAdLoadingErrorData!) {
         if (adErrorData != nil && adErrorData.adError != nil) {
             let message = adErrorData?.adError?.message ?? "unknown"
-            print("Error loading ads: \(message)")
+            print("AD: Error loading ads: \(message)")
         }
         contentPlayer?.play()
 
@@ -283,7 +347,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             self.setPaused()
         case IMAAdEventType.RESUME:
             print("AD: Got a RESUME event")
-            print("MYMP: RESUME CLICKED")
             self.setPlaying()
         case IMAAdEventType.SKIPPED:
             print("AD: Got a SKIPPED event")
@@ -302,6 +365,16 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             print("AD: Got a THIRD_QUARTILE event")
         case IMAAdEventType.LOADED:
             print("AD: Got a LOADED event")
+            let contentType = event?.ad?.contentType ?? "video"
+            if (contentType.hasPrefix("audio")) {
+                isVideo = false
+                videoView.isHidden = true
+                companionView.isHidden = false
+            } else {
+                isVideo = true
+                videoView.isHidden = false
+                companionView.isHidden = true
+            }
             adsManager.start()
         case IMAAdEventType.AD_BREAK_STARTED:
             print("AD: Got a AD_BREAK_STARTED event")
@@ -351,7 +424,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         // Something went wrong with the ads manager after ads were loaded.
         // Log the error and play the content.
         if (error != nil) {
-            print("AdsManager error: \(message)")
+            print("AD: AdsManager code: \(code) error: \(message)")
         }
         contentPlayer?.play()
 
@@ -395,24 +468,23 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     
     func adsManagerDidRequestContentResume(_ adsManager: IMAAdsManager!) {
         // The SDK is done playing ads (at least for now), so resume the content.
-        print("AD: adsManagerDidRequestContentResumev")
+        print("AD: adsManagerDidRequestContentResume")
         contentPlayer?.play()
     }
     
     func getAdTagUrl() -> String {
         var url: String = self.adUrl
-
-        url += "platform%3Dios%26Domain%3Dsuamusica"
-
-        for (key, value) in self.args {
-            if (key.starts(with: "__")) {
-                continue
-            }
-            url += "%26\(key)%3D\(value)"
+        if (url.hasSuffix("cust_params=")) {
+            url += "platform%3Dios%26Domain%3Dsuamusica"
+            
+            for (key, value) in self.args {
+                if (key.starts(with: "__")) {
+                    continue
+                }
+                url += "%26\(key)%3D\(value)"
+            }      
         }
-
-        print("Using AD URL: \(url)")
-
+        print("AD: Using AD URL: \(url)")
         return url
     }
     

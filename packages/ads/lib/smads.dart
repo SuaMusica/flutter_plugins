@@ -15,6 +15,9 @@ class SMAds {
   static const Ok = 1;
   static const NoConnectivity = -1;
   static const ScreenIsLocked = -2;
+  static const UnlockedScreen = 1;
+  static const LockedScreen = 0;
+
   static final MethodChannel _channel = const MethodChannel('smads')
     ..setMethodCallHandler(platformCallHandler);
 
@@ -47,6 +50,9 @@ class SMAds {
     final int result = await _channel.invokeMethod('load', args);
     return result;
   }
+
+  Future<int> get screenStatus async =>
+      await _channel.invokeMethod('screen_status');
 
   static void _log(String param) {
     print(param);

@@ -6,6 +6,8 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
     private var screen: Screen
     static let NoConnectivity = -1;
     static let ScreenIsLocked = -2;
+    static let UnlockedScreen = 1;
+    static let LockedScreen = 0;
 
     fileprivate static func verifyNetworkAccess() {
         do {
@@ -97,7 +99,8 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                     print("An error ocurred: \(error)")
                 }
             }
-
+        case "screen_status":
+            result(self.screen.status == .unlocked ? SwiftSmadsPlugin.UnlockedScreen : SwiftSmadsPlugin.LockedScreen)
         default:
             result(FlutterError(code: "-1", message: "Operation not supported", details: nil))
         }
