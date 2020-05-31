@@ -43,7 +43,7 @@ class Migration {
 
   Future<int> getLegacyDownloadContent() async {
     final int result = await _channel.invokeMethod('requestDownloadedContent');
-
+    _log("DownloadedContents.getLegacyDownloadContent: $result");
     return result ?? 0;
   }
 
@@ -67,6 +67,7 @@ class Migration {
         if (instance != null &&
             instance._downloadedStreamController != null &&
             !instance._downloadedStreamController.isClosed) {
+          _log("Migration._doHandlePlatformCall: ${call.arguments}");
           final content = (call.arguments as List<dynamic>)
               .where((item) => item is Map<dynamic, dynamic>)
               .map(

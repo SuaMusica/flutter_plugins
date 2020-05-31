@@ -2,13 +2,19 @@ package com.suamusica.migration;
 
 import android.content.Context
 import android.util.Log
-import androidx.annotation.NonNull;
+import androidx.annotation.NonNull
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry.Registrar
+import com.google.gson.Gson
 import com.suamusica.room.database.QueryDatabase
 
 
@@ -30,7 +36,7 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
   companion object {
     // Method names
     const val REQUEST_DOWNLOAD_CONTENT = "requestDownloadedContent"
-    const val DELETE_OLD_CONTENT = "requestDownloadedContent"
+    const val DELETE_OLD_CONTENT = "deleteOldContent"
     const val REQUEST_LOGGED_USER = "requestLoggedUser"
     const val Ok = 1
     const val NotOk = 0
@@ -48,25 +54,30 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
   private fun handleMethodCall(call: MethodCall, response: MethodChannel.Result) {
     when(call.method) {
       REQUEST_DOWNLOAD_CONTENT -> {
-        QueryDatabase.getInstance(context)?.let { db ->
-            val downloads = db.offlineMediaDao().getMedias()?.flatMap {
-              listOf(
-                      Pair("id", it.id),
-                      Pair("path", it.filePath)
-              )
-            } ?: listOf()
-
+          val result = GlobalScope.async {
+            QueryDatabase.getInstance(context)?.let { db ->
+              return@let db.offlineMediaDao().getMedias()?.map {
+                mapOf("id" to it.id, "path" to it.filePath)
+              } ?: listOf()
+            } ?: run {
+              return@run null
+            }
+          }
+        runBlocking {
+          try {
+            val downloads = result.await()
+            Log.d("Migration", "DownloadedContents: $downloads")
             channel.invokeMethod("downloadedContent", downloads)
-            if (downloads.isEmpty()) {
+
+            if (downloads == null || downloads?.isEmpty()) {
               response.success(NotOk)
             } else {
               response.success(Ok)
             }
-          } ?: run {
-            response.success(null)
+          } catch (ex: java.lang.Exception) {
+            Log.e("Migration", "error: $ex", ex)
           }
-
-        return
+        }
       }
       DELETE_OLD_CONTENT -> {
         QueryDatabase.getInstance(context)?.clearAllTables()
@@ -88,11 +99,9 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
         } else {
           response.success(null)
         }
-        return
       }
       else -> {
         response.notImplemented()
-        return
       }
     }
 
