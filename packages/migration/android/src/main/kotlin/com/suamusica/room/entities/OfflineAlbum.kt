@@ -37,4 +37,39 @@ data class OfflineAlbum(
       "$numberOfSongs Música"
     }
   }
+
+  fun toMigration(isVerified: Boolean = false) =
+      MigrationAlbum(
+          id = this.id,
+          name = this.name,
+          coverUrl = this.imageUrl,
+          shareUrl = this.shareUrl ?: "",
+          artistName = this.artistName,
+          artistId = this.ownerId,
+          isVerified = isVerified,
+          createdAt = this.creationTimeMillis.toString()
+      ).toMap()
+}
+
+data class MigrationAlbum(
+    var id: String,
+    var name: String,
+    var coverUrl: String,
+    var shareUrl: String,
+    var artistName: String,
+    var artistId: String,
+    var isVerified: Boolean = false,
+    var createdAt: String
+) {
+  fun toMap(): Map<String, Any> =
+      mapOf(
+          "id" to this.id,
+          "name" to this.name,
+          "cover_url" to this.coverUrl,
+          "artist_name" to this.artistName,
+          "artist_id" to this.artistId,
+          "share_url" to this.shareUrl,
+          "is_verified" to this.isVerified,
+          "created_at" to this.createdAt
+      )
 }

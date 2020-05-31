@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
-import 'package:migration/downloaded_content.dart';
+import 'package:migration/entities/downloaded_content.dart';
+import 'package:migration/entities/android_downloaded_content.dart';
 
 class Migration {
   Migration._();
@@ -31,15 +32,22 @@ class Migration {
     }
   }
 
+  final StreamController<AndroidDownloadedContent> _androidDownloadedStreamController =
+  StreamController<AndroidDownloadedContent>.broadcast();
+
   final StreamController<List<DownloadedContent>> _downloadedStreamController =
       StreamController<List<DownloadedContent>>.broadcast();
 
   void dipose() {
     _downloadedStreamController.close();
+    _androidDownloadedStreamController.close();
   }
 
   Stream<List<DownloadedContent>> get downloadedContent =>
       _downloadedStreamController.stream;
+
+  Stream<AndroidDownloadedContent> get androidDownloadedContent =>
+      _androidDownloadedStreamController.stream;
 
   Future<int> getLegacyDownloadContent() async {
     final int result = await _channel.invokeMethod('requestDownloadedContent');
@@ -67,7 +75,7 @@ class Migration {
         if (instance != null &&
             instance._downloadedStreamController != null &&
             !instance._downloadedStreamController.isClosed) {
-          _log("Migration._doHandlePlatformCall: ${call.arguments}");
+          _log("Migration.downloadedContent: ${call.arguments}");
           final content = (call.arguments as List<dynamic>)
               .where((item) => item is Map<dynamic, dynamic>)
               .map(
@@ -77,6 +85,19 @@ class Migration {
               .toList();
 
           instance._downloadedStreamController.add(content);
+        }
+
+        break;
+      case 'androidDownloadedContent':
+        if (instance != null &&
+            instance._androidDownloadedStreamController != null &&
+            !instance._androidDownloadedStreamController.isClosed) {
+          _log("Migration.androidDownloadedContent: ${call.arguments}");
+          final content = AndroidDownloadedContent.fromJson(
+              (call.arguments as Map<dynamic, dynamic>)
+          );
+
+          instance._androidDownloadedStreamController.add(content);
         }
 
         break;

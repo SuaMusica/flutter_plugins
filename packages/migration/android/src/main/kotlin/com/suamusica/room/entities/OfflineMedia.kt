@@ -54,4 +54,78 @@ data class OfflineMedia(
     listOf(), 0L, false, false, stream = "")
 
   fun mediaUrl(): String = if (File(filePath).exists()) filePath else stream
+
+  fun toMigration(): List<MigrationMedia> {
+    val content = mutableListOf<MigrationMedia>()
+
+    if (playlistIds.isEmpty()) {
+      content.add(
+          MigrationMedia(
+              id = this.id,
+              name= this.name,
+              albumId= this.albumId,
+              downloadId= this.downloadId.toString(),
+              isExternal= this.isExternal,
+              indexInAlbum= this.indexPosition.toString(),
+              streamPath= this.stream,
+              shareUrl= this.shareUrl ?: "",
+              localPath= this.filePath,
+              createdAt= this.creationTimeMillis.toString()
+          )
+      )
+    } else {
+      for (playlistId in playlistIds) {
+        content.add(
+            MigrationMedia(
+                id = this.id,
+                name= this.name,
+                albumId= this.albumId,
+                downloadId= this.downloadId.toString(),
+                isExternal= this.isExternal,
+                indexInAlbum= this.indexPosition.toString(),
+                streamPath= this.stream,
+                shareUrl= this.shareUrl ?: "",
+                localPath= this.filePath,
+                createdAt= this.creationTimeMillis.toString(),
+                playlistId = playlistId
+            )
+        )
+      }
+    }
+
+    return content.toList()
+  }
+}
+
+data class MigrationMedia(
+    var id: String,
+    var name: String,
+    var albumId: String,
+    var downloadId: String,
+    var isExternal: Boolean,
+    var indexInAlbum: String,
+    var path: String = "",
+    var streamPath: String,
+    var shareUrl: String,
+    var localPath: String,
+    var createdAt: String,
+    var indexInPlaylist: String = "-1",
+    var playlistId: String = "0"
+) {
+  fun toMap(): Map<String, Any> =
+      mapOf(
+          "id" to this.id,
+          "name" to this.name,
+          "album_id" to this.albumId,
+          "download_id" to this.downloadId,
+          "is_external" to this.isExternal,
+          "index_in_album" to this.indexInAlbum,
+          "path" to this.path,
+          "stream_path" to this.streamPath,
+          "share_url" to this.shareUrl,
+          "local_path" to this.localPath,
+          "created_at" to this.createdAt,
+          "index_in_playlist" to this.indexInPlaylist,
+          "playlist_id"  to this.playlistId
+      )
 }

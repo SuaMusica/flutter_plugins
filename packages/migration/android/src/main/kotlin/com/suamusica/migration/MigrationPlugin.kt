@@ -24,10 +24,10 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     val channel = MethodChannel(flutterPluginBinding.getFlutterEngine().getDartExecutor(), "migration")
     channel.setMethodCallHandler(
-      MigrationPlugin().apply { 
-        this.context = flutterPluginBinding.getApplicationContext()
-        this.channel = channel
-      }
+        MigrationPlugin().apply {
+          this.context = flutterPluginBinding.getApplicationContext()
+          this.channel = channel
+        }
     )
   }
   lateinit var channel:MethodChannel
@@ -54,20 +54,35 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
   private fun handleMethodCall(call: MethodCall, response: MethodChannel.Result) {
     when(call.method) {
       REQUEST_DOWNLOAD_CONTENT -> {
-          val result = GlobalScope.async {
-            QueryDatabase.getInstance(context)?.let { db ->
-              return@let db.offlineMediaDao().getMedias()?.map {
-                mapOf("id" to it.id, "path" to it.filePath)
-              } ?: listOf()
-            } ?: run {
-              return@run null
-            }
+        val result = GlobalScope.async {
+          QueryDatabase.getInstance(context)?.let { db ->
+            val medias = db.offlineMediaDao().getMedias()?.flatMap {
+              it.toMigration()
+            }?.map { it.toMap() } ?: listOf()
+
+            val playlists = db.offlinePlaylistDao().getPlaylists()?.map {
+              it.toMigration(isVerified =
+              medias.first { media -> media["playlist_id"] as String == it.id } != null
+              )
+            } ?: listOf()
+
+            val albums = db.offlineAlbumDao().getAlbums()?.map {
+              it.toMigration(isVerified =
+              medias.first { media -> media["album_id"] as String == it.id } != null
+              )
+            } ?: listOf()
+
+            return@let mapOf("medias" to medias, "playlists" to playlists, "albums" to albums)
+          } ?: run {
+            return@run null
           }
+        }
+
         runBlocking {
           try {
             val downloads = result.await()
             Log.d("Migration", "DownloadedContents: $downloads")
-            channel.invokeMethod("downloadedContent", downloads)
+            channel.invokeMethod("androidDownloadedContent", downloads)
 
             if (downloads == null || downloads?.isEmpty()) {
               response.success(NotOk)
@@ -80,21 +95,24 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
         }
       }
       DELETE_OLD_CONTENT -> {
-        QueryDatabase.getInstance(context)?.clearAllTables()
-      return
+        val result = GlobalScope.async {
+          QueryDatabase.getInstance(context)?.clearAllTables()
+        }
+        runBlocking { result.await() }
+        return
       }
       REQUEST_LOGGED_USER -> {
         val preferences = SharedPreferences(context)
         Log.d("Migration", "preferences: ${preferences.getUserId()}")
         if (preferences.isLogged()) {
           response.success(
-            mapOf(
-              "userid" to preferences.getUserId(),
-              "name" to preferences.getName(),
-              "cover" to preferences.getProfileCover(),
-              "age" to preferences.getAge(),
-              "gender" to preferences.getGender()
-            )
+              mapOf(
+                  "userid" to preferences.getUserId(),
+                  "name" to preferences.getName(),
+                  "cover" to preferences.getProfileCover(),
+                  "age" to preferences.getAge(),
+                  "gender" to preferences.getGender()
+              )
           )
         } else {
           response.success(null)
@@ -104,10 +122,8 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
         response.notImplemented()
       }
     }
-
-    // response.success(Ok)
   }
-    
+
 
   override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
   }
