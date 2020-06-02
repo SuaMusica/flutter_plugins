@@ -98,7 +98,8 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
         val result = GlobalScope.async {
           QueryDatabase.getInstance(context)?.clearAllTables()
         }
-        runBlocking { result.await() }
+        runBlocking { result.await()
+        response.success(Ok) }
         return
       }
       REQUEST_LOGGED_USER -> {
