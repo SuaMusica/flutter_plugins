@@ -24,7 +24,7 @@ class Migration {
   }
 
   static Future<void> platformCallHandler(MethodCall call) async {
-    _log('Method Call: $call');
+    _log('Method Call: ${call.method}');
     try {
       _doHandlePlatformCall(call);
     } catch (ex) {
@@ -32,8 +32,9 @@ class Migration {
     }
   }
 
-  final StreamController<AndroidDownloadedContent> _androidDownloadedStreamController =
-  StreamController<AndroidDownloadedContent>.broadcast();
+  final StreamController<AndroidDownloadedContent>
+      _androidDownloadedStreamController =
+      StreamController<AndroidDownloadedContent>.broadcast();
 
   final StreamController<List<DownloadedContent>> _downloadedStreamController =
       StreamController<List<DownloadedContent>>.broadcast();
@@ -92,10 +93,8 @@ class Migration {
         if (instance != null &&
             instance._androidDownloadedStreamController != null &&
             !instance._androidDownloadedStreamController.isClosed) {
-          _log("Migration.androidDownloadedContent: ${call.arguments}");
           final content = AndroidDownloadedContent.fromJson(
-              (call.arguments as Map<dynamic, dynamic>)
-          );
+              (call.arguments as Map<dynamic, dynamic>));
 
           instance._androidDownloadedStreamController.add(content);
         }

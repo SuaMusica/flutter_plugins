@@ -1,10 +1,17 @@
+import 'dart:core';
+
 extension MapParseInt on Map<dynamic, dynamic> {
   int parseToInt(String key) {
-    if (this[key] == null) {
+    if (!this.containsKey(key)) {
       return null;
     }
-
-    return this[key] is String ? 
-      int.parse(this[key] as String) : this[key] is int;
+    if (this[key] is! int) {
+      try {
+        return int.parse(this[key] as String);
+      } catch (er) {
+        return null;
+      }
+    }
+    return this[key];
   }
 }

@@ -3,5 +3,5 @@
 
 .packages
 .pub/
-
+.flutter-plugins-dependencies
 build/
