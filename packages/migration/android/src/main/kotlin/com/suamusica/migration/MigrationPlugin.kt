@@ -43,6 +43,7 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
   }
 
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
+
     try {
       handleMethodCall(call, result)
     } catch (e: Exception) {
@@ -52,6 +53,8 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
   }
 
   private fun handleMethodCall(call: MethodCall, response: MethodChannel.Result) {
+      Log.e("Migration", call.method)
+
     when(call.method) {
       REQUEST_DOWNLOAD_CONTENT -> {
         val result = GlobalScope.async {
@@ -60,15 +63,21 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
               it.toMigration()
             }?.map { it.toMap() } ?: listOf()
 
-            val playlists = db.offlinePlaylistDao().getPlaylists()?.map {
+
+            val playlists = db.offlinePlaylistDao().getPlaylists()?.filter{ it -> it.id!=null && it.name!=null && it.name.length>0 && it.artistName!=null && it.artistName.length>0 && it.ownerId!=null && it.ownerId.length>0 && it.ownerId.toInt()>0  && medias.firstOrNull { 
+              media ->  media.containsKey("playlist_id") && media["playlist_id"] as String == it.id 
+              } != null}?.map {
+              Log.d("Migration", "Migrating Playlist!! ${it}")
               it.toMigration(isVerified =
-              medias.first { media -> media["playlist_id"] as String == it.id } != null
+              medias.first { media ->  media.containsKey("playlist_id") && media["playlist_id"] as String == it.id } != null
               )
             } ?: listOf()
 
-            val albums = db.offlineAlbumDao().getAlbums()?.map {
+
+            val albums = db.offlineAlbumDao().getAlbums()?.filter{ it -> it.id!=null && it.name!=null && it.name.length>0 && it.artistName!=null && it.artistName.length>0 && it.ownerId!=null && it.ownerId.length>0 && it.ownerId.toInt()>0 && medias.firstOrNull { media ->  media.containsKey("album_id") && media["album_id"] as String == it.id } != null}?.map {
+              Log.d("Migration", "Migrating Album!! ${it}")
               it.toMigration(isVerified =
-              medias.first { media -> media["album_id"] as String == it.id } != null
+              medias.first { media -> media.containsKey("album_id") && media["album_id"] as String == it.id } != null
               )
             } ?: listOf()
 
