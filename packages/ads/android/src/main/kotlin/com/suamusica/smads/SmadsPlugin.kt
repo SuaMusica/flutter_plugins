@@ -1,5 +1,7 @@
 package com.suamusica.smads
 
+import android.content.Context
+import android.content.Intent
 import androidx.annotation.NonNull;
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
@@ -9,10 +11,27 @@ import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry.Registrar
 
 /** SmadsPlugin */
-public class SmadsPlugin: FlutterPlugin, MethodCallHandler {
+class SmadsPlugin: FlutterPlugin, MethodCallHandler {
+
   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-    val channel = MethodChannel(flutterPluginBinding.getFlutterEngine().getDartExecutor(), "smads")
+    val channel = MethodChannel(flutterPluginBinding.binaryMessenger, CHANNEL_NAME)
     channel.setMethodCallHandler(SmadsPlugin());
+    showImaPlayer(flutterPluginBinding.applicationContext)
+  }
+
+  private fun showImaPlayer(context: Context) {
+    context.startActivity(Intent(context, ImaPlayerActivity::class.java))
+  }
+
+  override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
+  }
+
+  override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
+    if (call.method == "getPlatformVersion") {
+      result.success("Android ${android.os.Build.VERSION.RELEASE}")
+    } else {
+      result.notImplemented()
+    }
   }
 
   // This static function is optional and equivalent to onAttachedToEngine. It supports the old
@@ -27,19 +46,10 @@ public class SmadsPlugin: FlutterPlugin, MethodCallHandler {
   companion object {
     @JvmStatic
     fun registerWith(registrar: Registrar) {
-      val channel = MethodChannel(registrar.messenger(), "smads")
+      val channel = MethodChannel(registrar.messenger(), CHANNEL_NAME)
       channel.setMethodCallHandler(SmadsPlugin())
     }
-  }
 
-  override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
-    if (call.method == "getPlatformVersion") {
-      result.success("Android ${android.os.Build.VERSION.RELEASE}")
-    } else {
-      result.notImplemented()
-    }
-  }
-
-  override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
+    const val CHANNEL_NAME = "smads"
   }
 }
