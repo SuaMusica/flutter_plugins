@@ -61,11 +61,11 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
           QueryDatabase.getInstance(context)?.let { db ->
             val medias = db.offlineMediaDao().getMedias()?.flatMap {
               it.toMigration()
-            }?.map { it.toMap() } ?: listOf()
+            } ?: listOf()
 
-
-            val playlists = db.offlinePlaylistDao().getPlaylists()?.filter{ it -> it.id!=null && it.name!=null && it.name.length>0 && it.artistName!=null && it.artistName.length>0 && it.ownerId!=null && it.ownerId.length>0 && it.ownerId.toInt()>0  && medias.firstOrNull { 
-              media ->  media.containsKey("playlist_id") && media["playlist_id"] as String == it.id 
+            val playlists = db.offlinePlaylistDao().getPlaylists()?.filter{ it -> it.id!=null && it.name!=null && it.name.length>0 && it.artistName!=null && it.artistName.length>0 && it.ownerId!=null && it.ownerId.length>0 && it.ownerId.toInt()>0  && medias.firstOrNull {
+              media ->
+                media.containsKey("playlist_id") && media["playlist_id"] as String == it.id
               } != null}?.map {
               Log.d("Migration", "Migrating Playlist!! ${it}")
               it.toMigration(isVerified =
@@ -74,7 +74,10 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
             } ?: listOf()
 
 
-            val albums = db.offlineAlbumDao().getAlbums()?.filter{ it -> it.id!=null && it.name!=null && it.name.length>0 && it.artistName!=null && it.artistName.length>0 && it.ownerId!=null && it.ownerId.length>0 && it.ownerId.toInt()>0 && medias.firstOrNull { media ->  media.containsKey("album_id") && media["album_id"] as String == it.id } != null}?.map {
+            val albums = db.offlineAlbumDao().getAlbums()?.filter{ it -> it.id!=null && it.name!=null && it.name.length>0 && it.artistName!=null && it.artistName.length>0 && it.ownerId!=null && it.ownerId.length>0 && it.ownerId.toInt()>0 && medias.firstOrNull {
+              media ->
+                media.containsKey("album_id") && media["album_id"] as String == it.id
+              } != null }?.map {
               Log.d("Migration", "Migrating Album!! ${it}")
               it.toMigration(isVerified =
               medias.first { media -> media.containsKey("album_id") && media["album_id"] as String == it.id } != null
@@ -107,8 +110,10 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
         val result = GlobalScope.async {
           QueryDatabase.getInstance(context)?.clearAllTables()
         }
-        runBlocking { result.await()
-        response.success(Ok) }
+        runBlocking {
+          result.await()
+          response.success(Ok)
+        }
         return
       }
       REQUEST_LOGGED_USER -> {
