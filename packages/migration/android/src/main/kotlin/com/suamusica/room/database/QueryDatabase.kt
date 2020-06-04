@@ -13,7 +13,7 @@ import com.suamusica.room.entities.*
 
 @Database(
     entities = [
-      RecentSearch::class, OfflineMedia::class, OfflineAlbum::class, OfflinePlaylist::class,
+      RecentSearch::class, FollowingId::class, OfflineMedia::class, OfflineAlbum::class, OfflinePlaylist::class,
       LocalPlayEvent::class, CountLocalPlayEvent::class, LocalDownloadEvent::class, CountLocalDownloadEvent::class,
       OfflineSimpleProfile::class, MusicNotDownload::class
     ],
@@ -22,6 +22,8 @@ import com.suamusica.room.entities.*
 abstract class QueryDatabase : RoomDatabase() {
 
   abstract fun recentSearchDao(): RecentSearchDao
+
+  abstract fun followingIdsDao(): FollowingIdsDao
 
   abstract fun localPlayEventDao(): LocalPlayEventDao
 
