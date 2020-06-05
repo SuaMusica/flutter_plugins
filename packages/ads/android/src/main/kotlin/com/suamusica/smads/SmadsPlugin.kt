@@ -2,7 +2,10 @@ package com.suamusica.smads
 
 import android.content.Context
 import android.content.Intent
-import androidx.annotation.NonNull;
+import androidx.annotation.NonNull
+import com.suamusica.smads.input.LoadMethodInput
+import com.suamusica.smads.result.LoadResult
+import com.suamusica.smads.result.ScreenStatusResult
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -13,36 +16,42 @@ import io.flutter.plugin.common.PluginRegistry.Registrar
 /** SmadsPlugin */
 class SmadsPlugin: FlutterPlugin, MethodCallHandler {
 
-  override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-    val channel = MethodChannel(flutterPluginBinding.binaryMessenger, CHANNEL_NAME)
-    channel.setMethodCallHandler(SmadsPlugin());
-    showImaPlayer(flutterPluginBinding.applicationContext)
-  }
+  private var channel: MethodChannel? = null
+  private var context: Context? = null
+  private var callback: SmadsCallback? = null
 
-  private fun showImaPlayer(context: Context) {
-    context.startActivity(Intent(context, ImaPlayerActivity::class.java))
+  override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+    this.channel = MethodChannel(flutterPluginBinding.binaryMessenger, CHANNEL_NAME)
+    this.context = flutterPluginBinding.applicationContext
+    this.callback = SmadsCallback(channel!!)
+    this.channel?.setMethodCallHandler(SmadsPlugin())
   }
 
   override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
+    channel = null
+    context = null
+    callback = null
   }
 
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
-    if (call.method == "getPlatformVersion") {
-      result.success("Android ${android.os.Build.VERSION.RELEASE}")
-    } else {
-      result.notImplemented()
+    when(call.method) {
+      LOAD_METHOD -> load(LoadMethodInput(call.arguments), result)
+      SCREEN_STATUS_METHOD -> screenStatus(result)
+      else -> result.notImplemented()
     }
   }
 
-  // This static function is optional and equivalent to onAttachedToEngine. It supports the old
-  // pre-Flutter-1.12 Android projects. You are encouraged to continue supporting
-  // plugin registration via this function while apps migrate to use the new Android APIs
-  // post-flutter-1.12 via https://flutter.dev/go/android-project-migration.
-  //
-  // It is encouraged to share logic between onAttachedToEngine and registerWith to keep
-  // them functionally equivalent. Only one of onAttachedToEngine or registerWith will be called
-  // depending on the user's project. onAttachedToEngine or registerWith must both be defined
-  // in the same class.
+  private fun load(input: LoadMethodInput, result: Result) {
+    context?.let {
+      it.startActivity(Intent(context, ImaPlayerActivity::class.java))
+      result.success(LoadResult.SUCCESS)
+    }
+  }
+
+  private fun screenStatus(result: Result) {
+    result.success(ScreenStatusResult.LOCKED_SCREEN)
+  }
+
   companion object {
     @JvmStatic
     fun registerWith(registrar: Registrar) {
@@ -51,5 +60,7 @@ class SmadsPlugin: FlutterPlugin, MethodCallHandler {
     }
 
     const val CHANNEL_NAME = "smads"
+    private const val LOAD_METHOD = "load"
+    private const val SCREEN_STATUS_METHOD = "screen_status"
   }
 }
