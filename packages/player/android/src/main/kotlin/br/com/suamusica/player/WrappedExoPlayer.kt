@@ -97,6 +97,16 @@ class WrappedExoPlayer(
         wifiLock?.setReferenceCounted(false)
         wakeLock?.setReferenceCounted(false)
 
+        // Metadata Build
+        val metadataBuilder = MediaMetadataCompat.Builder()
+        metadataBuilder.apply {
+            album = media?.author
+            title = media?.name
+            displayTitle = media?.name
+            albumArt = NotificationBuilder.getArt(context, media?.coverUrl)
+        }
+        val metadata = metadataBuilder.build()
+
         // Create a new MediaSession.
         val mediaButtonReceiver = ComponentName(context, MediaButtonReceiver::class.java)
         mediaSession = mediaSession?.let { it } ?: MediaSessionCompat(this.context, "MusicService", mediaButtonReceiver, null)
@@ -104,6 +114,14 @@ class WrappedExoPlayer(
                 setSessionActivity(sessionActivityPendingIntent)
                 isActive = true
                 setCallback(MediaSessionCallback())
+                val metadataBuilder = MediaMetadataCompat.Builder()
+                metadataBuilder.apply {
+                    album = media?.author
+                    title = media?.name
+                    displayTitle = media?.name
+                    albumArt = NotificationBuilder.getArt(context, media?.coverUrl)
+                }
+                setMetadata(metadata)
             }
 
         mediaSession?.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
@@ -117,6 +135,9 @@ class WrappedExoPlayer(
                 mediaSessionConnector = MediaSessionConnector(mediaSession).also { connector ->
                     // Produces DataSource instances through which media data is loaded.
                     connector.setPlayer(player)
+                    connector.setMediaMetadataProvider {
+                        return@setMediaMetadataProvider metadata
+                    }
                 }
             }
         }

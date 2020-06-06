@@ -52,6 +52,29 @@ class NotificationBuilder(private val context: Context) {
     private val stopPendingIntent =
             MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_STOP)
 
+    companion object {
+        private val glideOptions = RequestOptions()
+                .fallback(R.drawable.default_art)
+                .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
+
+        private const val NOTIFICATION_LARGE_ICON_SIZE = 144 // px
+
+        fun getArt(context: Context, artUri: String?) = try {
+            when {
+                artUri != null && artUri.isNotBlank() -> Glide.with(context)
+                        .applyDefaultRequestOptions(glideOptions)
+                        .asBitmap()
+                        .load(artUri)
+                        .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
+                        .get()
+                else -> null
+            }
+        } catch (e: Exception) {
+            Log.e("NotificationBuilder", artUri?.toString() ?: "", e)
+            null
+        }
+    }
+
     fun buildNotification(mediaSession: MediaSessionCompat, media: Media): Notification? {
         if (shouldCreateNowPlayingChannel()) {
             createNowPlayingChannel()
@@ -66,17 +89,21 @@ class NotificationBuilder(private val context: Context) {
         ++playPauseIndex
         actions.add(1)
 
-        if (playbackState.isPlaying) {
-            Log.i("NotificationBuilder", "Player is playing...")
-            builder.addAction(pauseAction)
-        } else if (playbackState.isPlayEnabled) {
-            Log.i("NotificationBuilder", "Player is NOT playing...")
-            builder.addAction(playAction)
-        } else {
-            Log.i("NotificationBuilder", "ELSE")
-            builder.addAction(playAction)
+        when {
+            playbackState.isPlaying -> {
+                Log.i("NotificationBuilder", "Player is playing...")
+                builder.addAction(pauseAction)
+            }
+            playbackState.isPlayEnabled -> {
+                Log.i("NotificationBuilder", "Player is NOT playing...")
+                builder.addAction(playAction)
+            }
+            else -> {
+                Log.i("NotificationBuilder", "ELSE")
+                builder.addAction(playAction)
+            }
         }
-        
+
         builder.addAction(skipToNextAction)
         actions.add(playPauseIndex + 1)
 
@@ -87,20 +114,7 @@ class NotificationBuilder(private val context: Context) {
 
         val artUri = media.coverUrl
 
-        val art = try {
-            when {
-                artUri?.isNotBlank() == true -> Glide.with(context)
-                        .applyDefaultRequestOptions(glideOptions)
-                        .asBitmap()
-                        .load(artUri)
-                        .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
-                        .get()
-                else -> null
-            }
-        } catch (e: Exception) {
-            Log.e("NotificationBuilder", artUri?.toString() ?: "", e)
-            null
-        }
+        val art = getArt(context, artUri)
 
         return builder
                 .setContentText(media.author)
@@ -139,9 +153,3 @@ class NotificationBuilder(private val context: Context) {
                 old
 }
 
-
-private const val NOTIFICATION_LARGE_ICON_SIZE = 144 // px
-
-private val glideOptions = RequestOptions()
-        .fallback(R.drawable.default_art)
-        .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
