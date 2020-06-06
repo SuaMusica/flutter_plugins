@@ -278,12 +278,7 @@ class WrappedExoPlayer(
         performAndEnableTracking {
             player.playWhenReady = true
 
-            AsyncTask.execute {
-                val notification = notificationBuilder.buildNotification(this.mediaSession!!, this.media!!)
-                notification?.let {
-                    notificationManager?.notify(NOW_PLAYING_NOTIFICATION, it)
-                }
-            }
+            sendNotification(true)
         }
     }
 
@@ -299,9 +294,14 @@ class WrappedExoPlayer(
     }
 
     override fun pause() {
+        Log.i("SMPlayer", "Notification: pause: 1")
         performAndDisableTracking {
             player.playWhenReady = false
+            Log.i("SMPlayer", "Notification: pause: 2")
         }
+        Log.i("SMPlayer", "Notification: pause: 3")
+        sendNotification(false)
+        Log.i("SMPlayer", "Notification: pause: 4")
     }
 
     override fun stop() {
@@ -309,6 +309,7 @@ class WrappedExoPlayer(
             player.playWhenReady = false
             channelManager.notifyPlayerStateChange(playerId, PlayerState.STOPPED)
         }
+        sendNotification(false)
     }
 
     override fun next() {
@@ -356,6 +357,15 @@ class WrappedExoPlayer(
     private fun performAndDisableTracking(callable: () -> Unit) {
         callable()
         stopTrackingProgress()
+    }
+
+    private fun sendNotification(onGoing: Boolean) {
+        AsyncTask.execute {
+            val notification = notificationBuilder.buildNotification(this.mediaSession!!, this.media!!, onGoing)
+            notification?.let {
+                notificationManager?.notify(NOW_PLAYING_NOTIFICATION, it)
+            }
+        }
     }
 
     private fun notifyPositionChange() {
@@ -432,9 +442,11 @@ class WrappedExoPlayer(
                 return
             }
 
+            val onGoing = updatedState == PlaybackStateCompat.STATE_PLAYING || updatedState == PlaybackStateCompat.STATE_BUFFERING
+
             // Skip building a notification when state is "none".
             val notification = if (updatedState != PlaybackStateCompat.STATE_NONE) {
-                mediaSession?.let { notificationBuilder.buildNotification(it, media!!) }
+                mediaSession?.let { notificationBuilder.buildNotification(it, media!!, onGoing) }
             } else {
                 null
             }
@@ -443,6 +455,9 @@ class WrappedExoPlayer(
                 PlaybackStateCompat.STATE_NONE,
                 PlaybackStateCompat.STATE_STOPPED -> {
                     removeNowPlayingNotification()
+                }
+                PlaybackStateCompat.STATE_PAUSED -> {
+
                 }
                 PlaybackStateCompat.STATE_BUFFERING,
                 PlaybackStateCompat.STATE_PLAYING -> {

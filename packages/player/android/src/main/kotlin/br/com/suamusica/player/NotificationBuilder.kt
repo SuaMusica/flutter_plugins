@@ -75,7 +75,7 @@ class NotificationBuilder(private val context: Context) {
         }
     }
 
-    fun buildNotification(mediaSession: MediaSessionCompat, media: Media): Notification? {
+    fun buildNotification(mediaSession: MediaSessionCompat, media: Media, onGoing: Boolean): Notification? {
         if (shouldCreateNowPlayingChannel()) {
             createNowPlayingChannel()
         }
@@ -116,15 +116,27 @@ class NotificationBuilder(private val context: Context) {
 
         val art = getArt(context, artUri)
 
-        return builder
+        val notification = builder
                 .setContentText(media.author)
                 .setContentTitle(media.name)
                 .setLargeIcon(art)
-                .setOnlyAlertOnce(true)
+                .setOnlyAlertOnce(false)
+                .setAutoCancel(false)
+                .setOngoing(onGoing)
+                .setDefaults(Notification.DEFAULT_ALL)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setStyle(mediaStyle)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .build()
+
+        if (onGoing) {
+            notification.flags += Notification.FLAG_ONGOING_EVENT
+            notification.flags += Notification.FLAG_NO_CLEAR
+        }
+
+        Log.i("Player", "Player: Sending Notification onGoing: $onGoing")
+
+        return notification
     }
 
     private fun shouldCreateNowPlayingChannel() =
