@@ -91,11 +91,11 @@ class NotificationBuilder(private val context: Context) {
 
         when {
             playbackState.isPlaying -> {
-                Log.i("NotificationBuilder", "Player is playing...")
+                Log.i("NotificationBuilder", "Player is playing... onGoing: $onGoing")
                 builder.addAction(pauseAction)
             }
             playbackState.isPlayEnabled -> {
-                Log.i("NotificationBuilder", "Player is NOT playing...")
+                Log.i("NotificationBuilder", "Player is NOT playing... onGoing: $onGoing")
                 builder.addAction(playAction)
             }
             else -> {
@@ -133,12 +133,12 @@ class NotificationBuilder(private val context: Context) {
                 .setSmallIcon(R.drawable.ic_notification)
                 .build()
 
-        if (onGoing) {
+        //if (onGoing) {
             notification.flags += Notification.FLAG_ONGOING_EVENT
             notification.flags += Notification.FLAG_NO_CLEAR
-        }
+        //}
 
-        Log.i("Player", "Player: Sending Notification onGoing: $onGoing")
+        Log.i("NotificationBuilder", "Sending Notification onGoing: $onGoing")
 
         return notification
     }
