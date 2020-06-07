@@ -105,6 +105,8 @@ class WrappedExoPlayer(
             title = media?.name
             displayTitle = media?.name
             albumArt = NotificationBuilder.getArt(context, media?.coverUrl)
+            putString(MediaMetadataCompat.METADATA_KEY_ARTIST, media?.author)
+            putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, media?.name)
         }
         val metadata = metadataBuilder.build()
 
@@ -115,13 +117,6 @@ class WrappedExoPlayer(
                 setSessionActivity(sessionActivityPendingIntent)
                 isActive = true
                 setCallback(MediaSessionCallback())
-                val metadataBuilder = MediaMetadataCompat.Builder()
-                metadataBuilder.apply {
-                    album = media?.author
-                    title = media?.name
-                    displayTitle = media?.name
-                    albumArt = NotificationBuilder.getArt(context, media?.coverUrl)
-                }
                 setMetadata(metadata)
             }
 
@@ -246,8 +241,6 @@ class WrappedExoPlayer(
         var url = media.url
         Log.i("Player", "Player: URL: $url")
         val uri = Uri.parse(url)
-
-        val playerNotificationManager = NotificationBuilder.createPlayerNotificationManager(context, mediaSession!!, player, media)
 
         @C.ContentType val type = Util.inferContentType(uri)
         Log.i("Player", "Player: Type: $type HLS: ${C.TYPE_HLS}")
