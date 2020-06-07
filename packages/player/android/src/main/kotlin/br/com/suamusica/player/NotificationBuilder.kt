@@ -164,6 +164,10 @@ class NotificationBuilder(private val context: Context) {
 
         val art = getArt(context, artUri)
 
+        // 1. Abrir o App ao clicar na Notificacao.
+        // 2. AO fechar o App(encerrar) remover a Not.
+        // 3.
+
         val notification = builder
                 .setStyle(mediaStyle)
                 .setCategory(NotificationCompat.CATEGORY_PROGRESS)
@@ -174,7 +178,7 @@ class NotificationBuilder(private val context: Context) {
                 .setLargeIcon(art)
                 .setColorized(true)
                 .setOnlyAlertOnce(false)
-                .setAutoCancel(false)
+                .setAutoCancel(true)
                 .setOngoing(onGoing)
                 .setDefaults(Notification.DEFAULT_ALL)
                 .setSmallIcon(R.drawable.ic_notification)

@@ -13,6 +13,7 @@ import android.net.wifi.WifiManager
 import android.os.AsyncTask
 import android.os.Handler
 import android.os.PowerManager
+import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
@@ -27,6 +28,7 @@ import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.Timeline
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
+import com.google.android.exoplayer2.ext.mediasession.TimelineQueueNavigator
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.source.hls.HlsMediaSource
@@ -98,18 +100,6 @@ class WrappedExoPlayer(
         wifiLock?.setReferenceCounted(false)
         wakeLock?.setReferenceCounted(false)
 
-        // Metadata Build
-        val metadataBuilder = MediaMetadataCompat.Builder()
-        metadataBuilder.apply {
-            album = media?.author
-            title = media?.name
-            displayTitle = media?.name
-            albumArt = NotificationBuilder.getArt(context, media?.coverUrl)
-            putString(MediaMetadataCompat.METADATA_KEY_ARTIST, media?.author)
-            putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, media?.name)
-        }
-        val metadata = metadataBuilder.build()
-
         // Create a new MediaSession.
         val mediaButtonReceiver = ComponentName(context, MediaButtonReceiver::class.java)
         mediaSession = mediaSession?.let { it } ?: MediaSessionCompat(this.context, "Player", mediaButtonReceiver, null)
@@ -117,7 +107,6 @@ class WrappedExoPlayer(
                 setSessionActivity(sessionActivityPendingIntent)
                 isActive = true
                 setCallback(MediaSessionCallback())
-                setMetadata(metadata)
             }
 
         mediaSession?.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
@@ -131,9 +120,6 @@ class WrappedExoPlayer(
                 mediaSessionConnector = MediaSessionConnector(mediaSession).also { connector ->
                     // Produces DataSource instances through which media data is loaded.
                     connector.setPlayer(player)
-                    connector.setMediaMetadataProvider {
-                        return@setMediaMetadataProvider metadata
-                    }
                 }
             }
         }
@@ -237,6 +223,33 @@ class WrappedExoPlayer(
         val defaultHttpDataSourceFactory = DefaultHttpDataSourceFactory("mp.next")
         defaultHttpDataSourceFactory.defaultRequestProperties.set("Cookie", cookie)
         val dataSourceFactory = DefaultDataSourceFactory(context, null, defaultHttpDataSourceFactory)
+
+        // Metadata Build
+        val metadataBuilder = MediaMetadataCompat.Builder()
+        metadataBuilder.apply {
+            album = media.author
+            albumArt = NotificationBuilder.getArt(context, media.coverUrl)
+            title = media.name
+            displayTitle = media.name
+            putString(MediaMetadataCompat.METADATA_KEY_ARTIST, media.author)
+            putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, media.name)
+        }
+        val metadata = metadataBuilder.build()
+        mediaSession?.setMetadata(metadata)
+        mediaSessionConnector?.setMediaMetadataProvider {
+            return@setMediaMetadataProvider metadata
+        }
+        val timelineQueueNavigator = object : TimelineQueueNavigator(mediaSession!!) {
+            override fun getMediaDescription(player: com.google.android.exoplayer2.Player, windowIndex: Int): MediaDescriptionCompat {
+                player.let {
+                    return MediaDescriptionCompat.Builder().apply {
+                        setTitle(media.author)
+                        setSubtitle(media.name)
+                    }.build()
+                }
+            }
+        }
+        mediaSessionConnector?.setQueueNavigator(timelineQueueNavigator)
 
         var url = media.url
         Log.i("Player", "Player: URL: $url")
