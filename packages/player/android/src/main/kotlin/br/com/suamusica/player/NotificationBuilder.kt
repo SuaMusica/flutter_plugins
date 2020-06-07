@@ -82,7 +82,7 @@ class NotificationBuilder(private val context: Context) {
         fun createPlayerNotificationManager(context: Context,
                                             mediaSession: MediaSessionCompat,
                                             exoPlayer: ExoPlayer,
-                                            media: Media) {
+                                            media: Media): PlayerNotificationManager {
             val playerNotificationManager = PlayerNotificationManager.createWithNotificationChannel(
                     context,
                     NOW_PLAYING_CHANNEL,
@@ -117,6 +117,8 @@ class NotificationBuilder(private val context: Context) {
             playerNotificationManager.setRewindIncrementMs(0)
             // no stop
             playerNotificationManager.setUseStopAction(false)
+
+            return playerNotificationManager
         }
     }
 

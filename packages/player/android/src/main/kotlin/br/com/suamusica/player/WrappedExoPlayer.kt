@@ -139,8 +139,6 @@ class WrappedExoPlayer(
                     connector.setMediaMetadataProvider {
                         return@setMediaMetadataProvider metadata
                     }
-
-//                    NotificationBuilder.createPlayerNotificationManager(context, mediaSession, player, media!!)
                 }
             }
         }
@@ -249,6 +247,7 @@ class WrappedExoPlayer(
         Log.i("Player", "Player: URL: $url")
         val uri = Uri.parse(url)
 
+        val playerNotificationManager = NotificationBuilder.createPlayerNotificationManager(context, mediaSession!!, player, media)
 
         @C.ContentType val type = Util.inferContentType(uri)
         Log.i("Player", "Player: Type: $type HLS: ${C.TYPE_HLS}")
