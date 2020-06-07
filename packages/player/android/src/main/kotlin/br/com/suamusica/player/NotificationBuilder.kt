@@ -111,22 +111,26 @@ class NotificationBuilder(private val context: Context) {
                 .setCancelButtonIntent(stopPendingIntent)
                 .setShowActionsInCompactView(*actions.toIntArray())
                 .setShowCancelButton(true)
+                .setMediaSession(mediaSession.sessionToken)
 
         val artUri = media.coverUrl
 
         val art = getArt(context, artUri)
 
         val notification = builder
-                .setContentText(media.author)
+                .setStyle(mediaStyle)
+                .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setShowWhen(false)
                 .setContentTitle(media.name)
+                .setContentText(media.author)
                 .setLargeIcon(art)
+                .setColorized(true)
                 .setOnlyAlertOnce(false)
                 .setAutoCancel(false)
                 .setOngoing(onGoing)
                 .setDefaults(Notification.DEFAULT_ALL)
                 .setSmallIcon(R.drawable.ic_notification)
-                .setStyle(mediaStyle)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .build()
 
         if (onGoing) {
