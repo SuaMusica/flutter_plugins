@@ -64,61 +64,22 @@ class NotificationBuilder(private val context: Context) {
 
         private const val NOTIFICATION_LARGE_ICON_SIZE = 144 // px
 
-        fun getArt(context: Context, artUri: String?) = try {
+        fun getArt(context: Context, artUri: String?, size: Int? = null) = try {
+            val glider = Glide.with(context)
+                    .applyDefaultRequestOptions(glideOptions)
+                    .asBitmap()
+                    .load(artUri)
             when {
-                artUri != null && artUri.isNotBlank() -> Glide.with(context)
-                        .applyDefaultRequestOptions(glideOptions)
-                        .asBitmap()
-                        .load(artUri)
-                        .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
-                        .get()
+                artUri != null && artUri.isNotBlank() ->
+                    when (size) {
+                        null -> glider.submit().get()
+                        else -> glider.submit(size, size).get()
+                    }
                 else -> null
             }
         } catch (e: Exception) {
             Log.e("NotificationBuilder", artUri?.toString() ?: "", e)
             null
-        }
-
-        fun createPlayerNotificationManager(context: Context,
-                                            mediaSession: MediaSessionCompat,
-                                            exoPlayer: ExoPlayer,
-                                            media: Media): PlayerNotificationManager {
-            val playerNotificationManager = PlayerNotificationManager.createWithNotificationChannel(
-                    context,
-                    NOW_PLAYING_CHANNEL,
-                    R.string.notification_channel,
-                    R.string.notification_channel_description,
-                    NOW_PLAYING_NOTIFICATION,
-                    object : PlayerNotificationManager.MediaDescriptionAdapter {
-                        override fun createCurrentContentIntent(player: Player): PendingIntent? {
-                            return null
-                        }
-
-                        override fun getCurrentContentText(player: Player) = media.author
-
-                        override fun getCurrentContentTitle(player: Player) = media.name
-
-                        override fun getCurrentLargeIcon(player: Player,
-                                                         callback: PlayerNotificationManager.BitmapCallback)
-                                = getArt(context, media.coverUrl)
-                    },
-                    object : PlayerNotificationManager.NotificationListener {
-                    })
-
-            playerNotificationManager.setMediaSessionToken(mediaSession.sessionToken)
-            playerNotificationManager.setPlayer(exoPlayer)
-
-            playerNotificationManager.setDefaults(Notification.DEFAULT_ALL)
-            playerNotificationManager.setSmallIcon(R.drawable.ic_notification)
-            playerNotificationManager.setUseNavigationActions(true)
-            playerNotificationManager.setUseNavigationActionsInCompactView(true)
-            // no fast-forward and rewind
-            playerNotificationManager.setFastForwardIncrementMs(0)
-            playerNotificationManager.setRewindIncrementMs(0)
-            // no stop
-            playerNotificationManager.setUseStopAction(false)
-
-            return playerNotificationManager
         }
     }
 
@@ -162,7 +123,7 @@ class NotificationBuilder(private val context: Context) {
 
         val artUri = media.coverUrl
 
-        val art = getArt(context, artUri)
+        val art = getArt(context, artUri, NOTIFICATION_LARGE_ICON_SIZE)
 
         // 1. Abrir o App ao clicar na Notificacao.
         // 2. AO fechar o App(encerrar) remover a Not.
