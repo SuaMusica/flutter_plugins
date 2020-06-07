@@ -259,13 +259,11 @@ class WrappedExoPlayer(
             }
 
             override fun onSkipToNext(player: com.google.android.exoplayer2.Player, controlDispatcher: ControlDispatcher) {
-                Log.i("Player", "Queue next")
-                super.onSkipToNext(player, controlDispatcher)
+                next()
             }
 
             override fun onSkipToPrevious(player: com.google.android.exoplayer2.Player, controlDispatcher: ControlDispatcher) {
-                Log.i("Player", "Queue previous")
-                super.onSkipToPrevious(player, controlDispatcher)
+                previous()
             }
         }
         mediaSessionConnector?.setQueueNavigator(timelineQueueNavigator)
