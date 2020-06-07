@@ -20,11 +20,7 @@ import android.util.Log
 import androidx.core.app.NotificationManagerCompat
 import androidx.media.session.MediaButtonReceiver
 import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
-import com.google.android.exoplayer2.C
-import com.google.android.exoplayer2.ExoPlaybackException
-import com.google.android.exoplayer2.PlaybackParameters
-import com.google.android.exoplayer2.SimpleExoPlayer
-import com.google.android.exoplayer2.Timeline
+import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.ext.mediasession.TimelineQueueNavigator
@@ -257,9 +253,19 @@ class WrappedExoPlayer(
                     return MediaDescriptionCompat.Builder().apply {
                         setTitle(media.author)
                         setSubtitle(media.name)
-                        setIconBitmap(art)
+                        setIconUri(Uri.parse(media.coverUrl))
                     }.build()
                 }
+            }
+
+            override fun onSkipToNext(player: com.google.android.exoplayer2.Player, controlDispatcher: ControlDispatcher) {
+                Log.i("Player", "Queue next")
+                super.onSkipToNext(player, controlDispatcher)
+            }
+
+            override fun onSkipToPrevious(player: com.google.android.exoplayer2.Player, controlDispatcher: ControlDispatcher) {
+                Log.i("Player", "Queue previous")
+                super.onSkipToPrevious(player, controlDispatcher)
             }
         }
         mediaSessionConnector?.setQueueNavigator(timelineQueueNavigator)
