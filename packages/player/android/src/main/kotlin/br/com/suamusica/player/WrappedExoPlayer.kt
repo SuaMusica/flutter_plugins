@@ -1,7 +1,5 @@
 package br.com.suamusica.player
 
-import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
-
 import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.PendingIntent
@@ -21,6 +19,7 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.core.app.NotificationManagerCompat
 import androidx.media.session.MediaButtonReceiver
+import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
 import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.ExoPlaybackException
 import com.google.android.exoplayer2.PlaybackParameters
@@ -109,7 +108,9 @@ class WrappedExoPlayer(
                 setCallback(MediaSessionCallback())
             }
 
-        mediaSession?.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
+        mediaSession?.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS
+                or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS
+                or MediaSessionCompat.FLAG_HANDLES_QUEUE_COMMANDS)
 
         mediaSession?.let { mediaSession ->
             val sessionToken = mediaSession.sessionToken
@@ -226,8 +227,8 @@ class WrappedExoPlayer(
 
         // Metadata Build
         val metadataBuilder = MediaMetadataCompat.Builder()
+        val art = NotificationBuilder.getArt(context, media.coverUrl)
         metadataBuilder.apply {
-            val art = NotificationBuilder.getArt(context, media.coverUrl)
             album = media.author
             albumArt = art
             title = media.name
@@ -235,18 +236,28 @@ class WrappedExoPlayer(
             putString(MediaMetadataCompat.METADATA_KEY_ARTIST, media.author)
             putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, media.name)
             putBitmap(MediaMetadataCompat.METADATA_KEY_ART, art)
+            putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON, art)
         }
         val metadata = metadataBuilder.build()
         mediaSession?.setMetadata(metadata)
         mediaSessionConnector?.setMediaMetadataProvider {
             return@setMediaMetadataProvider metadata
         }
+
         val timelineQueueNavigator = object : TimelineQueueNavigator(mediaSession!!) {
+            override fun getSupportedQueueNavigatorActions(player: com.google.android.exoplayer2.Player): Long {
+                var actions: Long = 0
+                    actions = actions or PlaybackStateCompat.ACTION_SKIP_TO_QUEUE_ITEM
+                    actions = actions or PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
+                    actions = actions or PlaybackStateCompat.ACTION_SKIP_TO_NEXT
+                return actions
+            }
             override fun getMediaDescription(player: com.google.android.exoplayer2.Player, windowIndex: Int): MediaDescriptionCompat {
                 player.let {
                     return MediaDescriptionCompat.Builder().apply {
                         setTitle(media.author)
                         setSubtitle(media.name)
+                        setIconBitmap(art)
                     }.build()
                 }
             }
