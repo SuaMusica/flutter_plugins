@@ -139,6 +139,8 @@ class WrappedExoPlayer(
                     connector.setMediaMetadataProvider {
                         return@setMediaMetadataProvider metadata
                     }
+
+//                    NotificationBuilder.createPlayerNotificationManager(context, mediaSession, player, media!!)
                 }
             }
         }
