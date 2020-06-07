@@ -227,12 +227,14 @@ class WrappedExoPlayer(
         // Metadata Build
         val metadataBuilder = MediaMetadataCompat.Builder()
         metadataBuilder.apply {
+            val art = NotificationBuilder.getArt(context, media.coverUrl)
             album = media.author
-            albumArt = NotificationBuilder.getArt(context, media.coverUrl)
+            albumArt = art
             title = media.name
             displayTitle = media.name
             putString(MediaMetadataCompat.METADATA_KEY_ARTIST, media.author)
             putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, media.name)
+            putBitmap(MediaMetadataCompat.METADATA_KEY_ART, art)
         }
         val metadata = metadataBuilder.build()
         mediaSession?.setMetadata(metadata)
