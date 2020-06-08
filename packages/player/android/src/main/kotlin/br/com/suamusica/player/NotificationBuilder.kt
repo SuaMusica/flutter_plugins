@@ -115,7 +115,7 @@ class NotificationBuilder(private val context: Context) {
         val artUri = media.coverUrl
 
         val art = getArt(context, artUri, NOTIFICATION_LARGE_ICON_SIZE)
-        
+
         // 2. AO fechar o App(encerrar) remover a Not.
 
         val notifyIntent = Intent("FLUTTER_NOTIFICATION_CLICK").apply {
