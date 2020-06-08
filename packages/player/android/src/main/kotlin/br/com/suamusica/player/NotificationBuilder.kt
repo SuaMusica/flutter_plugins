@@ -3,22 +3,18 @@ package br.com.suamusica.player
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
-import android.media.MediaMetadata
+import android.content.Intent
 import android.os.Build
-import android.support.v4.media.MediaMetadataCompat
+import android.support.v4.media.session.MediaControllerCompat
+import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.PlaybackStateCompat.*
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
-import android.support.v4.media.session.MediaControllerCompat
-import android.support.v4.media.session.MediaSessionCompat
-import android.support.v4.media.session.PlaybackStateCompat.ACTION_PAUSE
-import android.support.v4.media.session.PlaybackStateCompat.ACTION_PLAY
-import android.support.v4.media.session.PlaybackStateCompat.ACTION_SKIP_TO_NEXT
-import android.support.v4.media.session.PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
-import android.support.v4.media.session.PlaybackStateCompat.ACTION_STOP
-import android.util.Log
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
@@ -52,7 +48,33 @@ class NotificationBuilder(private val context: Context) {
     private val stopPendingIntent =
             MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_STOP)
 
-    fun buildNotification(mediaSession: MediaSessionCompat, media: Media): Notification? {
+    companion object {
+        private val glideOptions = RequestOptions()
+                .fallback(R.drawable.default_art)
+                .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
+
+        private const val NOTIFICATION_LARGE_ICON_SIZE = 144 // px
+
+        fun getArt(context: Context, artUri: String?, size: Int? = null) = try {
+            val glider = Glide.with(context)
+                    .applyDefaultRequestOptions(glideOptions)
+                    .asBitmap()
+                    .load(artUri)
+            when {
+                artUri != null && artUri.isNotBlank() ->
+                    when (size) {
+                        null -> glider.submit().get()
+                        else -> glider.submit(size, size).get()
+                    }
+                else -> null
+            }
+        } catch (e: Exception) {
+            Log.e("NotificationBuilder", artUri?.toString() ?: "", e)
+            null
+        }
+    }
+
+    fun buildNotification(mediaSession: MediaSessionCompat, media: Media, onGoing: Boolean): Notification? {
         if (shouldCreateNowPlayingChannel()) {
             createNowPlayingChannel()
         }
@@ -66,17 +88,21 @@ class NotificationBuilder(private val context: Context) {
         ++playPauseIndex
         actions.add(1)
 
-        if (playbackState.isPlaying) {
-            Log.i("NotificationBuilder", "Player is playing...")
-            builder.addAction(pauseAction)
-        } else if (playbackState.isPlayEnabled) {
-            Log.i("NotificationBuilder", "Player is NOT playing...")
-            builder.addAction(playAction)
-        } else {
-            Log.i("NotificationBuilder", "ELSE")
-            builder.addAction(playAction)
+        when {
+            playbackState.isPlaying -> {
+                Log.i("NotificationBuilder", "Player is playing... onGoing: $onGoing")
+                builder.addAction(pauseAction)
+            }
+            playbackState.isPlayEnabled -> {
+                Log.i("NotificationBuilder", "Player is NOT playing... onGoing: $onGoing")
+                builder.addAction(playAction)
+            }
+            else -> {
+                Log.i("NotificationBuilder", "ELSE")
+                builder.addAction(playAction)
+            }
         }
-        
+
         builder.addAction(skipToNextAction)
         actions.add(playPauseIndex + 1)
 
@@ -84,33 +110,47 @@ class NotificationBuilder(private val context: Context) {
                 .setCancelButtonIntent(stopPendingIntent)
                 .setShowActionsInCompactView(*actions.toIntArray())
                 .setShowCancelButton(true)
+                .setMediaSession(mediaSession.sessionToken)
 
         val artUri = media.coverUrl
 
-        val art = try {
-            when {
-                artUri?.isNotBlank() == true -> Glide.with(context)
-                        .applyDefaultRequestOptions(glideOptions)
-                        .asBitmap()
-                        .load(artUri)
-                        .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
-                        .get()
-                else -> null
-            }
-        } catch (e: Exception) {
-            Log.e("NotificationBuilder", artUri?.toString() ?: "", e)
-            null
+        val art = getArt(context, artUri, NOTIFICATION_LARGE_ICON_SIZE)
+
+        // 2. AO fechar o App(encerrar) remover a Not.
+
+        val notifyIntent = Intent("FLUTTER_NOTIFICATION_CLICK").apply {
+            addCategory(Intent.CATEGORY_DEFAULT)
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val notifyPendingIntent = PendingIntent.getActivity(
+                context, 0, notifyIntent, PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val notification = builder
+                .setContentIntent(notifyPendingIntent)
+                .setStyle(mediaStyle)
+                .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setShowWhen(false)
+                .setContentTitle(media.name)
+                .setContentText(media.author)
+                .setLargeIcon(art)
+                .setColorized(true)
+                .setOnlyAlertOnce(false)
+                .setAutoCancel(false)
+                .setOngoing(onGoing)
+                .setDefaults(Notification.DEFAULT_ALL)
+                .setSmallIcon(R.drawable.ic_notification)
+                .build()
+
+        if (onGoing) {
+            notification.flags += Notification.FLAG_ONGOING_EVENT
+            notification.flags += Notification.FLAG_NO_CLEAR
         }
 
-        return builder
-                .setContentText(media.author)
-                .setContentTitle(media.name)
-                .setLargeIcon(art)
-                .setOnlyAlertOnce(true)
-                .setSmallIcon(R.drawable.ic_notification)
-                .setStyle(mediaStyle)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .build()
+        Log.i("NotificationBuilder", "Sending Notification onGoing: $onGoing")
+
+        return notification
     }
 
     private fun shouldCreateNowPlayingChannel() =
@@ -139,9 +179,3 @@ class NotificationBuilder(private val context: Context) {
                 old
 }
 
-
-private const val NOTIFICATION_LARGE_ICON_SIZE = 144 // px
-
-private val glideOptions = RequestOptions()
-        .fallback(R.drawable.default_art)
-        .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
