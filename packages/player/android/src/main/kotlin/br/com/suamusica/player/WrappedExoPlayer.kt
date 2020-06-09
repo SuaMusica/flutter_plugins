@@ -386,9 +386,13 @@ class WrappedExoPlayer(
 
     private fun sendNotification(onGoing: Boolean) {
         AsyncTask.execute {
-            val notification = notificationBuilder.buildNotification(this.mediaSession!!, this.media!!, onGoing)
-            notification?.let {
-                notificationManager?.notify(NOW_PLAYING_NOTIFICATION, it)
+            mediaSession?.let {
+                media?.let {
+                    val notification = notificationBuilder?.buildNotification(this.mediaSession!!, this.media!!, onGoing)
+                    notification?.let {
+                        notificationManager?.notify(NOW_PLAYING_NOTIFICATION, it)
+                    }
+                }
             }
         }
     }
