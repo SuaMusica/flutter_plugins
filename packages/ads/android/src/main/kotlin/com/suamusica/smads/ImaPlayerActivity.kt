@@ -12,7 +12,7 @@ import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.source.ads.AdsMediaSource
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
-import kotlinx.android.synthetic.main.activity_ima_player.playerView
+import kotlinx.android.synthetic.main.activity_ima_player.videoAdContainer
 
 class ImaPlayerActivity : AppCompatActivity() {
 
@@ -43,7 +43,7 @@ class ImaPlayerActivity : AppCompatActivity() {
 
     private fun releasePlayer() {
         adsLoader.setPlayer(null)
-        playerView.player = null
+        videoAdContainer.player = null
         player?.release()
         player = null
     }
@@ -52,12 +52,12 @@ class ImaPlayerActivity : AppCompatActivity() {
         val contentUrl = intent.getStringExtra(CONTENT_URL_KEY)
         Log.d(tag, "contentUrl: $contentUrl")
         player = SimpleExoPlayer.Builder(this).build()
-        playerView.player = player
+        videoAdContainer.player = player
         adsLoader.setPlayer(player)
         val dataSourceFactory =  DefaultDataSourceFactory(this, Util.getUserAgent(this, "ima_test"))
         val mediaSourceFactory = ProgressiveMediaSource.Factory(dataSourceFactory)
         val mediaSource = mediaSourceFactory.createMediaSource(Uri.parse(contentUrl))
-        val adsMediaSource = AdsMediaSource(mediaSource, dataSourceFactory, adsLoader, playerView)
+        val adsMediaSource = AdsMediaSource(mediaSource, dataSourceFactory, adsLoader, videoAdContainer)
 
         player?.prepare(adsMediaSource)
         player?.playWhenReady = true
@@ -67,8 +67,8 @@ class ImaPlayerActivity : AppCompatActivity() {
         super.onStart()
         if (Util.SDK_INT > 23) {
             initializePlayer()
-            if (playerView != null) {
-                playerView.onResume()
+            if (videoAdContainer != null) {
+                videoAdContainer.onResume()
             }
         }
     }
@@ -77,8 +77,8 @@ class ImaPlayerActivity : AppCompatActivity() {
         super.onResume()
         if (Util.SDK_INT <= 23 || player == null) {
             initializePlayer()
-            if (playerView != null) {
-                playerView.onResume()
+            if (videoAdContainer != null) {
+                videoAdContainer.onResume()
             }
         }
     }
@@ -86,8 +86,8 @@ class ImaPlayerActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         if (Util.SDK_INT <= 23) {
-            if (playerView != null) {
-                playerView.onPause()
+            if (videoAdContainer != null) {
+                videoAdContainer.onPause()
             }
             releasePlayer()
         }
@@ -96,8 +96,8 @@ class ImaPlayerActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
         if (Util.SDK_INT > 23) {
-            if (playerView != null) {
-                playerView.onPause()
+            if (videoAdContainer != null) {
+                videoAdContainer.onPause()
             }
             releasePlayer()
         }
