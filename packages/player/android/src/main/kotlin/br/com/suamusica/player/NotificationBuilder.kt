@@ -167,6 +167,10 @@ class NotificationBuilder(private val context: Context) {
                 NotificationManager.IMPORTANCE_LOW)
                 .apply {
                     description = context.getString(R.string.notification_channel_description)
+                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P){
+                        this.setVibrationPattern(longArrayOf(0))
+                        this.enableVibration(true)
+                    }
                 }
 
         platformNotificationManager.createNotificationChannel(notificationChannel)
