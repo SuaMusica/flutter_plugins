@@ -2,6 +2,7 @@ package com.suamusica.smads
 
 import android.content.Context
 import androidx.annotation.NonNull
+import com.suamusica.smads.extensions.toAddPayerActivityExtras
 import com.suamusica.smads.input.LoadMethodInput
 import com.suamusica.smads.result.LoadResult
 import com.suamusica.smads.result.ScreenStatusResult
@@ -61,8 +62,9 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
 
     private fun showImaPlayer(loadMethodInput: LoadMethodInput, result: Result) {
         context?.let {
-            val intent = ImaPlayerActivity.getIntent(it, loadMethodInput.adTagUrl, loadMethodInput.contentUrl)
-            it.startActivity(intent)
+            loadMethodInput
+                    .toAddPayerActivityExtras()
+                    .startActivity(it)
             result.success(LoadResult.SUCCESS)
         }
     }

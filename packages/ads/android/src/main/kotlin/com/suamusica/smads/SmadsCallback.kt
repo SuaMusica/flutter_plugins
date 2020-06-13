@@ -7,7 +7,11 @@ import io.flutter.plugin.common.MethodChannel
 class SmadsCallback(private val channel: MethodChannel) {
 
     fun onAddEvent(adEventOutput: AdEventOutput) {
-        channel.invokeMethod(ON_AD_EVENT_METHOD, adEventOutput.toResult())
+        onAddEvent(adEventOutput.toResult())
+    }
+
+    fun onAddEvent(output: Map<String, String>) {
+        channel.invokeMethod(ON_AD_EVENT_METHOD, output)
     }
 
     fun onComplete() {

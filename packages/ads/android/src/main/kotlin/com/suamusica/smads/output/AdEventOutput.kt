@@ -1,7 +1,7 @@
 package com.suamusica.smads.output
 
 data class AdEventOutput(
-        val type: AdEventType,
+        val type: AdEventTypeOutput,
         val id: String,
         val title: String,
         val description: String,
@@ -15,7 +15,7 @@ data class AdEventOutput(
 
     fun toResult(): Map<String, String> {
         return mapOf(
-                TYPE_KEY to type.name,
+                TYPE_KEY to (type.suggestedName ?: type.name),
                 ID_KEY to id,
                 TITLE_KEY to title,
                 DESCRIPTION_KEY to description,
@@ -45,7 +45,7 @@ data class AdEventOutput(
 
         fun error(code: String, message: String): Map<String, String> {
             return mapOf(
-                    TYPE_KEY to AdEventType.ERROR.name,
+                    TYPE_KEY to AdEventTypeOutput.ERROR.name,
                     ERROR_CODE_KEY to code,
                     ERROR_MESSAGE_KEY to message
             )

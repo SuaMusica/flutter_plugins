@@ -1,4 +1,4 @@
-package com.suamusica.smads
+package com.suamusica.smads.view
 
 import android.content.Context
 import android.net.Uri
@@ -26,12 +26,11 @@ import timber.log.Timber
 
 class AdPlayerManager(
         context: Context,
-        adTagUrl: String
+        private val adPlayerParams: AdPlayerActivityExtras
 ) {
 
-    private val adsLoader: ImaAdsLoader = ImaAdsLoader(context, Uri.parse(adTagUrl))
+    private val adsLoader: ImaAdsLoader = ImaAdsLoader(context, Uri.parse(adPlayerParams.formattedAdTagUrl))
     private val dataSourceFactory: DataSource.Factory
-
     private var player: SimpleExoPlayer? = null
     private var viewAdCompanion: ViewGroup? = null
     private var adsManager: AdsManager? = null
@@ -62,8 +61,7 @@ class AdPlayerManager(
     }
 
     fun start(playerView: PlayerView,
-              companionAdSlotView: ViewGroup?,
-              contentUrl: String
+              companionAdSlotView: ViewGroup?
     ) {
         Timber.v("start")
         setupAdsLoader()
@@ -73,7 +71,7 @@ class AdPlayerManager(
         playerView.useController = false
         playerView.hideController()
 
-        val contentUri = Uri.parse(contentUrl)
+        val contentUri = Uri.parse(adPlayerParams.contentUrl)
         val mediaSourceFactory = getMediaSourceFactory(contentUri)
         val contentMediaSource = mediaSourceFactory.createMediaSource(contentUri)
         val mediaSourceWithAds = AdsMediaSource(
@@ -84,7 +82,6 @@ class AdPlayerManager(
         )
 
         player?.seekTo(contentPosition)
-
         player?.prepare(mediaSourceWithAds)
         player?.playWhenReady = true
     }
@@ -99,8 +96,6 @@ class AdPlayerManager(
         player?.playWhenReady = false
     }
 
-    fun getState() = player?.playbackState
-
     fun adsDuration() = player?.duration ?: 0L
 
     fun adsCurrentPosition() = player?.currentPosition ?: 0L
@@ -113,6 +108,7 @@ class AdPlayerManager(
         }
         adsManager?.destroy()
         adsLoader.release()
+        adsLoader.setPlayer(null)
     }
 
     private fun setupCompanionAd(companionAdSlotView: ViewGroup?) {
@@ -143,11 +139,17 @@ class AdPlayerManager(
                 adsManager?.addAdErrorListener { errorEventDispatcher.onNext(it) }
                 adsManager?.addAdEventListener {
                     Timber.d("onAdEvent($it)")
-                    isAudioAd = it.ad?.contentType?.contains("audio") ?: false
+                    setContentType(it)
                     adEventDispatcher.onNext(it)
                 }
                 adsManager?.init()
             }
+        }
+    }
+
+    private fun setContentType(adEvent: AdEvent) {
+        if (adEvent.type == AdEvent.AdEventType.LOADED) {
+            isAudioAd = adEvent.ad?.contentType?.contains("audio") ?: false
         }
     }
 }
