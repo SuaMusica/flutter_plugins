@@ -24,11 +24,6 @@ data class AdPlayerActivityExtras(private val adTagUrl: String,
         return intent
     }
 
-    fun startActivity(context: Context) {
-        val intent = toIntent(context)
-        context.startActivity(intent)
-    }
-
     private fun makeAgeExtra() = age ?: DEFAULT_AGE
     private fun makeGenderExtra() = if(!gender.isNullOrBlank()) gender else DEFAULT_GENDER
 

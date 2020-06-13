@@ -169,8 +169,8 @@ class AdPlayerActivity : AppCompatActivity() {
 
     private fun onAdError(adErrorEvent: AdErrorEvent) {
         Timber.v("onAdError($adErrorEvent)")
-        Timber.d("adErrorEvent.error.errorCode: %s", adErrorEvent.error.errorCode)
-        Timber.d("adErrorEvent.error.errorType: %s", adErrorEvent.error.errorType)
+        Timber.d("adErrorEvent.error.errorCode(${adErrorEvent.error.errorCode})")
+        Timber.d("adErrorEvent.error.errorType(${adErrorEvent.error.errorType})")
         Timber.d("adErrorEvent.error.errorCodeNumber: %s", adErrorEvent.error.errorCodeNumber)
         Timber.e(adErrorEvent.error.cause, "adErrorEvent.error.cause")
         onComplete()

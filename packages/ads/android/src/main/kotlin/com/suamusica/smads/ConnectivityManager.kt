@@ -2,6 +2,6 @@ package com.suamusica.smads
 
 import android.content.Context
 
-class ConnectivityManager(conntext: Context) {
-    fun hasInternetConnection(): Boolean = true
+object ConnectivityManager {
+    fun hasInternetConnection(context: Context): Boolean = true
 }

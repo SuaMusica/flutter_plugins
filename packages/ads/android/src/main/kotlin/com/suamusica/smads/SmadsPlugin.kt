@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.annotation.NonNull
 import com.suamusica.smads.extensions.toAddPayerActivityExtras
 import com.suamusica.smads.input.LoadMethodInput
+import com.suamusica.smads.output.ErrorOutput
 import com.suamusica.smads.result.LoadResult
 import com.suamusica.smads.result.ScreenStatusResult
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -19,7 +20,7 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
 
     private val tag = "SmadsPlugin"
     private var channel: MethodChannel? = null
-    private var context: Context? = null
+    private lateinit var context: Context
     private var callback: SmadsCallback? = null
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
@@ -35,7 +36,6 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
         Timber.v("onDetachedFromEngine")
         channel = null
-        context = null
         callback = null
         MethodChannelBridge.callback = null
     }
@@ -52,25 +52,38 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
 
     private fun load(input: Any, result: Result) {
         try {
+
+            if (ScreenManager.isLocked(context)) {
+                Timber.d("Screen is locked")
+                callback?.onError(ErrorOutput.SCREEN_IS_LOCKED)
+                result.success(LoadResult.SCREEN_IS_LOCKED)
+                return
+            }
+
+            if (!ConnectivityManager.hasInternetConnection(context)) {
+                Timber.d("has no connectivity")
+                callback?.onError(ErrorOutput.NO_CONNECTIVITY)
+                result.success(LoadResult.NO_CONNECTIVITY)
+                return
+            }
+
             val loadMethodInput = LoadMethodInput(input)
             Timber.d("loadMethodInput: %s", loadMethodInput)
-            showImaPlayer(loadMethodInput, result)
+            val intent = loadMethodInput.toAddPayerActivityExtras().toIntent(context)
+            context.startActivity(intent)
+            result.success(LoadResult.SUCCESS)
         } catch (t: Throwable) {
             result.error(LoadResult.UNKNOWN_ERROR.toString(), t.message, null)
         }
     }
 
-    private fun showImaPlayer(loadMethodInput: LoadMethodInput, result: Result) {
-        context?.let {
-            loadMethodInput
-                    .toAddPayerActivityExtras()
-                    .startActivity(it)
-            result.success(LoadResult.SUCCESS)
-        }
-    }
-
     private fun screenStatus(result: Result) {
-        result.success(ScreenStatusResult.UNLOCKED_SCREEN)
+        val resultCode = if(ScreenManager.isLocked(context)) {
+            ScreenStatusResult.LOCKED_SCREEN
+        } else {
+            ScreenStatusResult.UNLOCKED_SCREEN
+        }
+        result.success(resultCode)
     }
 
     companion object {

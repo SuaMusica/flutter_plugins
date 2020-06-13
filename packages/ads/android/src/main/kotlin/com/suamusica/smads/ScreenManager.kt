@@ -2,6 +2,7 @@ package com.suamusica.smads
 
 import android.content.Context
 
-class ScreenManager(context: Context) {
-    fun areInBackground() = false
+object ScreenManager {
+    fun areInBackground(context: Context) = false
+    fun isLocked(context: Context) = false
 }
