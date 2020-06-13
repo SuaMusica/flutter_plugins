@@ -99,6 +99,8 @@ class AdPlayerManager(
         player?.playWhenReady = false
     }
 
+    fun getState() = player?.playbackState
+
     fun adsDuration() = player?.duration ?: 0L
 
     fun adsCurrentPosition() = player?.currentPosition ?: 0L

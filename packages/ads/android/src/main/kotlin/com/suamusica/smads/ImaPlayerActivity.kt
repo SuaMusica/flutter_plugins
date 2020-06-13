@@ -6,11 +6,13 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.google.ads.interactivemedia.v3.api.AdErrorEvent
 import com.google.ads.interactivemedia.v3.api.AdEvent
+import com.google.android.exoplayer2.Player
 import com.jakewharton.rxbinding3.view.clicks
 import com.suamusica.smads.extensions.hide
 import com.suamusica.smads.extensions.show
 import com.suamusica.smads.media.domain.MediaProgress
 import com.suamusica.smads.player.PlayerAction
+import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
@@ -64,6 +66,7 @@ class ImaPlayerActivity : AppCompatActivity() {
         adPlayerManager.start(videoAdContainer, companionAdSlot, contentUrl)
         loadingContent()
         configureAdPlayerTimeoutJob()
+        configurePlayerStatusJob()
     }
 
     private fun configureAdPlayerTimeoutJob() {
@@ -76,6 +79,44 @@ class ImaPlayerActivity : AppCompatActivity() {
                     releaseVideoAd()
                 }, { e -> Timber.e(e) })
                 .compose()
+    }
+
+    private fun configurePlayerStatusJob() {
+        Observable.interval(20, TimeUnit.MILLISECONDS)
+                .observeOn(Schedulers.io())
+                .subscribe({
+                    runOnUiThread { updateProgressBar() }
+                }, {})
+                .compose()
+    }
+
+    private val playerStateDescription = mapOf(
+        Player.STATE_IDLE to "IDLE",
+        Player.STATE_BUFFERING to "BUFFERING",
+        Player.STATE_READY to "READY",
+        Player.STATE_ENDED to "ENDED"
+    )
+
+    private fun updateProgressBar() {
+
+        Timber.d("Player State: ${playerStateDescription[adPlayerManager.getState()]}")
+
+        when(adPlayerManager.getState()) {
+            Player.STATE_IDLE,
+            Player.STATE_BUFFERING,
+            Player.STATE_READY -> {}
+            Player.STATE_ENDED -> releaseVideoAd()
+            else -> {}
+        }
+
+        Timber.d("Progress - currentTime: ${adPlayerManager.adsCurrentPosition()}, durationTime: ${adPlayerManager.adsDuration()} ")
+        val currentTime = ceil(adPlayerManager.adsCurrentPosition().toDouble()).toLong()
+        val durationTime = adPlayerManager.adsDuration()
+        Timber.d("Progress(currentTime: $currentTime, durationTime: $durationTime)")
+        if (durationTime < 0) return
+        val mediaProgress = MediaProgress(currentTime, durationTime)
+        musicProgressView.bind(mediaProgress, null)
+        musicProgressView.disableSeekBarTouch()
     }
 
     private fun configureAdPlayerEventObservers() {
@@ -124,10 +165,12 @@ class ImaPlayerActivity : AppCompatActivity() {
                 playingButtonState()
             }
             AdEvent.AdEventType.SKIPPED -> {
-                releaseVideoAd()
+//                releaseVideoAd()
             }
             AdEvent.AdEventType.CONTENT_PAUSE_REQUESTED -> adPlayerManager.play()
-            AdEvent.AdEventType.ALL_ADS_COMPLETED -> releaseVideoAd()
+            AdEvent.AdEventType.ALL_ADS_COMPLETED -> {
+//                releaseVideoAd()
+            }
             AdEvent.AdEventType.AD_PROGRESS -> onAdProgressAddEventType()
             AdEvent.AdEventType.LOG -> {
                 Timber.d("LOG - data: ${adEvent.adData}")
@@ -146,9 +189,9 @@ class ImaPlayerActivity : AppCompatActivity() {
         val durationTime = adPlayerManager.adsDuration()
         Timber.d("Progress(currentTime: $currentTime, durationTime: $durationTime)")
         if (durationTime < 0) return
-        val mediaProgress = MediaProgress(currentTime, durationTime)
-        musicProgressView.bind(mediaProgress, null)
-        musicProgressView.disableSeekBarTouch()
+//        val mediaProgress = MediaProgress(currentTime, durationTime)
+//        musicProgressView.bind(mediaProgress, null)
+//        musicProgressView.disableSeekBarTouch()
 
         if (lastTimePosition == currentTime)
             adStuckTimes++
@@ -208,14 +251,20 @@ class ImaPlayerActivity : AppCompatActivity() {
 
     private fun releaseVideoAd() {
         Timber.v("releaseVideoAd")
-//        runOnUiThread { adPlayerManager.release() }
-//        finish()
+        runOnUiThread { adPlayerManager.release() }
+        finish()
     }
 
     private fun bindPlayPauseAction(playerAction: PlayerAction) {
         Timber.v("bindPlayPauseAction")
-        if (playerAction == PlayerAction.Play) adPlayerManager.play()
-        else adPlayerManager.pause()
+        if (playerAction == PlayerAction.Play) {
+            adPlayerManager.play()
+            playingButtonState()
+        }
+        else {
+            adPlayerManager.pause()
+            pauseButtonState()
+        }
     }
 
     private fun loadingContent() {
