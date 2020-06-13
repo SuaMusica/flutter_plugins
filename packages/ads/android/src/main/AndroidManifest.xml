@@ -6,7 +6,10 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application>
-        <activity android:theme="@style/Theme.AppCompat.Light.NoActionBar" android:name=".ImaPlayerActivity" />
+        <activity
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:name=".ImaPlayerActivity"
+            android:launchMode="singleInstance"/>
     </application>
 
 </manifest>

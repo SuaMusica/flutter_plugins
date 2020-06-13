@@ -1,7 +1,6 @@
 package com.suamusica.smads
 
 import android.content.Context
-import android.util.Log
 import androidx.annotation.NonNull
 import com.suamusica.smads.input.LoadMethodInput
 import com.suamusica.smads.result.LoadResult
@@ -12,6 +11,7 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry.Registrar
+import timber.log.Timber
 
 /** SmadsPlugin */
 class SmadsPlugin : FlutterPlugin, MethodCallHandler {
@@ -22,7 +22,8 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
     private var callback: SmadsCallback? = null
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-        Log.d(tag, "onAttachedToEngine")
+        Initializer.run()
+        Timber.v("onAttachedToEngine")
         this.channel = MethodChannel(flutterPluginBinding.binaryMessenger, CHANNEL_NAME)
         this.context = flutterPluginBinding.applicationContext
         this.callback = SmadsCallback(channel!!)
@@ -31,7 +32,7 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
-        Log.d(tag, "onDetachedFromEngine")
+        Timber.v("onDetachedFromEngine")
         channel = null
         context = null
         callback = null
@@ -39,8 +40,8 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
-        Log.d(tag, "onMethodCall")
-        Log.d(tag, "call.method: ${call.method}")
+        Timber.v("onMethodCall")
+        Timber.d("call.method: %s", call.method)
         when (call.method) {
             LOAD_METHOD -> load(call.arguments, result)
             SCREEN_STATUS_METHOD -> screenStatus(result)
@@ -51,7 +52,7 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
     private fun load(input: Any, result: Result) {
         try {
             val loadMethodInput = LoadMethodInput(input)
-            Log.d(tag, "loadMethodInput: $loadMethodInput")
+            Timber.d("loadMethodInput: %s", loadMethodInput)
             showImaPlayer(loadMethodInput, result)
         } catch (t: Throwable) {
             result.error(LoadResult.UNKNOWN_ERROR.toString(), t.message, null)
