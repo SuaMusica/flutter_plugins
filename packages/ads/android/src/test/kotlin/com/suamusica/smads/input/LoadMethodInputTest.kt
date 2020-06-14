@@ -12,6 +12,9 @@ internal class LoadMethodInputTest {
 
     private val urlKey = "__URL__"
     private val contentUrlKey = "__CONTENT__"
+    private val ageKey = "age"
+    private val genderKey = "gender"
+    private val typeAdKey = "typead"
 
     @Nested
     inner class `Given a values map` {
@@ -30,10 +33,27 @@ internal class LoadMethodInputTest {
 
         @Test
         fun `With valid params Should construct an instance of LoadMethodInput to use`() {
-            val urlValueMock = "url"
-            val contentUrlValueMock = "contentUrl"
-            val argument = mapOf(urlKey to urlValueMock, contentUrlKey to contentUrlValueMock)
-            val expectedResult = LoadMethodInput(url = urlValueMock, contentUrl = contentUrlValueMock)
+            val adTagUrlMock = "url"
+            val contentUrlMock = "contentUrl"
+            val ageMock = 36
+            val genderMock = "genderMock"
+            val typeAdMock = "typeAdMock"
+
+            val argument = mapOf(
+                    urlKey to adTagUrlMock,
+                    contentUrlKey to contentUrlMock,
+                    ageKey to ageMock,
+                    genderKey to genderMock,
+                    typeAdKey to typeAdMock
+            )
+
+            val expectedResult = LoadMethodInput(
+                    adTagUrl = adTagUrlMock,
+                    contentUrl = contentUrlMock,
+                    age = ageMock,
+                    gender = genderMock,
+                    typeAd = typeAdMock
+            )
             assertEquals(expectedResult, LoadMethodInput(argument))
         }
     }
