@@ -589,11 +589,9 @@ PlaylistItem *currentItem = nil;
             player.automaticallyWaitsToMinimizeStalling = TRUE;
         } else{
             player.automaticallyWaitsToMinimizeStalling = FALSE;
-            [player playImmediatelyAtRate:1];
+            [player playImmediatelyAtRate:0.01];
         }
     }
-    
-
 }
 
 -(void) initAVPlayer:(NSString *)playerId playerItem:(AVPlayerItem *)playerItem url:(NSString *)url onReady:(VoidCallback) onReady {
@@ -1242,7 +1240,6 @@ isNotification: (bool) respectSilence
     if ([self ensureConnected:playerId isLocal:isLocal] == -1) {
         return -1;
     }
-    [AudioSessionManager inactivateSession];
     
     if (!@available(iOS 11,*)) {
         url = [url stringByReplacingOccurrencesOfString:@".m3u8"
