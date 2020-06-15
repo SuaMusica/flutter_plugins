@@ -3,6 +3,8 @@ package com.suamusica.smads
 import android.content.Context
 import androidx.annotation.NonNull
 import com.suamusica.smads.extensions.toAddPayerActivityExtras
+import com.suamusica.smads.helpers.ConnectivityHelper
+import com.suamusica.smads.helpers.ScreenHelper
 import com.suamusica.smads.input.LoadMethodInput
 import com.suamusica.smads.output.ErrorOutput
 import com.suamusica.smads.result.LoadResult
@@ -53,14 +55,14 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
     private fun load(input: Any, result: Result) {
         try {
 
-            if (ScreenManager.isLocked(context)) {
+            if (ScreenHelper.isLocked(context)) {
                 Timber.d("Screen is locked")
                 callback?.onError(ErrorOutput.SCREEN_IS_LOCKED)
                 result.success(LoadResult.SCREEN_IS_LOCKED)
                 return
             }
 
-            if (!ConnectivityManager.hasInternetConnection(context)) {
+            if (!ConnectivityHelper.isReachable(context)) {
                 Timber.d("has no connectivity")
                 callback?.onError(ErrorOutput.NO_CONNECTIVITY)
                 result.success(LoadResult.NO_CONNECTIVITY)
@@ -78,7 +80,7 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     private fun screenStatus(result: Result) {
-        val resultCode = if(ScreenManager.isLocked(context)) {
+        val resultCode = if(ScreenHelper.isLocked(context)) {
             ScreenStatusResult.LOCKED_SCREEN
         } else {
             ScreenStatusResult.UNLOCKED_SCREEN
