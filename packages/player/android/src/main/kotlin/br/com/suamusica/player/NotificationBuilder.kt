@@ -6,6 +6,8 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.os.AsyncTask
 import android.os.Build
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
@@ -17,6 +19,7 @@ import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.request.FutureTarget
 import com.bumptech.glide.request.RequestOptions
 
 const val NOW_PLAYING_CHANNEL: String = "br.com.suamusica.media.NOW_PLAYING"
@@ -55,22 +58,35 @@ class NotificationBuilder(private val context: Context) {
 
         private const val NOTIFICATION_LARGE_ICON_SIZE = 144 // px
 
-        fun getArt(context: Context, artUri: String?, size: Int? = null) = try {
+        fun getArt(context: Context, artUri: String?, size: Int? = null): Bitmap? {
+            
             val glider = Glide.with(context)
-                    .applyDefaultRequestOptions(glideOptions)
-                    .asBitmap()
-                    .load(artUri)
-            when {
-                artUri != null && artUri.isNotBlank() ->
-                    when (size) {
-                        null -> glider.submit().get()
-                        else -> glider.submit(size, size).get()
+                            .applyDefaultRequestOptions(glideOptions)
+                            .asBitmap()
+                            .load(artUri)
+            var future: FutureTarget<Bitmap>?=null
+
+            AsyncTask.execute {
+                future = when {
+                        artUri != null && artUri.isNotBlank() ->
+                            when (size) {
+                                null -> glider.submit()
+                                else -> glider.submit(size, size)
+                            }
+                        else -> null
                     }
-                else -> null
             }
-        } catch (e: Exception) {
-            Log.e("NotificationBuilder", artUri?.toString() ?: "", e)
-            null
+            return try {
+                   future?.let {
+                       return it.get();
+                   }
+                    return null
+                } catch (e: Exception) {
+                    Log.e("NotificationBuilder", artUri?.toString() ?: "", e)
+                    null
+                } finally {
+                    Log.i("NotificationBuilder", future?.get()?.width.toString() )
+                }
         }
     }
 
