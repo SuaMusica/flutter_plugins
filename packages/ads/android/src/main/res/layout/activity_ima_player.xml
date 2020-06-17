@@ -7,48 +7,67 @@
     android:layout_height="match_parent"
     tools:context=".view.AdPlayerActivity">
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginBottom="16dp"
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="133dp"
+        android:ellipsize="end"
         android:gravity="center"
-        android:background="@android:color/black"
-        app:layout_constraintDimensionRatio="h,16:9"
-        app:layout_constraintBottom_toTopOf="@+id/textView"
+        android:letterSpacing="-0.09sp"
+        android:maxLines="1"
+        android:minHeight="24dp"
+        android:text="@string/advertisement"
+        android:textColor="@color/cerulean"
+        android:textSize="14sp"
+        android:typeface="sans"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintWidth_default="wrap"
+        tools:ignore="UnusedAttribute" />
+
+    <View
+        android:id="@+id/view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@android:color/black"
+        android:gravity="center"
+        app:layout_constraintDimensionRatio="h,16:9"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/videoAdContainer" />
 
     <com.google.android.exoplayer2.ui.PlayerView
         android:id="@+id/videoAdContainer"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginTop="10dp"
+        android:background="@android:color/black"
+        android:clickable="false"
         android:gravity="center"
         android:keepScreenOn="false"
-        android:clickable="false"
         android:longClickable="false"
-        android:background="@android:color/black"
         app:layout_constraintDimensionRatio="h,16:9"
-        app:layout_constraintBottom_toTopOf="@+id/textView"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/textView" />
 
     <LinearLayout
         android:id="@+id/companionAdSlot"
-        android:gravity="center"
-        android:textAlignment="center"
-        android:layout_marginBottom="16dp"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:gravity="center"
         android:orientation="horizontal"
+        android:textAlignment="center"
         android:visibility="invisible"
         app:layout_constraintDimensionRatio="h,16:9"
-        app:layout_constraintBottom_toTopOf="@+id/textView"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="@+id/videoAdContainer" />
 
     <ProgressBar
         android:id="@+id/progressBar"
@@ -61,44 +80,26 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/companionAdSlot" />
 
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginLeft="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginRight="8dp"
-        android:layout_marginBottom="16dp"
-        android:minHeight="24dp"
-        android:ellipsize="end"
-        android:gravity="center"
-        android:maxLines="1"
-        android:textColor="@color/cerulean"
-        android:textSize="14sp"
-        android:text="Publicidade"
-        app:layout_constraintBottom_toTopOf="@+id/musicProgressView"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintWidth_default="wrap" />
-
     <com.suamusica.smads.custom.views.MusicProgressView
         android:id="@+id/musicProgressView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginStart="18dp"
+        android:layout_marginLeft="18dp"
+        android:layout_marginTop="37dp"
+        android:layout_marginEnd="18dp"
+        android:layout_marginRight="18dp"
+        android:layout_marginBottom="24dp"
         app:layout_constraintBottom_toTopOf="@+id/buttonPlayPause"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/buttonPremiumUser" />
 
     <ImageButton
         android:id="@+id/buttonPlayPause"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="20dp"
         android:background="?selectableItemBackgroundBorderless"
         android:scaleType="center"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -106,4 +107,61 @@
         app:layout_constraintStart_toStartOf="parent"
         app:srcCompat="@drawable/ic_play_player"
         tools:ignore="ContentDescription,VectorDrawableCompat" />
+
+    <TextView
+        android:id="@+id/textDescription"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="@string/ad_player_description"
+        android:textColor="@color/grayish_brown"
+        android:textSize="13sp"
+        android:letterSpacing="-0.08sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/view"
+        tools:ignore="UnusedAttribute" />
+
+    <Button
+        android:id="@+id/buttonHelp"
+        android:layout_width="240dp"
+        android:layout_height="34dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/ad_help_button_background"
+        android:paddingLeft="13dp"
+        android:paddingRight="13dp"
+        android:text="@string/ad_help_button_description"
+        android:textColor="#2c93cf"
+        android:textSize="11sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textDescription" />
+
+    <Button
+        android:id="@+id/buttonPremiumUser"
+        android:layout_width="240dp"
+        android:layout_height="34dp"
+        android:layout_marginTop="26dp"
+        android:background="@drawable/ad_premium_button_background"
+        android:paddingLeft="13dp"
+        android:paddingRight="13dp"
+        android:text="@string/premium_user"
+        android:textColor="@color/white"
+        android:textSize="14sp"
+        app:layout_constraintCircleRadius="20dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.504"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/buttonHelp" />
+
+    <ImageButton
+        android:id="@+id/imageButton2"
+        android:layout_width="26dp"
+        android:layout_height="26dp"
+        android:layout_marginTop="28dp"
+        android:layout_marginEnd="18dp"
+        android:layout_marginRight="18dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/ic_notes_black" />
 </androidx.constraintlayout.widget.ConstraintLayout>
