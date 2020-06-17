@@ -56,6 +56,18 @@ class Migration {
     return result ?? 0;
   }
 
+  Future<List<dynamic>> getId3() async {
+    final List<dynamic> result =
+        await _channel.invokeMethod('extractId3');
+    return result ?? [];
+  }
+
+  Future<int> getArtWorks(List<Map<String, String>> items) async {
+    final int result =
+        await _channel.invokeMethod('extractArt', {"items": items});
+    return result ?? 0;
+  }
+
   Future<int> deleteOldDatabase() async {
     final int result = await _channel.invokeMethod('deleteOldContent');
 

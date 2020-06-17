@@ -19,6 +19,8 @@ rootProject.allprojects {
     repositories {
         google()
         jcenter()
+        maven { url 'https://dl.bintray.com/ijabz/maven' }
+
     }
 }
 
@@ -49,4 +51,5 @@ dependencies {
     kapt "androidx.room:room-compiler:$room_version"
 
     implementation "com.google.code.gson:gson:$gson_version"
+    implementation 'net.jthink:jaudiotagger:2.2.5'
 }
