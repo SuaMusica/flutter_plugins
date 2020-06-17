@@ -3,6 +3,8 @@ package com.suamusica.migration;
 import android.content.Context
 import android.util.Log
 import androidx.annotation.NonNull
+import com.mpatric.mp3agic.ID3v2
+import com.mpatric.mp3agic.Mp3File
 import com.suamusica.room.database.QueryDatabase
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
@@ -10,13 +12,7 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry.Registrar
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.runBlocking
-import org.jaudiotagger.audio.AudioFile
-import org.jaudiotagger.audio.AudioFileIO
-import org.jaudiotagger.tag.FieldKey
-import org.jaudiotagger.tag.Tag
+import kotlinx.coroutines.*
 import java.io.File
 import java.util.*
 
@@ -43,7 +39,6 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
         const val DELETE_OLD_CONTENT = "deleteOldContent"
         const val REQUEST_LOGGED_USER = "requestLoggedUser"
         const val EXTRACT_ART = "extractArt"
-        const val EXTRACT_ID3 = "extractId3"
 
         const val Ok = 1
         const val NotOk = 0
@@ -59,56 +54,64 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
         }
     }
 
+
+    private suspend fun getFiles() = coroutineScope {
+        async {
+            QueryDatabase.getInstance(context)?.let { db ->
+                val medias = db.offlineMediaDao().getMedias()?.flatMap {
+                    it.toMigration()
+                } ?: listOf()
+
+                val id3 = medias.map {
+                    readTags(it["local_path"] as String)
+                }
+                    
+                val playlists = db.offlinePlaylistDao().getPlaylists()?.filter { it ->
+                    it.id != null && it.name != null && it.name.isNotEmpty() && it.artistName != null && it.artistName.isNotEmpty() && it.ownerId != null && it.ownerId.isNotEmpty() && it.ownerId.toInt() > 0 && medias.firstOrNull { media ->
+                        media.containsKey("playlist_id") && media["playlist_id"] as String == it.id
+                    } != null
+                }?.map {
+                    Log.d("Migration", "Migrating Playlist!! ${it}")
+                    it.toMigration(isVerified =
+                    medias.first { media -> media.containsKey("playlist_id") && media["playlist_id"] as String == it.id } != null
+                    )
+                } ?: listOf()
+
+
+                val albums = db.offlineAlbumDao().getAlbums()?.filter { it ->
+                    it.id != null && it.name != null && it.name.isNotEmpty() && it.artistName != null && it.artistName.isNotEmpty() && it.ownerId != null && it.ownerId.isNotEmpty() && it.ownerId.toInt() > 0 && medias.firstOrNull { media ->
+                        media.containsKey("album_id") && media["album_id"] as String == it.id
+                    } != null
+                }?.map {
+                    Log.d("Migration", "Migrating Album!! $it")
+                    it.toMigration(isVerified =
+                    medias.first { media -> media.containsKey("album_id") && media["album_id"] as String == it.id } != null
+                    )
+                } ?: listOf()
+
+                return@let mapOf("medias" to medias, "playlists" to playlists, "albums" to albums, "id3" to id3)
+            } ?: run {
+                return@run null
+            }
+        }.await()
+
+    }
+
     private fun handleMethodCall(call: MethodCall, response: MethodChannel.Result) {
         Log.e("Migration", call.method)
-
         when (call.method) {
             REQUEST_DOWNLOAD_CONTENT -> {
-                val result = GlobalScope.async {
-                    QueryDatabase.getInstance(context)?.let { db ->
-                        val medias = db.offlineMediaDao().getMedias()?.flatMap {
-                            it.toMigration()
-                        } ?: listOf()
-
-                        val playlists = db.offlinePlaylistDao().getPlaylists()?.filter { it ->
-                            it.id != null && it.name != null && it.name.length > 0 && it.artistName != null && it.artistName.length > 0 && it.ownerId != null && it.ownerId.length > 0 && it.ownerId.toInt() > 0 && medias.firstOrNull { media ->
-                                media.containsKey("playlist_id") && media["playlist_id"] as String == it.id
-                            } != null
-                        }?.map {
-                            Log.d("Migration", "Migrating Playlist!! ${it}")
-                            it.toMigration(isVerified =
-                            medias.first { media -> media.containsKey("playlist_id") && media["playlist_id"] as String == it.id } != null
-                            )
-                        } ?: listOf()
-
-
-                        val albums = db.offlineAlbumDao().getAlbums()?.filter { it ->
-                            it.id != null && it.name != null && it.name.length > 0 && it.artistName != null && it.artistName.length > 0 && it.ownerId != null && it.ownerId.length > 0 && it.ownerId.toInt() > 0 && medias.firstOrNull { media ->
-                                media.containsKey("album_id") && media["album_id"] as String == it.id
-                            } != null
-                        }?.map {
-                            Log.d("Migration", "Migrating Album!! ${it}")
-                            it.toMigration(isVerified =
-                            medias.first { media -> media.containsKey("album_id") && media["album_id"] as String == it.id } != null
-                            )
-                        } ?: listOf()
-
-                        return@let mapOf("medias" to medias, "playlists" to playlists, "albums" to albums)
-                    } ?: run {
-                        return@run null
-                    }
-                }
-
-                runBlocking {
+                GlobalScope.launch {
                     try {
-                        val downloads = result.await()
+                        val downloads = getFiles()
                         Log.d("Migration", "DownloadedContents: $downloads")
-                        channel.invokeMethod("androidDownloadedContent", downloads)
-
-                        if (downloads == null || downloads?.isEmpty()) {
-                            response.success(NotOk)
-                        } else {
-                            response.success(Ok)
+                        GlobalScope.launch(Dispatchers.Main){
+                            channel.invokeMethod("androidDownloadedContent", downloads)
+                            if (downloads == null || downloads?.isEmpty()) {
+                                response.success(NotOk)
+                            } else {
+                                response.success(Ok)
+                            }
                         }
                     } catch (ex: java.lang.Exception) {
                         Log.e("Migration", "error: $ex", ex)
@@ -124,20 +127,6 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
                     response.success(Ok)
                 }
                 return
-            }
-            EXTRACT_ID3 -> {
-                val result = GlobalScope.async {
-                    QueryDatabase.getInstance(context)?.let { db ->
-                        return@let db.offlineMediaDao().getMedias()?.flatMap {
-                            listOf(mapOf(it.filePath to readTags(it.filePath)))
-                        } ?: listOf()
-                    } ?: run {
-                        return@run listOf<Map<String, Map<String, String>>>()
-                    }
-                }
-                runBlocking {
-                    response.success(result.await())
-                }
             }
             EXTRACT_ART -> {
                 GlobalScope.async {
@@ -180,38 +169,46 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
 
     private fun readArtwork(path: String): ByteArray? {
         try {
-            val mp3File = File(path)
-            val audioFile: AudioFile = AudioFileIO.read(mp3File)
-            return audioFile.tag.firstArtwork.binaryData
+            val mp3file = Mp3File(path)
+            if (mp3file.hasId3v2Tag()) {
+                return mp3file.id3v2Tag.albumImage
+            }
         } catch (e: Exception) {
-//      e.printStackTrace()
         }
         return null
     }
 
     private fun readTags(path: String): Map<String, String> {
-      val map: MutableMap<String, String> = HashMap()
+        val map: MutableMap<String, String> = HashMap()
+        map["path"] = path
+        Log.i("MigrationKotlin", "Begin $path")
         try {
-            val mp3File = File(path)
-            val audioFile = AudioFileIO.read(mp3File)
-            val tag: Tag = audioFile.tag
-            map["title"] = tag.getFirst(FieldKey.TITLE)
-            map["artist"] = tag.getFirst(FieldKey.ARTIST)
-            map["genre"] = tag.getFirst(FieldKey.GENRE)
-            map["trackNumber"] = tag.getFirst(FieldKey.TRACK)
-            map["trackTotal"] = tag.getFirst(FieldKey.TRACK_TOTAL)
-            map["discNumber"] = tag.getFirst(FieldKey.DISC_NO)
-            map["discTotal"] = tag.getFirst(FieldKey.DISC_TOTAL)
-            map["lyrics"] = tag.getFirst(FieldKey.LYRICS)
-            map["comment"] = tag.getFirst(FieldKey.COMMENT)
-            map["album"] = tag.getFirst(FieldKey.ALBUM)
-            map["albumArtist"] = tag.getFirst(FieldKey.ALBUM_ARTIST)
-            map["year"] = tag.getFirst(FieldKey.YEAR)
+            val mp3file = Mp3File(path)
+            if (mp3file.hasId3v1Tag()) {
+                val id3v1Tag = mp3file.id3v1Tag
+                if (id3v1Tag.artist != null && id3v1Tag.artist.trim().isNotEmpty()) {
+                    map["artist"] = id3v1Tag.artist
+                }
+                if (id3v1Tag.album != null && id3v1Tag.album.trim().isNotEmpty()) {
+                    map["album"] = id3v1Tag.album
+                }
+
+            }
+            if (mp3file.hasId3v2Tag()) {
+                val id3v2Tag: ID3v2 = mp3file.id3v2Tag
+                if (id3v2Tag.artist != null && id3v2Tag.artist.trim().isNotEmpty()) {
+                    map["artist"] = id3v2Tag.artist
+                }
+                if (id3v2Tag.album != null && id3v2Tag.album.trim().isNotEmpty()) {
+                    map["album"] = id3v2Tag.album
+                }
+            }
         } catch (e: Exception) {
-            // e.printStackTrace()
         }
-      return map
+        Log.i("MigrationKotlin", "End $path")
+        return map
     }
+
 
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
     }
