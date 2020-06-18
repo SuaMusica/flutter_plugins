@@ -105,7 +105,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:srcCompat="@drawable/ic_play_player"
+        app:srcCompat="@drawable/ic_bt_player_play"
         tools:ignore="ContentDescription,VectorDrawableCompat" />
 
     <TextView
@@ -135,7 +135,8 @@
         android:textSize="11sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textDescription" />
+        app:layout_constraintTop_toBottomOf="@+id/textDescription"
+        tools:ignore="SmallSp" />
 
     <Button
         android:id="@+id/buttonPremiumUser"
@@ -154,14 +155,77 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/buttonHelp" />
 
-    <ImageButton
-        android:id="@+id/imageButton2"
-        android:layout_width="26dp"
-        android:layout_height="26dp"
+    <ImageView
+        android:id="@+id/buttonPlayerPrevious"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="32dp"
+        android:layout_marginRight="32dp"
+        app:layout_constraintBottom_toBottomOf="@+id/buttonPlayPause"
+        app:layout_constraintEnd_toStartOf="@+id/buttonPlayPause"
+        app:layout_constraintTop_toTopOf="@+id/buttonPlayPause"
+        app:srcCompat="@drawable/ic_bt_player_previous_disabled"
+        tools:ignore="ContentDescription" />
+
+    <ImageView
+        android:id="@+id/buttonPlayerNext"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginLeft="32dp"
+        app:layout_constraintBottom_toBottomOf="@+id/buttonPlayPause"
+        app:layout_constraintStart_toEndOf="@+id/buttonPlayPause"
+        app:layout_constraintTop_toTopOf="@+id/buttonPlayPause"
+        app:srcCompat="@drawable/ic_bt_player_next_disabled"
+        tools:ignore="ContentDescription" />
+
+    <ImageView
+        android:id="@+id/buttonPlayerRepat"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="34dp"
+        android:layout_marginLeft="34dp"
+        android:alpha="0.2"
+        app:layout_constraintBottom_toBottomOf="@+id/buttonPlayerNext"
+        app:layout_constraintStart_toEndOf="@+id/buttonPlayerNext"
+        app:layout_constraintTop_toTopOf="@+id/buttonPlayerNext"
+        app:srcCompat="@drawable/ic_bt_player_repeat"
+        tools:ignore="ContentDescription" />
+
+    <ImageView
+        android:id="@+id/buttonPlayerShuffle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="34dp"
+        android:layout_marginRight="34dp"
+        android:alpha="0.2"
+        app:layout_constraintBottom_toBottomOf="@+id/buttonPlayerPrevious"
+        app:layout_constraintEnd_toStartOf="@+id/buttonPlayerPrevious"
+        app:layout_constraintTop_toTopOf="@+id/buttonPlayerPrevious"
+        app:srcCompat="@drawable/bt_shuffle_normal"
+        tools:ignore="ContentDescription" />
+
+    <ImageView
+        android:id="@+id/buttonArrowDown"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginTop="16dp"
+        android:alpha="0.2"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/ic_bt_keyboard_arrow_down" />
+
+    <ImageView
+        android:id="@+id/buttonSort"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_marginTop="28dp"
         android:layout_marginEnd="18dp"
         android:layout_marginRight="18dp"
+        android:alpha="0.2"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/ic_notes_black" />
+        app:srcCompat="@drawable/ic_bt_sort" />
 </androidx.constraintlayout.widget.ConstraintLayout>

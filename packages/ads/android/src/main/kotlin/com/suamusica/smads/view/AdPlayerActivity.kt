@@ -198,14 +198,14 @@ class AdPlayerActivity : AppCompatActivity() {
 
     private fun playingButtonState() {
         Timber.v("playingButtonState")
-        buttonPlayPause?.setImageResource(R.drawable.ic_pause_player)
+        buttonPlayPause?.setImageResource(R.drawable.ic_bt_player_pause)
         buttonPlayPause?.setTag(R.id.state, PlayerAction.Pause)
         buttonPlayPause?.show()
     }
 
     private fun pauseButtonState() {
         Timber.v("pauseButtonState")
-        buttonPlayPause?.setImageResource(R.drawable.ic_play_player)
+        buttonPlayPause?.setImageResource(R.drawable.ic_bt_player_play)
         buttonPlayPause?.setTag(R.id.state, PlayerAction.Play)
         buttonPlayPause?.show()
     }
