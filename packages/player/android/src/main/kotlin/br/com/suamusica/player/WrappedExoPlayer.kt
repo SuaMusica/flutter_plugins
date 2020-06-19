@@ -268,7 +268,7 @@ class WrappedExoPlayer(
         }
         mediaSessionConnector?.setQueueNavigator(timelineQueueNavigator)
 
-        var url = media.url
+        val url = media.url
         Log.i("Player", "Player: URL: $url")
         val uri = Uri.parse(url)
 

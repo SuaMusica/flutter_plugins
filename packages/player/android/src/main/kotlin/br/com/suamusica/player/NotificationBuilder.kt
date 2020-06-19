@@ -9,6 +9,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.os.AsyncTask
 import android.os.Build
+import android.provider.Settings
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat.*
@@ -21,6 +22,11 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.FutureTarget
 import com.bumptech.glide.request.RequestOptions
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 const val NOW_PLAYING_CHANNEL: String = "br.com.suamusica.media.NOW_PLAYING"
 const val NOW_PLAYING_NOTIFICATION: Int = 0xb339
@@ -59,34 +65,27 @@ class NotificationBuilder(private val context: Context) {
         private const val NOTIFICATION_LARGE_ICON_SIZE = 144 // px
 
         fun getArt(context: Context, artUri: String?, size: Int? = null): Bitmap? {
-            
+            Log.i("NotificationBuilder", "getArt: START")
             val glider = Glide.with(context)
                             .applyDefaultRequestOptions(glideOptions)
                             .asBitmap()
                             .load(artUri)
-            var future: FutureTarget<Bitmap>?=null
-
-            AsyncTask.execute {
-                future = when {
-                        artUri != null && artUri.isNotBlank() ->
-                            when (size) {
-                                null -> glider.submit()
-                                else -> glider.submit(size, size)
-                            }
-                        else -> null
-                    }
-            }
-            return try {
-                   future?.let {
-                       return it.get();
-                   }
-                    return null
-                } catch (e: Exception) {
-                    Log.e("NotificationBuilder", artUri?.toString() ?: "", e)
-                    null
-                } finally {
-                    Log.i("NotificationBuilder", future?.get()?.width.toString() )
+            var bitmap : Bitmap? = null
+            val result = GlobalScope.async {
+                bitmap = when {
+                    artUri != null && artUri.isNotBlank() ->
+                        when (size) {
+                            null -> glider.submit().get()
+                            else -> glider.submit(size, size).get()
+                        }
+                    else -> null
                 }
+            }
+
+            return runBlocking {
+                result.await()
+                return@runBlocking bitmap
+            }
         }
     }
 
