@@ -294,17 +294,21 @@ class WrappedExoPlayer(
                 throw IllegalStateException("Unsupported type: $type")
             }
         }
+        player.playWhenReady = false
         player.prepare(source)
-        // we have to reset the previus state
+        // we have to reset the previous state
         previousState = -1
     }
 
     override fun play() {
         performAndEnableTracking {
             player.playWhenReady = true
-
             sendNotification(true)
         }
+    }
+
+    override fun sendNotification() {
+        sendNotification(false)
     }
 
     override fun removeNotification() {
@@ -386,11 +390,11 @@ class WrappedExoPlayer(
 
     private fun sendNotification(onGoing: Boolean) {
         AsyncTask.execute {
-            mediaSession?.let {
-                media?.let {
-                    val notification = notificationBuilder?.buildNotification(this.mediaSession!!, this.media!!, onGoing)
+            mediaSession?.let { session ->
+                media?.let { media ->
+                    val notification = notificationBuilder.buildNotification(session, media, onGoing)
                     notification?.let {
-                        notificationManager?.notify(NOW_PLAYING_NOTIFICATION, it)
+                        notificationManager.notify(NOW_PLAYING_NOTIFICATION, it)
                     }
                 }
             }

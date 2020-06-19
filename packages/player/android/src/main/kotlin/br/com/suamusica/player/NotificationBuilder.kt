@@ -65,7 +65,6 @@ class NotificationBuilder(private val context: Context) {
         private const val NOTIFICATION_LARGE_ICON_SIZE = 144 // px
 
         fun getArt(context: Context, artUri: String?, size: Int? = null): Bitmap? {
-            Log.i("NotificationBuilder", "getArt: START")
             val glider = Glide.with(context)
                             .applyDefaultRequestOptions(glideOptions)
                             .asBitmap()

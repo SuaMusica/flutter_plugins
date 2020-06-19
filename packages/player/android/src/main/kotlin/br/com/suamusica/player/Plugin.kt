@@ -31,6 +31,7 @@ class Plugin private constructor(private val channel: MethodChannel, private val
     const val STOP_METHOD = "stop"
     const val RELEASE_METHOD = "release"
     const val SEEK_METHOD = "seek"
+    const val PREPARE_AND_SEND_NOTIFICATION_METHOD = "prepare_and_send_notification"
     const val REMOVE_NOTIFICATION_METHOD = "remove_notification"
     const val SET_VOLUME_METHOD = "setVolume"
     const val GET_DURATION_METHOD = "getDuration"
@@ -105,7 +106,7 @@ class Plugin private constructor(private val channel: MethodChannel, private val
           val loadOnly = call.argument<Boolean>(LOAD_ONLY)!!
           player.stayAwake = stayAwake
           player.volume = volume
-          Log.i("SMPlayer", "before preapre: cookie: $cookie")
+          Log.i("SMPlayer", "before prepare: cookie: $cookie")
           player.prepare(Media(name, author, url, coverUrl))
           if (position != null) {
             player.seek(position)
@@ -130,9 +131,23 @@ class Plugin private constructor(private val channel: MethodChannel, private val
           val position = call.argument<Int>(POSITION_ARGUMENT)!!
           player.seek(position)
         }
+        PREPARE_AND_SEND_NOTIFICATION_METHOD -> {
+          val name = call.argument<String>(NAME_ARGUMENT)!!
+          val author = call.argument<String>(AUTHOR_ARGUMENT)!!
+          val url = call.argument<String>(URL_ARGUMENT)!!
+          val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
+          val volume = call.argument<Double>(VOLUME_ARGUMENT)!!
+          val stayAwake = call.argument<Boolean>(STAY_AWAKE_ARGUMENT)!!
+          player.stayAwake = stayAwake
+          player.volume = volume
+          Log.i("SMPlayer", "PREPARE_AND_SEND_NOTIFICATION_METHOD: before prepare: cookie: $cookie")
+          player.prepare(Media(name, author, url, coverUrl))
+          player.sendNotification();
+        }
         REMOVE_NOTIFICATION_METHOD -> {
           player.removeNotification();
         }
+
         SET_VOLUME_METHOD -> {
           val volume = call.argument<Double>(VOLUME_ARGUMENT)!!
           player.volume = volume

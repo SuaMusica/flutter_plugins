@@ -149,7 +149,40 @@ class Player {
     return Ok;
   }
 
-  Media restartQueue() => _queue.restart();
+  Future<Media> restartQueue({
+    double volume = 1.0,
+    Duration position,
+    bool respectSilence = false,
+    bool stayAwake = false,
+  }) async {
+    var media = _queue.restart();
+
+    final url = (await localMediaValidator(media)) ?? media.url;
+    final isLocal = !url.startsWith("http");
+
+    // we need to update the value as it could have been
+    // downloading and is not downloaded
+    media.isLocal = isLocal;
+    media.url = url;
+
+    await invokePrepareAndSendNotification(media, {
+      'albumId': media.albumId?.toString() ?? "0",
+      'albumTitle': media.albumTitle ?? "",
+      'name': media.name,
+      'author': media.author,
+      'url': url,
+      'coverUrl': media.coverUrl,
+      'loadOnly': false,
+      'isLocal': isLocal,
+      'volume': volume,
+      'position': position?.inMilliseconds,
+      'respectSilence': respectSilence,
+      'stayAwake': stayAwake,
+    });
+
+    return media;
+  }
+
   Future<int> reorder(int oldIndex, int newIndex,
       [bool isShuffle = false]) async {
     _queue.reorder(oldIndex, newIndex, isShuffle);
@@ -254,6 +287,13 @@ class Player {
 
       return Ok;
     }
+  }
+
+  Future<int> invokePrepareAndSendNotification(
+      Media media, Map<String, dynamic> args) async {
+    final int result =
+        await _invokeMethod('prepare_and_send_notification', args);
+    return result;
   }
 
   Future<int> invokePlay(Media media, Map<String, dynamic> args) async {
