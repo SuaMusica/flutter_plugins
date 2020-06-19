@@ -4,16 +4,11 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.PorterDuff
+import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
-import androidx.constraintlayout.widget.ConstraintLayout
 import android.util.AttributeSet
 import android.widget.SeekBar
-import io.reactivex.Observable
-import io.reactivex.subjects.PublishSubject
-import kotlinx.android.synthetic.main.view_musicprogress.view.seekbar
-import kotlinx.android.synthetic.main.view_musicprogress.view.textViewCurrentTime
-import kotlinx.android.synthetic.main.view_musicprogress.view.textViewDuration
-import android.graphics.drawable.BitmapDrawable
+import androidx.constraintlayout.widget.ConstraintLayout
 import com.squareup.picasso.Picasso
 import com.squareup.picasso.Target
 import com.suamusica.smads.R
@@ -21,6 +16,11 @@ import com.suamusica.smads.extensions.asFormattedTime
 import com.suamusica.smads.extensions.isValidHexColor
 import com.suamusica.smads.media.domain.MediaProgress
 import com.suamusica.smads.media.domain.SeekProgress
+import io.reactivex.Observable
+import io.reactivex.subjects.PublishSubject
+import kotlinx.android.synthetic.main.view_musicprogress.view.seekbar
+import kotlinx.android.synthetic.main.view_musicprogress.view.textViewCurrentTime
+import kotlinx.android.synthetic.main.view_musicprogress.view.textViewDuration
 import timber.log.Timber
 
 
@@ -47,8 +47,9 @@ class MusicProgressView @JvmOverloads constructor(
 
     try {
       progressColor?.let { hexColor ->
-        if (hexColor.isValidHexColor())
+        if (hexColor.isValidHexColor()) {
           seekbar.progressDrawable.setColorFilter(Color.parseColor(hexColor), PorterDuff.Mode.MULTIPLY)
+        }
       }
     } catch (e: Exception) {
       Timber.e(e)

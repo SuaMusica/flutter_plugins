@@ -3,23 +3,28 @@ package com.suamusica.smads
 import com.suamusica.smads.output.AdEventOutput
 import com.suamusica.smads.output.ErrorOutput
 import io.flutter.plugin.common.MethodChannel
+import timber.log.Timber
 
 class SmadsCallback(private val channel: MethodChannel) {
 
     fun onAddEvent(adEventOutput: AdEventOutput) {
+        Timber.v("onAddEvent(adEventOutput = %s)", adEventOutput)
         onAddEvent(adEventOutput.toResult())
     }
 
     fun onAddEvent(output: Map<String, String>) {
+        Timber.v("onAddEvent(output = %s)", output)
         channel.invokeMethod(ON_AD_EVENT_METHOD, output)
     }
 
     fun onComplete() {
+        Timber.v("onComplete()")
         channel.invokeMethod(ON_COMPLETE_METHOD, mapOf<Any, Any>())
     }
 
-    fun onError(error: ErrorOutput) {
-        channel.invokeMethod(ON_ERROR_METHOD, error.toResult())
+    fun onError(errorOutput: ErrorOutput) {
+        Timber.v("onError(error = %s)", errorOutput)
+        channel.invokeMethod(ON_ERROR_METHOD, errorOutput.toResult())
     }
 
     companion object {

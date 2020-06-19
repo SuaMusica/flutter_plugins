@@ -11,7 +11,6 @@ import com.suamusica.smads.extensions.hide
 import com.suamusica.smads.extensions.show
 import com.suamusica.smads.media.domain.MediaProgress
 import com.suamusica.smads.output.AdEventOutput
-import com.suamusica.smads.output.AdEventTypeOutput
 import com.suamusica.smads.player.PlayerAction
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -113,24 +112,7 @@ class AdPlayerActivity : AppCompatActivity() {
             else -> Timber.d("Unregistered: %s", adEvent.type)
         }
 
-        callChannelOnAdEvent(adEvent)
-    }
-
-    private fun callChannelOnAdEvent(adEvent: AdEvent) {
-        val ad = adEvent.ad
-        val adEventOutput = AdEventOutput(
-                type = AdEventTypeOutput.getBy(adEvent.type),
-                id = ad.adId,
-                title = ad.title,
-                description = ad.description,
-                system = ad.adSystem,
-                advertiserName = ad.advertiserName,
-                contentType = ad.contentType,
-                creativeAdID = ad.creativeAdId,
-                creativeID = ad.creativeId,
-                dealID = ad.dealId
-        )
-        MethodChannelBridge.callback?.onAddEvent(adEventOutput)
+        MethodChannelBridge.callback?.onAddEvent(AdEventOutput.fromAdEvent(adEvent))
     }
 
     private fun onAdProgressAddEventType() {
@@ -145,7 +127,7 @@ class AdPlayerActivity : AppCompatActivity() {
         if (durationTime < 0) return
         
         val mediaProgress = MediaProgress(currentTime, durationTime)
-        musicProgressView.bind(mediaProgress, null)
+        musicProgressView.bind(mediaProgress = mediaProgress, thumbSeekBarUrl = null)
         musicProgressView.disableSeekBarTouch()
 
         updateAdStuckTimes(currentTime)

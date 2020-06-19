@@ -1,16 +1,18 @@
 package com.suamusica.smads.output
 
+import com.google.ads.interactivemedia.v3.api.AdEvent
+
 data class AdEventOutput(
         val type: AdEventTypeOutput,
-        val id: String,
-        val title: String,
-        val description: String,
-        val system: String,
-        val advertiserName: String,
-        val contentType: String,
-        val creativeAdID: String,
-        val creativeID: String,
-        val dealID: String
+        val id: String = EMPTY_STRING,
+        val title: String = EMPTY_STRING,
+        val description: String = EMPTY_STRING,
+        val system: String = EMPTY_STRING,
+        val advertiserName: String = EMPTY_STRING,
+        val contentType: String = EMPTY_STRING,
+        val creativeAdID: String = EMPTY_STRING,
+        val creativeID: String = EMPTY_STRING,
+        val dealID: String = EMPTY_STRING
 ) {
 
     fun toResult(): Map<String, String> {
@@ -43,12 +45,32 @@ data class AdEventOutput(
         private const val ERROR_CODE_KEY = "error.code"
         private const val ERROR_MESSAGE_KEY = "error.message"
 
+        private const val EMPTY_STRING = ""
+
         fun error(code: String, message: String): Map<String, String> {
             return mapOf(
                     TYPE_KEY to AdEventTypeOutput.ERROR.name,
                     ERROR_CODE_KEY to code,
                     ERROR_MESSAGE_KEY to message
             )
+        }
+
+        fun fromAdEvent(adEvent: AdEvent): AdEventOutput {
+            val ad = adEvent.ad
+            return ad?.let {
+                AdEventOutput(
+                        type = AdEventTypeOutput.getBy(adEvent.type),
+                        id = it.adId,
+                        title = it.title,
+                        description = it.description,
+                        system = it.adSystem,
+                        advertiserName = it.advertiserName,
+                        contentType = it.contentType,
+                        creativeAdID = it.creativeAdId,
+                        creativeID = it.creativeId,
+                        dealID = it.dealId
+                )
+            } ?: AdEventOutput(type = AdEventTypeOutput.getBy(adEvent.type))
         }
     }
 }

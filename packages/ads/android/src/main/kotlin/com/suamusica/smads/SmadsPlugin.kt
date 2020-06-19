@@ -1,6 +1,8 @@
 package com.suamusica.smads
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import androidx.annotation.NonNull
 import com.suamusica.smads.extensions.toAddPayerActivityExtras
 import com.suamusica.smads.helpers.ConnectivityHelper
@@ -53,6 +55,7 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     private fun load(input: Any, result: Result) {
+        Timber.d("load()")
         try {
 
             if (ScreenHelper.isLocked(context)) {
@@ -62,13 +65,26 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
                 return
             }
 
-            if (!ConnectivityHelper.isReachable(context)) {
-                Timber.d("has no connectivity")
-                callback?.onError(ErrorOutput.NO_CONNECTIVITY)
-                result.success(LoadResult.NO_CONNECTIVITY)
-                return
+            ConnectivityHelper.ping(context) { status ->
+                Handler(Looper.getMainLooper()).post { 
+                    if (status) {
+                        showAdPlayerActivity(input, result)
+                    } else {
+                        Timber.d("has no connectivity")
+                        callback?.onError(ErrorOutput.NO_CONNECTIVITY)
+                        result.success(LoadResult.NO_CONNECTIVITY)
+                    }
+                }
             }
+        } catch (t: Throwable) {
+            Timber.e(t)
+            result.error(LoadResult.UNKNOWN_ERROR.toString(), t.message, null)
+        }
+    }
 
+    private fun showAdPlayerActivity(input: Any, result: Result) {
+        Timber.d("showAdPlayerActivity()")
+        try {
             val loadMethodInput = LoadMethodInput(input)
             Timber.d("loadMethodInput: %s", loadMethodInput)
             val intent = loadMethodInput.toAddPayerActivityExtras().toIntent(context)
@@ -80,11 +96,13 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     private fun screenStatus(result: Result) {
+        Timber.d("screenStatus()")
         val resultCode = if(ScreenHelper.isLocked(context)) {
             ScreenStatusResult.LOCKED_SCREEN
         } else {
             ScreenStatusResult.UNLOCKED_SCREEN
         }
+        Timber.d("screenStatus = %s", resultCode)
         result.success(resultCode)
     }
 

@@ -8,22 +8,25 @@
     tools:context=".view.AdPlayerActivity">
 
     <TextView
-        android:id="@+id/textView"
+        android:id="@+id/title"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="133dp"
+        android:layout_height="24dp"
+        android:layout_marginTop="40dp"
+        android:layout_marginBottom="10dp"
         android:ellipsize="end"
         android:gravity="center"
-        android:letterSpacing="-0.09sp"
         android:maxLines="1"
         android:minHeight="24dp"
         android:text="@string/advertisement"
         android:textColor="@color/cerulean"
         android:textSize="14sp"
         android:typeface="sans"
+        app:layout_constraintBottom_toTopOf="@+id/view"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.502"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="1.0"
         app:layout_constraintWidth_default="wrap"
         tools:ignore="UnusedAttribute" />
 
@@ -31,19 +34,20 @@
         android:id="@+id/view"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:layout_marginBottom="100dp"
         android:background="@android:color/black"
         android:gravity="center"
+        app:layout_constraintBottom_toTopOf="@+id/buttonPlayPause"
         app:layout_constraintDimensionRatio="h,16:9"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/videoAdContainer" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <com.google.android.exoplayer2.ui.PlayerView
         android:id="@+id/videoAdContainer"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="10dp"
         android:background="@android:color/black"
         android:clickable="false"
         android:gravity="center"
@@ -53,7 +57,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView" />
+        app:layout_constraintTop_toTopOf="@+id/view" />
 
     <LinearLayout
         android:id="@+id/companionAdSlot"
@@ -67,7 +71,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/videoAdContainer" />
+        app:layout_constraintTop_toTopOf="@+id/view" />
 
     <ProgressBar
         android:id="@+id/progressBar"
@@ -116,7 +120,6 @@
         android:text="@string/ad_player_description"
         android:textColor="@color/grayish_brown"
         android:textSize="13sp"
-        android:letterSpacing="-0.08sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/view"
@@ -219,11 +222,11 @@
 
     <ImageView
         android:id="@+id/buttonSort"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="28dp"
-        android:layout_marginEnd="18dp"
-        android:layout_marginRight="18dp"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginRight="16dp"
         android:alpha="0.2"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
