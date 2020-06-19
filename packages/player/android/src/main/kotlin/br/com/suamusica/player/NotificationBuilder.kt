@@ -141,23 +141,28 @@ class NotificationBuilder(private val context: Context) {
                 context, 0, notifyIntent, PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val notification = builder
-                .setContentIntent(notifyPendingIntent)
-                .setStyle(mediaStyle)
-                .setCategory(NotificationCompat.CATEGORY_PROGRESS)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setShowWhen(false)
-                .setContentTitle(media.name)
-                .setContentText(media.author)
-                .setLargeIcon(art)
-                .setColorized(true)
-                .setOnlyAlertOnce(false)
-                .setAutoCancel(false)
-                .setOngoing(onGoing)
-                .setDefaults(Notification.DEFAULT_ALL)
-                .setSmallIcon(R.drawable.ic_notification)
-                .build()
-
+        val notification = builder.apply{
+                setContentIntent(notifyPendingIntent)
+                setStyle(mediaStyle)
+                setCategory(NotificationCompat.CATEGORY_PROGRESS)
+                setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                setShowWhen(false)
+                setContentTitle(media.name)
+                setContentText(media.author)
+                setLargeIcon(art)
+                setColorized(true)
+                setOnlyAlertOnce(false)
+                setAutoCancel(false)
+                setOngoing(onGoing)
+                setSmallIcon(R.drawable.ic_notification)
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O){
+                    setDefaults(Notification.DEFAULT_LIGHTS or Notification.DEFAULT_SOUND)
+                    setVibrate(longArrayOf(0))
+                } else{
+                    setDefaults(Notification.DEFAULT_ALL)
+                }
+        }.build()
+        
         if (onGoing) {
             notification.flags += Notification.FLAG_ONGOING_EVENT
             notification.flags += Notification.FLAG_NO_CLEAR

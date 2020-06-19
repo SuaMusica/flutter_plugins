@@ -56,6 +56,12 @@ class Migration {
     return result ?? 0;
   }
 
+  Future<int> getArtWorks(List<Map<String, String>> items) async {
+    final int result =
+        await _channel.invokeMethod('extractArt', {"items": items});
+    return result ?? 0;
+  }
+
   Future<int> deleteOldDatabase() async {
     final int result = await _channel.invokeMethod('deleteOldContent');
 
