@@ -5,4 +5,7 @@
     <string name="ad_player_description">A sua música tocará em alguns segundos.</string>
     <string name="ad_help_button_description">POR QUE ESTOU VENDO ESTE ANÚNCIO?</string>
     <string name="premium_user">SEJA UM USUÁRIO PREMIUM</string>
+    <string name="why_am_I_seeing_this_ad">Por que estou vendo este anúncio?</string>
+    <string name="help_description_1">Os anúncios são uma das formas que temos\npara oferecer o Sua Música de graça para\ntodos os usuários.</string>
+    <string name="help_description_2">Você pode ter a versão sem anúncios e\nsem interrupções. Tenha o Sua Música\nPremium.</string>
 </resources>

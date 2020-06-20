@@ -143,15 +143,10 @@
 
     <Button
         android:id="@+id/buttonPremiumUser"
-        android:layout_width="240dp"
-        android:layout_height="34dp"
+        style="@style/premium_button"
         android:layout_marginTop="26dp"
-        android:background="@drawable/ad_premium_button_background"
         android:paddingLeft="13dp"
         android:paddingRight="13dp"
-        android:text="@string/premium_user"
-        android:textColor="@color/white"
-        android:textSize="14sp"
         app:layout_constraintCircleRadius="20dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.504"

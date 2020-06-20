@@ -17,6 +17,7 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
+import kotlinx.android.synthetic.main.activity_ima_player.buttonHelp
 import kotlinx.android.synthetic.main.activity_ima_player.buttonPlayPause
 import kotlinx.android.synthetic.main.activity_ima_player.companionAdSlot
 import kotlinx.android.synthetic.main.activity_ima_player.musicProgressView
@@ -88,6 +89,17 @@ class AdPlayerActivity : AppCompatActivity() {
                 ?.doOnError { Timber.e(it) }
                 ?.subscribe()
                 ?.compose()
+
+        buttonHelp?.clicks()
+                ?.debounce(1, TimeUnit.SECONDS)
+                ?.observeOn(AndroidSchedulers.mainThread())
+                ?.doOnNext { showBottomSheetHelp() }
+                ?.subscribe()
+                ?.compose()
+    }
+
+    private fun showBottomSheetHelp() {
+        TODO("Not yet implemented")
     }
 
     private fun onAdEvent(adEvent: AdEvent) {
