@@ -9,6 +9,7 @@ import com.suamusica.smads.MethodChannelBridge
 import com.suamusica.smads.R
 import com.suamusica.smads.extensions.hide
 import com.suamusica.smads.extensions.show
+import com.suamusica.smads.helpers.Navigator
 import com.suamusica.smads.media.domain.MediaProgress
 import com.suamusica.smads.output.AdEventOutput
 import com.suamusica.smads.player.PlayerAction
@@ -17,12 +18,13 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
-import kotlinx.android.synthetic.main.activity_ima_player.buttonHelp
-import kotlinx.android.synthetic.main.activity_ima_player.buttonPlayPause
-import kotlinx.android.synthetic.main.activity_ima_player.companionAdSlot
-import kotlinx.android.synthetic.main.activity_ima_player.musicProgressView
-import kotlinx.android.synthetic.main.activity_ima_player.progressBar
-import kotlinx.android.synthetic.main.activity_ima_player.videoAdContainer
+import kotlinx.android.synthetic.main.activity_ad_player.buttonHelp
+import kotlinx.android.synthetic.main.activity_ad_player.buttonPlayPause
+import kotlinx.android.synthetic.main.activity_ad_player.buttonPremiumUser
+import kotlinx.android.synthetic.main.activity_ad_player.companionAdSlot
+import kotlinx.android.synthetic.main.activity_ad_player.musicProgressView
+import kotlinx.android.synthetic.main.activity_ad_player.progressBar
+import kotlinx.android.synthetic.main.activity_ad_player.videoAdContainer
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -40,7 +42,7 @@ class AdPlayerActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_ima_player)
+        setContentView(R.layout.activity_ad_player)
         Timber.v("onCreate")
         adPlayerManager = AdPlayerManager(this, AdPlayerActivityExtras.fromIntent(intent))
         configureAdPlayerEventObservers()
@@ -91,15 +93,27 @@ class AdPlayerActivity : AppCompatActivity() {
                 ?.compose()
 
         buttonHelp?.clicks()
-                ?.debounce(1, TimeUnit.SECONDS)
                 ?.observeOn(AndroidSchedulers.mainThread())
                 ?.doOnNext { showBottomSheetHelp() }
                 ?.subscribe()
                 ?.compose()
+
+        buttonPremiumUser.clicks()
+                .observeOn(AndroidSchedulers.mainThread())
+                ?.doOnNext { redirectToPremiumScreen() }
+                ?.subscribe()
+                ?.compose()
+    }
+
+    private fun redirectToPremiumScreen() {
+        Navigator.redirectToPremiumActivity(this) {
+            onComplete()
+        }
     }
 
     private fun showBottomSheetHelp() {
-        TODO("Not yet implemented")
+        val helperBottomSheet = AdPlayerHelperBottomSheet { onComplete() }
+        helperBottomSheet.show(supportFragmentManager, "AdHelp")
     }
 
     private fun onAdEvent(adEvent: AdEvent) {
