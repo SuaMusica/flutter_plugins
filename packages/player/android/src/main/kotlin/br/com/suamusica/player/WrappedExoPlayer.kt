@@ -21,9 +21,11 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.media.session.MediaButtonReceiver
 import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
 import com.google.android.exoplayer2.*
+import com.google.android.exoplayer2.C.WAKE_MODE_NETWORK
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.ext.mediasession.TimelineQueueNavigator
+import com.google.android.exoplayer2.offline.DownloadService.startForeground
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.source.hls.HlsMediaSource
@@ -37,7 +39,7 @@ import io.flutter.plugin.common.MethodChannel
 import java.util.concurrent.atomic.AtomicBoolean
 import com.google.android.exoplayer2.Player as ExoPlayer
 
-class WrappedExoPlayer(
+class WrappedExoPlayer (
     val playerId: String,
     override val context: Context,
     val channel: MethodChannel,
@@ -70,9 +72,6 @@ class WrappedExoPlayer(
     private var mediaController: MediaControllerCompat? = null
     private var mediaSessionConnector: MediaSessionConnector? = null
 
-    private var wifiLock: WifiManager.WifiLock? = null
-    private var wakeLock: PowerManager.WakeLock? = null
-
     private val uAmpAudioAttributes = AudioAttributes.Builder()
         .setContentType(C.CONTENT_TYPE_MUSIC)
         .setUsage(C.USAGE_MEDIA)
@@ -85,16 +84,10 @@ class WrappedExoPlayer(
     val player = SimpleExoPlayer.Builder(context).build().apply {
         setAudioAttributes(uAmpAudioAttributes, true)
         addListener(playerEventListener())
+        setWakeMode(WAKE_MODE_NETWORK)
     }
 
     init {
-        wifiLock = (context.getSystemService(Context.WIFI_SERVICE) as WifiManager)
-            .createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "wifiLock")
-        wakeLock = (context.getSystemService(Context.POWER_SERVICE) as PowerManager)
-            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ON_AFTER_RELEASE, "suamusica:wakeLock")
-        wifiLock?.setReferenceCounted(false)
-        wakeLock?.setReferenceCounted(false)
-
         // Create a new MediaSession.
         val mediaButtonReceiver = ComponentName(context, MediaButtonReceiver::class.java)
         mediaSession = mediaSession?.let { it } ?: MediaSessionCompat(this.context, "Player", mediaButtonReceiver, null)
