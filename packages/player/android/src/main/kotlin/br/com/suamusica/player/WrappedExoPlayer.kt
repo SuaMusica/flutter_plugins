@@ -85,6 +85,7 @@ class WrappedExoPlayer (
         setAudioAttributes(uAmpAudioAttributes, true)
         addListener(playerEventListener())
         setWakeMode(WAKE_MODE_NETWORK)
+        setHandleAudioBecomingNoisy(true)
     }
 
     init {
