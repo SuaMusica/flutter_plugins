@@ -54,4 +54,50 @@ data class OfflineMedia(
     listOf(), 0L, false, false, stream = "")
 
   fun mediaUrl(): String = if (File(filePath).exists()) filePath else stream
+
+  fun toMigration(): List<Map<String, Any>> {
+    val content = mutableListOf<Map<String, Any>>()
+
+    if (playlistIds.isEmpty()) {
+      content.add(
+          mapOf(
+              "id" to this.id,
+              "name" to this.name,
+              "album_id" to this.albumId,
+              "download_id" to this.downloadId.toString(),
+              "is_external" to this.isExternal,
+              "index_in_album" to this.indexPosition.toString(),
+              "path" to "",
+              "stream_path" to this.stream,
+              "share_url" to (this.shareUrl ?: ""),
+              "local_path" to this.filePath,
+              "created_at" to this.creationTimeMillis.toString(),
+              "index_in_playlist" to "-1",
+              "playlist_id"  to "0"
+          )
+      )
+    } else {
+      for (playlistId in playlistIds) {
+        content.add(
+            mapOf(
+                "id" to this.id,
+                "name" to this.name,
+                "album_id" to this.albumId,
+                "download_id" to this.downloadId.toString(),
+                "is_external" to this.isExternal,
+                "index_in_album" to this.indexPosition.toString(),
+                "path" to "",
+                "stream_path" to this.stream,
+                "share_url" to (this.shareUrl ?: ""),
+                "local_path" to this.filePath,
+                "created_at" to this.creationTimeMillis.toString(),
+                "index_in_playlist" to "-1",
+                "playlist_id"  to playlistId
+            )
+        )
+      }
+    }
+
+    return content.toList()
+  }
 }

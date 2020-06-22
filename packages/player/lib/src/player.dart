@@ -149,6 +149,7 @@ class Player {
     return Ok;
   }
 
+  Media restartQueue() => _queue.restart();
   Future<int> reorder(int oldIndex, int newIndex,
       [bool isShuffle = false]) async {
     _queue.reorder(oldIndex, newIndex, isShuffle);
