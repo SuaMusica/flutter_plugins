@@ -18,7 +18,7 @@ object ConnectivityHelper {
     fun isConnected(context: Context): Boolean {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val activeNetworkInfo = connectivityManager.activeNetworkInfo ?: return false
-        if (!activeNetworkInfo.isConnected) return false
+        return activeNetworkInfo.isConnected
         return true
     }
 
