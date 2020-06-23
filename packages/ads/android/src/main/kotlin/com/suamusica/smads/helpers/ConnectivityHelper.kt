@@ -19,7 +19,6 @@ object ConnectivityHelper {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val activeNetworkInfo = connectivityManager.activeNetworkInfo ?: return false
         return activeNetworkInfo.isConnected
-        return true
     }
 
     fun ping(context: Context, onResult: (status: Boolean) -> Unit) {
