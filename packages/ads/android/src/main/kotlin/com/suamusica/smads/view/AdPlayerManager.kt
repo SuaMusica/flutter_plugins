@@ -29,7 +29,7 @@ class AdPlayerManager(
         private val adPlayerParams: AdPlayerActivityExtras
 ) {
 
-    private val adsLoader: ImaAdsLoader = ImaAdsLoader(context, Uri.parse(adPlayerParams.formattedAdTagUrl))
+    private val adsLoader: ImaAdsLoader = ImaAdsLoader(context, Uri.parse(adPlayerParams.adTagUrl))
     private val dataSourceFactory: DataSource.Factory
     private var player: SimpleExoPlayer? = null
     private var viewAdCompanion: ViewGroup? = null
