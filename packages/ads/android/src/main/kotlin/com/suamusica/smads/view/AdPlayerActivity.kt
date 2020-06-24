@@ -7,6 +7,7 @@ import com.google.ads.interactivemedia.v3.api.AdEvent
 import com.jakewharton.rxbinding3.view.clicks
 import com.suamusica.smads.MethodChannelBridge
 import com.suamusica.smads.R
+import com.suamusica.smads.extensions.gone
 import com.suamusica.smads.extensions.hide
 import com.suamusica.smads.extensions.show
 import com.suamusica.smads.helpers.Navigator
@@ -201,7 +202,7 @@ class AdPlayerActivity : AppCompatActivity() {
     private fun showContent() {
         Timber.v("showContent")
         videoAdContainer.show()
-        progressBar.hide()
+        progressBar.gone()
     }
 
     private fun playingButtonState() {
