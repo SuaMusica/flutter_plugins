@@ -1,8 +1,9 @@
 group 'br.com.suamusica.player'
 version '1.0-SNAPSHOT'
 
+
 buildscript {
-    ext.kotlin_version = '1.3.10'
+    ext.kotlin_version = '1.3.50'
     ext.exoplayer_version = '2.11.4'
     ext.gson_version = '2.8.5'
     ext.glide_version = "4.9.0"
@@ -15,7 +16,8 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.2.1'
+        classpath 'com.android.tools.build:gradle:3.6.3'
+        
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
