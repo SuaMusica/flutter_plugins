@@ -9,11 +9,10 @@ interface Player {
     var releaseMode: ReleaseMode
     val context: Context
     var stayAwake: Boolean
-    val cookie: String
 
-    fun prepare(media: Media)
+    fun prepare(cookie: String, media: Media)
     fun play()
-    fun seek(position: Int)
+    fun seek(position: Long)
     fun pause()
     fun stop()
     fun release()

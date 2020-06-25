@@ -7,10 +7,7 @@ import android.app.Service
 import android.content.ComponentName
 import android.content.Context
 import android.net.Uri
-import android.net.wifi.WifiManager
-import android.os.AsyncTask
-import android.os.Handler
-import android.os.PowerManager
+import android.os.*
 import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
@@ -25,7 +22,6 @@ import com.google.android.exoplayer2.C.WAKE_MODE_NETWORK
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.ext.mediasession.TimelineQueueNavigator
-import com.google.android.exoplayer2.offline.DownloadService.startForeground
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.source.hls.HlsMediaSource
@@ -35,19 +31,14 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
 import com.google.android.exoplayer2.upstream.FileDataSource
 import com.google.android.exoplayer2.util.Util
-import io.flutter.plugin.common.MethodChannel
 import java.util.concurrent.atomic.AtomicBoolean
 import com.google.android.exoplayer2.Player as ExoPlayer
 
 class WrappedExoPlayer (
-    val playerId: String,
-    override val context: Context,
-    val channel: MethodChannel,
-    val plugin: Plugin,
-    val handler: Handler,
-    override val cookie: String
+        override val context: Context,
+        private val messenger: Messenger,
+        val handler: Handler
 ) : Player {
-    val TAG = "Player"
     override var volume = 1.0
     override val duration: Long
         get() = player.duration
@@ -55,9 +46,10 @@ class WrappedExoPlayer (
         get() = player.currentPosition
     override var releaseMode = ReleaseMode.RELEASE
     override var stayAwake: Boolean = false
-    val channelManager = MethodChannelManager(channel)
 
     var media: Media? = null
+
+    val TAG = "Player"
 
     private val mediaControllerCallback = MediaControllerCallback()
 
@@ -91,7 +83,7 @@ class WrappedExoPlayer (
     init {
         // Create a new MediaSession.
         val mediaButtonReceiver = ComponentName(context, MediaButtonReceiver::class.java)
-        mediaSession = mediaSession?.let { it } ?: MediaSessionCompat(this.context, "Player", mediaButtonReceiver, null)
+        mediaSession = mediaSession?.let { it } ?: MediaSessionCompat(this.context, TAG, mediaButtonReceiver, null)
             .apply {
                 setSessionActivity(sessionActivityPendingIntent)
                 isActive = true
@@ -119,36 +111,36 @@ class WrappedExoPlayer (
     private fun playerEventListener(): com.google.android.exoplayer2.Player.EventListener {
         return object : com.google.android.exoplayer2.Player.EventListener {
             override fun onTimelineChanged(timeline: Timeline, manifest: Any?, reason: Int) {
-                 Log.i("Player", "onTimelineChanged: timeline: $timeline manifest: $manifest reason: $reason")
+                 Log.i(TAG, "onTimelineChanged: timeline: $timeline manifest: $manifest reason: $reason")
             }
 
             override fun onTracksChanged(trackGroups: TrackGroupArray, trackSelections: TrackSelectionArray) {
-                 Log.i("Player", "onTimelineChanged: trackGroups: $trackGroups trackSelections: $trackSelections")
+                 Log.i(TAG, "onTimelineChanged: trackGroups: $trackGroups trackSelections: $trackSelections")
             }
 
             override fun onLoadingChanged(isLoading: Boolean) {
-                 Log.i("Player", "onLoadingChanged: isLoading: $isLoading")
+                 Log.i(TAG, "onLoadingChanged: isLoading: $isLoading")
                 if (isLoading) {
-                    channelManager.notifyPlayerStateChange(playerId, PlayerState.BUFFERING)
+                    notifyPlayerStateChange(PlayerState.BUFFERING)
                 }
             }
 
             override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
                 //TODO: Only emit Paused when user paused
-                Log.i("Player", "onPlayerStateChanged: playWhenReady: $playWhenReady playbackState: $playbackState currentPlaybackState: ${player.getPlaybackState()}")
+                Log.i(TAG, "onPlayerStateChanged: playWhenReady: $playWhenReady playbackState: $playbackState currentPlaybackState: ${player.getPlaybackState()}")
 
                 if (playWhenReady && playbackState == ExoPlayer.STATE_READY) {
-                    channelManager.notifyPlayerStateChange(playerId, PlayerState.PLAYING)
+                    notifyPlayerStateChange(PlayerState.PLAYING)
                 } else {
                     if (player.playbackError != null) {
-                        channelManager.notifyPlayerStateChange(playerId, PlayerState.ERROR, player.playbackError.toString())
+                        notifyPlayerStateChange(PlayerState.ERROR, player.playbackError.toString())
                     } else {
                         when (playbackState) {
                             ExoPlayer.STATE_IDLE -> { // 1
-                                channelManager.notifyPlayerStateChange(playerId, PlayerState.IDLE)
+                                notifyPlayerStateChange(PlayerState.IDLE)
                             }
                             ExoPlayer.STATE_BUFFERING -> { // 2 
-                                channelManager.notifyPlayerStateChange(playerId, PlayerState.BUFFERING)
+                                notifyPlayerStateChange(PlayerState.BUFFERING)
                             }
                             ExoPlayer.STATE_READY -> { // 3
                                 val status = if (playWhenReady) PlayerState.PLAYING else PlayerState.PAUSED
@@ -161,17 +153,17 @@ class WrappedExoPlayer (
                                 } else {
                                     if (status == PlayerState.PAUSED) {
                                         stopTrackingProgressAndPerformTask {
-                                            channelManager.notifyPlayerStateChange(playerId, status)
+                                            notifyPlayerStateChange(status)
                                         }
                                     } else {
-                                        channelManager.notifyPlayerStateChange(playerId, status)
+                                        notifyPlayerStateChange(status)
                                     }
 
                                 }
                             }
                             ExoPlayer.STATE_ENDED -> { // 4
                                 stopTrackingProgressAndPerformTask {
-                                    channelManager.notifyPlayerStateChange(playerId, PlayerState.COMPLETED)
+                                    notifyPlayerStateChange(PlayerState.COMPLETED)
                                 }
                             }
                         }
@@ -181,35 +173,35 @@ class WrappedExoPlayer (
             }
 
             override fun onRepeatModeChanged(repeatMode: Int) {
-                Log.i("Player", "onRepeatModeChanged: $repeatMode")
+                Log.i(TAG, "onRepeatModeChanged: $repeatMode")
             }
 
             override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
-                Log.i("Player", "onShuffleModeEnabledChanged: $shuffleModeEnabled")
+                Log.i(TAG, "onShuffleModeEnabledChanged: $shuffleModeEnabled")
             }
 
             override fun onPlayerError(error: ExoPlaybackException) {
-                Log.e("Player", "onPLayerError: ${error?.message}", error)
+                Log.e(TAG, "onPLayerError: ${error?.message}", error)
 
-                channelManager.notifyPlayerStateChange(playerId, PlayerState.ERROR, player.playbackError.toString())
+                notifyPlayerStateChange(PlayerState.ERROR, player.playbackError.toString())
             }
 
             override fun onPositionDiscontinuity(reason: Int) {
-                Log.i("Player", "onPositionDiscontinuity: $reason")
+                Log.i(TAG, "onPositionDiscontinuity: $reason")
             }
 
             override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters) {
-                Log.i("Player", "onPlaybackParametersChanged: $playbackParameters")
+                Log.i(TAG, "onPlaybackParametersChanged: $playbackParameters")
             }
 
             override fun onSeekProcessed() {
-                Log.i("Player", "onSeekProcessed")
-                channelManager.notifyPlayerStateChange(playerId, PlayerState.SEEK_END)
+                Log.i(TAG, "onSeekProcessed")
+                notifyPlayerStateChange(PlayerState.SEEK_END)
             }
         }
     }
 
-    override fun prepare(media: Media) {
+    override fun prepare(cookie: String, media: Media) {
         this.media = media
         val defaultHttpDataSourceFactory = DefaultHttpDataSourceFactory("mp.next")
         defaultHttpDataSourceFactory.defaultRequestProperties.set("Cookie", cookie)
@@ -263,11 +255,11 @@ class WrappedExoPlayer (
         mediaSessionConnector?.setQueueNavigator(timelineQueueNavigator)
 
         val url = media.url
-        Log.i("Player", "Player: URL: $url")
+        Log.i(TAG, "Player: URL: $url")
         val uri = Uri.parse(url)
 
         @C.ContentType val type = Util.inferContentType(uri)
-        Log.i("Player", "Player: Type: $type HLS: ${C.TYPE_HLS}")
+        Log.i(TAG, "Player: Type: $type HLS: ${C.TYPE_HLS}")
         val source = when (type) {
             C.TYPE_HLS -> HlsMediaSource.Factory(dataSourceFactory)
                 .setPlaylistParserFactory(SMHlsPlaylistParserFactory())
@@ -309,9 +301,9 @@ class WrappedExoPlayer (
         removeNowPlayingNotification();
     }
 
-    override fun seek(position: Int) {
+    override fun seek(position: Long) {
         performAndEnableTracking {
-            player.seekTo(position.toLong())
+            player.seekTo(position)
             player.playWhenReady = true
         }
     }
@@ -330,19 +322,19 @@ class WrappedExoPlayer (
     override fun stop() {
         performAndDisableTracking {
             player.playWhenReady = false
-            channelManager.notifyPlayerStateChange(playerId, PlayerState.STOPPED)
+            notifyPlayerStateChange(PlayerState.STOPPED)
         }
         sendNotification(false)
     }
 
     override fun next() {
-        Log.i("SMPlayer", "channel: $channel playerId: $playerId")
-        val ret = channel?.invokeMethod("commandCenter.onNext", mapOf("playerId" to playerId))
-        Log.i("SMPlayer", "channel: $channel playerId: $playerId ret: $ret")
+        TODO()
+//        val ret = channel?.invokeMethod("commandCenter.onNext", mapOf("playerId" to playerId))
     }
 
     override fun previous() {
-        channel?.invokeMethod("commandCenter.onPrevious", mapOf("playerId" to playerId))
+        TODO()
+//        channel?.invokeMethod("commandCenter.onPrevious", mapOf("playerId" to playerId))
     }
 
     override fun release() {
@@ -399,15 +391,33 @@ class WrappedExoPlayer (
         val currentPosition = if (player.currentPosition > player.duration) player.duration else player.currentPosition
         val duration = player.duration
 
-        // Log.i("Player", "notifyPositionChange: position: $currentPosition duration: $duration")
+        // Log.i(TAG, "notifyPositionChange: position: $currentPosition duration: $duration")
 
         if (duration > 0) {
-            channelManager.notifyPositionChange(playerId, currentPosition, duration)
+            notifyPositionChange(currentPosition, duration)
         }
     }
 
+    private fun notifyPositionChange(currentPosition: Long, duration: Long) {
+        val msg = Message.obtain(null, MediaService.MessageType.POSITION_CHANGE.ordinal, 0, 0)
+        msg.data = Bundle()
+        msg.data.putLong("currentPosition", currentPosition)
+        msg.data.putLong("duration", duration)
+        messenger.send(msg)
+    }
+
+    private fun notifyPlayerStateChange(state: PlayerState, error: String? = null) {
+        val msg = Message.obtain(null, MediaService.MessageType.STATE_CHANGE.ordinal, 0, 0)
+        msg.data = Bundle()
+        msg.data.putInt("state", state.ordinal)
+        error?.let {
+            msg.data.putString("error", it)
+        }
+        messenger.send(msg)
+    }
+
     private fun removeNowPlayingNotification() {
-        Log.d("Player", "removeNowPlayingNotification")
+        Log.d(TAG, "removeNowPlayingNotification")
         AsyncTask.execute {
             notificationManager?.cancel(NOW_PLAYING_NOTIFICATION)
         }
@@ -446,20 +456,20 @@ class WrappedExoPlayer (
     private inner class MediaControllerCallback : MediaControllerCompat.Callback() {
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
             Log.d(
-                "Player",
+                TAG,
                 "onMetadataChanged: metadata: $metadata"
             )
         }
 
         override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
-            Log.d("Player", "onPlaybackStateChanged state: $state")
+            Log.d(TAG, "onPlaybackStateChanged state: $state")
             AsyncTask.execute {
                 updateNotification(state!!)
             }
         }
 
         override fun onQueueChanged(queue: MutableList<MediaSessionCompat.QueueItem>?) {
-            Log.d("Player", "onQueueChanged queue: $queue")
+            Log.d(TAG, "onQueueChanged queue: $queue")
         }
 
         @SuppressLint("WakelockTimeout")
@@ -477,16 +487,16 @@ class WrappedExoPlayer (
             when (updatedState) {
                 PlaybackStateCompat.STATE_NONE,
                 PlaybackStateCompat.STATE_STOPPED -> {
-                    Log.i("Player", "updateNotification: STATE_NONE or STATE_STOPPED")
+                    Log.i(TAG, "updateNotification: STATE_NONE or STATE_STOPPED")
                     removeNowPlayingNotification()
                 }
                 PlaybackStateCompat.STATE_PAUSED -> {
-                    Log.i("Player", "updateNotification: STATE_PAUSED")
+                    Log.i(TAG, "updateNotification: STATE_PAUSED")
                     notificationManager.notify(NOW_PLAYING_NOTIFICATION, buildNotification(updatedState, onGoing)!!)
                 }
                 PlaybackStateCompat.STATE_BUFFERING,
                 PlaybackStateCompat.STATE_PLAYING -> {
-                    Log.i("Player", "updateNotification: STATE_BUFFERING or STATE_PLAYING")
+                    Log.i(TAG, "updateNotification: STATE_BUFFERING or STATE_PLAYING")
                     /**
                      * This may look strange, but the documentation for [Service.startForeground]
                      * notes that "calling this method does *not* put the service in the started
@@ -497,7 +507,7 @@ class WrappedExoPlayer (
                     }
                 }
                 else -> {
-                    Log.i("Player", "updateNotification: ELSE")
+                    Log.i(TAG, "updateNotification: ELSE")
                     if (notification != null) {
                         notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
                     } else

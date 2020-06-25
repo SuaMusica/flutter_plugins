@@ -6,7 +6,7 @@ import android.content.Intent
 import android.util.Log
 import android.view.KeyEvent
 
-class MusicService : BroadcastReceiver() {
+class MediaControlBroadcastReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
         if (intent == null || Intent.ACTION_MEDIA_BUTTON != intent.action
                 || !intent.hasExtra(Intent.EXTRA_KEY_EVENT)) {
@@ -17,21 +17,21 @@ class MusicService : BroadcastReceiver() {
 
         when (ke.keyCode) {
             KeyEvent.KEYCODE_MEDIA_PLAY -> {
-                Plugin.currentPlayer()?.play()
+                Plugin.play()
             }
             KeyEvent.KEYCODE_MEDIA_PAUSE -> {
-                Plugin.currentPlayer()?.pause()
+                Plugin.pause()
             }
             KeyEvent.KEYCODE_MEDIA_NEXT -> {
                 Log.i("Player", "Player: Key Code : Next")
-                Plugin.currentPlayer()?.next()
+                Plugin.next()
             }
             KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
                 Log.i("Player", "Player: Key Code : Previous")
-                Plugin.currentPlayer()?.previous()
+                Plugin.previous()
             }
             KeyEvent.KEYCODE_MEDIA_STOP -> {
-                Plugin.currentPlayer()?.stop()
+                Plugin.stop()
             }
         }
 
