@@ -7,7 +7,7 @@ import io.flutter.plugin.platform.PlatformView
 import io.flutter.plugin.platform.PlatformViewFactory
 
 class AdPlayerFactory(private val messenger: BinaryMessenger): PlatformViewFactory(StandardMessageCodec.INSTANCE) {
-  override fun create(context: Context, viewId: Int, args: Any?): PlatformView {
-    return AdPlayer(context, messenger, viewId, args as HashMap<*, *>?)
+  override fun create(context: Context, viewId: Int, args: Any): PlatformView {
+    return AdPlayer(context, messenger, viewId, AdPlayerParams(args))
   }
 }

@@ -20,7 +20,7 @@ class AdPlayer(
         private val context: Context,
         messenger: BinaryMessenger,
         id: Int,
-        args: HashMap<*, *>?
+        private val params: AdPlayerParams
 ) : PlatformView, MethodChannel.MethodCallHandler {
 
     private val channel: MethodChannel = MethodChannel(messenger, "${VIEW_TYPE_ID}_$id")
