@@ -83,6 +83,7 @@ class AdPlayer(
         private const val LOAD_METHOD = "load"
         private const val PLAY_METHOD = "play"
         private const val PAUSE_METHOD = "pause"
-        const val VIEW_TYPE_ID = "smads/player"
+        
+        const val VIEW_TYPE_ID = "suamusica/pre_roll"
     }
 }

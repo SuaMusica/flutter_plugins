@@ -9,7 +9,7 @@ class PreRollController extends PreRollEventHandler {
         super(listener) {
     if (listener != null) {
       _channel.setMethodCallHandler(handleEvent);
-      _channel.invokeMethod('setListener');
+      // _channel.invokeMethod('setListener');
     }
   }
   void pause() {
@@ -18,6 +18,10 @@ class PreRollController extends PreRollEventHandler {
 
   void play() {
     _channel.invokeMethod("play");
+  }
+
+  void load(Map<String, dynamic> args) {
+    _channel.invokeMethod("load", args ?? {});
   }
 
   void dispose() {
