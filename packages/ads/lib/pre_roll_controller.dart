@@ -1,10 +1,12 @@
 import 'package:flutter/services.dart';
 import 'package:smads/pre_roll_event_handler.dart';
+import 'package:smads/pre_roll_events.dart';
 
 class PreRollController extends PreRollEventHandler {
   final MethodChannel _channel;
 
-  PreRollController(int id, Function(String, Map<String, dynamic>) listener)
+  PreRollController(
+      int id, Function(PreRollEvent, Map<String, dynamic>) listener)
       : _channel = MethodChannel('suamusica/pre_roll_$id'),
         super(listener) {
     if (listener != null) {

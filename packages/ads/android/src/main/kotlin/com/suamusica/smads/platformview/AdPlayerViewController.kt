@@ -22,6 +22,7 @@ import kotlinx.android.synthetic.main.layout_ad_player.view.videoAdContainer
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.math.ceil
 
 class AdPlayerViewController(
         private val context: Context,
@@ -85,7 +86,6 @@ class AdPlayerViewController(
     private fun onAdEvent(adEvent: AdEvent) {
         Timber.v("onAdEvent(adEvent: $adEvent)")
         Timber.d("adEventType %s", adEvent.type)
-
         when (adEvent.type) {
             AdEvent.AdEventType.COMPLETED,
             AdEvent.AdEventType.SKIPPED -> onComplete()
@@ -94,14 +94,18 @@ class AdPlayerViewController(
                 onAdLoaded()
             }
             AdEvent.AdEventType.STARTED -> showContent()
-            AdEvent.AdEventType.PAUSED -> {}
-            AdEvent.AdEventType.RESUMED -> {}
+            AdEvent.AdEventType.PAUSED -> {
+            }
+            AdEvent.AdEventType.RESUMED -> {
+            }
             AdEvent.AdEventType.ALL_ADS_COMPLETED -> onComplete()
-            AdEvent.AdEventType.AD_PROGRESS -> return
+            AdEvent.AdEventType.AD_PROGRESS -> {
+            }
             else -> Timber.d("Unregistered: %s", adEvent.type)
         }
 
-        callback.onAddEvent(AdEventOutput.fromAdEvent(adEvent))
+        callback.onAddEvent(AdEventOutput.fromAdEvent(adEvent, ceil(adPlayerManager.adsDuration().toDouble()).toLong() ,ceil(adPlayerManager.adsCurrentPosition().toDouble()).toLong()
+        ))
     }
 
     private fun onAdError(adErrorEvent: AdErrorEvent) {

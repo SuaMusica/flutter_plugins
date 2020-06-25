@@ -5,14 +5,12 @@ import com.google.ads.interactivemedia.v3.api.AdEvent
 enum class AdEventTypeOutput(val suggestedName: String? = null) {
     ALL_ADS_COMPLETED,
     CLICKED,
-    COMPLETE,
+    COMPLETED,
     CUEPOINTS_CHANGED,
     FIRST_QUARTILE,
     LOG,
     AD_BREAK_READY,
     MIDPOINT,
-    PAUSE,
-    RESUME,
     SKIPPED,
     STARTED,
     TAPPED,
@@ -23,6 +21,15 @@ enum class AdEventTypeOutput(val suggestedName: String? = null) {
     AD_PERIOD_STARTED,
     AD_PERIOD_ENDED,
     ERROR,
+    CONTENT_PAUSE_REQUESTED,
+    CONTENT_RESUME_REQUESTED,
+    PAUSED,
+    RESUMED,
+    SKIPPABLE_STATE_CHANGED,
+    ICON_TAPPED,
+    AD_PROGRESS,
+    AD_BUFFERING,
+
     UNKNOWN("unknown");
 
     companion object {
@@ -30,13 +37,13 @@ enum class AdEventTypeOutput(val suggestedName: String? = null) {
                 when (adEventType) {
                     AdEvent.AdEventType.ALL_ADS_COMPLETED -> ALL_ADS_COMPLETED
                     AdEvent.AdEventType.CLICKED -> CLICKED
-                    AdEvent.AdEventType.COMPLETED -> COMPLETE
+                    AdEvent.AdEventType.COMPLETED -> COMPLETED
                     AdEvent.AdEventType.CUEPOINTS_CHANGED -> CUEPOINTS_CHANGED
                     AdEvent.AdEventType.FIRST_QUARTILE -> FIRST_QUARTILE
                     AdEvent.AdEventType.LOG -> LOG
                     AdEvent.AdEventType.MIDPOINT -> MIDPOINT
-                    AdEvent.AdEventType.PAUSED -> PAUSE
-                    AdEvent.AdEventType.RESUMED -> RESUME
+                    AdEvent.AdEventType.PAUSED -> PAUSED
+                    AdEvent.AdEventType.RESUMED -> RESUMED
                     AdEvent.AdEventType.SKIPPED -> SKIPPED
                     AdEvent.AdEventType.STARTED -> STARTED
                     AdEvent.AdEventType.TAPPED -> TAPPED
@@ -47,6 +54,13 @@ enum class AdEventTypeOutput(val suggestedName: String? = null) {
                     AdEvent.AdEventType.AD_BREAK_ENDED -> AD_BREAK_ENDED
                     AdEvent.AdEventType.AD_PERIOD_STARTED -> AD_PERIOD_STARTED
                     AdEvent.AdEventType.AD_PERIOD_ENDED -> AD_PERIOD_ENDED
+                    AdEvent.AdEventType.CONTENT_PAUSE_REQUESTED -> CONTENT_PAUSE_REQUESTED
+                    AdEvent.AdEventType.CONTENT_PAUSE_REQUESTED -> CONTENT_PAUSE_REQUESTED
+                    AdEvent.AdEventType.CONTENT_RESUME_REQUESTED -> CONTENT_RESUME_REQUESTED
+                    AdEvent.AdEventType.SKIPPABLE_STATE_CHANGED -> SKIPPABLE_STATE_CHANGED
+                    AdEvent.AdEventType.ICON_TAPPED -> ICON_TAPPED
+                    AdEvent.AdEventType.AD_PROGRESS -> AD_PROGRESS
+                    AdEvent.AdEventType.AD_BUFFERING -> AD_BUFFERING
                     else -> UNKNOWN
                 }
     }

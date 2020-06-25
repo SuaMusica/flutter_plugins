@@ -2,76 +2,59 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:smads/pre_roll_controller.dart';
+import 'package:smads/pre_roll_events.dart';
 
-class PreRoll extends StatefulWidget {
-  final String adUnitId;
-  final void Function(String, Map<String, dynamic>) listener;
-  final void Function(PreRollController) onCreated;
-
+class PreRoll extends StatelessWidget {
+  final Function(PreRollEvent, Map<String, dynamic>) listener;
+  final Function(PreRollController) onCreated;
+  final double maxHeight;
   PreRoll({
     Key key,
-    @required this.adUnitId,
     this.listener,
     this.onCreated,
+    this.maxHeight,
   }) : super(key: key);
 
   @override
-  _PreRollState createState() => _PreRollState();
-}
-
-class _PreRollState extends State<PreRoll> {
-  final UniqueKey _key = UniqueKey();
-  PreRollController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      return SizedBox.fromSize(
-        size: Size(640, 480),
-        child: AndroidView(
-          key: _key,
-          viewType: 'suamusica/pre_roll',
-          creationParams: <String, dynamic>{
-            'adUnitId': widget.adUnitId,
-            'adSize': {
-              'width': 640,
-              'height': 480,
-            },
-          },
-          creationParamsCodec: const StandardMessageCodec(),
-          onPlatformViewCreated: _onPlatformViewCreated,
-        ),
-      );
-    } else if (defaultTargetPlatform == TargetPlatform.iOS) {
-      return SizedBox.fromSize(
-        size: Size(640, 480),
-        child: UiKitView(
-          key: _key,
-          viewType: 'suamusica/pre_roll',
-          creationParams: <String, dynamic>{
-            'adUnitId': widget.adUnitId,
-            'adSize': {
-              'width': 640,
-              'height': 480,
-            },
-          },
-          creationParamsCodec: const StandardMessageCodec(),
-          onPlatformViewCreated: _onPlatformViewCreated,
-        ),
-      );
+    if (defaultTargetPlatform != TargetPlatform.android &&
+        defaultTargetPlatform != TargetPlatform.iOS) {
+      return Container();
     }
-    return Container();
+    final UniqueKey _key = UniqueKey();
+    final viewType = 'suamusica/pre_roll';
+    final creationParams = <String, dynamic>{
+      'adSize': {
+        'width': 640,
+        'height': 480,
+      },
+    };
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: maxHeight ?? MediaQuery.of(context).size.height,
+      ),
+      child: defaultTargetPlatform == TargetPlatform.android
+          ? AndroidView(
+              key: _key,
+              viewType: viewType,
+              creationParams: creationParams,
+              creationParamsCodec: const StandardMessageCodec(),
+              onPlatformViewCreated: _onPlatformViewCreated,
+            )
+          : UiKitView(
+              key: _key,
+              viewType: viewType,
+              creationParams: creationParams,
+              creationParamsCodec: const StandardMessageCodec(),
+              onPlatformViewCreated: _onPlatformViewCreated,
+            ),
+    );
   }
 
   void _onPlatformViewCreated(int id) {
-    _controller = PreRollController(id, widget.listener);
-    if (widget.onCreated != null) {
-      widget.onCreated(_controller);
+    PreRollController _controller = PreRollController(id, listener);
+    if (onCreated != null) {
+      onCreated(_controller);
     }
   }
 }
