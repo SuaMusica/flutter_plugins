@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout android:id="@+id/fullVideoAdContainer"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".view.AdPlayerActivity">
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="wrap_content"
+        android:layout_height="24dp"
+        android:layout_marginTop="40dp"
+        android:layout_marginBottom="10dp"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:maxLines="1"
+        android:minHeight="24dp"
+        android:text="@string/advertisement"
+        android:textColor="@color/cerulean"
+        android:textSize="14sp"
+        android:typeface="sans"
+        app:layout_constraintBottom_toTopOf="@+id/view"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.502"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="1.0"
+        app:layout_constraintWidth_default="wrap"
+        tools:ignore="UnusedAttribute" />
+
+    <View
+        android:id="@+id/view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@android:color/black"
+        android:gravity="center"
+        app:layout_constraintDimensionRatio="h,16:9"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.google.android.exoplayer2.ui.PlayerView
+        android:id="@+id/videoAdContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@android:color/black"
+        android:clickable="false"
+        android:gravity="center"
+        android:keepScreenOn="false"
+        android:longClickable="false"
+        app:layout_constraintDimensionRatio="h,16:9"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/view" />
+
+    <LinearLayout
+        android:id="@+id/companionAdSlot"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:textAlignment="center"
+        android:visibility="invisible"
+        app:layout_constraintDimensionRatio="h,16:9"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/view" />
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="75dp"
+        android:layout_height="75dp"
+        android:layout_centerInParent="true"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@+id/companionAdSlot"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/companionAdSlot" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
