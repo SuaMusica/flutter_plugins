@@ -54,8 +54,8 @@ class AdPlayer(
         Timber.d("load()")
         try {
 
-            if (ScreenHelper.isLocked(context)) {
-                Timber.d("Screen is locked")
+            if (!ScreenHelper.isVisible(context)) {
+                Timber.d("Screen is gone")
                 callback.onError(ErrorOutput.SCREEN_IS_LOCKED)
                 result.success(LoadResult.SCREEN_IS_LOCKED)
                 return
