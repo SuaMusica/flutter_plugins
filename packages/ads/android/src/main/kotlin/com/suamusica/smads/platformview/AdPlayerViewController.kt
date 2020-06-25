@@ -39,7 +39,7 @@ class AdPlayerViewController(
     private val companionAdSlot = adPlayerView.companionAdSlot
     private val progressBar = adPlayerView.progressBar
 
-    fun load(input: LoadMethodInput) {
+    fun load(input: LoadMethodInput, adSize: AdSize) {
         adPlayerManager = AdPlayerManager(context, input)
         configureAdPlayerEventObservers()
         adPlayerManager.load(videoAdContainer, companionAdSlot)
