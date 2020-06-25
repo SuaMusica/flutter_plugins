@@ -14,41 +14,23 @@ import timber.log.Timber
 /** SmadsPlugin */
 class SmadsPlugin : FlutterPlugin, MethodCallHandler {
 
-//    private var channel: MethodChannel? = null
-//    private lateinit var context: Context
-//    private var callback: SmadsCallback? = null
-
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         Initializer.run()
         Timber.v("onAttachedToEngine")
         val channel = MethodChannel(flutterPluginBinding.binaryMessenger, CHANNEL_NAME)
-//        this.context = flutterPluginBinding.applicationContext
-//        this.callback = SmadsCallback(channel!!)
         channel.setMethodCallHandler(this)
-//        MethodChannelBridge.callback = callback
-
         flutterPluginBinding
                 .platformViewRegistry
                 .registerViewFactory(AdPlayer.VIEW_TYPE_ID, AdPlayerFactory(flutterPluginBinding.binaryMessenger))
-
-
     }
 
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
         Timber.v("onDetachedFromEngine")
-//        channel = null
-//        callback = null
-//        MethodChannelBridge.callback = null
     }
 
     override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
         Timber.v("onMethodCall")
         Timber.d("call.method: %s", call.method)
-//        when (call.method) {
-//            LOAD_METHOD -> load(call.arguments, result)
-//            SCREEN_STATUS_METHOD -> screenStatus(result)
-//            else -> result.notImplemented()
-//        }
     }
 
     companion object {
