@@ -33,7 +33,6 @@ class AdPlayerManager(
     private val adsLoader: ImaAdsLoader = ImaAdsLoader(context, Uri.parse(input.adTagUrl))
     private val dataSourceFactory: DataSource.Factory
     private var player: SimpleExoPlayer? = null
-    private var viewAdCompanion: ViewGroup? = null
     private var adsManager: AdsManager? = null
     private var contentPosition: Long = 0
 
@@ -61,10 +60,8 @@ class AdPlayerManager(
         }
     }
 
-    fun start(playerView: PlayerView,
-              companionAdSlotView: ViewGroup?
-    ) {
-        Timber.v("start")
+    fun load(playerView: PlayerView, companionAdSlotView: ViewGroup) {
+        Timber.v("load")
         setupAdsLoader()
         setupCompanionAd(companionAdSlotView)
 
@@ -84,7 +81,6 @@ class AdPlayerManager(
 
         player?.seekTo(contentPosition)
         player?.prepare(mediaSourceWithAds)
-        player?.playWhenReady = true
     }
 
     fun play() {
@@ -112,17 +108,14 @@ class AdPlayerManager(
         adsLoader.setPlayer(null)
     }
 
-    private fun setupCompanionAd(companionAdSlotView: ViewGroup?) {
+    private fun setupCompanionAd(companionAdView: ViewGroup) {
         Timber.v("setupCompanionAd")
-        viewAdCompanion = companionAdSlotView
-        viewAdCompanion?.let { companionAdView ->
-            val companionAdSlot = ImaSdkFactory.getInstance().createCompanionAdSlot()
-            companionAdSlot.container = companionAdView
-            companionAdSlot.setSize(300, 250)
-            val companionAdSlots = ArrayList<CompanionAdSlot>()
-            companionAdSlots.add(companionAdSlot)
-            adsLoader.adDisplayContainer.companionSlots = companionAdSlots
-        }
+        val companionAdSlot = ImaSdkFactory.getInstance().createCompanionAdSlot()
+        companionAdSlot.container = companionAdView
+        companionAdSlot.setSize(300, 250)
+        val companionAdSlots = ArrayList<CompanionAdSlot>()
+        companionAdSlots.add(companionAdSlot)
+        adsLoader.adDisplayContainer.companionSlots = companionAdSlots
     }
 
     private fun setupAdsLoader() {

@@ -64,7 +64,7 @@ class AdPlayer(
             ConnectivityHelper.ping(context) { status ->
                 Handler(Looper.getMainLooper()).post {
                     if (status) {
-                        controller.run(LoadMethodInput(input))
+                        controller.load(LoadMethodInput(input))
                         result.success(LoadResult.SUCCESS)
                     } else {
                         Timber.d("has no connectivity")

@@ -39,11 +39,10 @@ class AdPlayerViewController(
     private val companionAdSlot = adPlayerView.companionAdSlot
     private val progressBar = adPlayerView.progressBar
 
-    fun run(input: LoadMethodInput) {
+    fun load(input: LoadMethodInput) {
         adPlayerManager = AdPlayerManager(context, input)
-        configureAdPlayerTimeoutJob()
         configureAdPlayerEventObservers()
-        adPlayerManager.start(videoAdContainer, companionAdSlot)
+        adPlayerManager.load(videoAdContainer, companionAdSlot)
     }
 
     fun play() {
