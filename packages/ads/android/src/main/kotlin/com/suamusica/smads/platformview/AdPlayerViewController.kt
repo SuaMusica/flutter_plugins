@@ -53,6 +53,11 @@ class AdPlayerViewController(
         adPlayerManager.pause()
     }
 
+    fun dispose() {
+        handler.post { adPlayerManager.release() }
+        compositeDisposable.clear()
+    }
+
     private fun configureAdPlayerTimeoutJob() {
         Timber.v("configureAdPlayerTimeoutJob")
         Single.timer(5, TimeUnit.SECONDS)
@@ -141,11 +146,5 @@ class AdPlayerViewController(
         Timber.v("releaseVideoAd")
         if (isCompleted.getAndSet(true)) return
         callback.onComplete()
-        handler.post { adPlayerManager.release() }
-        release()
-    }
-
-    private fun release() {
-        compositeDisposable.clear()
     }
 }

@@ -46,6 +46,7 @@ class AdPlayer(
             LOAD_METHOD -> load(call.arguments, result)
             PLAY_METHOD -> controller.play()
             PAUSE_METHOD -> controller.pause()
+            DISPOSE_METHOD -> controller.dispose()
             else -> result.notImplemented()
         }
     }
@@ -83,7 +84,8 @@ class AdPlayer(
         private const val LOAD_METHOD = "load"
         private const val PLAY_METHOD = "play"
         private const val PAUSE_METHOD = "pause"
-        
+        private const val DISPOSE_METHOD = "dispose"
+
         const val VIEW_TYPE_ID = "suamusica/pre_roll"
     }
 }

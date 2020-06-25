@@ -14,7 +14,4 @@ class AdPlayerView(
     init {
         inflate(context, R.layout.layout_ad_player, this)
     }
-
-
-
 }
