@@ -65,9 +65,10 @@ data class AdEventOutput(
 
         fun fromAdEvent(adEvent: AdEvent, duration: Long=0, position: Long = 0): AdEventOutput {
             val ad = adEvent.ad
+            val type = AdEventTypeOutput.getBy(adEvent.type)
             return ad?.let {
                 AdEventOutput(
-                        type = AdEventTypeOutput.getBy(adEvent.type),
+                        type = type,
                         id = it.adId,
                         title = it.title,
                         description = it.description,
@@ -80,7 +81,7 @@ data class AdEventOutput(
                         duration = duration.toString(),
                         position = position.toString()
                 )
-            } ?: AdEventOutput(type = AdEventTypeOutput.getBy(adEvent.type))
+            } ?: AdEventOutput(type = type)
         }
     }
 }

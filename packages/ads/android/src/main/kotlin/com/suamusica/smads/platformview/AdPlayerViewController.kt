@@ -104,8 +104,9 @@ class AdPlayerViewController(
             else -> Timber.d("Unregistered: %s", adEvent.type)
         }
 
-        callback.onAddEvent(AdEventOutput.fromAdEvent(adEvent, ceil(adPlayerManager.adsDuration().toDouble()).toLong() ,ceil(adPlayerManager.adsCurrentPosition().toDouble()).toLong()
-        ))
+        val duration = ceil(adPlayerManager.adsDuration().toDouble()).toLong()
+        val position = ceil(adPlayerManager.adsCurrentPosition().toDouble()).toLong()
+        callback.onAddEvent(AdEventOutput.fromAdEvent(adEvent, duration, position))
     }
 
     private fun onAdError(adErrorEvent: AdErrorEvent) {

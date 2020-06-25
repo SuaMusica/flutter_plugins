@@ -20,7 +20,6 @@ enum class AdEventTypeOutput(val suggestedName: String? = null) {
     AD_BREAK_ENDED,
     AD_PERIOD_STARTED,
     AD_PERIOD_ENDED,
-    ERROR,
     CONTENT_PAUSE_REQUESTED,
     CONTENT_RESUME_REQUESTED,
     PAUSED,
@@ -30,6 +29,7 @@ enum class AdEventTypeOutput(val suggestedName: String? = null) {
     AD_PROGRESS,
     AD_BUFFERING,
 
+    ERROR,
     UNKNOWN("unknown");
 
     companion object {
@@ -41,22 +41,21 @@ enum class AdEventTypeOutput(val suggestedName: String? = null) {
                     AdEvent.AdEventType.CUEPOINTS_CHANGED -> CUEPOINTS_CHANGED
                     AdEvent.AdEventType.FIRST_QUARTILE -> FIRST_QUARTILE
                     AdEvent.AdEventType.LOG -> LOG
+                    AdEvent.AdEventType.AD_BREAK_READY -> AD_BREAK_READY
                     AdEvent.AdEventType.MIDPOINT -> MIDPOINT
-                    AdEvent.AdEventType.PAUSED -> PAUSED
-                    AdEvent.AdEventType.RESUMED -> RESUMED
                     AdEvent.AdEventType.SKIPPED -> SKIPPED
                     AdEvent.AdEventType.STARTED -> STARTED
                     AdEvent.AdEventType.TAPPED -> TAPPED
                     AdEvent.AdEventType.THIRD_QUARTILE -> THIRD_QUARTILE
                     AdEvent.AdEventType.LOADED -> LOADED
-                    AdEvent.AdEventType.AD_BREAK_READY -> AD_BREAK_READY
                     AdEvent.AdEventType.AD_BREAK_STARTED -> AD_BREAK_STARTED
                     AdEvent.AdEventType.AD_BREAK_ENDED -> AD_BREAK_ENDED
                     AdEvent.AdEventType.AD_PERIOD_STARTED -> AD_PERIOD_STARTED
                     AdEvent.AdEventType.AD_PERIOD_ENDED -> AD_PERIOD_ENDED
                     AdEvent.AdEventType.CONTENT_PAUSE_REQUESTED -> CONTENT_PAUSE_REQUESTED
-                    AdEvent.AdEventType.CONTENT_PAUSE_REQUESTED -> CONTENT_PAUSE_REQUESTED
                     AdEvent.AdEventType.CONTENT_RESUME_REQUESTED -> CONTENT_RESUME_REQUESTED
+                    AdEvent.AdEventType.PAUSED -> PAUSED
+                    AdEvent.AdEventType.RESUMED -> RESUMED
                     AdEvent.AdEventType.SKIPPABLE_STATE_CHANGED -> SKIPPABLE_STATE_CHANGED
                     AdEvent.AdEventType.ICON_TAPPED -> ICON_TAPPED
                     AdEvent.AdEventType.AD_PROGRESS -> AD_PROGRESS
