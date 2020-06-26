@@ -45,7 +45,7 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
 
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
         Timber.v("onDetachedFromEngine")
-//        channel?.setMethodCallHandler(null)
+        channel?.setMethodCallHandler(null)
         channel = null
         MethodChannelBridge.callback = null
     }

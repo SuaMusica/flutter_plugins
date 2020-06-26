@@ -81,6 +81,7 @@ class AdPlayerManager(
 
         player?.seekTo(contentPosition)
         player?.prepare(mediaSourceWithAds)
+        player?.playWhenReady = false
     }
 
     fun play() {

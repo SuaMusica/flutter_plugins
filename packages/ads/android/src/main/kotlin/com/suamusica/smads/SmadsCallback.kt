@@ -11,12 +11,11 @@ class SmadsCallback(private val channel: MethodChannel,
                     private val handler: Handler = Handler(Looper.getMainLooper())) {
 
     fun onAddEvent(adEventOutput: AdEventOutput) {
-        Timber.v("onAddEvent(adEventOutput = %s)", adEventOutput)
+        Timber.v("onAddEvent(adEventOutput.type = %s)", adEventOutput.type)
         onAddEvent(adEventOutput.toResult())
     }
 
     fun onAddEvent(output: Map<String, String>) {
-        Timber.v("onAddEvent(output = %s)", output)
         handler.post { channel.invokeMethod(ON_AD_EVENT_METHOD, output) }
     }
 
