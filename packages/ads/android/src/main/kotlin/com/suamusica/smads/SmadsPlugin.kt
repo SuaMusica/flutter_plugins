@@ -21,7 +21,7 @@ import io.flutter.plugin.common.PluginRegistry.Registrar
 import timber.log.Timber
 
 /** SmadsPlugin */
-class SmadsPluginBackup : FlutterPlugin, MethodCallHandler {
+class SmadsPlugin : FlutterPlugin, MethodCallHandler {
 
     private val tag = "SmadsPlugin"
     private var channel: MethodChannel? = null
@@ -91,7 +91,7 @@ class SmadsPluginBackup : FlutterPlugin, MethodCallHandler {
         @JvmStatic
         fun registerWith(registrar: Registrar) {
             val channel = MethodChannel(registrar.messenger(), CHANNEL_NAME)
-            channel.setMethodCallHandler(SmadsPluginBackup())
+            channel.setMethodCallHandler(SmadsPlugin())
         }
 
         const val CHANNEL_NAME = "suamusica/pre_roll"
