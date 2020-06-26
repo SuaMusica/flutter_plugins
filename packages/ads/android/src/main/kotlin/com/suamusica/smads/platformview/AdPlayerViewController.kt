@@ -27,7 +27,7 @@ import kotlin.math.ceil
 class AdPlayerViewController(
         private val context: Context,
         private val callback: SmadsCallback,
-        adPlayerView: AdPlayerView
+        val adPlayerView: AdPlayerView
 ) {
     private var adPlayerManager: AdPlayerManager? = null
     private val isCompleted = AtomicBoolean(false)
@@ -38,8 +38,8 @@ class AdPlayerViewController(
     private val companionAdSlot = adPlayerView.companionAdSlot
     private val progressBar = adPlayerView.progressBar
 
-    fun load(input: LoadMethodInput, adSize: AdSize) {
-        Timber.v("load(input=%s, adSize=%s)", input, adSize)
+    fun load(input: LoadMethodInput) {
+        Timber.v("load(input=%s)", input)
         dispose()
         adPlayerManager = AdPlayerManager(context, input)
         configureAdPlayerEventObservers()
