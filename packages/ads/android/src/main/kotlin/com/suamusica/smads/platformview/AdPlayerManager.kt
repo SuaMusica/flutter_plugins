@@ -3,11 +3,7 @@ package com.suamusica.smads.platformview
 import android.content.Context
 import android.net.Uri
 import android.view.ViewGroup
-import com.google.ads.interactivemedia.v3.api.AdErrorEvent
-import com.google.ads.interactivemedia.v3.api.AdEvent
-import com.google.ads.interactivemedia.v3.api.AdsManager
-import com.google.ads.interactivemedia.v3.api.CompanionAdSlot
-import com.google.ads.interactivemedia.v3.api.ImaSdkFactory
+import com.google.ads.interactivemedia.v3.api.*
 import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.ext.ima.ImaAdsLoader
@@ -20,6 +16,7 @@ import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource
 import com.google.android.exoplayer2.ui.PlayerView
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
+import com.google.android.exoplayer2.upstream.TransferListener
 import com.google.android.exoplayer2.util.Util
 import com.suamusica.smads.input.LoadMethodInput
 import io.reactivex.subjects.PublishSubject
@@ -29,7 +26,6 @@ class AdPlayerManager(
         context: Context,
         private val input: LoadMethodInput
 ) {
-
     private val adsLoader: ImaAdsLoader = ImaAdsLoader(context, Uri.parse(input.adTagUrl))
     private val dataSourceFactory: DataSource.Factory
     private var player: SimpleExoPlayer? = null
@@ -64,7 +60,6 @@ class AdPlayerManager(
         Timber.v("load")
         setupAdsLoader()
         setupCompanionAd(companionAdSlotView)
-
         playerView.player = player
         playerView.useController = false
         playerView.hideController()
@@ -79,7 +74,6 @@ class AdPlayerManager(
                 playerView
         )
 
-        player?.seekTo(contentPosition)
         player?.prepare(mediaSourceWithAds)
         player?.playWhenReady = false
     }
@@ -120,7 +114,8 @@ class AdPlayerManager(
     }
 
     private fun setupAdsLoader() {
-        Timber.v("setupAdsLoader")
+        Timber.v("setupAdsLoader2")
+
         adsLoader.setPlayer(player)
         adsLoader.adsLoader.run {
             addAdErrorListener {
@@ -128,7 +123,7 @@ class AdPlayerManager(
                 errorEventDispatcher.onNext(it)
             }
             addAdsLoadedListener { adsManagerLoadedEvent ->
-                Timber.d("onAdsManagerLoaded($adsManagerLoadedEvent)")
+                Timber.d("onAdsManagerLoaded2($adsManagerLoadedEvent)")
                 adsManager = adsManagerLoadedEvent.adsManager
                 Timber.d("adsManager: $adsManager")
                 adsManager?.addAdErrorListener { errorEventDispatcher.onNext(it) }
@@ -137,7 +132,9 @@ class AdPlayerManager(
                     setContentType(it)
                     adEventDispatcher.onNext(it)
                 }
-                adsManager?.init()
+                val adsRenderingSettings: AdsRenderingSettings = ImaSdkFactory.getInstance().createAdsRenderingSettings()
+                adsRenderingSettings.enablePreloading = true
+                adsManager?.init(adsRenderingSettings)
             }
         }
     }
