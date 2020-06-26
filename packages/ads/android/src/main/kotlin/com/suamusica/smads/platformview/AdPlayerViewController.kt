@@ -29,8 +29,7 @@ class AdPlayerViewController(
         private val callback: SmadsCallback,
         adPlayerView: AdPlayerView
 ) {
-    lateinit var adPlayerManager: AdPlayerManager
-    private var timeoutShouldFinishAd = AtomicBoolean(true)
+    private var adPlayerManager: AdPlayerManager? = null
     private val isCompleted = AtomicBoolean(false)
     private val compositeDisposable: CompositeDisposable = CompositeDisposable()
     private fun Disposable.compose() = compositeDisposable.add(this)
@@ -41,54 +40,48 @@ class AdPlayerViewController(
 
     fun load(input: LoadMethodInput, adSize: AdSize) {
         Timber.v("load(input=%s, adSize=%s)", input, adSize)
+        dispose()
         adPlayerManager = AdPlayerManager(context, input)
         configureAdPlayerEventObservers()
-        adPlayerManager.load(videoAdContainer, companionAdSlot)
+        adPlayerManager?.load(videoAdContainer, companionAdSlot)
     }
 
     fun play() {
         Timber.v("play()")
-        adPlayerManager.play()
+        adPlayerManager?.play()
     }
 
     fun pause() {
         Timber.v("pause()")
-        adPlayerManager.pause()
+        adPlayerManager?.pause()
     }
 
     fun dispose() {
         Timber.v("dispose()")
-        handler.post { adPlayerManager.release() }
+        adPlayerManager?.let {
+            handler.post { it.release() }
+        }
         compositeDisposable.clear()
-    }
-
-    private fun configureAdPlayerTimeoutJob() {
-        Timber.v("configureAdPlayerTimeoutJob")
-        Single.timer(5, TimeUnit.SECONDS)
-                .observeOn(Schedulers.io())
-                .filter { timeoutShouldFinishAd.get() }
-                .subscribe({
-                    Timber.d("Time reached")
-                    onComplete()
-                }, { e -> Timber.e(e) })
-                .compose()
+        isCompleted.set(false)
     }
 
     private fun configureAdPlayerEventObservers() {
         Timber.v("configureAdPlayerEventObservers")
-        adPlayerManager.adEventDispatcher
+        adPlayerManager?.let {
+            it.adEventDispatcher
                 .observeOn(AndroidSchedulers.mainThread())
                 .doOnNext { onAdEvent(it) }
                 .doOnError { Timber.e(it) }
                 .subscribe()
                 .compose()
 
-        adPlayerManager.errorEventDispatcher
-                .observeOn(AndroidSchedulers.mainThread())
-                .doOnNext { onAdError(it) }
-                .doOnError { Timber.e(it) }
-                .subscribe()
-                .compose()
+            it.errorEventDispatcher
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .doOnNext { onAdError(it) }
+                    .doOnError { Timber.e(it) }
+                    .subscribe()
+                    .compose()
+        }
     }
 
     private fun onAdEvent(adEvent: AdEvent) {
@@ -97,10 +90,7 @@ class AdPlayerViewController(
         when (adEvent.type) {
             AdEvent.AdEventType.COMPLETED,
             AdEvent.AdEventType.SKIPPED -> onComplete()
-            AdEvent.AdEventType.LOADED -> {
-                timeoutShouldFinishAd.set(false)
-                onAdLoaded()
-            }
+            AdEvent.AdEventType.LOADED -> onAdLoaded()
             AdEvent.AdEventType.STARTED -> showContent()
             AdEvent.AdEventType.PAUSED -> {
             }
@@ -112,8 +102,8 @@ class AdPlayerViewController(
             else -> Timber.d("Unregistered: %s", adEvent.type)
         }
 
-        val duration = ceil(adPlayerManager.adsDuration().toDouble()).toLong()
-        val position = ceil(adPlayerManager.adsCurrentPosition().toDouble()).toLong()
+        val duration = adPlayerManager?.adsDuration()?.toDouble()?.let { ceil(it).toLong() } ?: 0L
+        val position = adPlayerManager?.adsCurrentPosition()?.toDouble()?.let { ceil(it).toLong() } ?: 0L
         callback.onAddEvent(AdEventOutput.fromAdEvent(adEvent, duration, position))
     }
 
@@ -131,7 +121,7 @@ class AdPlayerViewController(
     }
 
     private fun onAdLoaded() {
-        if (adPlayerManager.isAudioAd) {
+        if (adPlayerManager?.isAudioAd == true) {
             companionAdSlot.show()
             videoAdContainer.hide()
         } else {
