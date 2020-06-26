@@ -22,7 +22,7 @@ class AdPlayer(
         private val params: AdPlayerParams
 ) : PlatformView, MethodChannel.MethodCallHandler {
 
-    private val channel: MethodChannel = MethodChannel(messenger, "${VIEW_TYPE_ID}_$id")
+    private val channel: MethodChannel = MethodChannel(messenger, VIEW_TYPE_ID)
     private val playerView = AdPlayerView(context)
     private val callback = SmadsCallback(channel)
     private val controller = AdPlayerViewController(context, callback, playerView)
