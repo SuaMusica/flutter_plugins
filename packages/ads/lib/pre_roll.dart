@@ -1,12 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:smads/pre_roll_controller.dart';
 
 class PreRoll extends StatelessWidget {
   final double maxHeight;
+  final PreRollController controller;
+
   PreRoll({
     Key key,
     this.maxHeight,
+    this.controller,
   }) : super(key: key);
 
   @override
@@ -33,15 +37,19 @@ class PreRoll extends StatelessWidget {
               viewType: viewType,
               creationParams: creationParams,
               creationParamsCodec: const StandardMessageCodec(),
-              // onPlatformViewCreated: _onPlatformViewCreated,
+              onPlatformViewCreated: _onPlatformViewCreated,
             )
           : UiKitView(
               key: _key,
               viewType: viewType,
               creationParams: creationParams,
               creationParamsCodec: const StandardMessageCodec(),
-              // onPlatformViewCreated: _onPlatformViewCreated,
+              onPlatformViewCreated: _onPlatformViewCreated,
             ),
     );
+  }
+
+  void _onPlatformViewCreated(int id) {
+    controller.play();
   }
 }
