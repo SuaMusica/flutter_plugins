@@ -14,6 +14,6 @@ class AdPlayer(private val adPlayerView: AdPlayerView, adPlayerParams: AdPlayerP
     }
 
     companion object {
-        const val VIEW_TYPE_ID = "suamusica/pre_roll"
+        const val VIEW_TYPE_ID = "suamusica/pre_roll_view"
     }
 }
