@@ -19,9 +19,8 @@ class SMAds {
   static const UnlockedScreen = 1;
   static const LockedScreen = 0;
 
-  static final MethodChannel _channel =
-      MethodChannel(Platform.isAndroid ? 'suamusica/pre_roll' : 'smads')
-        ..setMethodCallHandler(platformCallHandler);
+  static final MethodChannel _channel = MethodChannel('smads')
+    ..setMethodCallHandler(platformCallHandler);
 
   static SMAds lastAd;
   Function onComplete;
