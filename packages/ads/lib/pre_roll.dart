@@ -22,7 +22,7 @@ class PreRoll extends StatelessWidget {
       return Container();
     }
     final UniqueKey _key = UniqueKey();
-    final viewType = 'suamusica/pre_roll';
+    final viewType = 'suamusica/pre_roll_view';
     final creationParams = <String, dynamic>{
       'adSize': {
         'width': 640,

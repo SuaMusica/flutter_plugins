@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -18,8 +19,9 @@ class SMAds {
   static const UnlockedScreen = 1;
   static const LockedScreen = 0;
 
-  static final MethodChannel _channel = const MethodChannel('smads')
-    ..setMethodCallHandler(platformCallHandler);
+  static final MethodChannel _channel =
+      MethodChannel(Platform.isAndroid ? 'suamusica/pre_roll' : 'smads')
+        ..setMethodCallHandler(platformCallHandler);
 
   static SMAds lastAd;
   Function onComplete;
