@@ -4,13 +4,17 @@ import android.view.View
 import io.flutter.plugin.platform.PlatformView
 import timber.log.Timber
 
-class AdPlayer(private val adPlayerView: AdPlayerView, adPlayerParams: AdPlayerParams) : PlatformView {
+class AdPlayer(private val controller: AdPlayerViewController,
+               adPlayerParams: AdPlayerParams) : PlatformView {
 
-    override fun getView(): View = adPlayerView
+    override fun getView(): View {
+        return controller.adPlayerView
+                ?: throw IllegalStateException("controller.adPlayerView should not be null.")
+    }
 
     override fun dispose() {
         Timber.v("dispose")
-        adPlayerView.visibility = View.GONE
+//        adPlayerView.visibility = View.GONE
     }
 
     companion object {

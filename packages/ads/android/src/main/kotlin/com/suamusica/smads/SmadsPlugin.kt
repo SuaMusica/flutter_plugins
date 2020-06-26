@@ -37,10 +37,10 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
         this.callback = SmadsCallback(channel!!)
         this.channel?.setMethodCallHandler(this)
         MethodChannelBridge.callback = callback
-        controller = AdPlayerViewController(context, callback, AdPlayerView(context))
+        controller = AdPlayerViewController(context, callback)
         flutterPluginBinding
                 .platformViewRegistry
-                .registerViewFactory(AdPlayer.VIEW_TYPE_ID, AdPlayerFactory(controller.adPlayerView))
+                .registerViewFactory(AdPlayer.VIEW_TYPE_ID, AdPlayerFactory(controller))
     }
 
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
@@ -67,7 +67,7 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
         Timber.d("load()")
         try {
             Handler(Looper.getMainLooper()).post {
-                controller.load(LoadMethodInput(input))
+                controller.load(LoadMethodInput(input), AdPlayerView(context))
                 result.success(LoadResult.SUCCESS)
             }
         } catch (t: Throwable) {

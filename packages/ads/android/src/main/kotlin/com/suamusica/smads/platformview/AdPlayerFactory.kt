@@ -6,9 +6,9 @@ import io.flutter.plugin.platform.PlatformView
 import io.flutter.plugin.platform.PlatformViewFactory
 import timber.log.Timber
 
-class AdPlayerFactory(private val adPlayerView: AdPlayerView): PlatformViewFactory(StandardMessageCodec.INSTANCE) {
+class AdPlayerFactory(private val controller: AdPlayerViewController): PlatformViewFactory(StandardMessageCodec.INSTANCE) {
   override fun create(context: Context, viewId: Int, args: Any): PlatformView {
     Timber.v("create(viewId = %s, args=%s)", viewId, args)
-    return AdPlayer(adPlayerView, AdPlayerParams(args))
+    return AdPlayer(controller, AdPlayerParams(args))
   }
 }

@@ -3,47 +3,51 @@ package com.suamusica.smads.platformview
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.widget.LinearLayout
+import android.widget.ProgressBar
 import com.google.ads.interactivemedia.v3.api.AdErrorEvent
 import com.google.ads.interactivemedia.v3.api.AdEvent
+import com.google.android.exoplayer2.ui.PlayerView
 import com.suamusica.smads.SmadsCallback
 import com.suamusica.smads.extensions.gone
 import com.suamusica.smads.extensions.hide
 import com.suamusica.smads.extensions.show
 import com.suamusica.smads.input.LoadMethodInput
 import com.suamusica.smads.output.AdEventOutput
-import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
-import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.layout_ad_player.view.companionAdSlot
 import kotlinx.android.synthetic.main.layout_ad_player.view.progressBar
 import kotlinx.android.synthetic.main.layout_ad_player.view.videoAdContainer
 import timber.log.Timber
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.ceil
 
 class AdPlayerViewController(
         private val context: Context,
-        private val callback: SmadsCallback,
-        val adPlayerView: AdPlayerView
+        private val callback: SmadsCallback
 ) {
     private var adPlayerManager: AdPlayerManager? = null
     private val isCompleted = AtomicBoolean(false)
     private val compositeDisposable: CompositeDisposable = CompositeDisposable()
     private fun Disposable.compose() = compositeDisposable.add(this)
     private val handler = Handler(Looper.getMainLooper())
-    private val videoAdContainer = adPlayerView.videoAdContainer
-    private val companionAdSlot = adPlayerView.companionAdSlot
-    private val progressBar = adPlayerView.progressBar
+    var adPlayerView: AdPlayerView? = null
+    private var videoAdContainer: PlayerView? = null
+    private var companionAdSlot: LinearLayout? = null
+    private var progressBar: ProgressBar? = null
 
-    fun load(input: LoadMethodInput) {
+    fun load(input: LoadMethodInput, adPlayerView: AdPlayerView) {
         Timber.v("load(input=%s)", input)
+        this.adPlayerView = adPlayerView
+        this.videoAdContainer = adPlayerView.videoAdContainer
+        this.companionAdSlot = adPlayerView.companionAdSlot
+        this.progressBar = adPlayerView.progressBar
         dispose()
         adPlayerManager = AdPlayerManager(context, input)
         configureAdPlayerEventObservers()
-        adPlayerManager?.load(videoAdContainer, companionAdSlot)
+        adPlayerManager?.load(adPlayerView.videoAdContainer, adPlayerView.companionAdSlot)
     }
 
     fun play() {
@@ -67,15 +71,15 @@ class AdPlayerViewController(
 
     private fun configureAdPlayerEventObservers() {
         Timber.v("configureAdPlayerEventObservers")
-        adPlayerManager?.let {
-            it.adEventDispatcher
+        adPlayerManager?.let { adPlayerManager ->
+            adPlayerManager.adEventDispatcher
                 .observeOn(AndroidSchedulers.mainThread())
                 .doOnNext { onAdEvent(it) }
                 .doOnError { Timber.e(it) }
                 .subscribe()
                 .compose()
 
-            it.errorEventDispatcher
+            adPlayerManager.errorEventDispatcher
                     .observeOn(AndroidSchedulers.mainThread())
                     .doOnNext { onAdError(it) }
                     .doOnError { Timber.e(it) }
@@ -122,18 +126,18 @@ class AdPlayerViewController(
 
     private fun onAdLoaded() {
         if (adPlayerManager?.isAudioAd == true) {
-            companionAdSlot.show()
-            videoAdContainer.hide()
+            companionAdSlot?.show()
+            videoAdContainer?.hide()
         } else {
-            companionAdSlot.hide()
-            videoAdContainer.show()
+            companionAdSlot?.hide()
+            videoAdContainer?.show()
         }
     }
 
     private fun showContent() {
         Timber.v("showContent")
-        videoAdContainer.show()
-        progressBar.gone()
+        videoAdContainer?.show()
+        progressBar?.gone()
     }
 
     private fun onComplete() {
