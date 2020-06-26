@@ -62,10 +62,10 @@ class AdPlayerViewController(
 
     fun dispose() {
         Timber.v("dispose()")
+        compositeDisposable.clear()
         adPlayerManager?.let {
             handler.post { it.release() }
         }
-        compositeDisposable.clear()
         isCompleted.set(false)
     }
 
@@ -141,7 +141,7 @@ class AdPlayerViewController(
     }
 
     private fun onComplete() {
-        Timber.v("releaseVideoAd")
+        Timber.v("onComplete()")
         if (isCompleted.getAndSet(true)) return
         callback.onComplete()
     }
