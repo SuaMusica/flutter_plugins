@@ -2,7 +2,7 @@ package com.suamusica.smads.platformview
 
 import com.suamusica.smads.extensions.getRequired
 
-data class AdSize(val width: String, val height: String) {
+data class AdSize(val width: Int, val height: Int) {
     @Suppress("UNCHECKED_CAST")
     constructor(args: Map<String, Int>) : this(
             args.getRequired(AD_SIZE_WIDTH_KEY),
@@ -14,7 +14,7 @@ data class AdSize(val width: String, val height: String) {
     }
 }
 
-class AdPlayerParams(val adSize: AdSize) {
+data class AdPlayerParams(val adSize: AdSize) {
 
     private constructor(args: Map<String, Any>) : this(AdSize(args.getRequired(AD_SIZE_KEY)))
 

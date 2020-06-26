@@ -40,20 +40,24 @@ class AdPlayerViewController(
     private val progressBar = adPlayerView.progressBar
 
     fun load(input: LoadMethodInput, adSize: AdSize) {
+        Timber.v("load(input=%s, adSize=%s)", input, adSize)
         adPlayerManager = AdPlayerManager(context, input)
         configureAdPlayerEventObservers()
         adPlayerManager.load(videoAdContainer, companionAdSlot)
     }
 
     fun play() {
+        Timber.v("play()")
         adPlayerManager.play()
     }
 
     fun pause() {
+        Timber.v("pause()")
         adPlayerManager.pause()
     }
 
     fun dispose() {
+        Timber.v("dispose()")
         handler.post { adPlayerManager.release() }
         compositeDisposable.clear()
     }

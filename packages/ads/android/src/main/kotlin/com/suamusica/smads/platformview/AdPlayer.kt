@@ -35,6 +35,7 @@ class AdPlayer(
     override fun getView(): View = playerView
 
     override fun dispose() {
+        Timber.v("dispose")
         playerView.visibility = View.GONE
         channel.setMethodCallHandler(null)
     }
