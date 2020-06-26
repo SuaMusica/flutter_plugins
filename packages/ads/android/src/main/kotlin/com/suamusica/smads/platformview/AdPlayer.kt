@@ -5,11 +5,10 @@ import android.os.Handler
 import android.os.Looper
 import android.view.View
 import com.suamusica.smads.SmadsCallback
-import com.suamusica.smads.helpers.ConnectivityHelper
 import com.suamusica.smads.helpers.ScreenHelper
 import com.suamusica.smads.input.LoadMethodInput
-import com.suamusica.smads.output.ErrorOutput
 import com.suamusica.smads.result.LoadResult
+import com.suamusica.smads.result.ScreenStatusResult
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -48,6 +47,7 @@ class AdPlayer(
             PLAY_METHOD -> controller.play()
             PAUSE_METHOD -> controller.pause()
             DISPOSE_METHOD -> controller.dispose()
+            SCREEN_STATUS_METHOD -> screenStatus(result)
             else -> result.notImplemented()
         }
     }
@@ -55,25 +55,9 @@ class AdPlayer(
     private fun load(input: Any, result: MethodChannel.Result) {
         Timber.d("load()")
         try {
-
-            if (!ScreenHelper.isVisible(context)) {
-                Timber.d("Screen is gone")
-                callback.onError(ErrorOutput.SCREEN_IS_LOCKED)
-                result.success(LoadResult.SCREEN_IS_LOCKED)
-                return
-            }
-
-            ConnectivityHelper.ping(context) { status ->
-                Handler(Looper.getMainLooper()).post {
-                    if (status) {
-                        controller.load(LoadMethodInput(input), params.adSize)
-                        result.success(LoadResult.SUCCESS)
-                    } else {
-                        Timber.d("has no connectivity")
-                        callback.onError(ErrorOutput.NO_CONNECTIVITY)
-                        result.success(LoadResult.NO_CONNECTIVITY)
-                    }
-                }
+            Handler(Looper.getMainLooper()).post {
+                controller.load(LoadMethodInput(input), params.adSize)
+                result.success(LoadResult.SUCCESS)
             }
         } catch (t: Throwable) {
             Timber.e(t)
@@ -81,12 +65,23 @@ class AdPlayer(
         }
     }
 
+    private fun screenStatus(result: MethodChannel.Result) {
+        Timber.d("screenStatus()")
+        val resultCode = if(ScreenHelper.isForeground(context)) {
+            ScreenStatusResult.IS_FOREGROUND
+        } else {
+            ScreenStatusResult.IS_BACKGROUND
+        }
+        Timber.d("screenStatus = %s", resultCode)
+        result.success(resultCode)
+    }
+
     companion object {
         private const val LOAD_METHOD = "load"
         private const val PLAY_METHOD = "play"
         private const val PAUSE_METHOD = "pause"
         private const val DISPOSE_METHOD = "dispose"
-
+        private const val SCREEN_STATUS_METHOD = "screen_status"
         const val VIEW_TYPE_ID = "suamusica/pre_roll"
     }
 }

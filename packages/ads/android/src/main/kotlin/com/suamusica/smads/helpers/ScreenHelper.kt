@@ -10,7 +10,7 @@ object ScreenHelper {
         return keyguardManager.isKeyguardLocked
     }
 
-    fun isVisible(context: Context): Boolean {
+    fun isForeground(context: Context): Boolean {
         val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         activityManager.runningAppProcesses?.forEach {
             if (it.processName == context.packageName) {

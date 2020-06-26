@@ -98,9 +98,9 @@ package com.suamusica.smads
 //    private fun screenStatus(result: Result) {
 //        Timber.d("screenStatus()")
 //        val resultCode = if(ScreenHelper.isLocked(context)) {
-//            ScreenStatusResult.LOCKED_SCREEN
+//            ScreenStatusResult.IS_BACKGROUND
 //        } else {
-//            ScreenStatusResult.UNLOCKED_SCREEN
+//            ScreenStatusResult.IS_FOREGROUND
 //        }
 //        Timber.d("screenStatus = %s", resultCode)
 //        result.success(resultCode)

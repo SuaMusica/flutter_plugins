@@ -2,7 +2,7 @@ package com.suamusica.smads.result
 
 class ScreenStatusResult {
     companion object {
-        const val LOCKED_SCREEN = 0
-        const val UNLOCKED_SCREEN = 1
+        const val IS_BACKGROUND = 0
+        const val IS_FOREGROUND = 1
     }
 }
