@@ -5,13 +5,13 @@ import 'package:smads/pre_roll_controller.dart';
 import 'package:smads/pre_roll_events.dart';
 
 class PreRoll extends StatelessWidget {
-  final Function(PreRollEvent, Map<String, dynamic>) listener;
-  final Function(PreRollController) onCreated;
+  // final Function(PreRollEvent, Map<String, dynamic>) listener;
+  // final Function(PreRollController) onCreated;
   final double maxHeight;
   PreRoll({
     Key key,
-    this.listener,
-    this.onCreated,
+    // this.listener,
+    // this.onCreated,
     this.maxHeight,
   }) : super(key: key);
 
@@ -39,22 +39,22 @@ class PreRoll extends StatelessWidget {
               viewType: viewType,
               creationParams: creationParams,
               creationParamsCodec: const StandardMessageCodec(),
-              onPlatformViewCreated: _onPlatformViewCreated,
+              // onPlatformViewCreated: _onPlatformViewCreated,
             )
           : UiKitView(
               key: _key,
               viewType: viewType,
               creationParams: creationParams,
               creationParamsCodec: const StandardMessageCodec(),
-              onPlatformViewCreated: _onPlatformViewCreated,
+              // onPlatformViewCreated: _onPlatformViewCreated,
             ),
     );
   }
 
-  void _onPlatformViewCreated(int id) {
-    PreRollController _controller = PreRollController(id, listener);
-    if (onCreated != null) {
-      onCreated(_controller);
-    }
-  }
+  // void _onPlatformViewCreated(int id) {
+  //   PreRollController _controller = PreRollController(listener);
+  //   if (onCreated != null) {
+  //     onCreated(_controller);
+  //   }
+  // }
 }
