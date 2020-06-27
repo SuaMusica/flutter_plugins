@@ -3,7 +3,12 @@ package com.suamusica.smads.platformview
 import android.content.Context
 import android.net.Uri
 import android.view.ViewGroup
-import com.google.ads.interactivemedia.v3.api.*
+import com.google.ads.interactivemedia.v3.api.AdErrorEvent
+import com.google.ads.interactivemedia.v3.api.AdEvent
+import com.google.ads.interactivemedia.v3.api.AdsManager
+import com.google.ads.interactivemedia.v3.api.AdsRenderingSettings
+import com.google.ads.interactivemedia.v3.api.CompanionAdSlot
+import com.google.ads.interactivemedia.v3.api.ImaSdkFactory
 import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.ext.ima.ImaAdsLoader
@@ -16,7 +21,6 @@ import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource
 import com.google.android.exoplayer2.ui.PlayerView
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
-import com.google.android.exoplayer2.upstream.TransferListener
 import com.google.android.exoplayer2.util.Util
 import com.suamusica.smads.input.LoadMethodInput
 import io.reactivex.subjects.PublishSubject
@@ -75,7 +79,6 @@ class AdPlayerManager(
         )
 
         player?.prepare(mediaSourceWithAds)
-        player?.playWhenReady = false
     }
 
     fun play() {
@@ -87,6 +90,8 @@ class AdPlayerManager(
         Timber.v("pause")
         player?.playWhenReady = false
     }
+
+    fun isPaused(): Boolean = player?.playWhenReady?.not() ?: true
 
     fun adsDuration() = player?.duration ?: 0L
 

@@ -37,6 +37,7 @@ class AdPlayerViewController(
     private var videoAdContainer: PlayerView? = null
     private var companionAdSlot: LinearLayout? = null
     private var progressBar: ProgressBar? = null
+    private val ignorePausedEvent = AtomicBoolean(true)
 
     fun load(input: LoadMethodInput, adPlayerView: AdPlayerView) {
         Timber.v("load(input=%s)", input)
@@ -45,6 +46,7 @@ class AdPlayerViewController(
         this.companionAdSlot = adPlayerView.companionAdSlot
         this.progressBar = adPlayerView.progressBar
         dispose()
+        ignorePausedEvent.set(true)
         adPlayerManager = AdPlayerManager(context, input)
         configureAdPlayerEventObservers()
         adPlayerManager?.load(adPlayerView.videoAdContainer, adPlayerView.companionAdSlot)
@@ -52,6 +54,7 @@ class AdPlayerViewController(
 
     fun play() {
         Timber.v("play()")
+        ignorePausedEvent.set(false)
         adPlayerManager?.play()
     }
 
@@ -63,9 +66,7 @@ class AdPlayerViewController(
     fun dispose() {
         Timber.v("dispose()")
         compositeDisposable.clear()
-        adPlayerManager?.let {
-            handler.post { it.release() }
-        }
+        adPlayerManager?.release()
         isCompleted.set(false)
     }
 
@@ -89,26 +90,38 @@ class AdPlayerViewController(
     }
 
     private fun onAdEvent(adEvent: AdEvent) {
-        Timber.d("onAdEvent(%s)", adEvent.type)
         when (adEvent.type) {
             AdEvent.AdEventType.COMPLETED,
             AdEvent.AdEventType.SKIPPED -> onComplete()
             AdEvent.AdEventType.LOADED -> onAdLoaded()
             AdEvent.AdEventType.STARTED -> showContent()
+            AdEvent.AdEventType.CONTENT_PAUSE_REQUESTED,
             AdEvent.AdEventType.PAUSED -> {
+                if (ignorePausedEvent.get()) {
+                    logIgnoredEvent(adEvent)
+                    return
+                }
             }
             AdEvent.AdEventType.RESUMED -> {
             }
             AdEvent.AdEventType.ALL_ADS_COMPLETED -> onComplete()
             AdEvent.AdEventType.AD_PROGRESS -> {
+                if (adPlayerManager?.isPaused() != false) {
+                    return
+                }
             }
             else -> Timber.d("Unregistered: %s", adEvent.type)
         }
 
+        Timber.d("onAdEvent(%s)", adEvent.type)
         val duration = adPlayerManager?.adsDuration()?.toDouble()?.let { ceil(it).toLong() } ?: 0L
         val position = adPlayerManager?.adsCurrentPosition()?.toDouble()?.let { ceil(it).toLong() } ?: 0L
         Timber.d("onAdEvent(duration=%s, position=%s)", duration, position)
         callback.onAddEvent(AdEventOutput.fromAdEvent(adEvent, duration, position))
+    }
+
+    private fun logIgnoredEvent(adEvent: AdEvent) {
+        Timber.d("Event(%s) ignored", adEvent.type)
     }
 
     private fun onAdError(adErrorEvent: AdErrorEvent) {
