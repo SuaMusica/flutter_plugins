@@ -1,78 +1,43 @@
 package br.com.suamusica.player
 
-import android.app.Service
-import android.content.Intent
+import android.os.Bundle
 import android.os.Handler
-import android.os.IBinder
-import android.os.Messenger
-import smplayer.IMediaService.Stub
+import android.support.v4.media.MediaBrowserCompat
+import android.util.Log
 
-class MediaService : Service() {
+class MediaService : androidx.media.MediaBrowserServiceCompat() {
     var player: Player? = null
+    private val TAG = "Player"
+    private var packageValidator: PackageValidator? = null
+    private val BROWSABLE_ROOT = "/"
+    private val EMPTY_ROOT = "@empty@"
 
     enum class MessageType {
         STATE_CHANGE,
         POSITION_CHANGE
     }
 
-    private val binder = object : Stub() {
-        override fun getDuration() = player?.duration ?: 0L
-        override fun getCurrentPosition() = player?.currentPosition ?: 0L
-
-        override fun removeNotification() {
-            player?.removeNotification()
-        }
-
-        override fun prepare(cookie: String, name: String, author: String, url: String, coverUrl: String) {
-            player?.prepare(cookie, Media(name, author, url, coverUrl))
-        }
-
-        override fun play() {
-            player?.play()
-        }
-
-        override fun pause() {
-            player?.pause()
-        }
-
-        override fun stop() {
-            player?.stop()
-        }
-
-        override fun seek(position: Long) {
-            player?.seek(position)
-        }
-
-        override fun next() {
-            player?.next()
-        }
-
-        override fun previous() {
-            player?.previous()
-        }
-
-
-        override fun getReleaseMode() = player?.releaseMode!!.ordinal
-        override fun setReleaseMode(releaseMode: Int) {
-            player?.releaseMode = ReleaseMode.fromInt(releaseMode)
-        }
-
-        override fun sendNotification() {
-            player?.sendNotification()
-        }
-
-        override fun release() {
-            player?.release()
-        }
+    init {
+        Log.i(TAG, "MediaService.init")
     }
 
     override fun onCreate() {
         super.onCreate()
-        val messenger = Messenger(binder)
-        player = WrappedExoPlayer(this, messenger, Handler())
+        packageValidator = PackageValidator(this, R.xml.allowed_media_browser_callers)
+        player = WrappedExoPlayer(this, Handler())
     }
 
-    override fun onBind(intent: Intent): IBinder {
-        return binder
+    override fun onGetRoot(clientPackageName: String, clientUid: Int, rootHints: Bundle?): BrowserRoot? {
+        val isKnowCaller = packageValidator?.isKnownCaller(clientPackageName, clientUid) ?: false
+
+        return if (isKnowCaller) {
+            BrowserRoot(BROWSABLE_ROOT, null)
+        } else {
+            BrowserRoot(EMPTY_ROOT, null)
+        }
+    }
+
+    override fun onLoadChildren(parentId: String, result: Result<MutableList<MediaBrowserCompat.MediaItem>>) {
+        result.detach()
     }
 }

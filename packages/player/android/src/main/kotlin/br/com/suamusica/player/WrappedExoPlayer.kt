@@ -36,7 +36,6 @@ import com.google.android.exoplayer2.Player as ExoPlayer
 
 class WrappedExoPlayer (
         override val context: Context,
-        private val messenger: Messenger,
         val handler: Handler
 ) : Player {
     override var volume = 1.0
@@ -51,6 +50,7 @@ class WrappedExoPlayer (
 
     val TAG = "Player"
 
+    private var playbackPreparer: MusicPlayerPlaybackPreparer? = null
     private val mediaControllerCallback = MediaControllerCallback()
 
     // Build a PendingIntent that can be used to launch the UI.
@@ -100,9 +100,16 @@ class WrappedExoPlayer (
             mediaController = MediaControllerCompat(this.context, sessionToken).also { mediaController ->
                 mediaController.registerCallback(mediaControllerCallback)
 
+                playbackPreparer = MusicPlayerPlaybackPreparer(
+                        this,
+                        player,
+                        mediaController,
+                        mediaSession
+                )
+
                 mediaSessionConnector = MediaSessionConnector(mediaSession).also { connector ->
-                    // Produces DataSource instances through which media data is loaded.
                     connector.setPlayer(player)
+                    connector.setPlaybackPreparer(playbackPreparer)
                 }
             }
         }
@@ -403,7 +410,6 @@ class WrappedExoPlayer (
         msg.data = Bundle()
         msg.data.putLong("currentPosition", currentPosition)
         msg.data.putLong("duration", duration)
-        messenger.send(msg)
     }
 
     private fun notifyPlayerStateChange(state: PlayerState, error: String? = null) {
@@ -413,7 +419,6 @@ class WrappedExoPlayer (
         error?.let {
             msg.data.putString("error", it)
         }
-        messenger.send(msg)
     }
 
     private fun removeNowPlayingNotification() {

@@ -1,5 +1,5 @@
 // IMediaService.aidl
-package smplayer;
+package suamusica.suamusicaapp;
 
 interface IMediaService {
     void prepare(String cookie, String name, String author, String url, String coverUrl);
