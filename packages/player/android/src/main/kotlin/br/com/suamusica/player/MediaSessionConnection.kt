@@ -37,11 +37,10 @@ class MediaSessionConnection(
     private var mediaBrowser: MediaBrowserCompat? = null
     private var mediaController: MediaControllerCompat? = null
 
-    private var isConnected = false
 
     init {
-        mediaBrowser = MediaBrowserCompat(context, serviceComponent, mediaBrowserConnectionCallback, null)
-        connectToMediaBrowser()
+        ensureMediaBrowser {
+        }
     }
 
     fun prepare(cookie: String, name: String, author: String, url: String, coverUrl: String) {
@@ -94,25 +93,29 @@ class MediaSessionConnection(
             ResultReceiver(null)
         else null
 
-        mediaBrowser?.let {
-            if (it.isConnected.not()) {
-                connectToMediaBrowser()
+        ensureMediaBrowser {
+            ensureMediaController {
+                it.sendCommand(command, bundle, receiver)
             }
-            mediaController?.sendCommand(command, bundle, receiver)
         }
     }
 
-    private fun connectToMediaBrowser() : MediaBrowserCompat? {
+    private fun ensureMediaBrowser(callable: (mediaBrowser: MediaBrowserCompat) -> Unit) {
         try {
+            if (mediaBrowser == null) {
+                val context = weakContext.get()
+                val serviceComponent = weakServiceComponent.get()
+                mediaBrowser = MediaBrowserCompat(context, serviceComponent,
+                        mediaBrowserConnectionCallback, null)
+            }
+
             mediaBrowser?.let {
                 if (it.isConnected.not()) {
-                    mediaBrowser?.connect()
+                    it.disconnect()
+                    it.connect()
+                } else {
+                    callable(mediaBrowser!!)
                 }
-                isConnected = it.isConnected
-                if (isConnected) {
-                    Log.i(TAG, "mediaBrowser.sessionToken: ${it.sessionToken} mediaBrowser.serviceComponent: ${it.serviceComponent}")
-                }
-                return it
             }
         } catch (e: Exception) {
             if (e.message?.contains("connect() called while neither disconnecting nor disconnected") == true)
@@ -120,7 +123,10 @@ class MediaSessionConnection(
             else
                 Log.e("Player", "Failed", e)
         }
-        return null
+    }
+
+    private fun ensureMediaController(callable: (mediaController: MediaControllerCompat) -> Unit) {
+        mediaController?.let(callable)
     }
 
     private inner class MediaBrowserConnectionCallback(private val context: Context)
@@ -139,11 +145,15 @@ class MediaSessionConnection(
         override fun onConnectionSuspended() {
             Log.i(TAG, "MediaBrowserConnectionCallback.onConnectionSuspended : STARTED")
 
+            mediaController = null
+
             Log.i(TAG, "MediaBrowserConnectionCallback.onConnectionSuspended : ENDED")
         }
 
         override fun onConnectionFailed() {
             Log.i(TAG, "MediaBrowserConnectionCallback.onConnectionFailed : STARTED")
+
+            mediaController = null
 
             Log.i(TAG, "MediaBrowserConnectionCallback.onConnectionFailed : ENDED")
         }
