@@ -19,7 +19,6 @@ class MediaSessionConnection(
 ) {
     val TAG = "Player"
 
-
     var releaseMode: Int
         get() {
             return ReleaseMode.RELEASE.ordinal
