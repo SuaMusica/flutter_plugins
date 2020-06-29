@@ -22,7 +22,7 @@ class MediaSessionConnection(
 
     var releaseMode: Int
         get() {
-
+            return ReleaseMode.RELEASE.ordinal
         }
         set(value) {
             val bundle = Bundle()
