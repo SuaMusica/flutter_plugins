@@ -68,7 +68,7 @@ class Plugin private constructor(private val channel: MethodChannel, private val
         private fun createMediaSessionConnection(context: Context) {
             mediaSessionConnection = MediaSessionConnection(context,
                     ComponentName(context, MediaService::class.java),
-                    PlayerStateChangeNotifier(MethodChannelManager(channel!!)))
+                    PlayerChangeNotifier(MethodChannelManager(channel!!)))
         }
 
         @JvmStatic

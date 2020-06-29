@@ -15,7 +15,7 @@ import java.lang.ref.WeakReference
 class MediaSessionConnection(
         context: Context,
         serviceComponent: ComponentName,
-        val playerStateChangeNotifier: PlayerStateChangeNotifier
+        val playerChangeNotifier: PlayerChangeNotifier
 ) {
     val TAG = "Player"
 
@@ -138,14 +138,31 @@ class MediaSessionConnection(
                 if (mediaBrowser.isConnected.not())
                     return
 
-                val playerManager = PlayerManager.getInstance(this)
-                playerManager.addListener(PlayerManagerServiceListener())
-
                 mediaController = MediaControllerCompat(context, mediaBrowser.sessionToken)
                 mediaController?.registerCallback(object : MediaControllerCompat.Callback() {
                     override fun onPlaybackStateChanged(state: PlaybackStateCompat) {
                         Log.i(TAG, "onPlaybackStateChanged: $state")
-                        playerStateChangeNotifier.notify(state.state)
+                        playerChangeNotifier.notifyStateChange(state.state)
+                    }
+
+                    override fun onExtrasChanged(extras: Bundle) {
+                        if (extras.containsKey("type")) {
+                            when(extras.getString("type")) {
+                                "position" -> {
+                                    val position = extras.getLong("position")
+                                    val duration = extras.getLong("duration")
+                                    playerChangeNotifier.notifyPositionChange(position, duration)
+                                }
+                                "error" -> {
+                                    val error = extras.getString("error")
+                                    playerChangeNotifier.notifyStateChange(PlayerState.ERROR.ordinal, error)
+                                }
+                                "seek-end" -> {
+                                    playerChangeNotifier.notifyStateChange(PlayerState.SEEK_END.ordinal)
+                                }
+                            }
+                        }
+                        super.onExtrasChanged(extras)
                     }
 
                     override fun onMetadataChanged(metadata: MediaMetadataCompat) {

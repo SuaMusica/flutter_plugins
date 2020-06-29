@@ -10,6 +10,7 @@ import android.net.Uri
 import android.net.wifi.WifiManager
 import android.os.AsyncTask
 import android.os.Bundle
+import android.os.Handler
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
@@ -41,8 +42,6 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
     private var packageValidator: PackageValidator? = null
 
-    private var wifiLock: WifiManager.WifiLock? = null
-
     private var mediaSession: MediaSessionCompat? = null
     private var mediaController: MediaControllerCompat? = null
     private var mediaSessionConnector: MediaSessionConnector? = null
@@ -58,6 +57,10 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             .build()
 
     private var player: SimpleExoPlayer? = null
+
+    private var progressTracker: ProgressTracker? = null
+
+    private var previousState: Int = -1
 
     private val BROWSABLE_ROOT = "/"
     private val EMPTY_ROOT = "@empty@"
@@ -216,7 +219,9 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
     }
 
     fun play() {
-        player?.playWhenReady = true
+        performAndEnableTracking {
+            player?.playWhenReady = true
+        }
     }
 
     fun removeNotification() {
@@ -229,15 +234,21 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
     }
 
     fun pause() {
-        player?.playWhenReady = false
+        performAndDisableTracking {
+            player?.playWhenReady = false
+        }
     }
 
     fun stop() {
-        player?.playWhenReady = false
+        performAndDisableTracking {
+            player?.playWhenReady = false
+        }
     }
 
     fun release() {
-        player?.playWhenReady = false
+        performAndDisableTracking {
+            player?.playWhenReady = false
+        }
     }
 
     private fun removeNowPlayingNotification() {
@@ -245,6 +256,51 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         AsyncTask.execute {
             notificationManager?.cancel(NOW_PLAYING_NOTIFICATION)
         }
+    }
+
+    private fun notifyPositionChange() {
+        var position = player?.currentPosition ?: 0L
+        val duration = player?.duration ?: 0L
+        position = if (position > duration) duration else position
+
+        if (duration > 0) {
+            val extra = Bundle()
+            extra.putString("type", "position")
+            extra.putLong("position", position)
+            extra.putLong("duration", duration)
+            mediaSession?.setExtras(extra)
+        }
+    }
+
+    private fun startTrackingProgress() {
+        if (progressTracker != null) {
+            return
+        }
+        this.progressTracker = ProgressTracker(Handler())
+    }
+
+    private fun stopTrackingProgress() {
+        progressTracker?.stopTracking()
+        progressTracker = null
+    }
+
+    private fun stopTrackingProgressAndPerformTask(callable: () -> Unit) {
+        if (progressTracker != null) {
+            progressTracker!!.stopTracking(callable)
+        } else {
+            callable()
+        }
+        progressTracker = null
+    }
+
+    private fun performAndEnableTracking(callable: () -> Unit) {
+        callable()
+        startTrackingProgress()
+    }
+
+    private fun performAndDisableTracking(callable: () -> Unit) {
+        callable()
+        stopTrackingProgress()
     }
 
     private fun playerEventListener(): Player.EventListener {
@@ -263,6 +319,48 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
             override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
                 Log.i(TAG, "onPlayerStateChanged: playWhenReady: $playWhenReady playbackState: $playbackState currentPlaybackState: ${player?.getPlaybackState()}")
+
+                if (playWhenReady && playbackState == ExoPlayer.STATE_READY) {
+                    //
+                } else {
+                    if (player?.playbackError != null) {
+                        //
+                    } else {
+                        when (playbackState) {
+                            ExoPlayer.STATE_IDLE -> { // 1
+                                //
+                            }
+                            ExoPlayer.STATE_BUFFERING -> { // 2
+                                //
+                            }
+                            ExoPlayer.STATE_READY -> { // 3
+                                val status = if (playWhenReady) PlayerState.PLAYING else PlayerState.PAUSED
+                                if (previousState == -1) {
+                                    // when we define that the track shall not "playWhenReady"
+                                    // no position info is sent
+                                    // therefore, we need to "emulate" the first position notification
+                                    // by sending it directly
+                                    notifyPositionChange()
+                                } else {
+                                    if (status == PlayerState.PAUSED) {
+                                        stopTrackingProgressAndPerformTask {
+                                            //
+                                        }
+                                    } else {
+                                        //
+                                    }
+
+                                }
+                            }
+                            ExoPlayer.STATE_ENDED -> { // 4
+                                stopTrackingProgressAndPerformTask {
+                                    //
+                                }
+                            }
+                        }
+                    }
+                }
+                previousState = playbackState
             }
 
             override fun onRepeatModeChanged(repeatMode: Int) {
@@ -274,7 +372,11 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             }
 
             override fun onPlayerError(error: ExoPlaybackException) {
-                Log.e(TAG, "onPLayerError: ${error?.message}", error)
+                Log.e(TAG, "onPLayerError: ${error.message}", error)
+                val bundle = Bundle()
+                bundle.putString("type", "error")
+                bundle.putString("error", error.message)
+                mediaSession?.setExtras(bundle)
             }
 
             override fun onPositionDiscontinuity(reason: Int) {
@@ -287,7 +389,40 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
             override fun onSeekProcessed() {
                 Log.i(TAG, "onSeekProcessed")
+                val bundle = Bundle()
+                bundle.putString("type", "seek-end")
+                mediaSession?.setExtras(bundle)
             }
+        }
+    }
+
+    private inner class ProgressTracker(val handler: Handler) : Runnable {
+        private val shutdownRequest = AtomicBoolean(false)
+        private var shutdownTask: (() -> Unit)? = null
+
+        init {
+            handler.post(this)
+        }
+
+        override fun run() {
+            notifyPositionChange()
+
+            if (!shutdownRequest.get()) {
+                handler.postDelayed(this, 400 /* ms */)
+            } else {
+                shutdownTask?.let {
+                    it()
+                }
+            }
+        }
+
+        fun stopTracking() {
+            shutdownRequest.set(true)
+        }
+
+        fun stopTracking(callable: () -> Unit) {
+            shutdownTask = callable
+            stopTracking()
         }
     }
 
@@ -295,7 +430,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
             Log.d(
                     TAG,
-                    "onMetadataChanged: metadata: $metadata"
+                    "onMetadataChanged: title: ${metadata?.title} duration: ${metadata?.duration}"
             )
         }
 
