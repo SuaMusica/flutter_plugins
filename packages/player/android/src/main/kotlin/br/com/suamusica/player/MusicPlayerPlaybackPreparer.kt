@@ -10,7 +10,7 @@ import com.google.android.exoplayer2.ControlDispatcher
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 
-class MusicPlayerPlaybackPreparer(val player: br.com.suamusica.player.WrappedExoPlayer,
+class MusicPlayerPlaybackPreparer(val mediaService: MediaService,
                                   val exoPlayer: Player,
                                   val mediaController: MediaControllerCompat,
                                   val mediaSession: MediaSessionCompat) : MediaSessionConnector.PlaybackPreparer {
@@ -48,49 +48,36 @@ class MusicPlayerPlaybackPreparer(val player: br.com.suamusica.player.WrappedExo
                         val author = it.getString("author")
                         val url = it.getString("url")
                         val coverUrl = it.getString("coverUrl")
-                        this.player.prepare(cookie, Media(name, author, url, coverUrl))
-                        this.player.callbackHandler = cb
+                        mediaService.prepare(cookie, Media(name, author, url, coverUrl))
                         return@let true
                     } ?: false
                 }
 
                 "play" -> {
-                    this.player.play()
+                    mediaService.play()
                     true
                 }
                 "pause" -> {
-                    this.player.pause()
-                    true
-                }
-                "prev" -> {
-                    this.player.previous()
-                    true
-                }
-                "next" -> {
-                    this.player.next()
+                    mediaService.pause()
                     true
                 }
                 "stop" -> {
-                    this.player.stop()
+                    mediaService.stop()
                     true
                 }
                 "release" -> {
-                    this.player.release()
+                    mediaService.release()
                     true
                 }
                 "seek" -> {
                     return extras?.let {
                         val position = it.getLong("position")
-                        this.player.seek(position)
+                        mediaService.seek(position)
                         return@let true
                     } ?: false
                 }
-                "send_notification" -> {
-                    this.player.sendNotification()
-                    return true
-                }
                 "remove_notification" -> {
-                    this.player.removeNotification()
+                    mediaService.removeNotification()
                     return true
                 }
                 else -> false

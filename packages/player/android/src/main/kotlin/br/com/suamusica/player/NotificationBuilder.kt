@@ -130,8 +130,6 @@ class NotificationBuilder(private val context: Context) {
 
         val art = getArt(context, artUri, NOTIFICATION_LARGE_ICON_SIZE)
 
-        // 2. AO fechar o App(encerrar) remover a Not.
-
         val notifyIntent = Intent("FLUTTER_NOTIFICATION_CLICK").apply {
             addCategory(Intent.CATEGORY_DEFAULT)
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -155,10 +153,10 @@ class NotificationBuilder(private val context: Context) {
                 setOngoing(onGoing)
                 setSmallIcon(R.drawable.ic_notification)
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O){
-                    setDefaults(Notification.DEFAULT_LIGHTS or Notification.DEFAULT_SOUND)
+                    setDefaults(Notification.DEFAULT_LIGHTS)
                     setVibrate(longArrayOf(0))
                 } else{
-                    setDefaults(Notification.DEFAULT_ALL)
+                    setDefaults(Notification.DEFAULT_LIGHTS)
                 }
         }.build()
         

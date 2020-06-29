@@ -2,9 +2,9 @@ package br.com.suamusica.player
 
 import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
-import android.os.*
+import android.os.Build
+import android.os.Bundle
+import android.os.ResultReceiver
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
@@ -64,14 +64,6 @@ class MediaSessionConnection(
 
     fun pause() {
         sendCommand("pause", null)
-    }
-
-    fun next() {
-        sendCommand("next", null)
-    }
-
-    fun previous() {
-        sendCommand("prev", null)
     }
 
     fun stop() {
@@ -145,6 +137,9 @@ class MediaSessionConnection(
             mediaBrowser?.let { mediaBrowser ->
                 if (mediaBrowser.isConnected.not())
                     return
+
+                val playerManager = PlayerManager.getInstance(this)
+                playerManager.addListener(PlayerManagerServiceListener())
 
                 mediaController = MediaControllerCompat(context, mediaBrowser.sessionToken)
                 mediaController?.registerCallback(object : MediaControllerCompat.Callback() {

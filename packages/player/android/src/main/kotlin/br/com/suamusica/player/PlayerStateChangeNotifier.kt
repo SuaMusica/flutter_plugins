@@ -15,7 +15,7 @@ class PlayerStateChangeNotifier(private val channelManager: MethodChannelManager
             else -> PlayerState.IDLE
         }
         Log.i("Player", "Notifying Player State change: $playerState")
-        channelManager.notifyPlayerStateChange("aa", playerState, null)
+        channelManager.notifyPlayerStateChange("sua-musica-player", playerState, null)
     }
 
 }

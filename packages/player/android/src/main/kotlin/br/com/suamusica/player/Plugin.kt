@@ -2,30 +2,25 @@ package br.com.suamusica.player
 
 import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
-import android.os.*
+import android.os.Handler
+import android.os.Message
+import android.os.ResultReceiver
 import android.util.Log
-import br.com.suamusica.player.MediaService.MessageType
-import br.com.suamusica.player.MediaService.MessageType.*
+import br.com.suamusica.player.MediaService.MessageType.NEXT
+import br.com.suamusica.player.MediaService.MessageType.PREVIOUS
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.PluginRegistry.Registrar
-import suamusica.suamusicaapp.IMediaService
 
 class Plugin private constructor(private val channel: MethodChannel, private val context: Context) : MethodCallHandler {
     companion object {
         // Argument names
-        const val PLAYER_ID_ARGUMENT = "playerId"
-        const val DEFAULT_PLAYER_ID = "default"
         const val NAME_ARGUMENT = "name"
         const val AUTHOR_ARGUMENT = "author"
         const val URL_ARGUMENT = "url"
         const val COVER_URL_ARGUMENT = "coverUrl"
-        const val VOLUME_ARGUMENT = "volume"
         const val POSITION_ARGUMENT = "position"
-        const val STAY_AWAKE_ARGUMENT = "stayAwake"
         const val LOAD_ONLY = "loadOnly"
         const val RELEASE_MODE_ARGUMENT = "releaseMode"
 
@@ -202,7 +197,7 @@ class Plugin private constructor(private val channel: MethodChannel, private val
         override fun handleMessage(msg: Message) {
             Log.i(TAG, "Got msg: $msg")
 
-            when(msg.what) {
+            when (msg.what) {
                 NEXT.ordinal -> {
                     channel?.invokeMethod("commandCenter.onNext", mapOf<String, String>())
                 }
