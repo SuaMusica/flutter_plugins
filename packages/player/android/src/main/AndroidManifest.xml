@@ -11,6 +11,7 @@
             android:exported="false"
             android:hardwareAccelerated="true"
             android:largeHeap="true"
+            android:process=":media.service"
             tools:ignore="ExportedService">
 
             <intent-filter>
