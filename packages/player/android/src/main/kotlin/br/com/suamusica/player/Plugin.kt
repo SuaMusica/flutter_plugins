@@ -88,12 +88,12 @@ class Plugin private constructor(private val channel: MethodChannel, private val
 
         @JvmStatic
         fun previous() {
-            mediaSessionConnection?.previous()
+            channel?.invokeMethod("commandCenter.onPrevious", emptyMap<String, String>())
         }
 
         @JvmStatic
         fun next() {
-            mediaSessionConnection?.next()
+            channel?.invokeMethod("commandCenter.onNext", emptyMap<String, String>())
         }
 
         @JvmStatic

@@ -22,18 +22,20 @@ class MediaSessionConnection(
 
     var releaseMode: Int
         get() {
-            TODO()
+
         }
         set(value) {
-            TODO()
+            val bundle = Bundle()
+            bundle.putInt("release_mode", value)
+            sendCommand("set_release_mode", bundle)
         }
     val currentPosition: Long
         get() {
-            TODO()
+            return 0L
         }
     val duration: Long
         get() {
-            TODO()
+            return 0L
         }
     private val weakContext = WeakReference(context)
     private val weakServiceComponent = WeakReference(serviceComponent)
