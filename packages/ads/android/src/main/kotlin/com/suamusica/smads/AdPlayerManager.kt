@@ -133,7 +133,6 @@ class AdPlayerManager(
                 Timber.d("adsManager: $adsManager")
                 adsManager?.addAdErrorListener { errorEventDispatcher.onNext(it) }
                 adsManager?.addAdEventListener {
-                    Timber.d("onAdEvent($it)")
                     setContentType(it)
                     adEventDispatcher.onNext(it)
                 }
