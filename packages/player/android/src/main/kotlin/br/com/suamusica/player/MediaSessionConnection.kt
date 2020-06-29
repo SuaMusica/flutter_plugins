@@ -2,19 +2,24 @@ package br.com.suamusica.player
 
 import android.content.ComponentName
 import android.content.Context
-import android.os.Build
-import android.os.Bundle
-import android.os.ResultReceiver
+import android.content.Intent
+import android.content.ServiceConnection
+import android.os.*
 import android.support.v4.media.MediaBrowserCompat
+import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
+import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import java.lang.ref.WeakReference
 
 class MediaSessionConnection(
         context: Context,
-        serviceComponent: ComponentName
+        serviceComponent: ComponentName,
+        val playerStateChangeNotifier: PlayerStateChangeNotifier
 ) {
     val TAG = "Player"
+
+
     var releaseMode: Int
         get() {
             TODO()
@@ -37,20 +42,19 @@ class MediaSessionConnection(
     private var mediaBrowser: MediaBrowserCompat? = null
     private var mediaController: MediaControllerCompat? = null
 
-
     init {
         ensureMediaBrowser {
         }
     }
 
-    fun prepare(cookie: String, name: String, author: String, url: String, coverUrl: String) {
+    fun prepare(cookie: String, media: Media, callbackHandler: ResultReceiver) {
         val bundle = Bundle()
         bundle.putString("cookie", cookie)
-        bundle.putString("name", name)
-        bundle.putString("author", author)
-        bundle.putString("url", url)
-        bundle.putString("coverUrl", coverUrl)
-        sendCommand("prepare", bundle)
+        bundle.putString("name", media.name)
+        bundle.putString("author", media.author)
+        bundle.putString("url", media.url)
+        bundle.putString("coverUrl", media.coverUrl)
+        sendCommand("prepare", bundle, callbackHandler)
     }
 
     fun play() {
@@ -74,24 +78,28 @@ class MediaSessionConnection(
     }
 
     fun seek(position: Long) {
-
+        val bundle = Bundle()
+        bundle.putLong("position", position)
+        sendCommand("seek", bundle)
     }
 
     fun release() {
-
+        sendCommand("release", null)
     }
 
     fun sendNotification() {
+        sendCommand("send_notification", null)
     }
 
     fun removeNotification() {
-
+        sendCommand("remove_notification", null)
     }
 
-    private fun sendCommand(command: String, bundle: Bundle? = null) {
-        val receiver = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
-            ResultReceiver(null)
-        else null
+    private fun sendCommand(command: String, bundle: Bundle? = null, callbackHandler: ResultReceiver? = null) {
+        val receiver = callbackHandler
+                ?: if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
+                    ResultReceiver(null)
+                else null
 
         ensureMediaBrowser {
             ensureMediaController {
@@ -138,6 +146,16 @@ class MediaSessionConnection(
                     return
 
                 mediaController = MediaControllerCompat(context, mediaBrowser.sessionToken)
+                mediaController?.registerCallback(object : MediaControllerCompat.Callback() {
+                    override fun onPlaybackStateChanged(state: PlaybackStateCompat) {
+                        Log.i(TAG, "onPlaybackStateChanged: $state")
+                        playerStateChangeNotifier.notify(state.state)
+                    }
+
+                    override fun onMetadataChanged(metadata: MediaMetadataCompat) {
+                        Log.i(TAG, "onMetadataChanged: $metadata duration: ${metadata.duration}")
+                    }
+                })
             }
             Log.i(TAG, "MediaBrowserConnectionCallback.onConnected : ENDED")
         }

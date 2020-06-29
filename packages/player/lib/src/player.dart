@@ -21,7 +21,7 @@ class Player {
   static final MethodChannel _channel = const MethodChannel('smplayer')
     ..setMethodCallHandler(platformCallHandler);
 
-  static final players = Map<String, Player>();
+  static Player player = null;
   static bool logEnabled = false;
 
   CookiesForCustomPolicy _cookies;
@@ -30,10 +30,11 @@ class Player {
   RepeatMode repeatMode = RepeatMode.NONE;
   final mutex = Mutex();
 
+  final String playerId;
+
   final StreamController<Event> _eventStreamController =
       StreamController<Event>();
 
-  final String playerId;
   final Future<CookiesForCustomPolicy> Function() cookieSigner;
   final Future<String> Function(Media) localMediaValidator;
   final bool autoPlay;
@@ -53,7 +54,7 @@ class Player {
     @required this.localMediaValidator,
     this.autoPlay = false,
   }) {
-    players[playerId] = this;
+    player = this;
   }
 
   Future<int> _invokeMethod(
@@ -81,12 +82,12 @@ class Player {
               "${cookies.policy.key}=${cookies.policy.value};${cookies.signature.key}=${cookies.signature.value};${cookies.keyPairId.key}=${cookies.keyPairId.value}";
         }
 
-        final Map<String, dynamic> withPlayerId = Map.of(arguments)
+        final Map<String, dynamic> args = Map.of(arguments)
           ..['playerId'] = playerId
           ..['cookie'] = cookie;
 
         return _channel
-            .invokeMethod(method, withPlayerId)
+            .invokeMethod(method, args)
             .then((result) => (result as int));
       });
     });
@@ -515,8 +516,6 @@ class Player {
     final Map<dynamic, dynamic> callArgs = call.arguments as Map;
     _log('_platformCallHandler call ${call.method} $callArgs');
 
-    final playerId = callArgs['playerId'] as String;
-    final Player player = players[playerId];
     if (player == null) {
       return;
     }

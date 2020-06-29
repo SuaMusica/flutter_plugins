@@ -2,7 +2,7 @@ package br.com.suamusica.player
 
 import io.flutter.plugin.common.MethodChannel
 
-class MethodChannelManager(val channel: MethodChannel) {
+class MethodChannelManager(private val channel: MethodChannel) {
 
     fun notifyPositionChange(playerId: String, position: Long, duration: Long) {
         val args = ArgsBuilder()

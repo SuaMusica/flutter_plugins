@@ -7,6 +7,7 @@ import android.support.v4.media.session.MediaSessionCompat.Callback
 import android.util.Log
 
 class MediaSessionCallback(): Callback() {
+
     override fun onMediaButtonEvent(mediaButtonEvent: Intent?): Boolean {
         Log.i("Player", "onMediaButtonEvent(): $mediaButtonEvent")
         return super.onMediaButtonEvent(mediaButtonEvent)

@@ -1,6 +1,7 @@
 package br.com.suamusica.player
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
@@ -38,6 +39,12 @@ class WrappedExoPlayer (
         override val context: Context,
         val handler: Handler
 ) : Player {
+    var callbackHandler : ResultReceiver? = null
+
+    val sessionToken: MediaSessionCompat.Token?
+        get() {
+            return mediaSession?.sessionToken
+        }
     override var volume = 1.0
     override val duration: Long
         get() = player.duration
@@ -165,7 +172,6 @@ class WrappedExoPlayer (
                                     } else {
                                         notifyPlayerStateChange(status)
                                     }
-
                                 }
                             }
                             ExoPlayer.STATE_ENDED -> { // 4
@@ -335,13 +341,15 @@ class WrappedExoPlayer (
     }
 
     override fun next() {
-        TODO()
-//        val ret = channel?.invokeMethod("commandCenter.onNext", mapOf("playerId" to playerId))
+        val data = Bundle()
+        data.putInt("type", MediaService.MessageType.NEXT.ordinal)
+        callbackHandler?.send(Activity.RESULT_OK, data)
     }
 
     override fun previous() {
-        TODO()
-//        channel?.invokeMethod("commandCenter.onPrevious", mapOf("playerId" to playerId))
+        val data = Bundle()
+        data.putInt("type", MediaService.MessageType.PREVIOUS.ordinal)
+        callbackHandler?.send(Activity.RESULT_OK, data)
     }
 
     override fun release() {
@@ -398,27 +406,25 @@ class WrappedExoPlayer (
         val currentPosition = if (player.currentPosition > player.duration) player.duration else player.currentPosition
         val duration = player.duration
 
-        // Log.i(TAG, "notifyPositionChange: position: $currentPosition duration: $duration")
-
         if (duration > 0) {
-            notifyPositionChange(currentPosition, duration)
-        }
-    }
+            val data = Bundle()
+            data.putInt("type", MediaService.MessageType.POSITION_CHANGE.ordinal)
+            data.putLong("currentPosition", currentPosition)
+            data.putLong("duration", duration)
 
-    private fun notifyPositionChange(currentPosition: Long, duration: Long) {
-        val msg = Message.obtain(null, MediaService.MessageType.POSITION_CHANGE.ordinal, 0, 0)
-        msg.data = Bundle()
-        msg.data.putLong("currentPosition", currentPosition)
-        msg.data.putLong("duration", duration)
+            callbackHandler?.send(Activity.RESULT_OK, data)
+        }
     }
 
     private fun notifyPlayerStateChange(state: PlayerState, error: String? = null) {
-        val msg = Message.obtain(null, MediaService.MessageType.STATE_CHANGE.ordinal, 0, 0)
-        msg.data = Bundle()
-        msg.data.putInt("state", state.ordinal)
+        val data = Bundle()
+        data.putInt("type", MediaService.MessageType.STATE_CHANGE.ordinal)
+        data.putInt("state", state.ordinal)
         error?.let {
-            msg.data.putString("error", it)
+            data.putString("error", it)
         }
+
+        callbackHandler?.send(Activity.RESULT_OK, data)
     }
 
     private fun removeNowPlayingNotification() {

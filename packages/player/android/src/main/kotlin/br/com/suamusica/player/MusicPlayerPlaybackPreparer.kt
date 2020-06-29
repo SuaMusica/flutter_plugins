@@ -10,7 +10,7 @@ import com.google.android.exoplayer2.ControlDispatcher
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 
-class MusicPlayerPlaybackPreparer(val player: br.com.suamusica.player.Player,
+class MusicPlayerPlaybackPreparer(val player: br.com.suamusica.player.WrappedExoPlayer,
                                   val exoPlayer: Player,
                                   val mediaController: MediaControllerCompat,
                                   val mediaSession: MediaSessionCompat) : MediaSessionConnector.PlaybackPreparer {
@@ -38,7 +38,7 @@ class MusicPlayerPlaybackPreparer(val player: br.com.suamusica.player.Player,
                            controlDispatcher: ControlDispatcher,
                            command: String, extras: Bundle?, cb: ResultReceiver?): Boolean {
         try {
-            Log.i(TAG, "MusicPlayerPlaybackPreparer.onPrepareFromUri : START")
+            Log.i(TAG, "MusicPlayerPlaybackPreparer.onCommand : START")
 
             return when (command) {
                 "prepare" -> {
@@ -49,6 +49,7 @@ class MusicPlayerPlaybackPreparer(val player: br.com.suamusica.player.Player,
                         val url = it.getString("url")
                         val coverUrl = it.getString("coverUrl")
                         this.player.prepare(cookie, Media(name, author, url, coverUrl))
+                        this.player.callbackHandler = cb
                         return@let true
                     } ?: false
                 }
@@ -57,10 +58,45 @@ class MusicPlayerPlaybackPreparer(val player: br.com.suamusica.player.Player,
                     this.player.play()
                     true
                 }
+                "pause" -> {
+                    this.player.pause()
+                    true
+                }
+                "prev" -> {
+                    this.player.previous()
+                    true
+                }
+                "next" -> {
+                    this.player.next()
+                    true
+                }
+                "stop" -> {
+                    this.player.stop()
+                    true
+                }
+                "release" -> {
+                    this.player.release()
+                    true
+                }
+                "seek" -> {
+                    return extras?.let {
+                        val position = it.getLong("position")
+                        this.player.seek(position)
+                        return@let true
+                    } ?: false
+                }
+                "send_notification" -> {
+                    this.player.sendNotification()
+                    return true
+                }
+                "remove_notification" -> {
+                    this.player.removeNotification()
+                    return true
+                }
                 else -> false
             }
         } finally {
-            Log.i(TAG, "MusicPlayerPlaybackPreparer.onPrepareFromUri : END")
+            Log.i(TAG, "MusicPlayerPlaybackPreparer.onCommand : END")
         }
     }
 

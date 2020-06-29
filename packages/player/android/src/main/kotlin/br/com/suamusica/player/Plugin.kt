@@ -4,11 +4,10 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
-import android.os.Handler
-import android.os.IBinder
-import android.os.Message
-import android.os.Messenger
+import android.os.*
 import android.util.Log
+import br.com.suamusica.player.MediaService.MessageType
+import br.com.suamusica.player.MediaService.MessageType.*
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
@@ -54,22 +53,27 @@ class Plugin private constructor(private val channel: MethodChannel, private val
 
         private var channel: MethodChannel? = null
 
-        var replyMessenger: Messenger? = null
+        var mediaSessionConnection: MediaSessionConnection? = null
 
-        var mediaSessionConnection : MediaSessionConnection? = null
+        val callbackHandler = ResultReceiver(CallbackHandler())
 
         @JvmStatic
         fun registerWith(registrar: Registrar) {
+            Log.i(TAG, "registerWith: START")
             channel = MethodChannel(registrar.messenger(), "smplayer")
             channel?.setMethodCallHandler(Plugin(channel!!, registrar.context()))
 
             val context = registrar.context()
 
             createMediaSessionConnection(context)
+
+            Log.i(TAG, "registerWith: END")
         }
 
         private fun createMediaSessionConnection(context: Context) {
-            mediaSessionConnection = MediaSessionConnection(context, ComponentName(context, MediaService::class.java))
+            mediaSessionConnection = MediaSessionConnection(context,
+                    ComponentName(context, MediaService::class.java),
+                    PlayerStateChangeNotifier(MethodChannelManager(channel!!)))
         }
 
         @JvmStatic
@@ -119,7 +123,7 @@ class Plugin private constructor(private val channel: MethodChannel, private val
                 val position = call.argument<Long>(POSITION_ARGUMENT)
                 val loadOnly = call.argument<Boolean>(LOAD_ONLY)!!
 
-                mediaSessionConnection?.prepare(cookie!!, name, author, url, coverUrl)
+                mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl), callbackHandler)
 
                 Log.i(TAG, "before prepare: cookie: $cookie")
                 position?.let {
@@ -152,7 +156,8 @@ class Plugin private constructor(private val channel: MethodChannel, private val
                 val url = call.argument<String>(URL_ARGUMENT)!!
                 val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
                 Log.i(TAG, "PREPARE_AND_SEND_NOTIFICATION_METHOD: before prepare: cookie: $cookie")
-                mediaSessionConnection?.prepare(cookie!!, name, author, url, coverUrl)
+
+                mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl), callbackHandler)
                 mediaSessionConnection?.sendNotification();
             }
             REMOVE_NOTIFICATION_METHOD -> {
@@ -191,5 +196,21 @@ class Plugin private constructor(private val channel: MethodChannel, private val
             }
         }
         response.success(Ok)
+    }
+
+    private class CallbackHandler : Handler() {
+        override fun handleMessage(msg: Message) {
+            Log.i(TAG, "Got msg: $msg")
+
+            when(msg.what) {
+                NEXT.ordinal -> {
+                    channel?.invokeMethod("commandCenter.onNext", mapOf<String, String>())
+                }
+                PREVIOUS.ordinal -> {
+                    channel?.invokeMethod("commandCenter.onPrevious", mapOf<String, String>())
+                }
+            }
+            super.handleMessage(msg)
+        }
     }
 }
