@@ -28,14 +28,10 @@ class MediaSessionConnection(
             bundle.putInt("release_mode", value)
             sendCommand("set_release_mode", bundle)
         }
-    val currentPosition: Long
-        get() {
-            return 0L
-        }
-    val duration: Long
-        get() {
-            return 0L
-        }
+    var currentPosition = 0L
+
+    var duration = 0L
+
     private val weakContext = WeakReference(context)
     private val weakServiceComponent = WeakReference(serviceComponent)
 
@@ -150,7 +146,9 @@ class MediaSessionConnection(
                             when(extras.getString("type")) {
                                 "position" -> {
                                     val position = extras.getLong("position")
+                                    this@MediaSessionConnection.currentPosition = position
                                     val duration = extras.getLong("duration")
+                                    this@MediaSessionConnection.duration = duration
                                     playerChangeNotifier.notifyPositionChange(position, duration)
                                 }
                                 "error" -> {
