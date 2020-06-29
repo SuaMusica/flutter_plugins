@@ -1,4 +1,4 @@
-package com.suamusica.smads.platformview
+package com.suamusica.smads
 
 import android.content.Context
 import android.net.Uri

@@ -1,6 +1,7 @@
 package com.suamusica.smads.platformview
 
 import android.view.View
+import com.suamusica.smads.AdPlayerViewController
 import io.flutter.plugin.platform.PlatformView
 import timber.log.Timber
 
@@ -14,7 +15,6 @@ class AdPlayer(private val controller: AdPlayerViewController,
 
     override fun dispose() {
         Timber.v("dispose")
-//        adPlayerView.visibility = View.GONE
     }
 
     companion object {

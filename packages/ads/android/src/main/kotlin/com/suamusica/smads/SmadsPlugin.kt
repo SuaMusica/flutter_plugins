@@ -9,7 +9,6 @@ import com.suamusica.smads.input.LoadMethodInput
 import com.suamusica.smads.platformview.AdPlayer
 import com.suamusica.smads.platformview.AdPlayerFactory
 import com.suamusica.smads.platformview.AdPlayerView
-import com.suamusica.smads.platformview.AdPlayerViewController
 import com.suamusica.smads.result.LoadResult
 import com.suamusica.smads.result.ScreenStatusResult
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -36,7 +35,6 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
         this.context = flutterPluginBinding.applicationContext
         this.callback = SmadsCallback(channel!!)
         this.channel?.setMethodCallHandler(this)
-        MethodChannelBridge.callback = callback
         controller = AdPlayerViewController(context, callback)
         flutterPluginBinding
                 .platformViewRegistry
@@ -47,7 +45,6 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
         Timber.v("onDetachedFromEngine")
         channel?.setMethodCallHandler(null)
         channel = null
-        MethodChannelBridge.callback = null
     }
 
     override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {

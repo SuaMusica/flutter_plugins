@@ -1,4 +1,4 @@
-package com.suamusica.smads.platformview
+package com.suamusica.smads
 
 import android.content.Context
 import android.os.Handler
@@ -8,12 +8,12 @@ import android.widget.ProgressBar
 import com.google.ads.interactivemedia.v3.api.AdErrorEvent
 import com.google.ads.interactivemedia.v3.api.AdEvent
 import com.google.android.exoplayer2.ui.PlayerView
-import com.suamusica.smads.SmadsCallback
 import com.suamusica.smads.extensions.gone
 import com.suamusica.smads.extensions.hide
 import com.suamusica.smads.extensions.show
 import com.suamusica.smads.input.LoadMethodInput
 import com.suamusica.smads.output.AdEventOutput
+import com.suamusica.smads.platformview.AdPlayerView
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable

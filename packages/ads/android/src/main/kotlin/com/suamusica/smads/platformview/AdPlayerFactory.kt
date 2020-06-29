@@ -1,6 +1,7 @@
 package com.suamusica.smads.platformview
 
 import android.content.Context
+import com.suamusica.smads.AdPlayerViewController
 import io.flutter.plugin.common.StandardMessageCodec
 import io.flutter.plugin.platform.PlatformView
 import io.flutter.plugin.platform.PlatformViewFactory
