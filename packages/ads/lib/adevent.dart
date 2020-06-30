@@ -53,7 +53,7 @@ class AdEvent {
 
   factory AdEvent.fromMap(Map<dynamic, dynamic> args) {
     final type = AdEventType.values
-        .firstWhere((e) => e.toString().endsWith(args["type"]));
+        .firstWhere((e) => e.toString().endsWith(args["type"]), orElse: () => null);
     final id = args["ad.id"];
     final title = args["ad.title"];
     final description = args["ad.description"];

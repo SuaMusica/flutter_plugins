@@ -18,7 +18,7 @@ class SMAds {
   static const UnlockedScreen = 1;
   static const LockedScreen = 0;
 
-  static final MethodChannel _channel = const MethodChannel('smads')
+  static final MethodChannel _channel = MethodChannel('smads')
     ..setMethodCallHandler(platformCallHandler);
 
   static SMAds lastAd;
