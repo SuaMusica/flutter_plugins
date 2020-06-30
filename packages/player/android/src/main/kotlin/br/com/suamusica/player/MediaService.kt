@@ -5,10 +5,13 @@ import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
 import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.AsyncTask
 import android.os.Bundle
 import android.os.Handler
+import androidx.core.content.ContextCompat
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
@@ -47,6 +50,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
     private var notificationBuilder: NotificationBuilder? = null
     private var notificationManager: NotificationManagerCompat? = null
+    private var isForegroundService = false
 
     private val uAmpAudioAttributes = AudioAttributes.Builder()
             .setContentType(C.CONTENT_TYPE_MUSIC)
@@ -508,14 +512,33 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                      */
                     if (notification != null) {
                         notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
+                        if (!isForegroundService) {
+                            ContextCompat.startForegroundService(
+                                    applicationContext,
+                                    Intent(applicationContext, this@MediaService.javaClass)
+                            )
+                            startForeground(NOW_PLAYING_NOTIFICATION, notification)
+
+                            isForegroundService = true
+                        }
                     }
                 }
                 else -> {
                     Log.i(TAG, "updateNotification: ELSE")
-                    if (notification != null) {
-                        notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
-                    } else
-                        removeNowPlayingNotification()
+                    if (isForegroundService) {
+                        stopForeground(false)
+
+                        isForegroundService = false
+
+                        // If playback has ended, also stop the service.
+                        if (updatedState == PlaybackStateCompat.STATE_NONE)
+                            stopSelf()
+                        if (notification != null) {
+                            notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
+                        } else
+                            removeNowPlayingNotification()
+                    }
+
                 }
             }
         }
