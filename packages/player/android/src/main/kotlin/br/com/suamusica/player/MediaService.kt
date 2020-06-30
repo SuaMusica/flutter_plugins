@@ -193,6 +193,15 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                     }.build()
                 }
             }
+
+            override fun onSkipToNext(player: com.google.android.exoplayer2.Player, controlDispatcher: ControlDispatcher) {
+                sendCommand("next")
+            }
+
+            override fun onSkipToPrevious(player: com.google.android.exoplayer2.Player, controlDispatcher: ControlDispatcher) {
+                sendCommand("previous")
+            }
+
         }
         mediaSessionConnector?.setQueueNavigator(timelineQueueNavigator)
 
@@ -230,6 +239,13 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         performAndEnableTracking {
             player?.playWhenReady = true
         }
+    }
+
+    fun sendCommand(type: String) {
+        val extra = Bundle()
+        extra.putString("type", type)
+        mediaSession?.setExtras(extra)
+
     }
 
     fun sendNotification(media: Media) {
@@ -277,13 +293,6 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         }
     }
 
-    fun resetPosition() {
-        val extra = Bundle()
-        extra.putString("type", "position")
-        extra.putLong("position", 0L)
-        extra.putLong("duration", 0L)
-        mediaSession?.setExtras(extra)
-    }
 
     private fun notifyPositionChange() {
         var position = player?.currentPosition ?: 0L
@@ -497,6 +506,11 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                 PlaybackStateCompat.STATE_STOPPED -> {
                     Log.i(TAG, "updateNotification: STATE_NONE or STATE_STOPPED")
                     removeNowPlayingNotification()
+                    if (isForegroundService) {
+                        stopSelf()
+                        stopForeground(true)
+                        isForegroundService = false
+                    }
                 }
                 PlaybackStateCompat.STATE_PAUSED -> {
                     Log.i(TAG, "updateNotification: STATE_PAUSED")
@@ -526,13 +540,10 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                 else -> {
                     Log.i(TAG, "updateNotification: ELSE")
                     if (isForegroundService) {
-                        stopForeground(false)
+                        stopForeground(true)
 
                         isForegroundService = false
 
-                        // If playback has ended, also stop the service.
-                        if (updatedState == PlaybackStateCompat.STATE_NONE)
-                            stopSelf()
                         if (notification != null) {
                             notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
                         } else

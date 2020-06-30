@@ -15,7 +15,7 @@ import java.lang.ref.WeakReference
 class MediaSessionConnection(
         context: Context,
         serviceComponent: ComponentName,
-        val playerChangeNotifier: PlayerChangeNotifier
+        val     playerChangeNotifier: PlayerChangeNotifier
 ) {
     val TAG = "Player"
 
@@ -141,9 +141,13 @@ class MediaSessionConnection(
 
                 mediaController = MediaControllerCompat(context, mediaBrowser.sessionToken)
                 mediaController?.registerCallback(object : MediaControllerCompat.Callback() {
+                    var lastState = PlaybackStateCompat.STATE_NONE - 1
                     override fun onPlaybackStateChanged(state: PlaybackStateCompat) {
-                        Log.i(TAG, "onPlaybackStateChanged: $state")
-                        playerChangeNotifier.notifyStateChange(state.state)
+                        if(lastState != state.state) {
+                            Log.i(TAG, "onPlaybackStateChanged: $state")
+                            lastState = state.state;
+                            playerChangeNotifier.notifyStateChange(state.state)
+                        }
                     }
 
                     override fun onExtrasChanged(extras: Bundle) {
@@ -162,6 +166,12 @@ class MediaSessionConnection(
                                 }
                                 "seek-end" -> {
                                     playerChangeNotifier.notifySeekEnd()
+                                }
+                                "next" -> {
+                                    playerChangeNotifier.notifyNext()
+                                }
+                                "previous" -> {
+                                    playerChangeNotifier.notifyPrevious()
                                 }
                             }
                         }

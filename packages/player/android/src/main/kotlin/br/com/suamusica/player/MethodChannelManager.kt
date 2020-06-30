@@ -24,6 +24,19 @@ class MethodChannelManager(private val channel: MethodChannel) {
         invokeMethod("state.change", args)
     }
 
+    fun notifyNext(playerId: String) {
+        val args = ArgsBuilder()
+                .playerId(playerId)
+                .build()
+        invokeMethod("commandCenter.onNext", args)
+    }
+    fun notifyPrevious(playerId: String) {
+        val args = ArgsBuilder()
+                .playerId(playerId)
+                .build()
+        invokeMethod("commandCenter.onPrevious", args)
+    }
+
 
     private fun invokeMethod(method: String, args: Map<String, Any>) {
         channel.invokeMethod(method, args)
