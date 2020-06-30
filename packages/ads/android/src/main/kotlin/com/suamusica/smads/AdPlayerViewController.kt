@@ -3,6 +3,7 @@ package com.suamusica.smads
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.view.View
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import com.google.ads.interactivemedia.v3.api.AdErrorEvent
@@ -20,6 +21,7 @@ import io.reactivex.disposables.Disposable
 import kotlinx.android.synthetic.main.layout_ad_player.view.companionAdSlot
 import kotlinx.android.synthetic.main.layout_ad_player.view.progressBar
 import kotlinx.android.synthetic.main.layout_ad_player.view.videoAdContainer
+import kotlinx.android.synthetic.main.layout_ad_player.view.view
 import timber.log.Timber
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.ceil
@@ -34,6 +36,7 @@ class AdPlayerViewController(
     private fun Disposable.compose() = compositeDisposable.add(this)
     private val handler = Handler(Looper.getMainLooper())
     var adPlayerView: AdPlayerView? = null
+    private var view: View? = null
     private var videoAdContainer: PlayerView? = null
     private var companionAdSlot: LinearLayout? = null
     private var progressBar: ProgressBar? = null
@@ -42,6 +45,7 @@ class AdPlayerViewController(
     fun load(input: LoadMethodInput, adPlayerView: AdPlayerView) {
         Timber.v("load(input=%s)", input)
         this.adPlayerView = adPlayerView
+        this.view = adPlayerView.view
         this.videoAdContainer = adPlayerView.videoAdContainer
         this.companionAdSlot = adPlayerView.companionAdSlot
         this.progressBar = adPlayerView.progressBar
@@ -138,19 +142,22 @@ class AdPlayerViewController(
     }
 
     private fun onAdLoaded() {
-        if (adPlayerManager?.isAudioAd == true) {
-            companionAdSlot?.show()
-            videoAdContainer?.hide()
-        } else {
-            companionAdSlot?.hide()
-            videoAdContainer?.show()
-        }
+        progressBar?.gone()
     }
 
     private fun showContent() {
         Timber.v("showContent")
-        videoAdContainer?.show()
-        progressBar?.gone()
+        if (adPlayerManager?.isAudioAd == true) {
+            Timber.v("adPlayerManager?.isAudioAd: true")
+            this.view?.hide()
+            videoAdContainer?.hide()
+            companionAdSlot?.show()
+        } else {
+            Timber.v("adPlayerManager?.isAudioAd: false")
+            view?.show()
+            videoAdContainer?.show()
+            companionAdSlot?.hide()
+        }
     }
 
     private fun onComplete() {
