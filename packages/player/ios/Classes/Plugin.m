@@ -353,6 +353,7 @@ PlaylistItem *currentItem = nil;
     currentResourceLoadingRequest = resourceLoadingRequest;
 }
 
+
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
     NSString * playerId = call.arguments[@"playerId"];
     NSLog(@"Player: Method Call => call %@, playerId %@", call.method, playerId);
@@ -530,8 +531,13 @@ PlaylistItem *currentItem = nil;
                 [self setLooping:looping playerId:playerId];
                 result(@(1));
             }
+        @"prepare_and_send_notification":
+            ^{
+                NSLog(@"Player: prepare_and_send_notification");
+                // TODO:
+                result(@(1));
+            }
     };
-    
     [ self initPlayerInfo:playerId ];
     CaseBlock c = methods[call.method];
     if (c) c(); else {
