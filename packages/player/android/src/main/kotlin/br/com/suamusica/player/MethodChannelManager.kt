@@ -2,7 +2,7 @@ package br.com.suamusica.player
 
 import io.flutter.plugin.common.MethodChannel
 
-class MethodChannelManager(val channel: MethodChannel) {
+class MethodChannelManager(private val channel: MethodChannel) {
 
     fun notifyPositionChange(playerId: String, position: Long, duration: Long) {
         val args = ArgsBuilder()
@@ -22,6 +22,19 @@ class MethodChannelManager(val channel: MethodChannel) {
                 .build()
 
         invokeMethod("state.change", args)
+    }
+
+    fun notifyNext(playerId: String) {
+        val args = ArgsBuilder()
+                .playerId(playerId)
+                .build()
+        invokeMethod("commandCenter.onNext", args)
+    }
+    fun notifyPrevious(playerId: String) {
+        val args = ArgsBuilder()
+                .playerId(playerId)
+                .build()
+        invokeMethod("commandCenter.onPrevious", args)
     }
 
 

@@ -3,7 +3,7 @@ package br.com.suamusica.player
 import java.util.*
 
 class ArgsBuilder {
-    val args = mutableMapOf<String, Any>()
+    private val args = mutableMapOf<String, Any>()
 
     fun playerId(id: String): ArgsBuilder {
         args["playerId"] = id
