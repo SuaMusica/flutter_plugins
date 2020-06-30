@@ -156,32 +156,9 @@ class Player {
     bool respectSilence = false,
     bool stayAwake = false,
   }) async {
-    var media = _queue.restart();
-
-    final url = (await localMediaValidator(media)) ?? media.url;
-    final isLocal = !url.startsWith("http");
-
-    // we need to update the value as it could have been
-    // downloading and is not downloaded
-    media.isLocal = isLocal;
-    media.url = url;
-
-    await invokePrepareAndSendNotification(media, {
-      'albumId': media.albumId?.toString() ?? "0",
-      'albumTitle': media.albumTitle ?? "",
-      'name': media.name,
-      'author': media.author,
-      'url': url,
-      'coverUrl': media.coverUrl,
-      'loadOnly': false,
-      'isLocal': isLocal,
-      'volume': volume,
-      'position': position?.inMilliseconds,
-      'respectSilence': respectSilence,
-      'stayAwake': stayAwake,
-    });
-
-    return media;
+    await playFromQueue(0);
+    await pause();
+    return current;
   }
 
   Future<int> reorder(int oldIndex, int newIndex,

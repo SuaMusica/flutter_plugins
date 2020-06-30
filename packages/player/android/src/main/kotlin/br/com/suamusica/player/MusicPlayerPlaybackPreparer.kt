@@ -80,6 +80,17 @@ class MusicPlayerPlaybackPreparer(val mediaService: MediaService,
                     mediaService.removeNotification()
                     return true
                 }
+                "send_notification" -> {
+                    return extras?.let {
+                        val name = it.getString("name")
+                        val author = it.getString("author")
+                        val url = it.getString("url")
+                        val coverUrl = it.getString("coverUrl")
+                        mediaService.sendNotification(Media(name, author, url, coverUrl))
+//                        mediaService.resetPosition()
+                        return true
+                    } ?: false
+                }
                 else -> false
             }
         } finally {

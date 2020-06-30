@@ -218,7 +218,7 @@ class Queue {
 
   Media restart() {
     index = -1;
-    return next();
+    return storage.elementAt(0).item;
   }
 
   void reorder(int oldIndex, int newIndex, [bool isShuffle = false]) {

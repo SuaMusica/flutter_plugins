@@ -50,8 +50,6 @@ class Plugin private constructor(private val channel: MethodChannel, private val
 
         var mediaSessionConnection: MediaSessionConnection? = null
 
-        val callbackHandler = ResultReceiver(CallbackHandler())
-
         @JvmStatic
         fun registerWith(registrar: Registrar) {
             Log.i(TAG, "registerWith: START")
@@ -118,7 +116,7 @@ class Plugin private constructor(private val channel: MethodChannel, private val
                 val position = call.argument<Long>(POSITION_ARGUMENT)
                 val loadOnly = call.argument<Boolean>(LOAD_ONLY)!!
 
-                mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl), callbackHandler)
+                mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl))
 
                 Log.i(TAG, "before prepare: cookie: $cookie")
                 position?.let {
@@ -151,9 +149,9 @@ class Plugin private constructor(private val channel: MethodChannel, private val
                 val url = call.argument<String>(URL_ARGUMENT)!!
                 val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
                 Log.i(TAG, "PREPARE_AND_SEND_NOTIFICATION_METHOD: before prepare: cookie: $cookie")
-
-                mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl), callbackHandler)
-                mediaSessionConnection?.sendNotification();
+//                mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl))
+//                mediaSessionConnection?.pause()
+                mediaSessionConnection?.sendNotification(name, author, url, coverUrl)
             }
             REMOVE_NOTIFICATION_METHOD -> {
                 mediaSessionConnection?.removeNotification();

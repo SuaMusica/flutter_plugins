@@ -44,14 +44,14 @@ class MediaSessionConnection(
         }
     }
 
-    fun prepare(cookie: String, media: Media, callbackHandler: ResultReceiver) {
+    fun prepare(cookie: String, media: Media) {
         val bundle = Bundle()
         bundle.putString("cookie", cookie)
         bundle.putString("name", media.name)
         bundle.putString("author", media.author)
         bundle.putString("url", media.url)
         bundle.putString("coverUrl", media.coverUrl)
-        sendCommand("prepare", bundle, callbackHandler)
+        sendCommand("prepare", bundle)
     }
 
     fun play() {
@@ -76,8 +76,13 @@ class MediaSessionConnection(
         sendCommand("release", null)
     }
 
-    fun sendNotification() {
-        sendCommand("send_notification", null)
+    fun sendNotification(name: String, author: String, url: String, coverUrl: String) {
+        val bundle = Bundle()
+        bundle.putString("name", name)
+        bundle.putString("author", author)
+        bundle.putString("url", url)
+        bundle.putString("coverUrl", coverUrl)
+        sendCommand("send_notification", bundle)
     }
 
     fun removeNotification() {
@@ -156,7 +161,7 @@ class MediaSessionConnection(
                                     playerChangeNotifier.notifyStateChange(PlayerState.ERROR.ordinal, error)
                                 }
                                 "seek-end" -> {
-                                    playerChangeNotifier.notifyStateChange(PlayerState.SEEK_END.ordinal)
+                                    playerChangeNotifier.notifySeekEnd()
                                 }
                             }
                         }

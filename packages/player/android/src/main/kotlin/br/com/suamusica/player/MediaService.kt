@@ -4,10 +4,8 @@ import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
-import android.content.*
-import android.media.AudioManager
+import android.content.ComponentName
 import android.net.Uri
-import android.net.wifi.WifiManager
 import android.os.AsyncTask
 import android.os.Bundle
 import android.os.Handler
@@ -19,7 +17,6 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.core.app.NotificationManagerCompat
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.media.session.MediaButtonReceiver
 import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
 import com.google.android.exoplayer2.*
@@ -61,6 +58,13 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
     private var progressTracker: ProgressTracker? = null
 
     private var previousState: Int = -1
+
+    /*
+
+
+
+     */
+
 
     private val BROWSABLE_ROOT = "/"
     private val EMPTY_ROOT = "@empty@"
@@ -224,6 +228,17 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         }
     }
 
+    fun sendNotification(media: Media) {
+        mediaSession?.let {
+            val state = player?.playbackState ?: PlaybackStateCompat.STATE_NONE
+            val onGoing = state == PlaybackStateCompat.STATE_PLAYING || state == PlaybackStateCompat.STATE_BUFFERING
+            val notification = notificationBuilder?.buildNotification(it, media, onGoing)
+            notification?.let {
+                notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
+            }
+        }
+    }
+
     fun removeNotification() {
         removeNowPlayingNotification();
     }
@@ -256,6 +271,14 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         AsyncTask.execute {
             notificationManager?.cancel(NOW_PLAYING_NOTIFICATION)
         }
+    }
+
+    fun resetPosition() {
+        val extra = Bundle()
+        extra.putString("type", "position")
+        extra.putLong("position", 0L)
+        extra.putLong("duration", 0L)
+        mediaSession?.setExtras(extra)
     }
 
     private fun notifyPositionChange() {
@@ -301,6 +324,14 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
     private fun performAndDisableTracking(callable: () -> Unit) {
         callable()
         stopTrackingProgress()
+    }
+
+    private fun buildNotification(updatedState: Int, onGoing: Boolean): Notification? {
+        return if (updatedState != PlaybackStateCompat.STATE_NONE) {
+            mediaSession?.let { notificationBuilder?.buildNotification(it, media!!, onGoing) }
+        } else {
+            null
+        }
     }
 
     private fun playerEventListener(): Player.EventListener {
@@ -408,7 +439,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             notifyPositionChange()
 
             if (!shutdownRequest.get()) {
-                handler.postDelayed(this, 400 /* ms */)
+                handler.postDelayed(this, 800 /* ms */)
             } else {
                 shutdownTask?.let {
                     it()
@@ -486,14 +517,6 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                     } else
                         removeNowPlayingNotification()
                 }
-            }
-        }
-
-        private fun buildNotification(updatedState: Int, onGoing: Boolean): Notification? {
-            return if (updatedState != PlaybackStateCompat.STATE_NONE) {
-                mediaSession?.let { notificationBuilder?.buildNotification(it, media!!, onGoing) }
-            } else {
-                null
             }
         }
     }

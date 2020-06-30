@@ -18,6 +18,11 @@ class PlayerChangeNotifier(private val channelManager: MethodChannelManager) {
         channelManager.notifyPlayerStateChange("sua-musica-player", playerState, error)
     }
 
+    fun notifySeekEnd() {
+        Log.i("Player", "Notifying Player State seek end")
+        channelManager.notifyPlayerStateChange("sua-musica-player", PlayerState.SEEK_END)
+    }
+
     fun notifyPositionChange(position: Long, duration: Long) {
         Log.i("Player", "Notifying Player Position change: position: $position duration: $duration")
         channelManager.notifyPositionChange("sua-musica-player", position, duration)

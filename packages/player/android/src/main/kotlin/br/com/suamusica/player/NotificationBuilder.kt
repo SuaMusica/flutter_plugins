@@ -159,7 +159,7 @@ class NotificationBuilder(private val context: Context) {
                     setDefaults(Notification.DEFAULT_LIGHTS)
                 }
         }.build()
-        
+
         if (onGoing) {
             notification.flags += Notification.FLAG_ONGOING_EVENT
             notification.flags += Notification.FLAG_NO_CLEAR
