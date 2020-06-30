@@ -267,13 +267,6 @@ class Player {
     }
   }
 
-  Future<int> invokePrepareAndSendNotification(
-      Media media, Map<String, dynamic> args) async {
-    final int result =
-        await _invokeMethod('prepare_and_send_notification', args);
-    return result;
-  }
-
   Future<int> invokePlay(Media media, Map<String, dynamic> args) async {
     final int result = await _invokeMethod('play', args);
     return result;

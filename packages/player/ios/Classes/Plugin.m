@@ -531,12 +531,6 @@ PlaylistItem *currentItem = nil;
                 [self setLooping:looping playerId:playerId];
                 result(@(1));
             }
-        @"prepare_and_send_notification":
-            ^{
-                NSLog(@"Player: prepare_and_send_notification");
-                // TODO:
-                result(@(1));
-            }
     };
     [ self initPlayerInfo:playerId ];
     CaseBlock c = methods[call.method];

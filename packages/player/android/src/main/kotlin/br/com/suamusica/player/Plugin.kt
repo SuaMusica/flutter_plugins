@@ -31,7 +31,6 @@ class Plugin private constructor(private val channel: MethodChannel, private val
         const val STOP_METHOD = "stop"
         const val RELEASE_METHOD = "release"
         const val SEEK_METHOD = "seek"
-        const val PREPARE_AND_SEND_NOTIFICATION_METHOD = "prepare_and_send_notification"
         const val REMOVE_NOTIFICATION_METHOD = "remove_notification"
         const val SET_VOLUME_METHOD = "setVolume"
         const val GET_DURATION_METHOD = "getDuration"
@@ -142,16 +141,6 @@ class Plugin private constructor(private val channel: MethodChannel, private val
             SEEK_METHOD -> {
                 val position = call.argument<Long>(POSITION_ARGUMENT)!!
                 mediaSessionConnection?.seek(position)
-            }
-            PREPARE_AND_SEND_NOTIFICATION_METHOD -> {
-                val name = call.argument<String>(NAME_ARGUMENT)!!
-                val author = call.argument<String>(AUTHOR_ARGUMENT)!!
-                val url = call.argument<String>(URL_ARGUMENT)!!
-                val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
-                Log.i(TAG, "PREPARE_AND_SEND_NOTIFICATION_METHOD: before prepare: cookie: $cookie")
-//                mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl))
-//                mediaSessionConnection?.pause()
-                mediaSessionConnection?.sendNotification(name, author, url, coverUrl)
             }
             REMOVE_NOTIFICATION_METHOD -> {
                 mediaSessionConnection?.removeNotification();
