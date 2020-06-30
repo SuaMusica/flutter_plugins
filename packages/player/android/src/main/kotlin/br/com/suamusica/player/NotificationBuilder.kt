@@ -6,7 +6,10 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.os.AsyncTask
 import android.os.Build
+import android.provider.Settings
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat.*
@@ -17,7 +20,13 @@ import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.request.FutureTarget
 import com.bumptech.glide.request.RequestOptions
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 const val NOW_PLAYING_CHANNEL: String = "br.com.suamusica.media.NOW_PLAYING"
 const val NOW_PLAYING_NOTIFICATION: Int = 0xb339
@@ -55,22 +64,27 @@ class NotificationBuilder(private val context: Context) {
 
         private const val NOTIFICATION_LARGE_ICON_SIZE = 144 // px
 
-        fun getArt(context: Context, artUri: String?, size: Int? = null) = try {
+        fun getArt(context: Context, artUri: String?, size: Int? = null): Bitmap? {
             val glider = Glide.with(context)
-                    .applyDefaultRequestOptions(glideOptions)
-                    .asBitmap()
-                    .load(artUri)
-            when {
-                artUri != null && artUri.isNotBlank() ->
-                    when (size) {
-                        null -> glider.submit().get()
-                        else -> glider.submit(size, size).get()
-                    }
-                else -> null
+                            .applyDefaultRequestOptions(glideOptions)
+                            .asBitmap()
+                            .load(artUri)
+            var bitmap : Bitmap? = null
+            val result = GlobalScope.async {
+                bitmap = when {
+                    artUri != null && artUri.isNotBlank() ->
+                        when (size) {
+                            null -> glider.submit().get()
+                            else -> glider.submit(size, size).get()
+                        }
+                    else -> null
+                }
             }
-        } catch (e: Exception) {
-            Log.e("NotificationBuilder", artUri?.toString() ?: "", e)
-            null
+
+            return runBlocking {
+                result.await()
+                return@runBlocking bitmap
+            }
         }
     }
 
@@ -116,8 +130,6 @@ class NotificationBuilder(private val context: Context) {
 
         val art = getArt(context, artUri, NOTIFICATION_LARGE_ICON_SIZE)
 
-        // 2. AO fechar o App(encerrar) remover a Not.
-
         val notifyIntent = Intent("FLUTTER_NOTIFICATION_CLICK").apply {
             addCategory(Intent.CATEGORY_DEFAULT)
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -141,13 +153,13 @@ class NotificationBuilder(private val context: Context) {
                 setOngoing(onGoing)
                 setSmallIcon(R.drawable.ic_notification)
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O){
-                    setDefaults(Notification.DEFAULT_LIGHTS or Notification.DEFAULT_SOUND)
+                    setDefaults(Notification.DEFAULT_LIGHTS)
                     setVibrate(longArrayOf(0))
                 } else{
-                    setDefaults(Notification.DEFAULT_ALL)
+                    setDefaults(Notification.DEFAULT_LIGHTS)
                 }
         }.build()
-        
+
         if (onGoing) {
             notification.flags += Notification.FLAG_ONGOING_EVENT
             notification.flags += Notification.FLAG_NO_CLEAR

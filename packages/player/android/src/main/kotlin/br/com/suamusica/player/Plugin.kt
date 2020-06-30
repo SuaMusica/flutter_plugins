@@ -1,173 +1,209 @@
 package br.com.suamusica.player
 
+import android.content.ComponentName
 import android.content.Context
 import android.os.Handler
+import android.os.Message
+import android.os.ResultReceiver
 import android.util.Log
+import br.com.suamusica.player.MediaService.MessageType.NEXT
+import br.com.suamusica.player.MediaService.MessageType.PREVIOUS
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.PluginRegistry.Registrar
 
-
 class Plugin private constructor(private val channel: MethodChannel, private val context: Context) : MethodCallHandler {
-  companion object {
-    // Argument names
-    const val PLAYER_ID_ARGUMENT = "playerId"
-    const val DEFAULT_PLAYER_ID = "default"
-    const val NAME_ARGUMENT = "name"
-    const val AUTHOR_ARGUMENT = "author"
-    const val URL_ARGUMENT = "url"
-    const val COVER_URL_ARGUMENT = "coverUrl"
-    const val VOLUME_ARGUMENT = "volume"
-    const val POSITION_ARGUMENT = "position"
-    const val STAY_AWAKE_ARGUMENT = "stayAwake"
-    const val LOAD_ONLY = "loadOnly"
-    const val RELEASE_MODE_ARGUMENT = "releaseMode"
+    companion object {
+        // Argument names
+        const val NAME_ARGUMENT = "name"
+        const val AUTHOR_ARGUMENT = "author"
+        const val URL_ARGUMENT = "url"
+        const val COVER_URL_ARGUMENT = "coverUrl"
+        const val POSITION_ARGUMENT = "position"
+        const val LOAD_ONLY = "loadOnly"
+        const val RELEASE_MODE_ARGUMENT = "releaseMode"
 
-    // Method names
-    const val PLAY_METHOD = "play"
-    const val RESUME_METHOD = "resume"
-    const val PAUSE_METHOD = "pause"
-    const val STOP_METHOD = "stop"
-    const val RELEASE_METHOD = "release"
-    const val SEEK_METHOD = "seek"
-    const val REMOVE_NOTIFICATION_METHOD = "remove_notification"
-    const val SET_VOLUME_METHOD = "setVolume"
-    const val GET_DURATION_METHOD = "getDuration"
-    const val GET_CURRENT_POSITION_METHOD = "getCurrentPosition"
-    const val SET_RELEASE_MODE_METHOD = "setReleaseMode"
-    const val CAN_PLAY = "can_play"
-    const val REMOVE_NOTIFICATION = "remove_notification"
-    const val DISABLE_NOTIFICATION_COMMANDS = "disable_notification_commands"
-    const val ENABLE_NOTIFICATION_COMMANDS = "enable_notification_commands"
+        // Method names
+        const val PLAY_METHOD = "play"
+        const val RESUME_METHOD = "resume"
+        const val PAUSE_METHOD = "pause"
+        const val STOP_METHOD = "stop"
+        const val RELEASE_METHOD = "release"
+        const val SEEK_METHOD = "seek"
+        const val PREPARE_AND_SEND_NOTIFICATION_METHOD = "prepare_and_send_notification"
+        const val REMOVE_NOTIFICATION_METHOD = "remove_notification"
+        const val SET_VOLUME_METHOD = "setVolume"
+        const val GET_DURATION_METHOD = "getDuration"
+        const val GET_CURRENT_POSITION_METHOD = "getCurrentPosition"
+        const val SET_RELEASE_MODE_METHOD = "setReleaseMode"
+        const val CAN_PLAY = "can_play"
+        const val REMOVE_NOTIFICATION = "remove_notification"
+        const val DISABLE_NOTIFICATION_COMMANDS = "disable_notification_commands"
+        const val ENABLE_NOTIFICATION_COMMANDS = "enable_notification_commands"
 
-    const val Ok = 1
+        const val TAG = "Player"
 
-    var playerId : String? = null
-    private val players = HashMap<String, Player>()
-    private var channel: MethodChannel? = null
+        const val Ok = 1
 
-    @JvmStatic
-    fun registerWith(registrar: Registrar) {
-      channel = MethodChannel(registrar.messenger(), "smplayer")
-      channel?.setMethodCallHandler(Plugin(channel!!, registrar.context()))
+        private var channel: MethodChannel? = null
+
+        var mediaSessionConnection: MediaSessionConnection? = null
+
+        @JvmStatic
+        fun registerWith(registrar: Registrar) {
+            Log.i(TAG, "registerWith: START")
+            channel = MethodChannel(registrar.messenger(), "smplayer")
+            channel?.setMethodCallHandler(Plugin(channel!!, registrar.context()))
+
+            val context = registrar.context()
+
+            createMediaSessionConnection(context)
+
+            Log.i(TAG, "registerWith: END")
+        }
+
+        private fun createMediaSessionConnection(context: Context) {
+            mediaSessionConnection = MediaSessionConnection(context,
+                    ComponentName(context, MediaService::class.java),
+                    PlayerChangeNotifier(MethodChannelManager(channel!!)))
+        }
+
+        @JvmStatic
+        fun play() {
+            mediaSessionConnection?.play()
+        }
+
+        @JvmStatic
+        fun pause() {
+            mediaSessionConnection?.pause()
+        }
+
+        @JvmStatic
+        fun previous() {
+            channel?.invokeMethod("commandCenter.onPrevious", emptyMap<String, String>())
+        }
+
+        @JvmStatic
+        fun next() {
+            channel?.invokeMethod("commandCenter.onNext", emptyMap<String, String>())
+        }
+
+        @JvmStatic
+        fun stop() {
+            mediaSessionConnection?.stop()
+        }
     }
 
-    @JvmStatic
-    fun playerId(call: MethodCall): String =
-            if (call.hasArgument(PLAYER_ID_ARGUMENT)) call.argument(PLAYER_ID_ARGUMENT)!! else DEFAULT_PLAYER_ID
-
-    private fun getPlayer(playerId: String,
-                          context: Context,
-                          channel: MethodChannel,
-                          plugin: Plugin,
-                          handler: Handler,
-                          cookie: String?): Player {
-      if (!players.containsKey(playerId) && cookie != null && cookie.length > 0) {
-        Log.i("SMPlayer", "setting player with cookie: cookie: $cookie")
-        val player = WrappedExoPlayer(playerId, context, channel, plugin, handler, cookie!!)
-        players[playerId] = player
-        Plugin.playerId = playerId
-      }
-      return players[playerId]!!
+    override fun onMethodCall(call: MethodCall, response: MethodChannel.Result) {
+        try {
+            handleMethodCall(call, response)
+        } catch (e: Exception) {
+            Log.e(TAG, "Unexpected error!", e)
+            response.error("Unexpected error!", e.message, e)
+        }
     }
 
-    @JvmStatic
-    fun currentPlayer() : Player? = players.values.firstOrNull()
-  }
+    private fun handleMethodCall(call: MethodCall, response: MethodChannel.Result) {
+        val cookie = call.argument<String>("cookie")
+        Log.i(TAG, "method: ${call.method} cookie: $cookie")
+        when (call.method) {
+            PLAY_METHOD -> {
+                val name = call.argument<String>(NAME_ARGUMENT)!!
+                val author = call.argument<String>(AUTHOR_ARGUMENT)!!
+                val url = call.argument<String>(URL_ARGUMENT)!!
+                val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
+                val position = call.argument<Long>(POSITION_ARGUMENT)
+                val loadOnly = call.argument<Boolean>(LOAD_ONLY)!!
 
-  private val handler = Handler()
+                mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl))
 
-  override fun onMethodCall(call: MethodCall, response: MethodChannel.Result) {
-    try {
-      handleMethodCall(call, response)
-    } catch (e: Exception) {
-      Log.e("SMPlayer", "Unexpected error!", e)
-      response.error("Unexpected error!", e.message, e)
+                Log.i(TAG, "before prepare: cookie: $cookie")
+                position?.let {
+                    mediaSessionConnection?.seek(it)
+                }
+
+                if (!loadOnly) {
+                    mediaSessionConnection?.play()
+                }
+            }
+            RESUME_METHOD -> {
+                mediaSessionConnection?.play()
+            }
+            PAUSE_METHOD -> {
+                mediaSessionConnection?.pause()
+            }
+            STOP_METHOD -> {
+                mediaSessionConnection?.stop()
+            }
+            RELEASE_METHOD -> {
+                mediaSessionConnection?.release()
+            }
+            SEEK_METHOD -> {
+                val position = call.argument<Long>(POSITION_ARGUMENT)!!
+                mediaSessionConnection?.seek(position)
+            }
+            PREPARE_AND_SEND_NOTIFICATION_METHOD -> {
+                val name = call.argument<String>(NAME_ARGUMENT)!!
+                val author = call.argument<String>(AUTHOR_ARGUMENT)!!
+                val url = call.argument<String>(URL_ARGUMENT)!!
+                val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
+                Log.i(TAG, "PREPARE_AND_SEND_NOTIFICATION_METHOD: before prepare: cookie: $cookie")
+//                mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl))
+//                mediaSessionConnection?.pause()
+                mediaSessionConnection?.sendNotification(name, author, url, coverUrl)
+            }
+            REMOVE_NOTIFICATION_METHOD -> {
+                mediaSessionConnection?.removeNotification();
+            }
+            SET_VOLUME_METHOD -> {
+
+            }
+            GET_DURATION_METHOD -> {
+                response.success(mediaSessionConnection?.duration)
+                return
+            }
+            GET_CURRENT_POSITION_METHOD -> {
+                response.success(mediaSessionConnection?.currentPosition)
+                return
+            }
+            SET_RELEASE_MODE_METHOD -> {
+                val releaseModeName = call.argument<String>(RELEASE_MODE_ARGUMENT)
+                val releaseMode = ReleaseMode.valueOf(releaseModeName!!.substring("ReleaseMode.".length))
+                mediaSessionConnection?.releaseMode = releaseMode.ordinal
+            }
+            REMOVE_NOTIFICATION -> {
+                // no operation required on Android
+            }
+            DISABLE_NOTIFICATION_COMMANDS -> {
+
+            }
+            ENABLE_NOTIFICATION_COMMANDS -> {
+            }
+            CAN_PLAY -> {
+                // no operation required on Android
+            }
+            else -> {
+                response.notImplemented()
+                return
+            }
+        }
+        response.success(Ok)
     }
-  }
-  
-  private fun handleMethodCall(call: MethodCall, response: MethodChannel.Result) {
-    val playerId = playerId(call)
-    val cookie = call.argument<String>("cookie")
-    Log.i("SMPlayer", "method: ${call.method} cookie: $cookie")
-    val player = getPlayer(playerId, context, channel, this, handler, cookie)
-    if (player!=null){
-      when (call.method) {
-        PLAY_METHOD -> {
-          val name = call.argument<String>(NAME_ARGUMENT)!!
-          val author = call.argument<String>(AUTHOR_ARGUMENT)!!
-          val url = call.argument<String>(URL_ARGUMENT)!!
-          val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
-          val volume = call.argument<Double>(VOLUME_ARGUMENT)!!
-          val position = call.argument<Int>(POSITION_ARGUMENT)
-          val stayAwake = call.argument<Boolean>(STAY_AWAKE_ARGUMENT)!!
-          val loadOnly = call.argument<Boolean>(LOAD_ONLY)!!
-          player.stayAwake = stayAwake
-          player.volume = volume
-          Log.i("SMPlayer", "before preapre: cookie: $cookie")
-          player.prepare(Media(name, author, url, coverUrl))
-          if (position != null) {
-            player.seek(position)
-          }
-          if (!loadOnly) {
-            player.play()
-          }
-        }
-        RESUME_METHOD -> {
-          player.play()
-        }
-        PAUSE_METHOD -> {
-          player.pause()
-        }
-        STOP_METHOD -> {
-          player.stop()
-        }
-        RELEASE_METHOD -> {
-          player.release()
-        }
-        SEEK_METHOD -> {
-          val position = call.argument<Int>(POSITION_ARGUMENT)!!
-          player.seek(position)
-        }
-        REMOVE_NOTIFICATION_METHOD -> {
-          player.removeNotification();
-        }
-        SET_VOLUME_METHOD -> {
-          val volume = call.argument<Double>(VOLUME_ARGUMENT)!!
-          player.volume = volume
-        }
-        GET_DURATION_METHOD -> {
-          response.success(player.duration)
-          return
-        }
-        GET_CURRENT_POSITION_METHOD -> {
-          response.success(player.currentPosition)
-          return
-        }
-        SET_RELEASE_MODE_METHOD -> {
-          val releaseModeName = call.argument<String>(RELEASE_MODE_ARGUMENT)
-          val releaseMode = ReleaseMode.valueOf(releaseModeName!!.substring("ReleaseMode.".length))
-          player.releaseMode = releaseMode
-        }
-        REMOVE_NOTIFICATION -> {
-          // no operation required on Android
-        }
-        DISABLE_NOTIFICATION_COMMANDS -> {
 
-        }
-        ENABLE_NOTIFICATION_COMMANDS -> {
+    private class CallbackHandler : Handler() {
+        override fun handleMessage(msg: Message) {
+            Log.i(TAG, "Got msg: $msg")
 
+            when (msg.what) {
+                NEXT.ordinal -> {
+                    channel?.invokeMethod("commandCenter.onNext", mapOf<String, String>())
+                }
+                PREVIOUS.ordinal -> {
+                    channel?.invokeMethod("commandCenter.onPrevious", mapOf<String, String>())
+                }
+            }
+            super.handleMessage(msg)
         }
-        CAN_PLAY -> {
-          // no operation required on Android
-        }
-        else -> {
-          response.notImplemented()
-          return
-        }
-      }
     }
-    response.success(Ok)
-  }
 }
