@@ -31,6 +31,7 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         Initializer.run()
         Timber.v("onAttachedToEngine")
+        System.setProperty("log.tag.IMASDK", "ERROR")
         this.channel = MethodChannel(flutterPluginBinding.binaryMessenger, CHANNEL_NAME)
         this.context = flutterPluginBinding.applicationContext
         this.callback = SmadsCallback(channel!!)
