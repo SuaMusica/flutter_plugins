@@ -232,10 +232,10 @@ class Player {
     volume ??= 1.0;
     respectSilence ??= false;
     stayAwake ??= false;
-    final isLocal = !mediaUrl.startsWith("http");
+
     // we need to update the value as it could have been
     // downloading and is not downloaded
-    media.isLocal = isLocal;
+    media.isLocal = !mediaUrl.startsWith("http");
     media.url = mediaUrl;
 
     if (autoPlay) {
@@ -249,7 +249,7 @@ class Player {
         'url': mediaUrl,
         'coverUrl': media.coverUrl,
         'loadOnly': false,
-        'isLocal': isLocal,
+        'isLocal': media.isLocal,
         'volume': volume,
         'position': position?.inMilliseconds,
         'respectSilence': respectSilence,
@@ -265,7 +265,7 @@ class Player {
           'url': mediaUrl,
           'coverUrl': media.coverUrl,
           'loadOnly': loadOnly,
-          'isLocal': isLocal,
+          'isLocal': media.isLocal,
           'volume': volume,
           'position': position?.inMilliseconds,
           'respectSilence': respectSilence,
