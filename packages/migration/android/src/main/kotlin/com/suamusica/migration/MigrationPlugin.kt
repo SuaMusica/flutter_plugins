@@ -65,7 +65,6 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
                 val id3 = medias.map {
                     readTags(it["local_path"] as String)
                 }
-                    
                 val playlists = db.offlinePlaylistDao().getPlaylists()?.filter { it ->
                     it.id != null && it.name != null && it.name.isNotEmpty() && it.artistName != null && it.artistName.isNotEmpty() && it.ownerId != null && it.ownerId.isNotEmpty() && it.ownerId.toInt() > 0 && medias.firstOrNull { media ->
                         media.containsKey("playlist_id") && media["playlist_id"] as String == it.id
@@ -105,7 +104,7 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
                     try {
                         val downloads = getFiles()
                         Log.d("Migration", "DownloadedContents: $downloads")
-                        GlobalScope.launch(Dispatchers.Main){
+                        GlobalScope.launch(Dispatchers.Main) {
                             channel.invokeMethod("androidDownloadedContent", downloads)
                             if (downloads == null || downloads?.isEmpty()) {
                                 response.success(NotOk)
@@ -132,12 +131,16 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
                 GlobalScope.async {
                     val items = call.argument<List<HashMap<String, String>>>("items")
                     for (item in items.orEmpty()) {
-                        val path = item["path"] as String
-                        val coverPath = item["coverPath"] as String
-                        val bytes = readArtwork(path)
-                        if (bytes != null) {
-                            val file = File(coverPath)
-                            file.writeBytes(bytes)
+                        try {
+                            val path = item["path"] as String
+                            val coverPath = item["coverPath"] as String
+                            val bytes = readArtwork(path)
+                            if (bytes != null && bytes.size < 2000000) {
+                                Log.d("Migration", "bytes is: ${bytes.size}")
+                                val file = File(coverPath)
+                                file.writeBytes(bytes)
+                            }
+                        } catch (e: Exception) {
                         }
                     }
                 }
