@@ -21,7 +21,7 @@ class Player {
   static final MethodChannel _channel = const MethodChannel('smplayer')
     ..setMethodCallHandler(platformCallHandler);
 
-  static Player player = null;
+  static Player player;
   static bool logEnabled = false;
 
   CookiesForCustomPolicy _cookies;
