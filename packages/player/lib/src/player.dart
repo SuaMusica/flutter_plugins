@@ -198,15 +198,15 @@ class Player {
   }) async {
     Media media = _queue.item(pos);
     if (media != null) {
-      final url = (await localMediaValidator(media)) ?? media.url;
+      final mediaUrl = (await localMediaValidator(media)) ?? media.url;
 
-      if (await _canPlay(url)) {
+      if (await _canPlay(mediaUrl)) {
         final media = _queue.move(pos);
         _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
         return _doPlay(
           media,
           shallNotify: shallNotify,
-          mediaUrl: url,
+          mediaUrl: mediaUrl,
         );
       } else {
         return NotOk;
@@ -313,8 +313,8 @@ class Player {
   Future<int> previous() async {
     Media media = _queue.possiblePrevious();
     if (media != null) {
-      final url = (await localMediaValidator(media)) ?? media.url;
-      if (await _canPlay(url)) {
+      final mediaUrl = (await localMediaValidator(media)) ?? media.url;
+      if (await _canPlay(mediaUrl)) {
         final current = _queue.current;
         var previous = _queue.previous();
         if (previous == null) {
@@ -327,7 +327,7 @@ class Player {
           _notifyChangeToPrevious(previous);
           return _doPlay(
             previous,
-            mediaUrl: url,
+            mediaUrl: mediaUrl,
           );
         }
       } else {
