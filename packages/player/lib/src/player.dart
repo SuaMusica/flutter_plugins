@@ -193,6 +193,7 @@ class Player {
     Duration position,
     bool respectSilence = false,
     bool stayAwake = false,
+    bool shallNotify = false,
   }) async {
     Media media = _queue.item(pos);
     if (media != null) {
@@ -201,7 +202,10 @@ class Player {
       if (await _canPlay(url, isLocal)) {
         final media = _queue.move(pos);
         _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
-        return _doPlay(media);
+        return _doPlay(
+          media,
+          shallNotify: shallNotify,
+        );
       } else {
         return NotOk;
       }
@@ -216,7 +220,11 @@ class Player {
     Duration position,
     bool respectSilence = false,
     bool stayAwake = false,
+    bool shallNotify = false,
   }) async {
+    if (shallNotify) {
+      _notifyChangeToNext(media);
+    }
     volume ??= 1.0;
     respectSilence ??= false;
     stayAwake ??= false;
@@ -326,13 +334,15 @@ class Player {
     }
   }
 
-  Future<int> next() async {
+  Future<int> next({
+    bool shallNotify = true,
+  }) async {
     final media = _queue.possibleNext(repeatMode);
     if (media != null) {
       final url = (await localMediaValidator(media)) ?? media.url;
       final isLocal = !url.startsWith("http");
       if (await _canPlay(url, isLocal)) {
-        return _doNext(true);
+        return _doNext(shallNotify);
       } else {
         return NotOk;
       }
@@ -358,7 +368,10 @@ class Player {
       // notice that in this case
       // we do not emit the NEXT event
       // we only play the track
-      return _doPlay(next);
+      return _doPlay(
+        next,
+        shallNotify: shallNotify,
+      );
     }
 
     next = _queue.next();
@@ -387,10 +400,10 @@ class Player {
     if (repeatMode == RepeatMode.TRACK) {
       repeatMode = RepeatMode.QUEUE;
     }
-    if (shallNotify) {
-      _notifyChangeToNext(next);
-    }
-    return _doPlay(next);
+    return _doPlay(
+      next,
+      shallNotify: shallNotify,
+    );
   }
 
   Future<int> pause() async {
