@@ -186,30 +186,36 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
         map["path"] = path
         Log.i("MigrationKotlin", "Begin $path")
         try {
-            val mp3file = Mp3File(path)
-            if (mp3file.hasId3v1Tag()) {
-                val id3v1Tag = mp3file.id3v1Tag
-                if (id3v1Tag.artist != null && id3v1Tag.artist.trim().isNotEmpty()) {
-                    map["artist"] = id3v1Tag.artist
-                }
-                if (id3v1Tag.album != null && id3v1Tag.album.trim().isNotEmpty()) {
-                    map["album"] = id3v1Tag.album
-                }
+            val fileSize = File(path).length()
+            val sizeInMb = fileSize / (1024.0 * 1024)
+            if (sizeInMb < 30) {
+                val mp3file = Mp3File(path)
+                if (mp3file.hasId3v1Tag()) {
+                    val id3v1Tag = mp3file.id3v1Tag
+                    if (id3v1Tag.artist != null && id3v1Tag.artist.trim().isNotEmpty()) {
+                        map["artist"] = id3v1Tag.artist
+                    }
+                    if (id3v1Tag.album != null && id3v1Tag.album.trim().isNotEmpty()) {
+                        map["album"] = id3v1Tag.album
+                    }
 
-            }
-            if (mp3file.hasId3v2Tag()) {
-                val id3v2Tag: ID3v2 = mp3file.id3v2Tag
-                if (id3v2Tag.artist != null && id3v2Tag.artist.trim().isNotEmpty()) {
-                    map["artist"] = id3v2Tag.artist
                 }
-                if (id3v2Tag.album != null && id3v2Tag.album.trim().isNotEmpty()) {
-                    map["album"] = id3v2Tag.album
+                if (mp3file.hasId3v2Tag()) {
+                    val id3v2Tag: ID3v2 = mp3file.id3v2Tag
+                    if (id3v2Tag.artist != null && id3v2Tag.artist.trim().isNotEmpty()) {
+                        map["artist"] = id3v2Tag.artist
+                    }
+                    if (id3v2Tag.album != null && id3v2Tag.album.trim().isNotEmpty()) {
+                        map["album"] = id3v2Tag.album
+                    }
                 }
             }
         } catch (e: Exception) {
+        } catch (o: OutOfMemoryError) {
         }
         Log.i("MigrationKotlin", "End $path")
         return map
+
     }
 
 
