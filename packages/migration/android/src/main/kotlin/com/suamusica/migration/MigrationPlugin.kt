@@ -172,11 +172,16 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
 
     private fun readArtwork(path: String): ByteArray? {
         try {
-            val mp3file = Mp3File(path)
-            if (mp3file.hasId3v2Tag()) {
-                return mp3file.id3v2Tag.albumImage
+            val fileSize = File(path).length()
+            val sizeInMb = fileSize / (1024.0 * 1024)
+            if (sizeInMb < 30) {
+                val mp3file = Mp3File(path)
+                if (mp3file.hasId3v2Tag()) {
+                    return mp3file.id3v2Tag.albumImage
+                }
             }
         } catch (e: Exception) {
+        } catch (o: OutOfMemoryError) {
         }
         return null
     }
@@ -184,7 +189,7 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
     private fun readTags(path: String): Map<String, String> {
         val map: MutableMap<String, String> = HashMap()
         map["path"] = path
-        Log.i("MigrationKotlin", "Begin $path")
+//        Log.i("MigrationKotlin", "Begin $path")
         try {
             val fileSize = File(path).length()
             val sizeInMb = fileSize / (1024.0 * 1024)
@@ -213,7 +218,7 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
         } catch (e: Exception) {
         } catch (o: OutOfMemoryError) {
         }
-        Log.i("MigrationKotlin", "End $path")
+//        Log.i("MigrationKotlin", "End $path")
         return map
 
     }
