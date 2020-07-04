@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:smaws/aws.dart';
@@ -21,7 +22,7 @@ class Player {
   static final MethodChannel _channel = const MethodChannel('smplayer')
     ..setMethodCallHandler(platformCallHandler);
 
-  static Player player = null;
+  static Player player;
   static bool logEnabled = false;
 
   CookiesForCustomPolicy _cookies;
@@ -95,9 +96,9 @@ class Player {
 
   Future<bool> canPlay(Media media) async {
     if (media != null) {
+      if (Platform.isAndroid) return true;
       final url = (await localMediaValidator(media)) ?? media.url;
-      final isLocal = !url.startsWith("http");
-      return await _canPlay(url, isLocal);
+      return await _canPlay(url);
     } else {
       return false;
     }
@@ -193,15 +194,20 @@ class Player {
     Duration position,
     bool respectSilence = false,
     bool stayAwake = false,
+    bool shallNotify = false,
   }) async {
     Media media = _queue.item(pos);
     if (media != null) {
-      final url = (await localMediaValidator(media)) ?? media.url;
-      final isLocal = !url.startsWith("http");
-      if (await _canPlay(url, isLocal)) {
+      final mediaUrl = (await localMediaValidator(media)) ?? media.url;
+
+      if (await _canPlay(mediaUrl)) {
         final media = _queue.move(pos);
         _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
-        return _doPlay(media);
+        return _doPlay(
+          media,
+          shallNotify: shallNotify,
+          mediaUrl: mediaUrl,
+        );
       } else {
         return NotOk;
       }
@@ -216,17 +222,21 @@ class Player {
     Duration position,
     bool respectSilence = false,
     bool stayAwake = false,
+    bool shallNotify = false,
+    String mediaUrl,
   }) async {
+    if (shallNotify) {
+      _notifyChangeToNext(media);
+    }
+    mediaUrl ??= (await localMediaValidator(media)) ?? media.url;
     volume ??= 1.0;
     respectSilence ??= false;
     stayAwake ??= false;
-    final url = (await localMediaValidator(media)) ?? media.url;
-    final isLocal = !url.startsWith("http");
 
     // we need to update the value as it could have been
     // downloading and is not downloaded
-    media.isLocal = isLocal;
-    media.url = url;
+    media.isLocal = !mediaUrl.startsWith("http");
+    media.url = mediaUrl;
 
     if (autoPlay) {
       _notifyBeforePlayEvent((loadOnly) => {});
@@ -236,10 +246,10 @@ class Player {
         'albumTitle': media.albumTitle ?? "",
         'name': media.name,
         'author': media.author,
-        'url': url,
+        'url': mediaUrl,
         'coverUrl': media.coverUrl,
         'loadOnly': false,
-        'isLocal': isLocal,
+        'isLocal': media.isLocal,
         'volume': volume,
         'position': position?.inMilliseconds,
         'respectSilence': respectSilence,
@@ -252,10 +262,10 @@ class Player {
           'albumTitle': media.albumTitle ?? "",
           'name': media.name,
           'author': media.author,
-          'url': url,
+          'url': mediaUrl,
           'coverUrl': media.coverUrl,
           'loadOnly': loadOnly,
-          'isLocal': isLocal,
+          'isLocal': media.isLocal,
           'volume': volume,
           'position': position?.inMilliseconds,
           'respectSilence': respectSilence,
@@ -303,9 +313,8 @@ class Player {
   Future<int> previous() async {
     Media media = _queue.possiblePrevious();
     if (media != null) {
-      final url = (await localMediaValidator(media)) ?? media.url;
-      final isLocal = !url.startsWith("http");
-      if (await _canPlay(url, isLocal)) {
+      final mediaUrl = (await localMediaValidator(media)) ?? media.url;
+      if (await _canPlay(mediaUrl)) {
         final current = _queue.current;
         var previous = _queue.previous();
         if (previous == null) {
@@ -316,7 +325,10 @@ class Player {
           return _rewind(current);
         } else {
           _notifyChangeToPrevious(previous);
-          return _doPlay(previous);
+          return _doPlay(
+            previous,
+            mediaUrl: mediaUrl,
+          );
         }
       } else {
         return NotOk;
@@ -326,13 +338,18 @@ class Player {
     }
   }
 
-  Future<int> next() async {
+  Future<int> next({
+    bool shallNotify = true,
+  }) async {
     final media = _queue.possibleNext(repeatMode);
     if (media != null) {
-      final url = (await localMediaValidator(media)) ?? media.url;
-      final isLocal = !url.startsWith("http");
-      if (await _canPlay(url, isLocal)) {
-        return _doNext(true);
+      final mediaUrl = (await localMediaValidator(media)) ?? media.url;
+
+      if (await _canPlay(mediaUrl)) {
+        return _doNext(
+          shallNotify: shallNotify,
+          mediaUrl: mediaUrl,
+        );
       } else {
         return NotOk;
       }
@@ -341,7 +358,10 @@ class Player {
     }
   }
 
-  Future<int> _doNext(bool shallNotify) async {
+  Future<int> _doNext({
+    bool shallNotify,
+    String mediaUrl,
+  }) async {
     final current = _queue.current;
     Media next;
 
@@ -358,7 +378,10 @@ class Player {
       // notice that in this case
       // we do not emit the NEXT event
       // we only play the track
-      return _doPlay(next);
+      return _doPlay(
+        next,
+        shallNotify: shallNotify,
+      );
     }
 
     next = _queue.next();
@@ -387,10 +410,11 @@ class Player {
     if (repeatMode == RepeatMode.TRACK) {
       repeatMode = RepeatMode.QUEUE;
     }
-    if (shallNotify) {
-      _notifyChangeToNext(next);
-    }
-    return _doPlay(next);
+    return _doPlay(
+      next,
+      shallNotify: shallNotify,
+      mediaUrl: mediaUrl,
+    );
   }
 
   Future<int> pause() async {
@@ -473,7 +497,7 @@ class Player {
     switch (player.repeatMode) {
       case RepeatMode.NONE:
       case RepeatMode.QUEUE:
-        player._doNext(false);
+        player._doNext(shallNotify: false);
         break;
 
       case RepeatMode.TRACK:
@@ -685,11 +709,12 @@ class Player {
     await Future.wait(futures);
   }
 
-  Future<bool> _canPlay(String url, bool isLocal) async {
-    return await _invokeMethod('can_play', {
-          'url': url,
-          'isLocal': isLocal,
-        }) ==
-        Ok;
+  Future<bool> _canPlay(String url) async {
+    return Platform.isAndroid ||
+        await _invokeMethod('can_play', {
+              'url': url,
+              'isLocal': !url.startsWith("http"),
+            }) ==
+            Ok;
   }
 }

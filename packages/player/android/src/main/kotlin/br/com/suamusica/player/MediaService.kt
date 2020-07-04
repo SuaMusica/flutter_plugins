@@ -136,6 +136,50 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         }
     }
 
+    override fun onTaskRemoved(rootIntent: Intent) {
+        Log.d(TAG, "onTaskRemoved")
+        super.onTaskRemoved(rootIntent)
+
+        /**
+         * By stopping playback, the player will transition to [Player.STATE_IDLE]. This will
+         * cause a state change in the MediaSession, and (most importantly) call
+         * [MediaControllerCallback.onPlaybackStateChanged]. Because the playback state will
+         * be reported as [PlaybackStateCompat.STATE_NONE], the service will first remove
+         * itself as a foreground service, and will then call [stopSelf].
+         */
+        player?.stop(true)
+    }
+
+    override fun onDestroy() {
+        removeNotification()
+        Log.d(TAG, "onDestroy")
+//        mediaController?.unregisterCallback(mediaControllerCallback)
+        mediaSessionConnector?.setPlayer(null)
+        player?.release()
+        stopSelf()
+
+        mediaSession?.run {
+            isActive = false
+            release()
+            Log.d("MusicService", "onDestroy(isActive: $isActive)")
+        }
+
+        releasePossibleLeaks()
+        super.onDestroy()
+
+    }
+
+    private fun releasePossibleLeaks() {
+        player?.release()
+        notificationManager = null
+        notificationBuilder = null
+        packageValidator = null
+        mediaSession = null
+        mediaController = null
+        mediaSessionConnector = null
+    }
+
+
     override fun onGetRoot(clientPackageName: String, clientUid: Int, rootHints: Bundle?): BrowserRoot? {
         val isKnowCaller = packageValidator?.isKnownCaller(clientPackageName, clientUid) ?: false
 
@@ -499,23 +543,14 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             val onGoing = updatedState == PlaybackStateCompat.STATE_PLAYING || updatedState == PlaybackStateCompat.STATE_BUFFERING
 
             // Skip building a notification when state is "none".
-            val notification = buildNotification(updatedState, onGoing)
+            val notification = if (updatedState != PlaybackStateCompat.STATE_NONE) {
+                buildNotification(updatedState, onGoing)
+            } else {
+                null
+            }
+            Log.d(TAG, "!!! updateNotification state: $updatedState $onGoing")
 
             when (updatedState) {
-                PlaybackStateCompat.STATE_NONE,
-                PlaybackStateCompat.STATE_STOPPED -> {
-                    Log.i(TAG, "updateNotification: STATE_NONE or STATE_STOPPED")
-                    removeNowPlayingNotification()
-                    if (isForegroundService) {
-                        stopSelf()
-                        stopForeground(true)
-                        isForegroundService = false
-                    }
-                }
-                PlaybackStateCompat.STATE_PAUSED -> {
-                    Log.i(TAG, "updateNotification: STATE_PAUSED")
-                    notificationManager?.notify(NOW_PLAYING_NOTIFICATION, buildNotification(updatedState, onGoing)!!)
-                }
                 PlaybackStateCompat.STATE_BUFFERING,
                 PlaybackStateCompat.STATE_PLAYING -> {
                     Log.i(TAG, "updateNotification: STATE_BUFFERING or STATE_PLAYING")
@@ -538,18 +573,19 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                     }
                 }
                 else -> {
-                    Log.i(TAG, "updateNotification: ELSE")
                     if (isForegroundService) {
-                        stopForeground(true)
-
+                        stopForeground(false)
                         isForegroundService = false
-
+                        // If playback has ended, also stop the service.
+                        if (updatedState == PlaybackStateCompat.STATE_NONE){
+                            stopSelf()
+                            Log.i(TAG, "Stopping Service")
+                        }
                         if (notification != null) {
                             notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
                         } else
                             removeNowPlayingNotification()
                     }
-
                 }
             }
         }

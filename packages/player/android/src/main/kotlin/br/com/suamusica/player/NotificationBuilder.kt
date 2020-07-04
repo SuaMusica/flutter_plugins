@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.drawable.Drawable
 import android.os.AsyncTask
 import android.os.Build
 import android.provider.Settings
@@ -66,18 +67,22 @@ class NotificationBuilder(private val context: Context) {
 
         fun getArt(context: Context, artUri: String?, size: Int? = null): Bitmap? {
             val glider = Glide.with(context)
-                            .applyDefaultRequestOptions(glideOptions)
-                            .asBitmap()
-                            .load(artUri)
-            var bitmap : Bitmap? = null
+                    .applyDefaultRequestOptions(glideOptions)
+                    .asBitmap()
+                    .load(artUri)
+            var bitmap: Bitmap? = null
             val result = GlobalScope.async {
-                bitmap = when {
-                    artUri != null && artUri.isNotBlank() ->
-                        when (size) {
-                            null -> glider.submit().get()
-                            else -> glider.submit(size, size).get()
-                        }
-                    else -> null
+                try {
+                    bitmap = when {
+                        artUri != null && artUri.isNotBlank() ->
+                            when (size) {
+                                null -> glider.submit().get()
+                                else -> glider.submit(size, size).get()
+                            }
+                        else -> null
+                    }
+                } catch (e: Exception) {
+                    null                
                 }
             }
 
@@ -127,6 +132,7 @@ class NotificationBuilder(private val context: Context) {
                 .setMediaSession(mediaSession.sessionToken)
 
         val artUri = media.coverUrl
+        Log.i("GetArt", "2")
 
         val art = getArt(context, artUri, NOTIFICATION_LARGE_ICON_SIZE)
 
@@ -138,26 +144,26 @@ class NotificationBuilder(private val context: Context) {
                 context, 0, notifyIntent, PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val notification = builder.apply{
-                setContentIntent(notifyPendingIntent)
-                setStyle(mediaStyle)
-                setCategory(NotificationCompat.CATEGORY_PROGRESS)
-                setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                setShowWhen(false)
-                setContentTitle(media.name)
-                setContentText(media.author)
-                setLargeIcon(art)
-                setColorized(true)
-                setOnlyAlertOnce(false)
-                setAutoCancel(false)
-                setOngoing(onGoing)
-                setSmallIcon(R.drawable.ic_notification)
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O){
-                    setDefaults(Notification.DEFAULT_LIGHTS)
-                    setVibrate(longArrayOf(0))
-                } else{
-                    setDefaults(Notification.DEFAULT_LIGHTS)
-                }
+        val notification = builder.apply {
+            setContentIntent(notifyPendingIntent)
+            setStyle(mediaStyle)
+            setCategory(NotificationCompat.CATEGORY_PROGRESS)
+            setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            setShowWhen(false)
+            setContentTitle(media.name)
+            setContentText(media.author)
+            setLargeIcon(art)
+            setColorized(true)
+            setOnlyAlertOnce(false)
+            setAutoCancel(false)
+            setOngoing(onGoing)
+            setSmallIcon(R.drawable.ic_notification)
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                setDefaults(Notification.DEFAULT_LIGHTS)
+                setVibrate(longArrayOf(0))
+            } else {
+                setDefaults(Notification.DEFAULT_LIGHTS)
+            }
         }.build()
 
         if (onGoing) {
@@ -184,7 +190,7 @@ class NotificationBuilder(private val context: Context) {
                 NotificationManager.IMPORTANCE_LOW)
                 .apply {
                     description = context.getString(R.string.notification_channel_description)
-                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P){
+                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
                         this.setVibrationPattern(longArrayOf(0))
                         this.enableVibration(true)
                     }

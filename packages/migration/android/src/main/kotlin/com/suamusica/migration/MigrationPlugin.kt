@@ -65,7 +65,6 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
                 val id3 = medias.map {
                     readTags(it["local_path"] as String)
                 }
-                    
                 val playlists = db.offlinePlaylistDao().getPlaylists()?.filter { it ->
                     it.id != null && it.name != null && it.name.isNotEmpty() && it.artistName != null && it.artistName.isNotEmpty() && it.ownerId != null && it.ownerId.isNotEmpty() && it.ownerId.toInt() > 0 && medias.firstOrNull { media ->
                         media.containsKey("playlist_id") && media["playlist_id"] as String == it.id
@@ -105,7 +104,7 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
                     try {
                         val downloads = getFiles()
                         Log.d("Migration", "DownloadedContents: $downloads")
-                        GlobalScope.launch(Dispatchers.Main){
+                        GlobalScope.launch(Dispatchers.Main) {
                             channel.invokeMethod("androidDownloadedContent", downloads)
                             if (downloads == null || downloads?.isEmpty()) {
                                 response.success(NotOk)
@@ -132,12 +131,16 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
                 GlobalScope.async {
                     val items = call.argument<List<HashMap<String, String>>>("items")
                     for (item in items.orEmpty()) {
-                        val path = item["path"] as String
-                        val coverPath = item["coverPath"] as String
-                        val bytes = readArtwork(path)
-                        if (bytes != null) {
-                            val file = File(coverPath)
-                            file.writeBytes(bytes)
+                        try {
+                            val path = item["path"] as String
+                            val coverPath = item["coverPath"] as String
+                            val bytes = readArtwork(path)
+                            if (bytes != null && bytes.size < 2000000) {
+                                Log.d("Migration", "bytes is: ${bytes.size}")
+                                val file = File(coverPath)
+                                file.writeBytes(bytes)
+                            }
+                        } catch (e: Exception) {
                         }
                     }
                 }
@@ -169,11 +172,16 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
 
     private fun readArtwork(path: String): ByteArray? {
         try {
-            val mp3file = Mp3File(path)
-            if (mp3file.hasId3v2Tag()) {
-                return mp3file.id3v2Tag.albumImage
+            val fileSize = File(path).length()
+            val sizeInMb = fileSize / (1024.0 * 1024)
+            if (sizeInMb < 30) {
+                val mp3file = Mp3File(path)
+                if (mp3file.hasId3v2Tag()) {
+                    return mp3file.id3v2Tag.albumImage
+                }
             }
         } catch (e: Exception) {
+        } catch (o: OutOfMemoryError) {
         }
         return null
     }
@@ -181,32 +189,38 @@ public class MigrationPlugin : FlutterPlugin, MethodCallHandler {
     private fun readTags(path: String): Map<String, String> {
         val map: MutableMap<String, String> = HashMap()
         map["path"] = path
-        Log.i("MigrationKotlin", "Begin $path")
+//        Log.i("MigrationKotlin", "Begin $path")
         try {
-            val mp3file = Mp3File(path)
-            if (mp3file.hasId3v1Tag()) {
-                val id3v1Tag = mp3file.id3v1Tag
-                if (id3v1Tag.artist != null && id3v1Tag.artist.trim().isNotEmpty()) {
-                    map["artist"] = id3v1Tag.artist
-                }
-                if (id3v1Tag.album != null && id3v1Tag.album.trim().isNotEmpty()) {
-                    map["album"] = id3v1Tag.album
-                }
+            val fileSize = File(path).length()
+            val sizeInMb = fileSize / (1024.0 * 1024)
+            if (sizeInMb < 30) {
+                val mp3file = Mp3File(path)
+                if (mp3file.hasId3v1Tag()) {
+                    val id3v1Tag = mp3file.id3v1Tag
+                    if (id3v1Tag.artist != null && id3v1Tag.artist.trim().isNotEmpty()) {
+                        map["artist"] = id3v1Tag.artist
+                    }
+                    if (id3v1Tag.album != null && id3v1Tag.album.trim().isNotEmpty()) {
+                        map["album"] = id3v1Tag.album
+                    }
 
-            }
-            if (mp3file.hasId3v2Tag()) {
-                val id3v2Tag: ID3v2 = mp3file.id3v2Tag
-                if (id3v2Tag.artist != null && id3v2Tag.artist.trim().isNotEmpty()) {
-                    map["artist"] = id3v2Tag.artist
                 }
-                if (id3v2Tag.album != null && id3v2Tag.album.trim().isNotEmpty()) {
-                    map["album"] = id3v2Tag.album
+                if (mp3file.hasId3v2Tag()) {
+                    val id3v2Tag: ID3v2 = mp3file.id3v2Tag
+                    if (id3v2Tag.artist != null && id3v2Tag.artist.trim().isNotEmpty()) {
+                        map["artist"] = id3v2Tag.artist
+                    }
+                    if (id3v2Tag.album != null && id3v2Tag.album.trim().isNotEmpty()) {
+                        map["album"] = id3v2Tag.album
+                    }
                 }
             }
         } catch (e: Exception) {
+        } catch (o: OutOfMemoryError) {
         }
-        Log.i("MigrationKotlin", "End $path")
+//        Log.i("MigrationKotlin", "End $path")
         return map
+
     }
 
 

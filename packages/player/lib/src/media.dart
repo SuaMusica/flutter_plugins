@@ -11,6 +11,7 @@ class Media {
   final String author;
   String url;
   bool isLocal;
+  final String localPath;
   final String coverUrl;
   final bool isVerified;
   final String shareUrl;
@@ -28,6 +29,7 @@ class Media {
     this.isLocal,
     @required this.coverUrl,
     this.isVerified,
+    this.localPath,
     this.shareUrl,
     this.playlistId,
     this.isSpot,
