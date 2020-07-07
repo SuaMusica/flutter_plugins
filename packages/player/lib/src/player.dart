@@ -420,9 +420,11 @@ class Player {
 
   Future<int> pause() async {
     _notifyPlayerStatusChangeEvent(EventType.PAUSE_REQUEST);
-    final int result = await _invokeMethod('pause');
-    return result;
+
+    return await _invokeMethod('pause');
   }
+
+  void addUsingPlayer(Event event) => _addUsingPlayer(player, event);
 
   Future<int> stop() async {
     _notifyPlayerStatusChangeEvent(EventType.STOP_REQUESTED);
