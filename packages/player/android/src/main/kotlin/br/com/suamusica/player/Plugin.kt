@@ -112,14 +112,14 @@ class Plugin private constructor(private val channel: MethodChannel, private val
                 val author = call.argument<String>(AUTHOR_ARGUMENT)!!
                 val url = call.argument<String>(URL_ARGUMENT)!!
                 val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
-                val position = call.argument<Long>(POSITION_ARGUMENT)
+                val position = call.argument<Int>(POSITION_ARGUMENT)
                 val loadOnly = call.argument<Boolean>(LOAD_ONLY)!!
 
                 mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl))
 
                 Log.i(TAG, "before prepare: cookie: $cookie")
                 position?.let {
-                    mediaSessionConnection?.seek(it)
+                    mediaSessionConnection?.seek(it.toLong())
                 }
 
                 if (!loadOnly) {

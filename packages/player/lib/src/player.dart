@@ -207,6 +207,7 @@ class Player {
           media,
           shallNotify: shallNotify,
           mediaUrl: mediaUrl,
+          position: position,
         );
       } else {
         return NotOk;
