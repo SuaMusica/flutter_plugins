@@ -28,6 +28,8 @@ void main() {
       url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
       coverUrl:
           "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+      bigCoverUrl:
+          "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
       author: "Xand Avião",
       isLocal: false,
       isVerified: true,
@@ -44,6 +46,8 @@ void main() {
           "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
       coverUrl:
           "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+      bigCoverUrl:
+          "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
       author: "Xand Avião",
       isLocal: false,
       isVerified: true,
@@ -57,6 +61,8 @@ void main() {
       name: "Borrachinha",
       url: "https://android.suamusica.com.br/373377/2238511/05+Borrachinha.mp3",
       coverUrl:
+          "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+      bigCoverUrl:
           "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
       author: "Xand Avião",
       isLocal: false,
