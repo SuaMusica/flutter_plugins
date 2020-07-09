@@ -168,7 +168,7 @@ class Queue {
   }
 
   Media possibleNext(RepeatMode repeatMode) {
-    if (repeatMode == RepeatMode.NONE) {
+    if (repeatMode == RepeatMode.NONE || repeatMode == RepeatMode.TRACK) {
       return _next();
     } else if (repeatMode == RepeatMode.QUEUE) {
       if (storage.length - 1 == index) {
@@ -176,8 +176,6 @@ class Queue {
       } else {
         return _next();
       }
-    } else if (repeatMode == RepeatMode.TRACK) {
-      return storage.length != 0 ? storage.elementAt(index).item : null;
     } else {
       return null;
     }
@@ -217,7 +215,7 @@ class Queue {
   }
 
   Media restart() {
-    index = -1;
+    index = 0;
     return storage.elementAt(0).item;
   }
 
