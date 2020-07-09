@@ -151,16 +151,7 @@ class Player {
     return Ok;
   }
 
-  Future<Media> restartQueue({
-    double volume = 1.0,
-    Duration position,
-    bool respectSilence = false,
-    bool stayAwake = false,
-  }) async {
-    await playFromQueue(0);
-    await pause();
-    return current;
-  }
+  Media restartQueue() => _queue.restart();
 
   Future<int> reorder(int oldIndex, int newIndex,
       [bool isShuffle = false]) async {
@@ -395,6 +386,7 @@ class Player {
         return _forward(current);
       } else {
         if (repeatMode == RepeatMode.NONE) {
+          _queue.index = -1;
           return NotOk;
         } else if (repeatMode == RepeatMode.QUEUE) {
           next = _queue.restart();
