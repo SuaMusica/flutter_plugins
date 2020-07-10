@@ -445,6 +445,11 @@ PlaylistItem *currentItem = nil;
                 int ret = [self resume:playerId];
                 result(@(ret));
             },
+        @"send_notification": 
+            ^{
+                NSLog(@"Player: send_notification");
+                result(@(1));
+            },
         @"remove_notification":
             ^{
                 NSLog(@"Player: remove_notification");

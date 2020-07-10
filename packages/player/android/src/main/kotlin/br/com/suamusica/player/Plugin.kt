@@ -37,6 +37,7 @@ class Plugin private constructor(private val channel: MethodChannel, private val
         const val GET_CURRENT_POSITION_METHOD = "getCurrentPosition"
         const val SET_RELEASE_MODE_METHOD = "setReleaseMode"
         const val CAN_PLAY = "can_play"
+        const val SEND_NOTIFICATION = "send_notification"
         const val REMOVE_NOTIFICATION = "remove_notification"
         const val DISABLE_NOTIFICATION_COMMANDS = "disable_notification_commands"
         const val ENABLE_NOTIFICATION_COMMANDS = "enable_notification_commands"
@@ -107,6 +108,15 @@ class Plugin private constructor(private val channel: MethodChannel, private val
         val cookie = call.argument<String>("cookie")
         Log.i(TAG, "method: ${call.method} cookie: $cookie")
         when (call.method) {
+            SEND_NOTIFICATION -> {
+                val name = call.argument<String>(NAME_ARGUMENT)!!
+                val author = call.argument<String>(AUTHOR_ARGUMENT)!!
+                val url = call.argument<String>(URL_ARGUMENT)!!
+                val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
+
+                mediaSessionConnection?.sendNotification(name, author, url, coverUrl)
+            }
+
             PLAY_METHOD -> {
                 val name = call.argument<String>(NAME_ARGUMENT)!!
                 val author = call.argument<String>(AUTHOR_ARGUMENT)!!
