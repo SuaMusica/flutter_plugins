@@ -141,6 +141,29 @@ class Player {
     return Ok;
   }
 
+  Future<int> sendNotification() async {
+    if (_queue.size > 0) {
+      if (_queue.current == null) {
+        _queue.move(0);
+      }
+      final media = _queue.current;
+      final mediaUrl = (await localMediaValidator(media)) ?? media.url;
+
+      return await _invokeMethod('send_notification', {
+        'albumId': media.albumId?.toString() ?? "0",
+        'albumTitle': media.albumTitle ?? "",
+        'name': media.name,
+        'author': media.author,
+        'url': mediaUrl,
+        'coverUrl': media.coverUrl,
+        'loadOnly': false,
+        'isLocal': media.isLocal,
+      });
+    } else {
+      return Ok;
+    }
+  }
+
   Future<int> disableNotificatonCommands() async {
     await _invokeMethod('disable_notification_commands');
     return Ok;
