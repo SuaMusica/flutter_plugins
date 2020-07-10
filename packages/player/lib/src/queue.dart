@@ -125,7 +125,7 @@ class Queue {
     } else {
       final diff = now.difference(_lastPrevious).inMilliseconds;
       print("diff: $diff");
-      if (diff < 1000) {
+      if (diff < 3000) {
         if (index > 0) {
           --index;
         }
@@ -144,7 +144,7 @@ class Queue {
       return storage.elementAt(index).item;
     } else {
       final diff = now.difference(_lastPrevious).inMilliseconds;
-      if (diff < 1000) {
+      if (diff < 3000) {
         var workIndex = index;
         if (index > 0) {
           --workIndex;

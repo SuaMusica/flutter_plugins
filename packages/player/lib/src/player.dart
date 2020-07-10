@@ -311,7 +311,7 @@ class Player {
       return NotOk;
     }
     _notifyRewind(media);
-    return seek(Duration(seconds: 0));
+    return player.externalPlayback ? 1 : seek(Duration(seconds: 0));
   }
 
   Future<int> forward() async {
@@ -684,11 +684,13 @@ class Player {
 
   static _notifyPlayerStateChangeEvent(Player player, EventType eventType) {
     _addUsingPlayer(
-        player,
-        Event(
-            type: eventType,
-            media: player._queue.current,
-            queuePosition: player._queue.index));
+      player,
+      Event(
+        type: eventType,
+        media: player._queue.current,
+        queuePosition: player._queue.index,
+      ),
+    );
   }
 
   static _notifyPlayerErrorEvent(Player player, String error,
