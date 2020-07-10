@@ -86,7 +86,11 @@ class MusicPlayerPlaybackPreparer(val mediaService: MediaService,
                         val author = it.getString("author")
                         val url = it.getString("url")
                         val coverUrl = it.getString("coverUrl")
-                        mediaService.sendNotification(Media(name, author, url, coverUrl))
+                        var isPlaying:Boolean? = null;
+                        if(it.containsKey("isPlaying")){
+                            isPlaying = it.getBoolean("isPlaying")
+                        }
+                        mediaService.sendNotification(Media(name, author, url, coverUrl),isPlaying)
                         return true
                     } ?: false
                 }

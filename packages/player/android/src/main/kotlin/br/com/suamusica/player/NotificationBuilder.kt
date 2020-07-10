@@ -82,7 +82,7 @@ class NotificationBuilder(private val context: Context) {
                         else -> null
                     }
                 } catch (e: Exception) {
-                    null                
+                    null
                 }
             }
 
@@ -93,7 +93,7 @@ class NotificationBuilder(private val context: Context) {
         }
     }
 
-    fun buildNotification(mediaSession: MediaSessionCompat, media: Media, onGoing: Boolean): Notification? {
+    fun buildNotification(mediaSession: MediaSessionCompat, media: Media, onGoing: Boolean, isPlayingExternal: Boolean?): Notification? {
         if (shouldCreateNowPlayingChannel()) {
             createNowPlayingChannel()
         }
@@ -108,6 +108,13 @@ class NotificationBuilder(private val context: Context) {
         actions.add(1)
 
         when {
+            isPlayingExternal != null -> {
+                if (isPlayingExternal) {
+                    builder.addAction(pauseAction)
+                } else {
+                    builder.addAction(playAction)
+                }
+            }
             playbackState.isPlaying -> {
                 Log.i("NotificationBuilder", "Player is playing... onGoing: $onGoing")
                 builder.addAction(pauseAction)

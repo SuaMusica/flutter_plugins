@@ -292,11 +292,16 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
     }
 
-    fun sendNotification(media: Media) {
+    fun sendNotification(media: Media,isPlayingExternal:Boolean?) {
         mediaSession?.let {
-            val state = player?.playbackState ?: PlaybackStateCompat.STATE_NONE
-            val onGoing = state == PlaybackStateCompat.STATE_PLAYING || state == PlaybackStateCompat.STATE_BUFFERING
-            val notification = notificationBuilder?.buildNotification(it, media, onGoing)
+            var onGoing:Boolean
+            onGoing = if(isPlayingExternal==null) {
+                val state = player?.playbackState ?: PlaybackStateCompat.STATE_NONE
+                state == PlaybackStateCompat.STATE_PLAYING || state == PlaybackStateCompat.STATE_BUFFERING
+            } else{
+                isPlayingExternal
+            }
+            val notification = notificationBuilder?.buildNotification(it, media, onGoing,isPlayingExternal)
             notification?.let {
                 notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
             }
@@ -385,7 +390,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
     private fun buildNotification(updatedState: Int, onGoing: Boolean): Notification? {
         return if (updatedState != PlaybackStateCompat.STATE_NONE) {
-            mediaSession?.let { notificationBuilder?.buildNotification(it, media!!, onGoing) }
+            mediaSession?.let { notificationBuilder?.buildNotification(it, media!!, onGoing, null) }
         } else {
             null
         }

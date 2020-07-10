@@ -20,6 +20,7 @@ class Plugin private constructor(private val channel: MethodChannel, private val
         const val AUTHOR_ARGUMENT = "author"
         const val URL_ARGUMENT = "url"
         const val COVER_URL_ARGUMENT = "coverUrl"
+        const val IS_PLAYING_ARGUMENT = "isPlaying"
         const val POSITION_ARGUMENT = "position"
         const val LOAD_ONLY = "loadOnly"
         const val RELEASE_MODE_ARGUMENT = "releaseMode"
@@ -51,6 +52,9 @@ class Plugin private constructor(private val channel: MethodChannel, private val
         var mediaSessionConnection: MediaSessionConnection? = null
 
         @JvmStatic
+        var externalPlayback: Boolean? = false
+
+        @JvmStatic
         fun registerWith(registrar: Registrar) {
             Log.i(TAG, "registerWith: START")
             channel = MethodChannel(registrar.messenger(), "smplayer")
@@ -71,12 +75,21 @@ class Plugin private constructor(private val channel: MethodChannel, private val
 
         @JvmStatic
         fun play() {
-            mediaSessionConnection?.play()
+            if (externalPlayback!!) {
+                channel?.invokeMethod("externalPlayback.play", emptyMap<String, String>())
+            } else {
+                mediaSessionConnection?.play()
+            }
         }
 
         @JvmStatic
         fun pause() {
-            mediaSessionConnection?.pause()
+            if (externalPlayback!!) {
+                channel?.invokeMethod("externalPlayback.pause", emptyMap<String, String>())
+            } else {
+
+                mediaSessionConnection?.pause()
+            }
         }
 
         @JvmStatic
@@ -106,15 +119,16 @@ class Plugin private constructor(private val channel: MethodChannel, private val
 
     private fun handleMethodCall(call: MethodCall, response: MethodChannel.Result) {
         val cookie = call.argument<String>("cookie")
-        Log.i(TAG, "method: ${call.method} cookie: $cookie")
+        Plugin.externalPlayback = call.argument<Boolean>("externalplayback")
+        Log.i(TAG, "method: ${call.method} cookie: $cookie externalPlayback: $externalPlayback")
         when (call.method) {
             SEND_NOTIFICATION -> {
                 val name = call.argument<String>(NAME_ARGUMENT)!!
                 val author = call.argument<String>(AUTHOR_ARGUMENT)!!
                 val url = call.argument<String>(URL_ARGUMENT)!!
                 val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
-
-                mediaSessionConnection?.sendNotification(name, author, url, coverUrl)
+                var isPlaying: Boolean? = call.argument<Boolean>(IS_PLAYING_ARGUMENT) ?: null
+                mediaSessionConnection?.sendNotification(name, author, url, coverUrl,isPlaying)
             }
 
             PLAY_METHOD -> {

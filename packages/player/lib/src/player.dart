@@ -25,6 +25,7 @@ class Player {
   static Player player;
   static bool logEnabled = false;
 
+  bool externalPlayback = false;
   CookiesForCustomPolicy _cookies;
   PlayerState state = PlayerState.IDLE;
   Queue _queue = Queue();
@@ -85,7 +86,8 @@ class Player {
 
         final Map<String, dynamic> args = Map.of(arguments)
           ..['playerId'] = playerId
-          ..['cookie'] = cookie;
+          ..['cookie'] = cookie
+          ..['externalplayback'] = externalPlayback;
 
         return _channel
             .invokeMethod(method, args)
@@ -141,24 +143,26 @@ class Player {
     return Ok;
   }
 
-  Future<int> sendNotification() async {
+  Future<int> sendNotification({bool isPlaying}) async {
     if (_queue.size > 0) {
       if (_queue.current == null) {
         _queue.move(0);
       }
       final media = _queue.current;
-      final mediaUrl = (await localMediaValidator(media)) ?? media.url;
-
-      return await _invokeMethod('send_notification', {
+      final data = {
         'albumId': media.albumId?.toString() ?? "0",
         'albumTitle': media.albumTitle ?? "",
         'name': media.name,
         'author': media.author,
-        'url': mediaUrl,
+        'url': media.url,
         'coverUrl': media.coverUrl,
         'loadOnly': false,
         'isLocal': media.isLocal,
-      });
+      };
+      if (isPlaying != null) {
+        data['isPlaying'] = isPlaying;
+      }
+      return await _invokeMethod('send_notification', data);
     } else {
       return Ok;
     }
@@ -607,6 +611,16 @@ class Player {
       case 'commandCenter.onPrevious':
         print("Player : Command Center : Got a previous request");
         player.previous();
+        break;
+      case 'externalPlayback.play':
+        print("Player : externalPlayback : Play");
+        _notifyPlayerStateChangeEvent(
+            player, EventType.EXTERNAL_RESUME_REQUESTED);
+        break;
+      case 'externalPlayback.pause':
+        print("Player : externalPlayback : Pause");
+        _notifyPlayerStateChangeEvent(
+            player, EventType.EXTERNAL_PAUSE_REQUESTED);
         break;
       default:
         _log('Unknown method ${call.method} ');
