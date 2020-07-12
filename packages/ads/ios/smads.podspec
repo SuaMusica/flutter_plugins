@@ -19,7 +19,7 @@ A new flutter plugin project.
   s.resources  = ['Classes/**/*.{storyboard,xib,png}']
   s.dependency 'Flutter'
   s.dependency 'GoogleAds-IMA-iOS-SDK', '~> 3.11.3'
-  s.dependency 'ReachabilitySwift'
+  s.dependency 'Reachability'
   s.dependency 'PureLayout'
   s.platform = :ios, '9.0'
 
