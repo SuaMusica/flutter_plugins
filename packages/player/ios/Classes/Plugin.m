@@ -1338,10 +1338,10 @@ isNotification: (bool) respectSilence
         CMTime duration = [[[player currentItem]  asset] duration];
         int _duration = CMTimeGetSeconds(duration);
         
-        NSDictionary *currentItem = playersCurrentItem[playerId];
-        NSString *name = currentItem[@"name"];
-        NSString *author = currentItem[@"author"];
-        NSString *coverUrl = currentItem[@"coverUrl"];
+        NSDictionary *currentItemProps = playersCurrentItem[playerId];
+        NSString *name = currentItemProps[@"name"];
+        NSString *author = currentItemProps[@"author"];
+        NSString *coverUrl = currentItemProps[@"coverUrl"];
         if (name == nil || author == nil  || coverUrl == nil){
             name = @"Sua Musica";
             author = @"Sua Musica";
@@ -1355,7 +1355,7 @@ isNotification: (bool) respectSilence
         
         dispatch_async(dispatch_get_global_queue(0,0), ^{
             dispatch_async(dispatch_get_main_queue(), ^{
-                [NowPlayingCenter updateWithRate:1.0 position:position duration:_duration];
+                [NowPlayingCenter updateWithItem:currentItem rate:1.0 position:position duration:_duration];
             });
         });
         
