@@ -364,22 +364,6 @@ PlaylistItem *currentItem = nil;
     NSDictionary *methods = @{
         @"can_play":
             ^{
-                NSLog(@"Player: can-play!");
-                NSString *url = call.arguments[@"url"];
-                if (url == nil)
-                    result(0);
-                if (call.arguments[@"isLocal"] == nil)
-                    result(0);
-                int isLocal = [call.arguments[@"isLocal"]intValue] ;
-#ifdef ENABLE_PLAYER_NETWORK_ERROR
-                // we decided to disable this check
-                if (!isConnected && !isLocal) {
-                    [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_NETWORK_ERROR)}];
-                    result(@(-1));
-                } else {
-                    result(@(Ok));
-                }
-#endif
                 result(@(Ok));
             },
         @"play":
@@ -589,7 +573,6 @@ PlaylistItem *currentItem = nil;
             player.automaticallyWaitsToMinimizeStalling = TRUE;
         } else{
             player.automaticallyWaitsToMinimizeStalling = FALSE;
-            [player playImmediatelyAtRate:0.01];
         }
     }
 }
@@ -1239,6 +1222,12 @@ isNotification: (bool) respectSilence
 {
     if ([self ensureConnected:playerId isLocal:isLocal] == -1) {
         return -1;
+    }
+    
+    NSMutableDictionary * playerInfo = players[playerId];
+    AVPlayer *player = playerInfo[@"player"];
+    if (player.rate != 0) {
+        [player pause];
     }
     
     if (!@available(iOS 11,*)) {
