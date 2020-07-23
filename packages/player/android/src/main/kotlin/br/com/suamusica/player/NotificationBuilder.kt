@@ -136,7 +136,7 @@ class NotificationBuilder(private val context: Context) {
 
         val art = getArt(context, artUri, NOTIFICATION_LARGE_ICON_SIZE)
 
-        val notifyIntent = Intent("FLUTTER_NOTIFICATION_CLICK").apply {
+        val notifyIntent = Intent("SUA_MUSICA_FLUTTER_NOTIFICATION_CLICK").apply {
             addCategory(Intent.CATEGORY_DEFAULT)
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
