@@ -8,9 +8,11 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.net.wifi.WifiManager
 import android.os.AsyncTask
 import android.os.Bundle
 import android.os.Handler
+import android.os.PowerManager
 import androidx.core.content.ContextCompat
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaDescriptionCompat
@@ -22,6 +24,7 @@ import android.util.Log
 import androidx.core.app.NotificationManagerCompat
 import androidx.media.session.MediaButtonReceiver
 import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
+
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
@@ -35,6 +38,7 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
 import com.google.android.exoplayer2.upstream.FileDataSource
 import com.google.android.exoplayer2.util.Util
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 class MediaService : androidx.media.MediaBrowserServiceCompat() {
@@ -51,6 +55,8 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
     private var notificationBuilder: NotificationBuilder? = null
     private var notificationManager: NotificationManagerCompat? = null
     private var isForegroundService = false
+    private var wifiLock: WifiManager.WifiLock? = null
+    private var wakeLock: PowerManager.WakeLock? = null
 
     private val uAmpAudioAttributes = AudioAttributes.Builder()
             .setContentType(C.CONTENT_TYPE_MUSIC)
@@ -85,6 +91,12 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         packageValidator = PackageValidator(applicationContext, R.xml.allowed_media_browser_callers)
         notificationBuilder = NotificationBuilder(this)
         notificationManager = NotificationManagerCompat.from(this)
+        wifiLock = (applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager)
+            .createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "suamusica:wifiLock")
+        wakeLock = (applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager)
+            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ON_AFTER_RELEASE, "suamusica:wakeLock")
+        wifiLock?.setReferenceCounted(false)
+        wakeLock?.setReferenceCounted(false)
 
         val sessionActivityPendingIntent =
                 this.packageManager?.getLaunchIntentForPackage(this.packageName)?.let { sessionIntent ->
@@ -106,7 +118,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         player = SimpleExoPlayer.Builder(this).build().apply {
             setAudioAttributes(uAmpAudioAttributes, true)
             addListener(playerEventListener())
-            setWakeMode(C.WAKE_MODE_NETWORK)
+            // setWakeMode(C.WAKE_MODE_NETWORK)
             setHandleAudioBecomingNoisy(true)
         }
 
@@ -154,6 +166,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         removeNotification()
         Log.d(TAG, "onDestroy")
 //        mediaController?.unregisterCallback(mediaControllerCallback)
+        releaseLock()
         mediaSessionConnector?.setPlayer(null)
         player?.release()
         stopSelf()
@@ -177,9 +190,24 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         mediaSession = null
         mediaController = null
         mediaSessionConnector = null
+        wifiLock = null
+        wakeLock = null
+
     }
 
+    private fun acquireLock(duration: Long) {
+        wifiLock?.acquire()
+        wakeLock?.acquire(duration)
+    }
 
+    private fun releaseLock() {
+        try {
+        if (wifiLock?.isHeld == true) wifiLock?.release()
+        if (wakeLock?.isHeld == true) wakeLock?.release()
+        } catch (e: Exception) {
+        Log.e("MusicService", e.message, e)
+        }
+    }
     override fun onGetRoot(clientPackageName: String, clientUid: Int, rootHints: Bundle?): BrowserRoot? {
         val isKnowCaller = packageValidator?.isKnownCaller(clientPackageName, clientUid) ?: false
 
@@ -407,6 +435,11 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
             override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
                 Log.i(TAG, "onPlayerStateChanged: playWhenReady: $playWhenReady playbackState: $playbackState currentPlaybackState: ${player?.getPlaybackState()}")
+                if (playWhenReady) {
+                val duration = player?.duration ?: 0L
+                    acquireLock(if (duration > 1L) duration + TimeUnit.MINUTES.toMillis(2) else TimeUnit.MINUTES.toMillis(3))
+                } else
+                releaseLock()
 
                 if (playWhenReady && playbackState == ExoPlayer.STATE_READY) {
                     //
