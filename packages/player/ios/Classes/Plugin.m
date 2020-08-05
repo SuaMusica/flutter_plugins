@@ -816,6 +816,9 @@ PlaylistItem *currentItem = nil;
 }
 
 -(void)disposePlayerItem:(AVPlayerItem *)playerItem {
+    if (playerItem == nil) {
+        return;
+    }
     if (latestPlayerItemObserved == playerItem) {
         NSLog(@"Player: disposing Player Items : START");
         
@@ -850,6 +853,7 @@ PlaylistItem *currentItem = nil;
                 NSLog(@"Player: failed remove removeObserver %@ : %@", ob, exception);
             }
         }
+        latestPlayerItemObserved = nil;
         NSLog(@"Player: disposing Player Items : END");
     }
 }
@@ -882,7 +886,7 @@ PlaylistItem *currentItem = nil;
 {
     NSLog(@"Player: setUrl url: %@ cookie: %@", url, cookie);
     currentResourceLoader = nil;
-    
+    [self disposePlayerItem:latestPlayerItemObserved];
     NSMutableDictionary * playerInfo = players[playerId];
     AVPlayer *player = playerInfo[@"player"];
     [self configurePlayer: playerId url:url];
@@ -1586,4 +1590,3 @@ isNotification: (bool) respectSilence
 }
 
 @end
-
