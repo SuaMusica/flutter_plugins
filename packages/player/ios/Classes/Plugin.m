@@ -369,22 +369,6 @@ PlaylistItem *currentItem = nil;
     NSDictionary *methods = @{
         @"can_play":
             ^{
-                NSLog(@"Player: can-play!");
-                NSString *url = call.arguments[@"url"];
-                if (url == nil)
-                    result(0);
-                if (call.arguments[@"isLocal"] == nil)
-                    result(0);
-                int isLocal = [call.arguments[@"isLocal"]intValue] ;
-#ifdef ENABLE_PLAYER_NETWORK_ERROR
-                // we decided to disable this check
-                if (!isConnected && !isLocal) {
-                    [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": playerId, @"errorType": @(PLAYER_ERROR_NETWORK_ERROR)}];
-                    result(@(-1));
-                } else {
-                    result(@(Ok));
-                }
-#endif
                 result(@(Ok));
             },
         @"play":
@@ -842,6 +826,9 @@ PlaylistItem *currentItem = nil;
 }
 
 -(void)disposePlayerItem:(AVPlayerItem *)playerItem {
+    if (playerItem == nil) {
+        return;
+    }
     if (latestPlayerItemObserved == playerItem) {
         NSLog(@"Player: disposing Player Items : START");
         
@@ -876,6 +863,7 @@ PlaylistItem *currentItem = nil;
                 NSLog(@"Player: failed remove removeObserver %@ : %@", ob, exception);
             }
         }
+        latestPlayerItemObserved = nil;
         NSLog(@"Player: disposing Player Items : END");
     }
 }
@@ -908,7 +896,7 @@ PlaylistItem *currentItem = nil;
 {
     NSLog(@"Player: setUrl url: %@ cookie: %@", url, cookie);
     currentResourceLoader = nil;
-    
+    [self disposePlayerItem:latestPlayerItemObserved];
     NSMutableDictionary * playerInfo = players[playerId];
     AVPlayer *player = playerInfo[@"player"];
     [self configurePlayer: playerId url:url];
@@ -1254,6 +1242,12 @@ isNotification: (bool) respectSilence
         return -1;
     }
     
+    NSMutableDictionary * playerInfo = players[playerId];
+    AVPlayer *player = playerInfo[@"player"];
+    if (player.rate != 0) {
+        [player pause];
+    }
+    
     if (!@available(iOS 11,*)) {
         url = [url stringByReplacingOccurrencesOfString:@".m3u8"
                                              withString:@".mp3"];
@@ -1351,10 +1345,10 @@ isNotification: (bool) respectSilence
         CMTime duration = [[[player currentItem]  asset] duration];
         int _duration = CMTimeGetSeconds(duration);
         
-        NSDictionary *currentItem = playersCurrentItem[playerId];
-        NSString *name = currentItem[@"name"];
-        NSString *author = currentItem[@"author"];
-        NSString *coverUrl = currentItem[@"coverUrl"];
+        NSDictionary *currentItemProps = playersCurrentItem[playerId];
+        NSString *name = currentItemProps[@"name"];
+        NSString *author = currentItemProps[@"author"];
+        NSString *coverUrl = currentItemProps[@"coverUrl"];
         if (name == nil || author == nil  || coverUrl == nil){
             name = @"Sua Musica";
             author = @"Sua Musica";
@@ -1368,7 +1362,7 @@ isNotification: (bool) respectSilence
         
         dispatch_async(dispatch_get_global_queue(0,0), ^{
             dispatch_async(dispatch_get_main_queue(), ^{
-                [NowPlayingCenter updateWithRate:1.0 position:position duration:_duration];
+                [NowPlayingCenter updateWithItem:currentItem rate:1.0 position:position duration:_duration];
             });
         });
         
@@ -1610,4 +1604,3 @@ isNotification: (bool) respectSilence
 }
 
 @end
-

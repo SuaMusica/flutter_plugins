@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:smaws/aws.dart';
 import 'package:flutter/services.dart';
@@ -94,16 +92,6 @@ class Player {
             .then((result) => (result as int));
       });
     });
-  }
-
-  Future<bool> canPlay(Media media) async {
-    if (media != null) {
-      if (Platform.isAndroid) return true;
-      final url = (await localMediaValidator(media)) ?? media.url;
-      return await _canPlay(url);
-    } else {
-      return false;
-    }
   }
 
   Future<int> enqueue(
@@ -240,18 +228,13 @@ class Player {
     if (media != null) {
       final mediaUrl = (await localMediaValidator(media)) ?? media.url;
 
-      if (await _canPlay(mediaUrl)) {
-        final media = _queue.move(pos);
-        _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
-        return _doPlay(
-          media,
-          shallNotify: shallNotify,
-          mediaUrl: mediaUrl,
-          position: position,
-        );
-      } else {
-        return NotOk;
-      }
+
+      _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
+      return _doPlay(
+        _queue.move(pos),
+        shallNotify: shallNotify,
+        mediaUrl: mediaUrl,
+      );
     } else {
       return NotOk;
     }
@@ -355,24 +338,20 @@ class Player {
     Media media = _queue.possiblePrevious();
     if (media != null) {
       final mediaUrl = (await localMediaValidator(media)) ?? media.url;
-      if (await _canPlay(mediaUrl)) {
-        final current = _queue.current;
-        var previous = _queue.previous();
-        if (previous == null) {
-          return NotOk;
-        }
-
-        if (previous == current) {
-          return _rewind(current);
-        } else {
-          _notifyChangeToPrevious(previous);
-          return _doPlay(
-            previous,
-            mediaUrl: mediaUrl,
-          );
-        }
-      } else {
+      final current = _queue.current;
+      var previous = _queue.previous();
+      if (previous == null) {
         return NotOk;
+      }
+
+      if (previous == current) {
+        return _rewind(current);
+      } else {
+        _notifyChangeToPrevious(previous);
+        return _doPlay(
+          previous,
+          mediaUrl: mediaUrl,
+        );
       }
     } else {
       return NotOk;
@@ -386,14 +365,10 @@ class Player {
     if (media != null) {
       final mediaUrl = (await localMediaValidator(media)) ?? media.url;
 
-      if (await _canPlay(mediaUrl)) {
-        return _doNext(
-          shallNotify: shallNotify,
-          mediaUrl: mediaUrl,
-        );
-      } else {
-        return NotOk;
-      }
+      return _doNext(
+        shallNotify: shallNotify,
+        mediaUrl: mediaUrl,
+      );
     } else {
       return null;
     }
@@ -763,14 +738,5 @@ class Player {
       futures.add(_eventStreamController.close());
     }
     await Future.wait(futures);
-  }
-
-  Future<bool> _canPlay(String url) async {
-    return Platform.isAndroid ||
-        await _invokeMethod('can_play', {
-              'url': url,
-              'isLocal': !url.startsWith("http"),
-            }) ==
-            Ok;
   }
 }

@@ -24,6 +24,7 @@ enum PreRollEvent {
   AD_BREAK_ENDED,
   AD_PERIOD_STARTED,
   AD_PERIOD_ENDED,
+  ERROR,
   UNKNOWN,
 }
 
@@ -80,6 +81,8 @@ extension ParseToPreRollEvent on String {
         return PreRollEvent.AD_PERIOD_STARTED;
       case "AD_PERIOD_ENDED":
         return PreRollEvent.AD_PERIOD_ENDED;
+      case "ERROR":
+        return PreRollEvent.ERROR;
       default:
         return PreRollEvent.UNKNOWN;
     }

@@ -16,19 +16,19 @@ class MusicPlayerPlaybackPreparer(val mediaService: MediaService,
                                   val mediaSession: MediaSessionCompat) : MediaSessionConnector.PlaybackPreparer {
     val TAG = "Player"
 
-    override fun onPrepareFromMediaId(mediaId: String, playWhenReady: Boolean, extras: Bundle) {
+    override fun onPrepareFromMediaId(mediaId: String, playWhenReady: Boolean, extras: Bundle?) {
         Log.i(TAG, "MusicPlayerPlaybackPreparer.onPrepareFromMediaId : START")
 
         Log.i(TAG, "MusicPlayerPlaybackPreparer.onPrepareFromMediaId : END")
     }
 
-    override fun onPrepareFromSearch(query: String, playWhenReady: Boolean, extras: Bundle) {
+    override fun onPrepareFromSearch(query: String, playWhenReady: Boolean, extras: Bundle?) {
         Log.i(TAG, "MusicPlayerPlaybackPreparer.onPrepareFromSearch : START")
 
         Log.i(TAG, "MusicPlayerPlaybackPreparer.onPrepareFromSearch : END")
     }
 
-    override fun onPrepareFromUri(uri: Uri, playWhenReady: Boolean, extras: Bundle) {
+    override fun onPrepareFromUri(uri: Uri, playWhenReady: Boolean, extras: Bundle?) {
         Log.i(TAG, "MusicPlayerPlaybackPreparer.onPrepareFromUri : START")
 
         Log.i(TAG, "MusicPlayerPlaybackPreparer.onPrepareFromUri : END")
