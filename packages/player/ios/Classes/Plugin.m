@@ -55,6 +55,8 @@ static NSMutableDictionary * playersCurrentItem;
 
 NSString *DEFAULT_COVER = @"https://images.suamusica.com.br/gaMy5pP78bm6VZhPZCs4vw0TdEw=/500x500/imgs/cd_cover.png";
 
+NSString *MINUTES_OF_SILENCE = @"";
+
 BOOL notifiedBufferEmptyWithNoConnection = false;
 
 @interface Plugin()
@@ -119,6 +121,9 @@ PlaylistItem *currentItem = nil;
             [registrar addMethodCallDelegate:instance channel:channel];
             [Plugin saveDefaultCover:registrar];
             _channel_player = channel;
+            
+            NSString* minutesOfSilenceKey = [registrar lookupKeyForAsset:@"assets/30-minutes-of-silence.mp3"];
+            MINUTES_OF_SILENCE = [[NSBundle mainBundle] pathForResource:minutesOfSilenceKey ofType:nil];
         }
     }
 }
@@ -594,7 +599,6 @@ PlaylistItem *currentItem = nil;
             player.automaticallyWaitsToMinimizeStalling = TRUE;
         } else{
             player.automaticallyWaitsToMinimizeStalling = FALSE;
-            [player playImmediatelyAtRate:0.01];
         }
     }
 }
@@ -1242,6 +1246,10 @@ PlaylistItem *currentItem = nil;
        time: (CMTime) time
 isNotification: (bool) respectSilence
 {
+    if ([url isEqualToString:@"silence://from-asset"]) {
+        url = MINUTES_OF_SILENCE;
+    }
+    
     if ([self ensureConnected:playerId isLocal:isLocal] == -1) {
         return -1;
     }

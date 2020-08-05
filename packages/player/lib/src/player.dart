@@ -143,7 +143,12 @@ class Player {
     return Ok;
   }
 
-  Future<int> sendNotification({bool isPlaying}) async {
+  Future<int> sendNotification({
+    bool isPlaying,
+    bool shallPlay,
+    Duration position,
+    Duration duration,
+  }) async {
     if (_queue.size > 0) {
       if (_queue.current == null) {
         _queue.move(0);
@@ -159,10 +164,27 @@ class Player {
         'loadOnly': false,
         'isLocal': media.isLocal,
       };
+
+      if (position != null) {
+        data['position'] = position.inMilliseconds;
+      }
+
+      if (duration != null) {
+        data['duration'] = duration.inMilliseconds;
+      }
+
       if (isPlaying != null) {
         data['isPlaying'] = isPlaying;
       }
-      return await _invokeMethod('send_notification', data);
+
+      await _invokeMethod('send_notification', data);
+
+      if (shallPlay) {
+        media.url = "silence://from-asset";
+        return await this.play(media);
+      }
+
+      return Ok;
     } else {
       return Ok;
     }
