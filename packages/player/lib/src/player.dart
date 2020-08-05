@@ -133,7 +133,6 @@ class Player {
 
   Future<int> sendNotification({
     bool isPlaying,
-    bool shallPlay,
     Duration position,
     Duration duration,
   }) async {
@@ -164,13 +163,7 @@ class Player {
       if (isPlaying != null) {
         data['isPlaying'] = isPlaying;
       }
-
       await _invokeMethod('send_notification', data);
-
-      if (shallPlay) {
-        media.url = "silence://from-asset";
-        return await this.play(media);
-      }
 
       return Ok;
     } else {
@@ -227,7 +220,6 @@ class Player {
     Media media = _queue.item(pos);
     if (media != null) {
       final mediaUrl = (await localMediaValidator(media)) ?? media.url;
-
 
       _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
       return _doPlay(
