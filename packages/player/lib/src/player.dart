@@ -23,6 +23,7 @@ class Player {
   static Player player;
   static bool logEnabled = false;
 
+  bool _shallSendEvents = true;
   bool externalPlayback = false;
   CookiesForCustomPolicy _cookies;
   PlayerState state = PlayerState.IDLE;
@@ -85,6 +86,7 @@ class Player {
         final Map<String, dynamic> args = Map.of(arguments)
           ..['playerId'] = playerId
           ..['cookie'] = cookie
+          ..['shallSendEvents'] = _shallSendEvents
           ..['externalplayback'] = externalPlayback;
 
         return _channel
@@ -128,6 +130,16 @@ class Player {
 
   Future<int> removeNotificaton() async {
     await _invokeMethod('remove_notification');
+    return Ok;
+  }
+
+  Future<int> enableEvents() {
+    this._shallSendEvents = true;
+    return Ok;
+  }
+
+  Future<int> disableEvents() {
+    this._shallSendEvents = false;
     return Ok;
   }
 
@@ -711,14 +723,17 @@ class Player {
   }
 
   void _add(Event event) {
-    if (_eventStreamController != null && !_eventStreamController.isClosed) {
+    if (_eventStreamController != null &&
+        !_eventStreamController.isClosed &&
+        _shallSendEvents) {
       _eventStreamController.add(event);
     }
   }
 
   static void _addUsingPlayer(Player player, Event event) {
     if (player._eventStreamController != null &&
-        !player._eventStreamController.isClosed) {
+        !player._eventStreamController.isClosed &&
+        player._shallSendEvents) {
       player._eventStreamController.add(event);
     }
   }
