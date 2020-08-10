@@ -177,6 +177,11 @@ class Player {
       }
       await _invokeMethod('send_notification', data);
 
+      if (isPlaying) {
+        media.url = "silence://from-asset";
+        return await this.play(media);
+      }
+
       return Ok;
     } else {
       return Ok;
