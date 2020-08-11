@@ -47,6 +47,7 @@ class Player {
     EventType.REWIND,
     EventType.PLAY_REQUESTED,
     EventType.PAUSED,
+    EventType.PLAYING,
   ];
 
   Stream<Event> _stream;
@@ -733,7 +734,6 @@ class Player {
   }
 
   void _add(Event event) {
-    print(event);
     if (_eventStreamController != null &&
         !_eventStreamController.isClosed &&
         (_shallSendEvents || chromeCastEnabledEvents.contains(event.type))) {
@@ -742,7 +742,6 @@ class Player {
   }
 
   static void _addUsingPlayer(Player player, Event event) {
-    print(event);
     if (player._eventStreamController != null &&
         !player._eventStreamController.isClosed &&
         (player._shallSendEvents ||
@@ -753,7 +752,6 @@ class Player {
 
   Future<void> dispose() async {
     List<Future> futures = [];
-
     if (!_eventStreamController.isClosed) {
       futures.add(_eventStreamController.close());
     }
