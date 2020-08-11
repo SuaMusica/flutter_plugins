@@ -133,12 +133,12 @@ class Player {
     return Ok;
   }
 
-  Future<int> enableEvents() {
+  int enableEvents() {
     this._shallSendEvents = true;
     return Ok;
   }
 
-  Future<int> disableEvents() {
+  int disableEvents() {
     this._shallSendEvents = false;
     return Ok;
   }
