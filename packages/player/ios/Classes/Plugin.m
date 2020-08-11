@@ -225,7 +225,7 @@ PlaylistItem *currentItem = nil;
                 NSLog(@"Player: Remote Command Play: Enabled");
                 [self resume:_playerId];
                 int state = STATE_PLAYING;
-                [self notifyStateChange:_playerId state:state];
+                [self notifyStateChange:_playerId state:state overrideBlock:true];
             } else {
                 NSLog(@"Player: Remote Command Play: Disabled");
             }
@@ -238,14 +238,14 @@ PlaylistItem *currentItem = nil;
         [commandCenter.pauseCommand removeTarget:pauseId];
     }
     pauseId = [commandCenter.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
-        NSLog(@"Player: Remote Command Pause: SART");
+        NSLog(@"Player: Remote Command Pause: START");
         if (_playerId != nil) {
             NSMutableDictionary * playerInfo = players[_playerId];
             if ([playerInfo[@"areNotificationCommandsEnabled"] boolValue]) {
                 NSLog(@"Player: Remote Command Pause: Enabled");
                 [self pause:_playerId];
                 int state = STATE_PAUSED;
-                [self notifyStateChange:_playerId state:state];
+                [self notifyStateChange:_playerId state:state overrideBlock:true];
             } else {
                 NSLog(@"Player: Remote Command Pause: Disabled");
             }
@@ -439,9 +439,61 @@ PlaylistItem *currentItem = nil;
                 int ret = [self resume:playerId];
                 result(@(ret));
             },
-        @"send_notification": 
+        @"send_notification":
             ^{
                 NSLog(@"Player: send_notification");
+                NSString *albumId = call.arguments[@"albumId"];
+                NSString *albumTitle = call.arguments[@"albumTitle"];
+                NSString *name = call.arguments[@"name"];
+                NSString *author = call.arguments[@"author"];
+                NSString *url = @"silence://from-asset";
+                NSString *coverUrl = call.arguments[@"coverUrl"];
+                NSString *cookie = call.arguments[@"cookie"];
+                bool isPlaying = [call.arguments[@"isPlaying"]boolValue] ;
+                
+                if (albumId == nil)
+                    result(0);
+                if (name == nil)
+                    result(0);
+                if (author == nil)
+                    result(0);
+                if (url == nil)
+                    result(0);
+                if (cookie == nil)
+                    result(0);
+                if (call.arguments[@"position"] == nil)
+                    result(0);
+                if (call.arguments[@"duration"] == nil)
+                    result(0);
+                if (coverUrl == nil) {
+                    coverUrl = DEFAULT_COVER;
+                }
+                int position = call.arguments[@"position"] == [NSNull null] ? 0.0 : [call.arguments[@"position"] intValue]/1000 ;
+                int duration = call.arguments[@"duration"] == [NSNull null] ? 0.0 : [call.arguments[@"duration"] intValue]/1000 ;
+                CMTime time = CMTimeMakeWithSeconds(position,NSEC_PER_SEC);
+                
+                currentItem = [[PlaylistItem alloc] initWithAlbumId:albumId albumName:albumTitle title:name artist:author url:url coverUrl:coverUrl];
+                
+                lastName = name;
+                lastAuthor = author;
+                lastUrl = url;
+                lastCoverUrl = coverUrl;
+                lastCookie = cookie;
+                lastTime = time;
+                
+                if (isPlaying == false) {
+                    [self pause:playerId];
+                } else if (position == 0) {
+                    [self play:playerId name:name author:author url:url coverUrl:coverUrl cookie:cookie isLocal:true volume:0.0 time:time isNotification:true];
+                }
+                [NowPlayingCenter setWithItem:currentItem];
+                dispatch_async(dispatch_get_global_queue(0,0), ^{
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [NowPlayingCenter updateWithItem:currentItem rate:1.0 position:position duration:duration];
+                    });
+                });
+                
+                
                 result(@(1));
             },
         @"remove_notification":
@@ -733,7 +785,7 @@ PlaylistItem *currentItem = nil;
             NSMutableDictionary * playerInfo = players[_playerId];
             [playerInfo setValue:@(false) forKey:@"isSeeking"];
             int state = STATE_SEEK_END;
-            [self notifyStateChange:_playerId state:state];
+            [self notifyStateChange:_playerId state:state overrideBlock:false];
             NSLog(@"Player: AVPlayerItemTimeJumpedNotification: %@", [note object]);
         }];
         id failedEndTimeObserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVPlayerItemFailedToPlayToEndTimeNotification
@@ -909,7 +961,7 @@ PlaylistItem *currentItem = nil;
     __block AVPlayerItem *playerItem;
     
     @try {
-        if (!playerInfo || ![url isEqualToString:playerInfo[@"url"]]) {
+        if (!playerInfo || ![url isEqualToString:playerInfo[@"url"]] || [url containsString:@"silence.mp3"] ) {
             NSLog(@"Player: Loading new URL");
             if (isLocal) {
                 NSLog(@"Player: Item is Local");
@@ -989,7 +1041,7 @@ PlaylistItem *currentItem = nil;
                 [self observePlayerItem:[player currentItem] playerId:playerId];
                 [ playerInfo setObject:@true forKey:@"isPlaying" ];
                 int state = STATE_PLAYING;
-                [self notifyStateChange:playerId state:state];
+                [self notifyStateChange:playerId state:state overrideBlock:false];
                 onReady(playerId);
             } else if ([[player currentItem] status ] == AVPlayerItemStatusFailed) {
                 NSLog(@"Player: FAILED STATUS. Notifying app that an error happened.");
@@ -1042,7 +1094,7 @@ PlaylistItem *currentItem = nil;
     NSLog(@"Player: Resuming");
     [self resume:_playerId];
     int state = STATE_BUFFERING;
-    [self notifyStateChange:_playerId state:state];
+    [self notifyStateChange:_playerId state:state overrideBlock:false];
     [ playerInfo setObject:@false forKey:@"isPlaying" ];
     [ playerInfo setObject:url forKey:@"url" ];
     
@@ -1367,13 +1419,15 @@ isNotification: (bool) respectSilence
         
         if (shallSendEvents) {
             [_channel_player invokeMethod:@"audio.onCurrentPosition" arguments:@{@"playerId": playerId, @"position": @(positionInMillis), @"duration": @(durationInMillis)}];
+            
+            dispatch_async(dispatch_get_global_queue(0,0), ^{
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [NowPlayingCenter updateWithItem:currentItem rate:1.0 position:position duration:_duration];
+                });
+            });
         }
         
-        dispatch_async(dispatch_get_global_queue(0,0), ^{
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [NowPlayingCenter updateWithItem:currentItem rate:1.0 position:position duration:_duration];
-            });
-        });
+        
         
         playerInfo = nil;
         player = nil;
@@ -1389,7 +1443,7 @@ isNotification: (bool) respectSilence
     
     [self doPause:playerId];
     int state = STATE_PAUSED;
-    [self notifyStateChange:playerId state:state];
+    [self notifyStateChange:playerId state:state overrideBlock:false];
     return Ok;
 }
 
@@ -1416,7 +1470,7 @@ isNotification: (bool) respectSilence
     [player play];
     [playerInfo setObject:@true forKey:@"isPlaying"];
     int state = STATE_PLAYING;
-    [self notifyStateChange:playerId state:state];
+    [self notifyStateChange:playerId state:state overrideBlock:false];
     
     [NowPlayingCenter setWithItem:currentItem];
     
@@ -1448,7 +1502,7 @@ isNotification: (bool) respectSilence
         [ self seek:playerId time:CMTimeMake(0, 1) ];
         [playerInfo setObject:@false forKey:@"isPlaying"];
         int state = STATE_STOPPED;
-        [self notifyStateChange:playerId state:state];
+        [self notifyStateChange:playerId state:state overrideBlock:false];
     }
 }
 
@@ -1531,11 +1585,11 @@ isNotification: (bool) respectSilence
         AVPlayer *player = playerInfo[@"player"];
         if (player.rate != 0) {
             int state = isConnected ? STATE_BUFFER_EMPTY : STATE_BUFFERING;
-            [self notifyStateChange:_playerId state:state];
+            [self notifyStateChange:_playerId state:state overrideBlock:false];
         } else {
             NSLog(@"Player: playbackBufferEmpty rate == 0");
             int state = STATE_PAUSED;
-            [self notifyStateChange:_playerId state:state];
+            [self notifyStateChange:_playerId state:state overrideBlock:false];
         }
     } else if ([keyPath isEqualToString: @"playbackLikelyToKeepUp"] || [keyPath isEqualToString: @"playbackBufferFull"]) {
         NSMutableDictionary * playerInfo = players[_playerId];
@@ -1551,7 +1605,7 @@ isNotification: (bool) respectSilence
         if (shouldStartPlaySoon && player.rate != 0) {
             [ playerInfo setObject:@true forKey:@"isPlaying" ];
             int state = STATE_PLAYING;
-            [self notifyStateChange:_playerId state:state];
+            [self notifyStateChange:_playerId state:state overrideBlock:false];
         }
         shouldAutoStart = false;
     } else {
@@ -1565,8 +1619,9 @@ isNotification: (bool) respectSilence
 
 - (void) notifyStateChange:(NSString *) playerId
                      state:(int)state
+             overrideBlock:(bool)overrideBlock
 {
-    if (shallSendEvents) {
+    if (shallSendEvents || overrideBlock) {
         [_channel_player invokeMethod:@"state.change" arguments:@{@"playerId": playerId, @"state": @(state)}];
     }
 }

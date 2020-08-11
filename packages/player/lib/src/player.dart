@@ -39,6 +39,15 @@ class Player {
   final Future<CookiesForCustomPolicy> Function() cookieSigner;
   final Future<String> Function(Media) localMediaValidator;
   final bool autoPlay;
+  final chromeCastEnabledEvents = [
+    EventType.BEFORE_PLAY,
+    EventType.NEXT,
+    EventType.PREVIOUS,
+    EventType.POSITION_CHANGE,
+    EventType.REWIND,
+    EventType.PLAY_REQUESTED,
+    EventType.PAUSED,
+  ];
 
   Stream<Event> _stream;
 
@@ -176,12 +185,6 @@ class Player {
         data['isPlaying'] = isPlaying;
       }
       await _invokeMethod('send_notification', data);
-
-      if (isPlaying) {
-        media.url = "silence://from-asset";
-        return await this.play(media);
-      }
-
       return Ok;
     } else {
       return Ok;
@@ -311,6 +314,7 @@ class Player {
   }
 
   Future<int> invokePlay(Media media, Map<String, dynamic> args) async {
+    print(args);
     final int result = await _invokeMethod('play', args);
     return result;
   }
@@ -715,12 +719,13 @@ class Player {
   static _notifyPositionChangeEvent(
       Player player, Duration newPosition, Duration newDuration) {
     _addUsingPlayer(
-        player,
-        PositionChangeEvent(
-            media: player._queue.current,
-            queuePosition: player._queue.index,
-            position: newPosition,
-            duration: newDuration));
+      player,
+      PositionChangeEvent(
+          media: player._queue.current,
+          queuePosition: player._queue.index,
+          position: newPosition,
+          duration: newDuration),
+    );
   }
 
   static void _log(String param) {
@@ -728,17 +733,20 @@ class Player {
   }
 
   void _add(Event event) {
+    print(event);
     if (_eventStreamController != null &&
         !_eventStreamController.isClosed &&
-        _shallSendEvents) {
+        (_shallSendEvents || chromeCastEnabledEvents.contains(event.type))) {
       _eventStreamController.add(event);
     }
   }
 
   static void _addUsingPlayer(Player player, Event event) {
+    print(event);
     if (player._eventStreamController != null &&
         !player._eventStreamController.isClosed &&
-        player._shallSendEvents) {
+        (player._shallSendEvents ||
+            player.chromeCastEnabledEvents.contains(event.type))) {
       player._eventStreamController.add(event);
     }
   }
