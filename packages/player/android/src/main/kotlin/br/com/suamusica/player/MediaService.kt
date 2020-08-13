@@ -9,11 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.net.wifi.WifiManager
-import android.os.AsyncTask
-import android.os.Bundle
-import android.os.Handler
-import android.os.PowerManager
-import androidx.core.content.ContextCompat
+import android.os.*
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
@@ -22,9 +18,9 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.media.session.MediaButtonReceiver
 import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
-
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
@@ -43,6 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class MediaService : androidx.media.MediaBrowserServiceCompat() {
     private val TAG = "Player"
+     val userAgent = "SuaMusica/player (Linux; Android ${Build.VERSION.SDK_INT}; ${Build.BRAND}/${Build.MODEL})"
 
     private var packageValidator: PackageValidator? = null
 
@@ -224,7 +221,11 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
     fun prepare(cookie: String, media: Media) {
         this.media = media
-        val defaultHttpDataSourceFactory = DefaultHttpDataSourceFactory("mp.next")
+        val defaultHttpDataSourceFactory = DefaultHttpDataSourceFactory(userAgent,
+        10 * 1000,
+        15 * 1000,
+        true)
+        
         defaultHttpDataSourceFactory.defaultRequestProperties.set("Cookie", cookie)
         val dataSourceFactory = DefaultDataSourceFactory(this, null, defaultHttpDataSourceFactory)
 
