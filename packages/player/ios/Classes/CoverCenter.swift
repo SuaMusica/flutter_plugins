@@ -78,7 +78,7 @@ extension String {
     
     private func toUIImage(data: Data, url: String) -> UIImage? {
         let fileExt = self.fileExt(url: url)
-        if (fileExt.hasPrefix(".webp")) {
+        if (fileExt.hasPrefix(".webp") || url.contains("filters:format(webp)")) {
             return SDImageWebPCoder.shared.decodedImage(with: data, options: nil)
         } else {
             return UIImage.init(data: data)
