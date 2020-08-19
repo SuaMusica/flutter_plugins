@@ -142,7 +142,7 @@ extension String {
             }
         }
         var fileExt = self.fileExt(url: url)
-        if (fileExt.hasPrefix(".webp")) {
+        if (fileExt.hasPrefix(".webp") || url.contains("filters:format(webp)")) {
             fileExt = ".webp"
         }
         let coverPath = "\(documentDirectory)/\(albumId)\(fileExt)"
