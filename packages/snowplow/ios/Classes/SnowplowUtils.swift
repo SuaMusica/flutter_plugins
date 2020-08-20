@@ -6,7 +6,7 @@ class SnowplowUtils {
         let event = SPScreenView.build({ (builder : SPScreenViewBuilder?) -> Void in
             builder!.setName(screenName)
         })
-        tracker.trackScreenViewEvent(event)
+        tracker.track(event)
     }
 
     static func trackStructuredEventWithTracker(with tracker: SPTracker, andCategory category: String, andAction action: String, andLabel label: String,  andProperty property: String,andValue value: Int) {
@@ -19,7 +19,7 @@ class SnowplowUtils {
             }
             builder!.setProperty(property)
         })
-        tracker.trackStructuredEvent(event)
+        tracker.track(event)
     }
 
     static func trackCustomEventWithTracker(with tracker: SPTracker, andSchema customSchema: String, andData data: NSObject) {
@@ -30,6 +30,6 @@ class SnowplowUtils {
             builder!.setEventData(eventData ?? SPSelfDescribingJson(schema: customSchema, andData: data))
             builder!.setContexts(NSMutableArray(array: contexts))
         })
-        tracker.trackUnstructuredEvent(event)
+        tracker.track(event)
     }
 }
