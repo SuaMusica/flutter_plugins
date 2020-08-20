@@ -46,8 +46,9 @@ public class SwiftSnowplowPlugin: NSObject, FlutterPlugin {
           let category = args["category"] as! String;
           let action = args["action"] as! String;
           let label = args["label"] as! String;
+          let value = args["value"] as! String;
           let property = args["property"] as! String;
-          trackEvent(result: result, category, action, label, property);
+          trackEvent(result: result, category, action, label, value,property);
         default:
             result(FlutterError(code: "-1", message: "Operation not supported", details: nil))
         }
@@ -74,8 +75,8 @@ public class SwiftSnowplowPlugin: NSObject, FlutterPlugin {
     result(true)
   }
 
-  public func trackEvent(result: @escaping FlutterResult, _ category: String, _ action: String, _ label: String, _ property: String) {
-    SnowplowUtils.trackStructuredEventWithTracker(with: SwiftSnowplowPlugin.tracker!, andCategory: category, andAction: action, andLabel: label, andProperty: property)
+  public func trackEvent(result: @escaping FlutterResult, _ category: String, _ action: String, _ label: String , _ value: String, _ property: String) {
+    SnowplowUtils.trackStructuredEventWithTracker(with: SwiftSnowplowPlugin.tracker!, andCategory: category, andAction: action, andLabel: label, andValue: value, andProperty: property)
     result(true)
   }
 }

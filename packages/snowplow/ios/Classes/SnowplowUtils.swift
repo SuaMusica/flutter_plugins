@@ -9,11 +9,12 @@ class SnowplowUtils {
         tracker.trackScreenViewEvent(event)
     }
 
-    static func trackStructuredEventWithTracker(with tracker: SPTracker, andCategory category: String, andAction action: String, andLabel label: String, andProperty property: String) {
+    static func trackStructuredEventWithTracker(with tracker: SPTracker, andCategory category: String, andAction action: String, andLabel label: String, andValue value: String, andProperty property: String) {
         let event = SPStructured.build({ (builder : SPStructuredBuilder?) -> Void in
             builder!.setCategory(category)
             builder!.setAction(action)
             builder!.setLabel(label)
+            builder!.setValue(value)
             builder!.setProperty(property)
         })
         tracker.trackStructuredEvent(event)

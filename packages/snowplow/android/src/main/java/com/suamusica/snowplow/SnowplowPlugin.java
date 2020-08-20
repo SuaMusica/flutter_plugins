@@ -83,7 +83,8 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
         final String action = methodCall.argument("action");
         final String label = methodCall.argument("label");
         final String property = methodCall.argument("property");
-        trackEvent(result, category, action, label, property);
+        final String value = methodCall.argument("value");
+        trackEvent(result, category, action, label, value, property);
         break;
       default:
         result.notImplemented();
@@ -98,8 +99,8 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
   }
 
   private void trackEvent(final MethodChannel.Result result, String category, String action,
-      String label, String property) {
-    tracker.track(Structured.builder().category(category).action(action).label(label)
+      String label, String value, String property) {
+    tracker.track(Structured.builder().category(category).action(action).label(label).value(value)
         .property(property).build());
     result.success(true);
   }
