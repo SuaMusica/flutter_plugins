@@ -1357,8 +1357,10 @@ isNotification: (bool) respectSilence
     
     [self configureRemoteCommandCenter];
     if ([self configureAudioSession:playerId] != Ok) {
-        [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": _playerId, @"errorType": @(PLAYER_ERROR_FAILED)}];
-        return NotOk;
+        if (!loadOnly) {
+            [_channel_player invokeMethod:@"audio.onError" arguments:@{@"playerId": _playerId, @"errorType": @(PLAYER_ERROR_FAILED)}];
+            return NotOk;
+        }
     }
     
     if (name == nil) {
