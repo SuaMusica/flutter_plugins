@@ -434,7 +434,7 @@ class Player {
   }
 
   Future<int> seek(Duration position) {
-    _notifyPlayerStateChangeEvent(this, EventType.SEEK_START);
+    _notifyPlayerStateChangeEvent(this, EventType.SEEK_START, "");
     return _invokeMethod('seek', {'position': position.inMilliseconds});
   }
 
@@ -460,7 +460,7 @@ class Player {
 
   static Future<void> _handleOnComplete(Player player) async {
     player.state = PlayerState.COMPLETED;
-    _notifyPlayerStateChangeEvent(player, EventType.FINISHED_PLAYING);
+    _notifyPlayerStateChangeEvent(player, EventType.FINISHED_PLAYING, "");
     switch (player.repeatMode) {
       case RepeatMode.NONE:
       case RepeatMode.QUEUE:
@@ -504,38 +504,64 @@ class Player {
         final errorType = callArgs['errorType'] ?? 2;
 
         _notifyPlayerErrorEvent(
-            player, 'error', PlayerErrorType.values[errorType]);
+          player,
+          'error',
+          PlayerErrorType.values[errorType],
+        );
         break;
       case 'state.change':
         final state = callArgs['state'];
+        String error = callArgs['error'] ?? "";
         player.state = PlayerState.values[state];
 
         switch (player.state) {
           case PlayerState.IDLE:
             break;
-
           case PlayerState.BUFFERING:
-            _notifyPlayerStateChangeEvent(player, EventType.BUFFERING);
+            _notifyPlayerStateChangeEvent(
+              player,
+              EventType.BUFFERING,
+              error,
+            );
             break;
-
           case PlayerState.PLAYING:
-            _notifyPlayerStateChangeEvent(player, EventType.PLAYING);
+            _notifyPlayerStateChangeEvent(
+              player,
+              EventType.PLAYING,
+              error,
+            );
             break;
 
           case PlayerState.PAUSED:
-            _notifyPlayerStateChangeEvent(player, EventType.PAUSED);
+            _notifyPlayerStateChangeEvent(
+              player,
+              EventType.PAUSED,
+              error,
+            );
             break;
 
           case PlayerState.STOPPED:
-            _notifyPlayerStateChangeEvent(player, EventType.STOP_REQUESTED);
+            _notifyPlayerStateChangeEvent(
+              player,
+              EventType.STOP_REQUESTED,
+              error,
+            );
             break;
 
           case PlayerState.SEEK_END:
-            _notifyPlayerStateChangeEvent(player, EventType.SEEK_END);
+            _notifyPlayerStateChangeEvent(
+              player,
+              EventType.SEEK_END,
+              error,
+            );
             break;
 
           case PlayerState.BUFFER_EMPTY:
-            _notifyPlayerStateChangeEvent(player, EventType.BUFFER_EMPTY);
+            _notifyPlayerStateChangeEvent(
+              player,
+              EventType.BUFFER_EMPTY,
+              error,
+            );
             break;
 
           case PlayerState.COMPLETED:
@@ -617,13 +643,26 @@ class Player {
             duration: newDuration));
   }
 
-  static _notifyPlayerStateChangeEvent(Player player, EventType eventType) {
-    _addUsingPlayer(
+  static _notifyPlayerStateChangeEvent(
+    Player player,
+    EventType eventType,
+    String error,
+  ) {
+    if (error.isNotEmpty) {
+      _notifyPlayerErrorEvent(
         player,
-        Event(
-            type: eventType,
-            media: player._queue.current,
-            queuePosition: player._queue.index));
+        error,
+        PlayerErrorType.INFORMATION,
+      );
+    }
+    _addUsingPlayer(
+      player,
+      Event(
+        type: eventType,
+        media: player._queue.current,
+        queuePosition: player._queue.index,
+      ),
+    );
   }
 
   static _notifyPlayerErrorEvent(Player player, String error,
@@ -631,11 +670,12 @@ class Player {
     _addUsingPlayer(
       player,
       Event(
-          type: EventType.ERROR_OCCURED,
-          media: player._queue.current,
-          queuePosition: player._queue.index,
-          error: error,
-          errorType: errorType),
+        type: EventType.ERROR_OCCURED,
+        media: player._queue.current,
+        queuePosition: player._queue.index,
+        error: error,
+        errorType: errorType,
+      ),
     );
   }
 
