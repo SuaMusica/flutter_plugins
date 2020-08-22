@@ -1,6 +1,6 @@
 package com.suamusica.mediascanner.output
 
-data class Media(
+data class MediaOutput(
         val title: String
 ) {
 
