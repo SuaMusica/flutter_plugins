@@ -42,4 +42,5 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation files('lib/flutter.jar')
     implementation 'androidx.annotation:annotation:1.1.0'
+    implementation "com.jakewharton.timber:timber:4.7.1"
 }
