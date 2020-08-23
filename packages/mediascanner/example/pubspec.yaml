@@ -12,6 +12,7 @@ dependencies:
   flutter:
     sdk: flutter
 
+  permission_handler: ^5.0.1
   mediascanner:
     # When depending on this package from a real application you should use:
     #   mediascanner: ^x.y.z

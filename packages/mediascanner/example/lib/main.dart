@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:mediascanner/media_scanner.dart';
 import 'package:mediascanner/model/media_scan_params.dart';
 import 'package:mediascanner/model/scanned_media.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 void main() {
   runApp(MyApp());
@@ -23,6 +24,11 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     initPlatformState();
+    scanMedias();
+  }
+
+  Future<void> scanMedias() async {
+    await Permission.storage.request();
     MediaScanner.instance.scan(MediaScanParams(MediaType.audio, [".mp3", ".wav"]));
   }
 
