@@ -8,7 +8,7 @@ class ScanMediaMethodInput(
 ) {
     private constructor(args: Map<String, Any>)
             : this(
-            args.getRequired(MEDIA_TYPE),
+            MediaType.valueOf(args.getRequired(MEDIA_TYPE)),
             args.getRequired(SUPPORTED_EXTENSIONS)
     )
 

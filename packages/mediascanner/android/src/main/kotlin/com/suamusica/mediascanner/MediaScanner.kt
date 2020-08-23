@@ -2,7 +2,7 @@ package com.suamusica.mediascanner
 
 import android.content.Context
 import com.suamusica.mediascanner.input.ScanMediaMethodInput
-import com.suamusica.mediascanner.output.MediaOutput
+import com.suamusica.mediascanner.output.ScannedMediaOutput
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
@@ -13,12 +13,12 @@ class MediaScanner(
 ) {
     fun scan(input: ScanMediaMethodInput) {
         executor.execute {
-            val mediaOutputList: List<MediaOutput> = getAudioMedia()
-            mediaOutputList.forEach { callback.onMediaScanned(it) }
+            val scannedMediaOutputList: List<ScannedMediaOutput> = getAudioMedia()
+            scannedMediaOutputList.forEach { callback.onMediaScanned(it) }
         }
     }
 
-    private fun getAudioMedia(): List<MediaOutput> {
-        return listOf(MediaOutput(title = "Title Media Test"))
+    private fun getAudioMedia(): List<ScannedMediaOutput> {
+        return listOf(ScannedMediaOutput(title = "Title Media Test"))
     }
 }

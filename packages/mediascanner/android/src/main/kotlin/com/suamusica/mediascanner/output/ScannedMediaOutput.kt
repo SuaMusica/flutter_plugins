@@ -1,17 +1,17 @@
 package com.suamusica.mediascanner.output
 
-data class MediaOutput(
+data class ScannedMediaOutput(
         val title: String
 ) {
 
-    fun toResult(): Map<String, String> {
+    fun toResult(): Map<String, Any> {
         return mapOf(
-                TYPE_KEY to title
+                TITLE_KEY to title
         )
     }
 
     companion object {
-        private const val TYPE_KEY = "type"
+        private const val TITLE_KEY = "title"
         private const val EMPTY_STRING = ""
     }
 }

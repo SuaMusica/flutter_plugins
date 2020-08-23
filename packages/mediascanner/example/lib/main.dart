@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:flutter/services.dart';
-import 'package:mediascanner/mediascanner.dart';
+import 'package:mediascanner/media_scanner.dart';
+import 'package:mediascanner/model/media_scan_params.dart';
+import 'package:mediascanner/model/scanned_media.dart';
 
 void main() {
   runApp(MyApp());
@@ -15,19 +17,22 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
+  String _media = 'Unknown';
 
   @override
   void initState() {
     super.initState();
     initPlatformState();
+    MediaScanner.instance.scan(MediaScanParams(MediaType.audio, [".mp3", ".wav"]));
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
     String platformVersion;
+    String media;
     // Platform messages may fail, so we use a try/catch PlatformException.
     try {
-      platformVersion = await Mediascanner.platformVersion;
+      platformVersion = await MediaScanner.platformVersion;
     } on PlatformException {
       platformVersion = 'Failed to get platform version.';
     }
@@ -50,7 +55,21 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Plugin example app'),
         ),
         body: Center(
-          child: Text('Running on: $_platformVersion\n'),
+          child: Column(
+            children: [
+              Text('Running on: $_platformVersion\n'),
+              StreamBuilder<ScannedMedia>(
+                stream: MediaScanner.instance.onScannedMediaStream,
+                builder: (context, snapshot) {
+
+                  if (snapshot.hasError || !snapshot.hasData)
+                    return Container();
+
+                  return Text('Scanned Media: ${snapshot.data}\n');
+                }
+              ),
+            ],
+          ),
         ),
       ),
     );

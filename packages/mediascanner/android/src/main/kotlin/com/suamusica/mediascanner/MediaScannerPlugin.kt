@@ -56,7 +56,7 @@ public class MediascannerPlugin: FlutterPlugin, MethodCallHandler {
   companion object {
     @JvmStatic
     fun registerWith(registrar: Registrar) {
-      val channel = MethodChannel(registrar.messenger(), "MediaScanner")
+      val channel = MethodChannel(registrar.messenger(), CHANNEL_NAME)
       channel.setMethodCallHandler(MediascannerPlugin())
     }
 
