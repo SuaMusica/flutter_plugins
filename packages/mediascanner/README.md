@@ -1,4 +1,4 @@
-# MediaScanner
+# mediascanner
 
 A new flutter plugin project.
 

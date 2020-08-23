@@ -1,10 +1,10 @@
 import Flutter
 import UIKit
 
-public class SwiftMediaScannerPlugin: NSObject, FlutterPlugin {
+public class SwiftMediascannerPlugin: NSObject, FlutterPlugin {
   public static func register(with registrar: FlutterPluginRegistrar) {
-    let channel = FlutterMethodChannel(name: "MediaScanner", binaryMessenger: registrar.messenger())
-    let instance = SwiftMediaScannerPlugin()
+    let channel = FlutterMethodChannel(name: "mediascanner", binaryMessenger: registrar.messenger())
+    let instance = SwiftMediascannerPlugin()
     registrar.addMethodCallDelegate(instance, channel: channel)
   }
 

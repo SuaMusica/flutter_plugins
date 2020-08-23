@@ -1,4 +1,4 @@
-name: MediaScanner
+name: mediascanner
 description: A new flutter plugin project.
 version: 0.0.1
 author:
@@ -28,10 +28,10 @@ flutter:
   plugin:
     platforms:
       android:
-        package: com.example.MediaScanner
-        pluginClass: MediaScannerPlugin
+        package: com.suamusica.mediascanner
+        pluginClass: MediascannerPlugin
       ios:
-        pluginClass: MediaScannerPlugin
+        pluginClass: MediascannerPlugin
 
   # To add assets to your plugin package, add an assets section, like this:
   # assets:

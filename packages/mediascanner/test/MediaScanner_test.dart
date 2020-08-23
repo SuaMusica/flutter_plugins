@@ -1,9 +1,9 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:MediaScanner/MediaScanner.dart';
+import 'package:mediascanner/mediascanner.dart';
 
 void main() {
-  const MethodChannel channel = MethodChannel('MediaScanner');
+  const MethodChannel channel = MethodChannel('mediascanner');
 
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -18,6 +18,6 @@ void main() {
   });
 
   test('getPlatformVersion', () async {
-    expect(await MediaScanner.platformVersion, '42');
+    expect(await Mediascanner.platformVersion, '42');
   });
 }

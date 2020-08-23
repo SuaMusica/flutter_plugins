@@ -1,6 +1,6 @@
-# MediaScanner_example
+# mediascanner_example
 
-Demonstrates how to use the MediaScanner plugin.
+Demonstrates how to use the mediascanner plugin.
 
 ## Getting Started
 
