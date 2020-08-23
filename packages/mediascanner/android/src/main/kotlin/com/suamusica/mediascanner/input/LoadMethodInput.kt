@@ -2,7 +2,7 @@ package com.suamusica.mediascanner.input
 
 import com.suamusica.mediascanner.extensions.getRequired
 
-class ScanMediaMethodInput(
+data class ScanMediaMethodInput(
         val mediaType: MediaType,
         val extensions: List<String>
 ) {
