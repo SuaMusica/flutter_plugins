@@ -109,7 +109,14 @@ class Plugin private constructor(private val channel: MethodChannel, private val
         Log.i(TAG, "method: ${call.method} cookie: $cookie")
         when (call.method) {
             LOAD_METHOD -> {
-                
+                val name = call.argument<String>(NAME_ARGUMENT)!!
+                val author = call.argument<String>(AUTHOR_ARGUMENT)!!
+                val url = call.argument<String>(URL_ARGUMENT)!!
+                val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
+                val position = call.argument<Long>(POSITION_ARGUMENT)
+                val loadOnly = call.argument<Boolean>(LOAD_ONLY)!!
+
+                mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl))
             }
             PLAY_METHOD -> {
                 val name = call.argument<String>(NAME_ARGUMENT)!!
