@@ -30,12 +30,14 @@ class CookieSigner {
   factory CookieSigner.from(String privateKeyPath) => CookieSigner(
       privateKeyPath, CustomPolicyBuilder(), DefaultContentCleaner());
 
-  Future<CookiesForCustomPolicy> getCookiesForCustomPolicy(
-      String resourceUrlOrPath,
-      String keyPairId,
-      DateTime expiresOn,
-      DateTime activeFrom,
-      String ipRange) async {
+  Future<CookiesForCustomPolicy> getCookiesForCustomPolicy({
+    String resourceUrlOrPath,
+    String keyPairId,
+    int difference = 0,
+    DateTime expiresOn,
+    DateTime activeFrom,
+    String ipRange,
+  }) async {
     ArgumentError.checkNotNull(resourceUrlOrPath);
     ArgumentError.checkNotNull(keyPairId);
     ArgumentError.checkNotNull(expiresOn);
@@ -52,10 +54,11 @@ class CookieSigner {
     String urlSafeSignature = _makeBytesUrlSafe(signature.bytes);
 
     return CookiesForCustomPolicy(
-      expiresOn,
-      Entry(PolicyKey, urlSafePolicy),
-      Entry(KeyPairIdKey, keyPairId),
-      Entry(SignatureKey, urlSafeSignature),
+      expires: expiresOn,
+      difference: difference ?? 0,
+      policy: Entry(PolicyKey, urlSafePolicy),
+      keyPairId: Entry(KeyPairIdKey, keyPairId),
+      signature: Entry(SignatureKey, urlSafeSignature),
     );
   }
 
@@ -81,5 +84,6 @@ class CookieSigner {
     return signer.generateSignature(dataToSign);
   }
 
-  String _makeBytesUrlSafe(Uint8List content) => contentCleaner.makeBytesUrlSafe(content);
+  String _makeBytesUrlSafe(Uint8List content) =>
+      contentCleaner.makeBytesUrlSafe(content);
 }

@@ -384,10 +384,10 @@ Player createPlayer() => Player(
 Future<CookiesForCustomPolicy> cookieSigner() async {
   DateTime expiresOn = DateTime.now().add(Duration(hours: 12));
   return CookiesForCustomPolicy(
-    expiresOn,
-    Entry(CookieSigner.PolicyKey, "ABC"),
-    Entry(CookieSigner.KeyPairIdKey, "ABC"),
-    Entry(CookieSigner.SignatureKey, "ABC"),
+    expires: expiresOn,
+    policy: Entry(CookieSigner.PolicyKey, "ABC"),
+    keyPairId: Entry(CookieSigner.KeyPairIdKey, "ABC"),
+    signature: Entry(CookieSigner.SignatureKey, "ABC"),
   );
 }
 
