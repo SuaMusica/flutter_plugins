@@ -7,6 +7,9 @@ class CookiesForCustomPolicy extends SignedCookies {
   final Entry<String, String> signature;
 
   CookiesForCustomPolicy(
-      DateTime expires, this.policy, this.keyPairId, this.signature)
-      : super(expires);
+    DateTime expires,
+    this.policy,
+    this.keyPairId,
+    this.signature,
+  ) : super(expires);
 }

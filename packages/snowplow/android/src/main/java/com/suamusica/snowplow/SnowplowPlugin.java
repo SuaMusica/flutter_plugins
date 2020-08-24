@@ -35,31 +35,17 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
   @Override
   public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
     applicationContext = flutterPluginBinding.getApplicationContext();
-    channel =
-        new MethodChannel(flutterPluginBinding.getFlutterEngine().getDartExecutor(), CHANNEL_NAME);
+    channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), CHANNEL_NAME);
     stb = new SnowplowTrackerBuilder();
     tracker = stb.getTracker(applicationContext);
     channel.setMethodCallHandler(this);
   }
 
+
   private SnowplowPlugin(Context context) {
     this.applicationContext = context;
     this.stb = new SnowplowTrackerBuilder();
     this.tracker = this.stb.getTracker(this.applicationContext);
-  }
-
-  // This static function is optional and equivalent to onAttachedToEngine. It supports the old
-  // pre-Flutter-1.12 Android projects. You are encouraged to continue supporting
-  // plugin registration via this function while apps migrate to use the new Android APIs
-  // post-flutter-1.12 via https://flutter.dev/go/android-project-migration.
-  //
-  // It is encouraged to share logic between onAttachedToEngine and registerWith to keep
-  // them functionally equivalent. Only one of onAttachedToEngine or registerWith will be called
-  // depending on the user's project. onAttachedToEngine or registerWith must both be defined
-  // in the same class.
-  public static void registerWith(Registrar registrar) {
-    final MethodChannel channel = new MethodChannel(registrar.messenger(), CHANNEL_NAME);
-    channel.setMethodCallHandler(new SnowplowPlugin(registrar.context()));
   }
 
   @Override
@@ -83,7 +69,8 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
         final String action = methodCall.argument("action");
         final String label = methodCall.argument("label");
         final String property = methodCall.argument("property");
-        trackEvent(result, category, action, label, property);
+        final Integer value = methodCall.argument("value");
+        trackEvent(result, category, action, label, property, value);
         break;
       default:
         result.notImplemented();
@@ -98,9 +85,14 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
   }
 
   private void trackEvent(final MethodChannel.Result result, String category, String action,
-      String label, String property) {
-    tracker.track(Structured.builder().category(category).action(action).label(label)
-        .property(property).build());
+      String label, String property, Integer value) {
+
+    Structured.Builder struct =
+        Structured.builder().category(category).action(action).label(label).property(property);
+    if (value > 0) {
+      struct.value(Double.valueOf(value));
+    }
+    tracker.track(struct.build());
     result.success(true);
   }
 

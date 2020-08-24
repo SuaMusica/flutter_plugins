@@ -49,6 +49,7 @@ class Snowplow {
     String action,
     String label,
     String property,
+    int value,
   }) async {
     try {
       Map<String, dynamic> args = <String, dynamic>{
@@ -56,9 +57,10 @@ class Snowplow {
         'action': action,
         'label': label,
         'property': property,
+        'value': value
       };
       return _channel.invokeMethod('trackEvent', args);
-    } on PlatformException catch (e) {
+    } catch (e) {
       print("Failed ${e.message}");
       return Future.value(false);
     }

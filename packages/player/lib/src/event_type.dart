@@ -32,4 +32,10 @@ enum PlayerErrorType {
   FAILED_TO_PLAY,
   FAILED_TO_PLAY_ERROR,
   NETWORK_ERROR,
+  INFORMATION,
+}
+
+extension FeedTypeString on PlayerErrorType {
+  String get toShortString =>
+      this.toString().replaceAll("PlayerErrorType.", "");
 }

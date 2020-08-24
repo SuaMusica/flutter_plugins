@@ -3,8 +3,7 @@ abstract class SignedCookies {
 
   SignedCookies(this.expires);
 
-  bool isValid() {
-    return this.expires != null &&
-        !this.expires.difference(DateTime.now()).isNegative;
-  }
+  bool isValid() =>
+      this.expires != null &&
+      !(this.expires.difference(DateTime.now()).inMinutes <= 15);
 }
