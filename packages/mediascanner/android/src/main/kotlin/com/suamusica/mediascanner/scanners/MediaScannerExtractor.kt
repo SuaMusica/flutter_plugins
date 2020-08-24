@@ -9,8 +9,15 @@ interface MediaScannerExtractor {
     val mediaType: MediaType
     val uri: Uri
     val columns: Array<String>
+    val selection: String
+    val selectionArgs: Array<String>
+    val sortOrder: String?
+
     fun getScannedMediaFromCursor(cursor: Cursor): ScannedMediaOutput
 
     fun Cursor.getStringByColumnName(columnName: String): String =
             this.getString(this.getColumnIndex(columnName)) ?: ""
+
+    fun Cursor.getIntByColumnName(columnName: String): Int =
+            this.getInt(this.getColumnIndex(columnName))
 }

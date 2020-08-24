@@ -17,7 +17,7 @@ class MediaScanner(
         private val executor: Executor = Executors.newSingleThreadExecutor(),
         private val contentResolver: ContentResolver = context.contentResolver,
         private val mediaScannerExtractors: List<MediaScannerExtractor> = listOf(
-                AudioMediaScannerExtractor()
+                AudioMediaScannerExtractor(context)
         )
 ) {
     fun scan(input: ScanMediaMethodInput) {
@@ -32,11 +32,20 @@ class MediaScanner(
                 || it.mediaType == input.mediaType }
 
         extractors.forEach { extractor ->
-            val cursor = contentResolver.query(extractor.uri, extractor.columns, null, null, null)
-            cursor?.use {
-                while (it.moveToNext()) {
-                    val scannedMedia = extractor.getScannedMediaFromCursor(it)
-                    callback.onMediaScanned(scannedMedia)
+            val cursor = contentResolver.query(
+                    extractor.uri,
+                    extractor.columns,
+                    extractor.selection,
+                    extractor.selectionArgs,
+                    null
+            )
+            cursor?.use { c ->
+                while (c.moveToNext()) {
+                    val scannedMedia = extractor.getScannedMediaFromCursor(c)
+                    val extension = ".".plus(scannedMedia.path.substringAfterLast("."))
+                    input.extensions.find { extension.contains(it) }?.let {
+                        callback.onMediaScanned(scannedMedia)
+                    }
                 }
             }
         }
