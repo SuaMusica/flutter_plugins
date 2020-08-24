@@ -117,6 +117,8 @@ class Plugin private constructor(private val channel: MethodChannel, private val
                 val loadOnly = call.argument<Boolean>(LOAD_ONLY)!!
 
                 mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl))
+                mediaSessionConnection?.sendNotification(name, author, url, coverUrl)
+                Log.i(TAG, "method: ${call.method} name: $name author: $author")
             }
             PLAY_METHOD -> {
                 val name = call.argument<String>(NAME_ARGUMENT)!!
