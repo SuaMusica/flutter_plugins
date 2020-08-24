@@ -6,10 +6,14 @@ class CookiesForCustomPolicy extends SignedCookies {
   final Entry<String, String> keyPairId;
   final Entry<String, String> signature;
 
-  CookiesForCustomPolicy(
+  CookiesForCustomPolicy({
     DateTime expires,
+    int difference,
     this.policy,
     this.keyPairId,
     this.signature,
-  ) : super(expires);
+  }) : super(difference, expires);
+
+  String toHeaders() =>
+      "${this.policy.key}=${this.policy.value};${this.signature.key}=${this.signature.value};${this.keyPairId.key}=${this.keyPairId.value}";
 }

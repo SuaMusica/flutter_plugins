@@ -61,35 +61,22 @@ class Player {
     Map<String, dynamic> arguments,
   ]) async {
     arguments ??= const {};
+    if (_cookies == null || !_cookies.isValid) {
+      debugPrint("Generating Cookies");
+      _cookies = await cookieSigner();
+    }
+    String cookie = _cookies.toHeaders();
+    if (method == "play") {
+      debugPrint("Cookie: $cookie");
+    }
 
-    Future<bool> requiresCookie =
-        Future.value(true); // changing to always pass cookies
-    return requiresCookie.then((requires) {
-      Future<CookiesForCustomPolicy> cookies = Future.value(_cookies);
-      if (requires) {
-        if (_cookies == null || !_cookies.isValid()) {
-          cookies = (() async => await cookieSigner())();
-        }
-      }
+    final Map<String, dynamic> args = Map.of(arguments)
+      ..['playerId'] = playerId
+      ..['cookie'] = cookie;
 
-      return cookies.then((cookies) {
-        String cookie = "";
-        // we need to save it in order to reuse if it is still valid
-        if (requires) {
-          _cookies = cookies;
-          cookie =
-              "${cookies.policy.key}=${cookies.policy.value};${cookies.signature.key}=${cookies.signature.value};${cookies.keyPairId.key}=${cookies.keyPairId.value}";
-        }
-
-        final Map<String, dynamic> args = Map.of(arguments)
-          ..['playerId'] = playerId
-          ..['cookie'] = cookie;
-
-        return _channel
-            .invokeMethod(method, args)
-            .then((result) => (result as int));
-      });
-    });
+    return _channel
+        .invokeMethod(method, args)
+        .then((result) => (result as int));
   }
 
   Future<int> enqueue(
