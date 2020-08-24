@@ -17,7 +17,7 @@ class Media {
   final String shareUrl;
   final int playlistId;
   final bool isSpot;
-
+  String fallbackUrl;
   Media({
     @required this.id,
     @required this.name,
@@ -33,8 +33,10 @@ class Media {
     this.shareUrl,
     this.playlistId,
     this.isSpot,
-  }) : super();
-
+    this.fallbackUrl,
+  }) : super() {
+    fallbackUrl = fallbackUrl ?? url;
+  }
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
@@ -48,6 +50,7 @@ class Media {
         'is_verified': isVerified,
         'shared_url': shareUrl,
         'playlist_id': playlistId,
+        'fallbackUrl': fallbackUrl,
         'is_spot': isSpot,
       };
 
@@ -71,6 +74,7 @@ class Media {
           isVerified == other.isVerified &&
           shareUrl == other.shareUrl &&
           playlistId == other.playlistId &&
+          fallbackUrl == other.fallbackUrl &&
           isSpot == other.isSpot;
 
   @override

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:smaws/aws.dart';
 import 'package:flutter/services.dart';
@@ -190,6 +191,13 @@ class Player {
       _notifyChangeToNext(media);
     }
     mediaUrl ??= (await localMediaValidator(media)) ?? media.url;
+    //If it is local, check if it exists before playing it.
+    if (!mediaUrl.startsWith("http")) {
+      if (!File(mediaUrl).existsSync() && media.fallbackUrl != null) {
+        //Should we remove from DB??
+        mediaUrl = media.fallbackUrl;
+      }
+    }
     volume ??= 1.0;
     respectSilence ??= false;
     stayAwake ??= false;
