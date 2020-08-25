@@ -5,6 +5,7 @@ import android.content.ContentResolver
 import android.content.Context
 import com.suamusica.mediascanner.input.MediaType
 import com.suamusica.mediascanner.input.ScanMediaMethodInput
+import com.suamusica.mediascanner.output.ScannedMediaOutput
 import com.suamusica.mediascanner.scanners.AudioMediaScannerExtractor
 import com.suamusica.mediascanner.scanners.MediaScannerExtractor
 import timber.log.Timber
@@ -28,8 +29,12 @@ class MediaScanner(
     @SuppressLint("Recycle")
     private fun scanMediasFromAndroidApi(input: ScanMediaMethodInput) {
 
-        val extractors = mediaScannerExtractors.filter { input.mediaType == MediaType.ALL
-                || it.mediaType == input.mediaType }
+        val allMediaScanned = mutableListOf<ScannedMediaOutput>()
+
+        val extractors = mediaScannerExtractors.filter {
+            input.mediaType == MediaType.ALL
+                    || it.mediaType == input.mediaType
+        }
 
         extractors.forEach { extractor ->
             val cursor = contentResolver.query(
@@ -44,10 +49,13 @@ class MediaScanner(
                     val scannedMedia = extractor.getScannedMediaFromCursor(c)
                     val extension = ".".plus(scannedMedia.path.substringAfterLast("."))
                     input.extensions.find { extension.contains(it) }?.let {
+                        allMediaScanned.add(scannedMedia)
                         callback.onMediaScanned(scannedMedia)
                     }
                 }
             }
         }
+
+        callback.onAllMediaScanned(allMediaScanned)
     }
 }

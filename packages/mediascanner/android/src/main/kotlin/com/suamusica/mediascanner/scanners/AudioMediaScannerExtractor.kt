@@ -38,6 +38,7 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
         return ScannedMediaOutput(
                 title = cursor.getStringByColumnName(Audio.Media.TITLE),
                 artist = cursor.getStringByColumnName(Audio.Media.ARTIST),
+                albumId = cursor.getIntByColumnName(Audio.Media.ALBUM_ID),
                 album = cursor.getStringByColumnName(Audio.Media.ALBUM),
                 track = cursor.getStringByColumnName(Audio.Media.TRACK),
                 path = cursor.getStringByColumnName(Audio.Media.DATA),
