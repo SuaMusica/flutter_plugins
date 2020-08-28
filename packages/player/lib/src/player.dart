@@ -210,7 +210,7 @@ class Player {
       'author': media.author,
       'url': mediaUrl,
       'coverUrl': media.coverUrl,
-      'loadOnly': false,
+      'loadOnly': true,
       'isLocal': media.isLocal,
       'volume': volume,
       'position': position?.inMilliseconds,
