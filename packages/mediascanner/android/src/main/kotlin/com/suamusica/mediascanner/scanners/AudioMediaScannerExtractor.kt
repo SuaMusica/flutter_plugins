@@ -36,6 +36,7 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
 
     override fun getScannedMediaFromCursor(cursor: Cursor): ScannedMediaOutput {
         return ScannedMediaOutput(
+                mediaId = cursor.getIntByColumnName(Audio.Media._ID),
                 title = cursor.getStringByColumnName(Audio.Media.TITLE),
                 artist = cursor.getStringByColumnName(Audio.Media.ARTIST),
                 albumId = cursor.getIntByColumnName(Audio.Media.ALBUM_ID),

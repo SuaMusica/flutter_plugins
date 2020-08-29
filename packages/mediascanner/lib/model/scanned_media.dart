@@ -1,7 +1,8 @@
 class ScannedMedia {
-  ScannedMedia(this.title, this.artist, this.albumId, this.album, this.track,
+  ScannedMedia(this.mediaId, this.title, this.artist, this.albumId, this.album, this.track,
       this.path, this.albumCoverPath);
 
+  int mediaId;
   String title;
   String artist;
   int albumId;
@@ -13,6 +14,7 @@ class ScannedMedia {
   @override
   String toString() {
     return 'ScannedMedia{'
+        'mediaId: $mediaId, '
         'title: $title, '
         'artist: $artist, '
         'albumId: $albumId, '
@@ -25,6 +27,7 @@ class ScannedMedia {
 
   static ScannedMedia fromMap(Map<dynamic, dynamic> map) {
     return ScannedMedia(
+        map["mediaId"] as int,
         map["title"] as String,
         map["artist"] as String,
         map["albumId"] as int,

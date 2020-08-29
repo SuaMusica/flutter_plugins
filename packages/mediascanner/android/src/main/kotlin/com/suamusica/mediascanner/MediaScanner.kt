@@ -50,7 +50,6 @@ class MediaScanner(
                     val extension = ".".plus(scannedMedia.path.substringAfterLast("."))
                     input.extensions.find { extension.contains(it) }?.let {
                         allMediaScanned.add(scannedMedia)
-                        callback.onMediaScanned(scannedMedia)
                     }
                 }
             }

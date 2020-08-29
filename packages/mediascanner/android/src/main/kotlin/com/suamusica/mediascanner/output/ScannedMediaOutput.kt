@@ -1,6 +1,7 @@
 package com.suamusica.mediascanner.output
 
 data class ScannedMediaOutput(
+        val mediaId: Int,
         val title: String,
         val artist: String,
         val albumId: Int,
@@ -12,6 +13,7 @@ data class ScannedMediaOutput(
 
     fun toResult(): Map<String, Any> {
         return mapOf(
+                MEDIA_ID_KEY to mediaId,
                 TITLE_KEY to title,
                 ARTIST_KEY to artist,
                 ALBUM_ID_KEY to albumId,
@@ -23,6 +25,7 @@ data class ScannedMediaOutput(
     }
 
     companion object {
+        private const val MEDIA_ID_KEY = "mediaId"
         private const val TITLE_KEY = "title"
         private const val ARTIST_KEY = "artist"
         private const val ALBUM_ID_KEY = "albumId"
