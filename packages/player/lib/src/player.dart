@@ -127,7 +127,13 @@ class Player {
     return Ok;
   }
 
-  Media restartQueue() => _queue.restart();
+  Future<Media> restartQueue() async {
+    final media = _queue.restart();
+
+    await this.load(media);
+
+    return media;
+  }
 
   Future<int> reorder(int oldIndex, int newIndex,
       [bool isShuffle = false]) async {
@@ -142,6 +148,10 @@ class Player {
   int get queuePosition => _queue.index;
   int get size => _queue.size;
   Media get top => _queue.top;
+
+  Future<int> load(Media media) async {
+    return _doLoad(_queue.current);
+  }
 
   Future<int> play(
     Media media, {
@@ -176,6 +186,37 @@ class Player {
     } else {
       return NotOk;
     }
+  }
+
+  Future<int> _doLoad(
+    Media media, {
+    double volume = 1.0,
+    Duration position,
+    bool respectSilence = false,
+    bool stayAwake = false,
+    bool shallNotify = false,
+    String mediaUrl,
+  }) async {
+    mediaUrl ??= (await localMediaValidator(media)) ?? media.url;
+    // we need to update the value as it could have been
+    // downloading and is not downloaded
+    media.isLocal = !mediaUrl.startsWith("http");
+    media.url = mediaUrl;
+
+    return invokeLoad({
+      'albumId': media.albumId?.toString() ?? "0",
+      'albumTitle': media.albumTitle ?? "",
+      'name': media.name,
+      'author': media.author,
+      'url': mediaUrl,
+      'coverUrl': media.coverUrl,
+      'loadOnly': true,
+      'isLocal': media.isLocal,
+      'volume': volume,
+      'position': position?.inMilliseconds,
+      'respectSilence': respectSilence,
+      'stayAwake': stayAwake,
+    });
   }
 
   Future<int> _doPlay(
@@ -248,6 +289,11 @@ class Player {
 
   Future<int> invokePlay(Media media, Map<String, dynamic> args) async {
     final int result = await _invokeMethod('play', args);
+    return result;
+  }
+
+  Future<int> invokeLoad(Map<String, dynamic> args) async {
+    final int result = await _invokeMethod('load', args);
     return result;
   }
 
