@@ -1411,7 +1411,7 @@ isNotification: (bool) respectSilence
         [player pause];
     }
     
-    if (!@available(iOS 11,*)) {
+    if (!@available(iOS 13,*)) {
         url = [url stringByReplacingOccurrencesOfString:@".m3u8"
                                              withString:@".mp3"];
         url = [url stringByReplacingOccurrencesOfString:@"stream/"
