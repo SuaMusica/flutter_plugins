@@ -63,12 +63,12 @@ class Player {
   ]) async {
     arguments ??= const {};
     if (_cookies == null || !_cookies.isValid) {
-      debugPrint("Generating Cookies");
+      _log("Generating Cookies");
       _cookies = await cookieSigner();
     }
     String cookie = _cookies.toHeaders();
     if (method == "play") {
-      debugPrint("Cookie: $cookie");
+      _log("Cookie: $cookie");
     }
 
     final Map<String, dynamic> args = Map.of(arguments)
@@ -571,11 +571,11 @@ class Player {
 
         break;
       case 'commandCenter.onNext':
-        print("Player : Command Center : Got a next request");
+        _log("Player : Command Center : Got a next request");
         player.next();
         break;
       case 'commandCenter.onPrevious':
-        print("Player : Command Center : Got a previous request");
+        _log("Player : Command Center : Got a previous request");
         player.previous();
         break;
       default:
@@ -686,7 +686,7 @@ class Player {
   }
 
   static void _log(String param) {
-    print(param);
+    debugPrint(param);
   }
 
   void _add(Event event) {
