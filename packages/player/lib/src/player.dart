@@ -233,6 +233,9 @@ class Player {
     }
     mediaUrl ??= (await localMediaValidator(media)) ?? media.url;
     //If it is local, check if it exists before playing it.
+    if (mediaUrl.startsWith("/storage/emulated/0/storage")) {
+      mediaUrl = mediaUrl.replaceFirst("/storage/emulated/0/", "");
+    }
     if (!mediaUrl.startsWith("http")) {
       if (!File(mediaUrl).existsSync() && media.fallbackUrl != null) {
         //Should we remove from DB??
