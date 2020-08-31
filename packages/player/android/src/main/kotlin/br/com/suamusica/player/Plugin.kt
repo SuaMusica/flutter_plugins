@@ -25,6 +25,7 @@ class Plugin private constructor(private val channel: MethodChannel, private val
         const val RELEASE_MODE_ARGUMENT = "releaseMode"
 
         // Method names
+        const val LOAD_METHOD = "load"
         const val PLAY_METHOD = "play"
         const val RESUME_METHOD = "resume"
         const val PAUSE_METHOD = "pause"
@@ -107,6 +108,18 @@ class Plugin private constructor(private val channel: MethodChannel, private val
         val cookie = call.argument<String>("cookie")
         Log.i(TAG, "method: ${call.method} cookie: $cookie")
         when (call.method) {
+            LOAD_METHOD -> {
+                val name = call.argument<String>(NAME_ARGUMENT)!!
+                val author = call.argument<String>(AUTHOR_ARGUMENT)!!
+                val url = call.argument<String>(URL_ARGUMENT)!!
+                val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
+                val position = call.argument<Long>(POSITION_ARGUMENT)
+                val loadOnly = call.argument<Boolean>(LOAD_ONLY)!!
+
+                mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl))
+                mediaSessionConnection?.sendNotification(name, author, url, coverUrl)
+                Log.i(TAG, "method: ${call.method} name: $name author: $author")
+            }
             PLAY_METHOD -> {
                 val name = call.argument<String>(NAME_ARGUMENT)!!
                 val author = call.argument<String>(AUTHOR_ARGUMENT)!!
