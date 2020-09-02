@@ -84,19 +84,21 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         PREVIOUS
     }
 
-    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "onStartCommand")
         return Service.START_STICKY
+
     }
+
     override fun onCreate() {
         super.onCreate()
         packageValidator = PackageValidator(applicationContext, R.xml.allowed_media_browser_callers)
         notificationBuilder = NotificationBuilder(this)
         notificationManager = NotificationManagerCompat.from(this)
         wifiLock = (applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager)
-            .createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "suamusica:wifiLock")
+                .createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "suamusica:wifiLock")
         wakeLock = (applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager)
-            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ON_AFTER_RELEASE, "suamusica:wakeLock")
+                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ON_AFTER_RELEASE, "suamusica:wakeLock")
         wifiLock?.setReferenceCounted(false)
         wakeLock?.setReferenceCounted(false)
 
@@ -204,12 +206,13 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
     private fun releaseLock() {
         try {
-        if (wifiLock?.isHeld == true) wifiLock?.release()
-        if (wakeLock?.isHeld == true) wakeLock?.release()
+            if (wifiLock?.isHeld == true) wifiLock?.release()
+            if (wakeLock?.isHeld == true) wakeLock?.release()
         } catch (e: Exception) {
-        Log.e("MusicService", e.message, e)
+            Log.e("MusicService", e.message, e)
         }
     }
+
     override fun onGetRoot(clientPackageName: String, clientUid: Int, rootHints: Bundle?): BrowserRoot? {
         val isKnowCaller = packageValidator?.isKnownCaller(clientPackageName, clientUid) ?: false
 
@@ -227,9 +230,9 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
     fun prepare(cookie: String, media: Media) {
         this.media = media
         val defaultHttpDataSourceFactory = DefaultHttpDataSourceFactory(userAgent,
-        10 * 1000,
-        15 * 1000,
-        true)
+                10 * 1000,
+                15 * 1000,
+                true)
         defaultHttpDataSourceFactory.defaultRequestProperties.set("Cookie", cookie)
         val dataSourceFactory = DefaultDataSourceFactory(this, null, defaultHttpDataSourceFactory)
 
@@ -441,10 +444,10 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
                 Log.i(TAG, "onPlayerStateChanged: playWhenReady: $playWhenReady playbackState: $playbackState currentPlaybackState: ${player?.getPlaybackState()}")
                 if (playWhenReady) {
-                val duration = player?.duration ?: 0L
+                    val duration = player?.duration ?: 0L
                     acquireLock(if (duration > 1L) duration + TimeUnit.MINUTES.toMillis(2) else TimeUnit.MINUTES.toMillis(3))
                 } else
-                releaseLock()
+                    releaseLock()
 
                 if (playWhenReady && playbackState == ExoPlayer.STATE_READY) {
                     //
@@ -615,7 +618,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                         stopForeground(false)
                         isForegroundService = false
                         // If playback has ended, also stop the service.
-                        if (updatedState == PlaybackStateCompat.STATE_NONE){
+                        if (updatedState == PlaybackStateCompat.STATE_NONE) {
                             stopSelf()
                             Log.i(TAG, "Stopping Service")
                         }
