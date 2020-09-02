@@ -84,6 +84,10 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         PREVIOUS
     }
 
+    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+        Log.d(TAG, "onStartCommand")
+        return Service.START_STICKY
+    }
     override fun onCreate() {
         super.onCreate()
         packageValidator = PackageValidator(applicationContext, R.xml.allowed_media_browser_callers)
