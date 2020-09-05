@@ -1,6 +1,15 @@
 class ScannedMedia {
-  ScannedMedia(this.mediaId, this.title, this.artist, this.albumId, this.album, this.track,
-      this.path, this.albumCoverPath);
+  ScannedMedia(
+      this.mediaId,
+      this.title,
+      this.artist,
+      this.albumId,
+      this.album,
+      this.track,
+      this.path,
+      this.albumCoverPath,
+      this.createdAt,
+      this.updatedAt);
 
   int mediaId;
   String title;
@@ -10,6 +19,8 @@ class ScannedMedia {
   String track;
   String path;
   String albumCoverPath;
+  DateTime createdAt;
+  DateTime updatedAt;
 
   @override
   String toString() {
@@ -21,20 +32,25 @@ class ScannedMedia {
         'album: $album, '
         'track: $track, '
         'path: $path, '
-        'albumCoverPath: $albumCoverPath'
+        'albumCoverPath: $albumCoverPath, '
+        'createdAt: $createdAt, '
+        'updatedAt: $updatedAt'
         '}';
   }
 
   static ScannedMedia fromMap(Map<dynamic, dynamic> map) {
     return ScannedMedia(
-        map["mediaId"] as int,
-        map["title"] as String,
-        map["artist"] as String,
-        map["albumId"] as int,
-        map["album"] as String,
-        map["track"] as String,
-        map["path"] as String,
-        map["album_cover_path"] as String);
+      map["mediaId"] as int,
+      map["title"] as String,
+      map["artist"] as String,
+      map["albumId"] as int,
+      map["album"] as String,
+      map["track"] as String,
+      map["path"] as String,
+      map["album_cover_path"] as String,
+      DateTime.fromMillisecondsSinceEpoch(map["created_at"] as int),
+      DateTime.fromMillisecondsSinceEpoch(map["updated_at"] as int),
+    );
   }
 
   static List<ScannedMedia> fromList(List<dynamic> mapList) {

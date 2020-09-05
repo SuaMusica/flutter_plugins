@@ -20,6 +20,8 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
             Audio.Media.ALBUM_ID,
             Audio.Media.ALBUM,
             Audio.Media.DATA,
+            Audio.Media.DATE_ADDED,
+            Audio.Media.DATE_MODIFIED,
             Audio.Media._ID
     )
 
@@ -43,7 +45,9 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
                 album = cursor.getStringByColumnName(Audio.Media.ALBUM),
                 track = cursor.getStringByColumnName(Audio.Media.TRACK),
                 path = cursor.getStringByColumnName(Audio.Media.DATA),
-                albumCoverPath = getAlbumCoverPathByAlbumId(cursor.getIntByColumnName(Audio.Media.ALBUM_ID))
+                albumCoverPath = getAlbumCoverPathByAlbumId(cursor.getIntByColumnName(Audio.Media.ALBUM_ID)),
+                createdAt = cursor.getLongByColumnName(Audio.Media.DATE_ADDED),
+                updatedAt = cursor.getLongByColumnName(Audio.Media.DATE_MODIFIED)
         )
     }
 

@@ -8,7 +8,9 @@ data class ScannedMediaOutput(
         val album: String,
         val track: String,
         val path: String,
-        val albumCoverPath: String
+        val albumCoverPath: String,
+        val createdAt: Long,
+        val updatedAt: Long
 ) {
 
     fun toResult(): Map<String, Any> {
@@ -20,7 +22,9 @@ data class ScannedMediaOutput(
                 ALBUM_KEY to album,
                 TRACK_KEY to track,
                 PATH_KEY to path,
-                ALBUM_COVER_PATH_KEY to albumCoverPath
+                ALBUM_COVER_PATH_KEY to albumCoverPath,
+                CREATED_AT_KEY to createdAt,
+                UPDATED_AT_KEY to updatedAt
         )
     }
 
@@ -33,6 +37,8 @@ data class ScannedMediaOutput(
         private const val TRACK_KEY = "track"
         private const val PATH_KEY = "path"
         private const val ALBUM_COVER_PATH_KEY = "album_cover_path"
+        private const val CREATED_AT_KEY = "created_at"
+        private const val UPDATED_AT_KEY = "updated_at"
         private const val EMPTY_STRING = ""
     }
 }

@@ -20,4 +20,7 @@ interface MediaScannerExtractor {
 
     fun Cursor.getIntByColumnName(columnName: String): Int =
             this.getInt(this.getColumnIndex(columnName))
+
+    fun Cursor.getLongByColumnName(columnName: String): Long =
+            this.getLong(this.getColumnIndex(columnName))
 }
