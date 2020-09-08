@@ -29,9 +29,9 @@ flutter:
     platforms:
       android:
         package: com.suamusica.mediascanner
-        pluginClass: MediascannerPlugin
+        pluginClass: MediaScannerPlugin
       ios:
-        pluginClass: MediascannerPlugin
+        pluginClass: MediaScannerPlugin
 
   # To add assets to your plugin package, add an assets section, like this:
   # assets:
