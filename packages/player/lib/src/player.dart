@@ -24,6 +24,8 @@ class Player {
   static Player player;
   static bool logEnabled = false;
 
+  bool _shallSendEvents = true;
+  bool externalPlayback = false;
   CookiesForCustomPolicy _cookies;
   PlayerState state = PlayerState.IDLE;
   Queue _queue = Queue();
@@ -38,6 +40,16 @@ class Player {
   final Future<CookiesForCustomPolicy> Function() cookieSigner;
   final Future<String> Function(Media) localMediaValidator;
   final bool autoPlay;
+  final chromeCastEnabledEvents = [
+    EventType.BEFORE_PLAY,
+    EventType.NEXT,
+    EventType.PREVIOUS,
+    EventType.POSITION_CHANGE,
+    EventType.REWIND,
+    EventType.PLAY_REQUESTED,
+    EventType.PAUSED,
+    EventType.PLAYING,
+  ];
 
   Stream<Event> _stream;
 
@@ -71,9 +83,12 @@ class Player {
       _log("Cookie: $cookie");
     }
 
-    final Map<String, dynamic> args = Map.of(arguments)
-      ..['playerId'] = playerId
-      ..['cookie'] = cookie;
+        final Map<String, dynamic> args = Map.of(arguments)
+          ..['playerId'] = playerId
+          ..['cookie'] = cookie
+          ..['shallSendEvents'] = _shallSendEvents
+          ..['externalplayback'] = externalPlayback;
+
 
     return _channel
         .invokeMethod(method, args)
@@ -115,6 +130,55 @@ class Player {
   Future<int> removeNotificaton() async {
     await _invokeMethod('remove_notification');
     return Ok;
+  }
+
+  int enableEvents() {
+    this._shallSendEvents = true;
+    return Ok;
+  }
+
+  int disableEvents() {
+    this._shallSendEvents = false;
+    return Ok;
+  }
+
+  Future<int> sendNotification({
+    bool isPlaying,
+    Duration position,
+    Duration duration,
+  }) async {
+    if (_queue.size > 0) {
+      if (_queue.current == null) {
+        _queue.move(0);
+      }
+      final media = _queue.current;
+      final data = {
+        'albumId': media.albumId?.toString() ?? "0",
+        'albumTitle': media.albumTitle ?? "",
+        'name': media.name,
+        'author': media.author,
+        'url': media.url,
+        'coverUrl': media.coverUrl,
+        'loadOnly': false,
+        'isLocal': media.isLocal,
+      };
+
+      if (position != null) {
+        data['position'] = position.inMilliseconds;
+      }
+
+      if (duration != null) {
+        data['duration'] = duration.inMilliseconds;
+      }
+
+      if (isPlaying != null) {
+        data['isPlaying'] = isPlaying;
+      }
+      await _invokeMethod('send_notification', data);
+      return Ok;
+    } else {
+      return Ok;
+    }
   }
 
   Future<int> disableNotificatonCommands() async {
@@ -289,6 +353,7 @@ class Player {
   }
 
   Future<int> invokePlay(Media media, Map<String, dynamic> args) async {
+    print(args);
     final int result = await _invokeMethod('play', args);
     return result;
   }
@@ -308,7 +373,7 @@ class Player {
       return NotOk;
     }
     _notifyRewind(media);
-    return seek(Duration(seconds: 0));
+    return player.externalPlayback ? 1 : seek(Duration(seconds: 0));
   }
 
   Future<int> forward() async {
@@ -428,9 +493,11 @@ class Player {
 
   Future<int> pause() async {
     _notifyPlayerStatusChangeEvent(EventType.PAUSE_REQUEST);
-    final int result = await _invokeMethod('pause');
-    return result;
+
+    return await _invokeMethod('pause');
   }
+
+  void addUsingPlayer(Event event) => _addUsingPlayer(player, event);
 
   Future<int> stop() async {
     _notifyPlayerStatusChangeEvent(EventType.STOP_REQUESTED);
@@ -625,6 +692,16 @@ class Player {
         _log("Player : Command Center : Got a previous request");
         player.previous();
         break;
+      case 'externalPlayback.play':
+        print("Player : externalPlayback : Play");
+        _notifyPlayerStateChangeEvent(
+            player, EventType.EXTERNAL_RESUME_REQUESTED);
+        break;
+      case 'externalPlayback.pause':
+        print("Player : externalPlayback : Pause");
+        _notifyPlayerStateChangeEvent(
+            player, EventType.EXTERNAL_PAUSE_REQUESTED);
+        break;
       default:
         _log('Unknown method ${call.method} ');
     }
@@ -724,12 +801,13 @@ class Player {
   static _notifyPositionChangeEvent(
       Player player, Duration newPosition, Duration newDuration) {
     _addUsingPlayer(
-        player,
-        PositionChangeEvent(
-            media: player._queue.current,
-            queuePosition: player._queue.index,
-            position: newPosition,
-            duration: newDuration));
+      player,
+      PositionChangeEvent(
+          media: player._queue.current,
+          queuePosition: player._queue.index,
+          position: newPosition,
+          duration: newDuration),
+    );
   }
 
   static void _log(String param) {
@@ -737,21 +815,24 @@ class Player {
   }
 
   void _add(Event event) {
-    if (_eventStreamController != null && !_eventStreamController.isClosed) {
+    if (_eventStreamController != null &&
+        !_eventStreamController.isClosed &&
+        (_shallSendEvents || chromeCastEnabledEvents.contains(event.type))) {
       _eventStreamController.add(event);
     }
   }
 
   static void _addUsingPlayer(Player player, Event event) {
     if (player._eventStreamController != null &&
-        !player._eventStreamController.isClosed) {
+        !player._eventStreamController.isClosed &&
+        (player._shallSendEvents ||
+            player.chromeCastEnabledEvents.contains(event.type))) {
       player._eventStreamController.add(event);
     }
   }
 
   Future<void> dispose() async {
     List<Future> futures = [];
-
     if (!_eventStreamController.isClosed) {
       futures.add(_eventStreamController.close());
     }

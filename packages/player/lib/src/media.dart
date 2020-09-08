@@ -13,6 +13,7 @@ class Media {
   bool isLocal;
   final String localPath;
   final String coverUrl;
+  final String bigCoverUrl;
   final bool isVerified;
   final String shareUrl;
   final int playlistId;
@@ -28,6 +29,7 @@ class Media {
     @required this.albumTitle,
     this.isLocal,
     @required this.coverUrl,
+    @required this.bigCoverUrl,
     this.isVerified,
     this.localPath,
     this.shareUrl,
@@ -47,6 +49,7 @@ class Media {
         'url': url,
         'is_local': isLocal,
         'cover_url': coverUrl,
+        'bigCover': bigCoverUrl,
         'is_verified': isVerified,
         'shared_url': shareUrl,
         'playlist_id': playlistId,

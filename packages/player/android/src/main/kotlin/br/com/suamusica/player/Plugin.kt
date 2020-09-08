@@ -20,6 +20,7 @@ class Plugin private constructor(private val channel: MethodChannel, private val
         const val AUTHOR_ARGUMENT = "author"
         const val URL_ARGUMENT = "url"
         const val COVER_URL_ARGUMENT = "coverUrl"
+        const val IS_PLAYING_ARGUMENT = "isPlaying"
         const val POSITION_ARGUMENT = "position"
         const val LOAD_ONLY = "loadOnly"
         const val RELEASE_MODE_ARGUMENT = "releaseMode"
@@ -38,6 +39,7 @@ class Plugin private constructor(private val channel: MethodChannel, private val
         const val GET_CURRENT_POSITION_METHOD = "getCurrentPosition"
         const val SET_RELEASE_MODE_METHOD = "setReleaseMode"
         const val CAN_PLAY = "can_play"
+        const val SEND_NOTIFICATION = "send_notification"
         const val REMOVE_NOTIFICATION = "remove_notification"
         const val DISABLE_NOTIFICATION_COMMANDS = "disable_notification_commands"
         const val ENABLE_NOTIFICATION_COMMANDS = "enable_notification_commands"
@@ -49,6 +51,9 @@ class Plugin private constructor(private val channel: MethodChannel, private val
         private var channel: MethodChannel? = null
 
         var mediaSessionConnection: MediaSessionConnection? = null
+
+        @JvmStatic
+        var externalPlayback: Boolean? = false
 
         @JvmStatic
         fun registerWith(registrar: Registrar) {
@@ -71,12 +76,21 @@ class Plugin private constructor(private val channel: MethodChannel, private val
 
         @JvmStatic
         fun play() {
-            mediaSessionConnection?.play()
+            if (externalPlayback!!) {
+                channel?.invokeMethod("externalPlayback.play", emptyMap<String, String>())
+            } else {
+                mediaSessionConnection?.play()
+            }
         }
 
         @JvmStatic
         fun pause() {
-            mediaSessionConnection?.pause()
+            if (externalPlayback!!) {
+                channel?.invokeMethod("externalPlayback.pause", emptyMap<String, String>())
+            } else {
+
+                mediaSessionConnection?.pause()
+            }
         }
 
         @JvmStatic
@@ -106,33 +120,41 @@ class Plugin private constructor(private val channel: MethodChannel, private val
 
     private fun handleMethodCall(call: MethodCall, response: MethodChannel.Result) {
         val cookie = call.argument<String>("cookie")
-        Log.i(TAG, "method: ${call.method} cookie: $cookie")
+        Plugin.externalPlayback = call.argument<Boolean>("externalplayback")
+        Log.i(TAG, "method: ${call.method} cookie: $cookie externalPlayback: $externalPlayback")
         when (call.method) {
-            LOAD_METHOD -> {
+                      LOAD_METHOD -> {
                 val name = call.argument<String>(NAME_ARGUMENT)!!
                 val author = call.argument<String>(AUTHOR_ARGUMENT)!!
                 val url = call.argument<String>(URL_ARGUMENT)!!
                 val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
                 val position = call.argument<Long>(POSITION_ARGUMENT)
                 val loadOnly = call.argument<Boolean>(LOAD_ONLY)!!
-
                 mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl))
                 mediaSessionConnection?.sendNotification(name, author, url, coverUrl)
                 Log.i(TAG, "method: ${call.method} name: $name author: $author")
+            }
+                SEND_NOTIFICATION -> {
+                val name = call.argument<String>(NAME_ARGUMENT)!!
+                val author = call.argument<String>(AUTHOR_ARGUMENT)!!
+                val url = call.argument<String>(URL_ARGUMENT)!!
+                val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
+                var isPlaying: Boolean? = call.argument<Boolean>(IS_PLAYING_ARGUMENT) ?: null
+                mediaSessionConnection?.sendNotification(name, author, url, coverUrl,isPlaying)
             }
             PLAY_METHOD -> {
                 val name = call.argument<String>(NAME_ARGUMENT)!!
                 val author = call.argument<String>(AUTHOR_ARGUMENT)!!
                 val url = call.argument<String>(URL_ARGUMENT)!!
                 val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
-                val position = call.argument<Long>(POSITION_ARGUMENT)
+                val position = call.argument<Int>(POSITION_ARGUMENT)
                 val loadOnly = call.argument<Boolean>(LOAD_ONLY)!!
 
                 mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl))
 
                 Log.i(TAG, "before prepare: cookie: $cookie")
                 position?.let {
-                    mediaSessionConnection?.seek(it)
+                    mediaSessionConnection?.seek(it.toLong())
                 }
 
                 if (!loadOnly) {

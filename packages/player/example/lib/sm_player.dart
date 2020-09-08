@@ -95,6 +95,8 @@ class _SMPlayerState extends State<SMPlayer> {
             "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
         coverUrl:
             "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+        bigCoverUrl:
+            "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
         author: "Xand Avião",
         isLocal: false,
         isVerified: true,
@@ -111,6 +113,8 @@ class _SMPlayerState extends State<SMPlayer> {
         name: "Track 2",
         url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
         coverUrl:
+            "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+        bigCoverUrl:
             "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
         author: "Xand Avião",
         isLocal: false,

@@ -21,7 +21,6 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.media.session.MediaButtonReceiver
 import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
-
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
@@ -41,7 +40,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 class MediaService : androidx.media.MediaBrowserServiceCompat() {
     private val TAG = "Player"
     val userAgent = "SuaMusica/player (Linux; Android ${Build.VERSION.SDK_INT}; ${Build.BRAND}/${Build.MODEL})"
-
     private var packageValidator: PackageValidator? = null
 
     private var mediaSession: MediaSessionCompat? = null
@@ -328,11 +326,16 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
     }
 
-    fun sendNotification(media: Media) {
+    fun sendNotification(media: Media,isPlayingExternal:Boolean?) {
         mediaSession?.let {
-            val state = player?.playbackState ?: PlaybackStateCompat.STATE_NONE
-            val onGoing = state == PlaybackStateCompat.STATE_PLAYING || state == PlaybackStateCompat.STATE_BUFFERING
-            val notification = notificationBuilder?.buildNotification(it, media, onGoing)
+            var onGoing:Boolean
+            onGoing = if(isPlayingExternal==null) {
+                val state = player?.playbackState ?: PlaybackStateCompat.STATE_NONE
+                state == PlaybackStateCompat.STATE_PLAYING || state == PlaybackStateCompat.STATE_BUFFERING
+            } else{
+                isPlayingExternal
+            }
+            val notification = notificationBuilder?.buildNotification(it, media, onGoing,isPlayingExternal)
             notification?.let {
                 notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
             }
@@ -421,7 +424,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
     private fun buildNotification(updatedState: Int, onGoing: Boolean): Notification? {
         return if (updatedState != PlaybackStateCompat.STATE_NONE) {
-            mediaSession?.let { notificationBuilder?.buildNotification(it, media!!, onGoing) }
+            mediaSession?.let { notificationBuilder?.buildNotification(it, media!!, onGoing, null) }
         } else {
             null
         }

@@ -15,7 +15,7 @@ import java.lang.ref.WeakReference
 class MediaSessionConnection(
         context: Context,
         serviceComponent: ComponentName,
-        val     playerChangeNotifier: PlayerChangeNotifier
+        val playerChangeNotifier: PlayerChangeNotifier
 ) {
     val TAG = "Player"
 
@@ -76,12 +76,15 @@ class MediaSessionConnection(
         sendCommand("release", null)
     }
 
-    fun sendNotification(name: String, author: String, url: String, coverUrl: String) {
+    fun sendNotification(name: String, author: String, url: String, coverUrl: String, isPlaying: Boolean?) {
         val bundle = Bundle()
         bundle.putString("name", name)
         bundle.putString("author", author)
         bundle.putString("url", url)
         bundle.putString("coverUrl", coverUrl)
+        if (isPlaying != null) {
+            bundle.putBoolean("isPlaying", isPlaying)
+        }
         sendCommand("send_notification", bundle)
     }
 
@@ -143,7 +146,7 @@ class MediaSessionConnection(
                 mediaController?.registerCallback(object : MediaControllerCompat.Callback() {
                     var lastState = PlaybackStateCompat.STATE_NONE - 1
                     override fun onPlaybackStateChanged(state: PlaybackStateCompat) {
-                        if(lastState != state.state) {
+                        if (lastState != state.state) {
                             Log.i(TAG, "onPlaybackStateChanged: $state")
                             lastState = state.state;
                             playerChangeNotifier.notifyStateChange(state.state)
@@ -152,7 +155,7 @@ class MediaSessionConnection(
 
                     override fun onExtrasChanged(extras: Bundle) {
                         if (extras.containsKey("type")) {
-                            when(extras.getString("type")) {
+                            when (extras.getString("type")) {
                                 "position" -> {
                                     val position = extras.getLong("position")
                                     this@MediaSessionConnection.currentPosition = position
