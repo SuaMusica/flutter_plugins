@@ -57,7 +57,7 @@ public class MediaScannerPlugin: FlutterPlugin, MethodCallHandler {
     @JvmStatic
     fun registerWith(registrar: Registrar) {
       val channel = MethodChannel(registrar.messenger(), CHANNEL_NAME)
-      channel.setMethodCallHandler(MediascannerPlugin())
+      channel.setMethodCallHandler(MediaScannerPlugin())
     }
 
     private const val SCAN_MEDIA = "scan_media"

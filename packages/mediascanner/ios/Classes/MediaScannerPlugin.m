@@ -1,4 +1,4 @@
-#import "MediascannerPlugin.h"
+#import "MediaScannerPlugin.h"
 #if __has_include(<mediascanner/mediascanner-Swift.h>)
 #import <mediascanner/mediascanner-Swift.h>
 #else
@@ -8,8 +8,8 @@
 #import "mediascanner-Swift.h"
 #endif
 
-@implementation MediascannerPlugin
+@implementation MediaScannerPlugin
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
-  [SwiftMediascannerPlugin registerWithRegistrar:registrar];
+  [SwiftMediaScannerPlugin registerWithRegistrar:registrar];
 }
 @end

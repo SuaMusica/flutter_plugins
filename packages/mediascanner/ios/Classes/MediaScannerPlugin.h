@@ -1,4 +1,4 @@
 #import <Flutter/Flutter.h>
 
-@interface MediascannerPlugin : NSObject<FlutterPlugin>
+@interface MediaScannerPlugin : NSObject<FlutterPlugin>
 @end
