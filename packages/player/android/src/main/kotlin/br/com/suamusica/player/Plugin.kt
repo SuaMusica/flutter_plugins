@@ -123,7 +123,7 @@ class Plugin private constructor(private val channel: MethodChannel, private val
         Plugin.externalPlayback = call.argument<Boolean>("externalplayback")
         Log.i(TAG, "method: ${call.method} cookie: $cookie externalPlayback: $externalPlayback")
         when (call.method) {
-                      LOAD_METHOD -> {
+            LOAD_METHOD -> {
                 val name = call.argument<String>(NAME_ARGUMENT)!!
                 val author = call.argument<String>(AUTHOR_ARGUMENT)!!
                 val url = call.argument<String>(URL_ARGUMENT)!!
@@ -131,7 +131,7 @@ class Plugin private constructor(private val channel: MethodChannel, private val
                 val position = call.argument<Long>(POSITION_ARGUMENT)
                 val loadOnly = call.argument<Boolean>(LOAD_ONLY)!!
                 mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl))
-                mediaSessionConnection?.sendNotification(name, author, url, coverUrl)
+                mediaSessionConnection?.sendNotification(name, author, url, coverUrl,null)
                 Log.i(TAG, "method: ${call.method} name: $name author: $author")
             }
                 SEND_NOTIFICATION -> {

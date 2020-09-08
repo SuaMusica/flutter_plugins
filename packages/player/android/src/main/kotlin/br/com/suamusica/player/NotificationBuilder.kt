@@ -139,7 +139,6 @@ class NotificationBuilder(private val context: Context) {
                 .setMediaSession(mediaSession.sessionToken)
 
         val artUri = media.coverUrl
-        Log.i("GetArt", "2")
 
         val art = getArt(context, artUri, NOTIFICATION_LARGE_ICON_SIZE)
 

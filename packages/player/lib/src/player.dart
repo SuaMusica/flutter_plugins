@@ -49,6 +49,8 @@ class Player {
     EventType.PLAY_REQUESTED,
     EventType.PAUSED,
     EventType.PLAYING,
+    EventType.EXTERNAL_RESUME_REQUESTED,
+    EventType.EXTERNAL_PAUSE_REQUESTED
   ];
 
   Stream<Event> _stream;
@@ -83,12 +85,11 @@ class Player {
       _log("Cookie: $cookie");
     }
 
-        final Map<String, dynamic> args = Map.of(arguments)
-          ..['playerId'] = playerId
-          ..['cookie'] = cookie
-          ..['shallSendEvents'] = _shallSendEvents
-          ..['externalplayback'] = externalPlayback;
-
+    final Map<String, dynamic> args = Map.of(arguments)
+      ..['playerId'] = playerId
+      ..['cookie'] = cookie
+      ..['shallSendEvents'] = _shallSendEvents
+      ..['externalplayback'] = externalPlayback;
 
     return _channel
         .invokeMethod(method, args)
@@ -693,14 +694,14 @@ class Player {
         player.previous();
         break;
       case 'externalPlayback.play':
-        print("Player : externalPlayback : Play");
+        print("Player: externalPlayback : Play");
         _notifyPlayerStateChangeEvent(
-            player, EventType.EXTERNAL_RESUME_REQUESTED);
+            player, EventType.EXTERNAL_RESUME_REQUESTED, "");
         break;
       case 'externalPlayback.pause':
-        print("Player : externalPlayback : Pause");
+        print("Player: externalPlayback : Pause");
         _notifyPlayerStateChangeEvent(
-            player, EventType.EXTERNAL_PAUSE_REQUESTED);
+            player, EventType.EXTERNAL_PAUSE_REQUESTED, "");
         break;
       default:
         _log('Unknown method ${call.method} ');
@@ -823,6 +824,7 @@ class Player {
   }
 
   static void _addUsingPlayer(Player player, Event event) {
+    print("_platformCallHandler _addUsingPlayer $event");
     if (player._eventStreamController != null &&
         !player._eventStreamController.isClosed &&
         (player._shallSendEvents ||
