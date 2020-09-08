@@ -13,8 +13,8 @@ import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry.Registrar
 import timber.log.Timber
 
-/** MediascannerPlugin */
-public class MediascannerPlugin: FlutterPlugin, MethodCallHandler {
+/** MediaScannerPlugin */
+public class MediaScannerPlugin: FlutterPlugin, MethodCallHandler {
   private lateinit var channel : MethodChannel
   private lateinit var channelCallback: ChannelCallback
   private lateinit var context: Context
