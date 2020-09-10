@@ -23,11 +23,20 @@ class MediaScanner(
 ) {
     fun scan(input: ScanMediaMethodInput) {
         Timber.v("scan(%s)", input)
-        executor.execute { scanMediasFromAndroidApi(input) }
+        executor.execute {
+            try {
+                scanMediasFromAndroidApi(input)
+            } catch (e: Throwable) {
+                Timber.e(e)
+                callback.onAllMediaScanned(emptyList())
+            }
+        }
     }
 
     @SuppressLint("Recycle")
     private fun scanMediasFromAndroidApi(input: ScanMediaMethodInput) {
+
+//        SystemClock.sleep(10000)
 
         val allMediaScanned = mutableListOf<ScannedMediaOutput>()
 
