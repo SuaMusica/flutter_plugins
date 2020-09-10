@@ -13,8 +13,8 @@ import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry.Registrar
 import timber.log.Timber
 
-/** MediascannerPlugin */
-public class MediascannerPlugin: FlutterPlugin, MethodCallHandler {
+/** MediaScannerPlugin */
+public class MediaScannerPlugin: FlutterPlugin, MethodCallHandler {
   private lateinit var channel : MethodChannel
   private lateinit var channelCallback: ChannelCallback
   private lateinit var context: Context
@@ -57,7 +57,7 @@ public class MediascannerPlugin: FlutterPlugin, MethodCallHandler {
     @JvmStatic
     fun registerWith(registrar: Registrar) {
       val channel = MethodChannel(registrar.messenger(), CHANNEL_NAME)
-      channel.setMethodCallHandler(MediascannerPlugin())
+      channel.setMethodCallHandler(MediaScannerPlugin())
     }
 
     private const val SCAN_MEDIA = "scan_media"
