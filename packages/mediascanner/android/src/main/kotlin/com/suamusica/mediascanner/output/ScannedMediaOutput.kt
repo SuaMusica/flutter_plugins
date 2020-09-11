@@ -1,10 +1,10 @@
 package com.suamusica.mediascanner.output
 
 data class ScannedMediaOutput(
-        val mediaId: Int,
+        val mediaId: Long,
         val title: String,
         val artist: String,
-        val albumId: Int,
+        val albumId: Long,
         val album: String,
         val track: String,
         val path: String,

@@ -132,10 +132,12 @@ class _MyAppState extends State<MyApp> {
       child: Card(
         child: Opacity(
           opacity: 0.3,
-          child: Image.file(
-            File(data.albumCoverPath),
-            fit: BoxFit.fill,
-          ),
+          child: data.albumCoverPath.isEmpty
+              ? Container()
+              : Image.file(
+                  File(data.albumCoverPath),
+                  fit: BoxFit.fill,
+                ),
         ),
       ),
     );
