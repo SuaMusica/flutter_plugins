@@ -3,12 +3,14 @@ package com.suamusica.mediascanner
 import android.annotation.SuppressLint
 import android.content.ContentResolver
 import android.content.Context
+import com.suamusica.mediascanner.input.DeleteMediaMethodInput
 import com.suamusica.mediascanner.input.MediaType
 import com.suamusica.mediascanner.input.ScanMediaMethodInput
 import com.suamusica.mediascanner.output.ScannedMediaOutput
 import com.suamusica.mediascanner.scanners.AudioMediaScannerExtractor
 import com.suamusica.mediascanner.scanners.MediaScannerExtractor
 import timber.log.Timber
+import java.io.File
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
@@ -21,6 +23,30 @@ class MediaScanner(
                 AudioMediaScannerExtractor(context)
         )
 ) {
+
+    fun deleteFromMediaId(input: DeleteMediaMethodInput) {
+
+        executor.execute {
+
+            val file = File(input.fullPath)
+            if (file.exists()) {
+                file.delete()
+                val parentFile = file.parentFile
+                if (parentFile.isDirectory && parentFile.listFiles().isNullOrEmpty()) {
+                    val deleteParent = parentFile.delete()
+                    Timber.d("Delete: (parentFile: ${file.parent}, fileDeleted: $deleteParent)")
+                }
+            }
+
+            val extractors = mediaScannerExtractors.filter {
+                input.mediaType == MediaType.ALL
+                        || it.mediaType == input.mediaType
+            }
+
+            extractors.forEach { it.delete(input.id) }
+        }
+    }
+
     fun scan(input: ScanMediaMethodInput) {
         Timber.v("scan(%s)", input)
         executor.execute {
@@ -35,8 +61,6 @@ class MediaScanner(
 
     @SuppressLint("Recycle")
     private fun scanMediasFromAndroidApi(input: ScanMediaMethodInput) {
-
-//        SystemClock.sleep(10000)
 
         val allMediaScanned = mutableListOf<ScannedMediaOutput>()
 

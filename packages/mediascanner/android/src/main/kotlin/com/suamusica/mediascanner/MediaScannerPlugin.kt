@@ -3,6 +3,7 @@ package com.suamusica.mediascanner
 import android.content.Context
 import android.os.Build
 import androidx.annotation.NonNull;
+import com.suamusica.mediascanner.input.DeleteMediaMethodInput
 import com.suamusica.mediascanner.input.ScanMediaMethodInput
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -36,6 +37,7 @@ public class MediaScannerPlugin: FlutterPlugin, MethodCallHandler {
 
     when (call.method) {
       SCAN_MEDIA -> scanMedia(args = call.arguments, result = result)
+      DELETE_MEDIA -> deleteMedia(args = call.arguments, result = result)
       "getPlatformVersion" -> {
         result.success("Android ${Build.VERSION.RELEASE}")
       }
@@ -45,6 +47,11 @@ public class MediaScannerPlugin: FlutterPlugin, MethodCallHandler {
 
   private fun scanMedia(args: Any, result: Result) {
     mediaScanner.scan(ScanMediaMethodInput(args))
+    result.success(RequestStatusResult.SUCCESS)
+  }
+
+  private fun deleteMedia(args: Any, result: Result) {
+    mediaScanner.deleteFromMediaId(DeleteMediaMethodInput(args))
     result.success(RequestStatusResult.SUCCESS)
   }
 
@@ -61,6 +68,7 @@ public class MediaScannerPlugin: FlutterPlugin, MethodCallHandler {
     }
 
     private const val SCAN_MEDIA = "scan_media"
+    private const val DELETE_MEDIA = "delete_media"
     private const val CHANNEL_NAME = "MediaScanner"
   }
 }

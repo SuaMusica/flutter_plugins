@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
+import 'package:mediascanner/model/delete_media_params.dart';
 import 'package:mediascanner/model/media_scan_params.dart';
 import 'package:mediascanner/model/scanned_media.dart';
 
@@ -48,6 +49,12 @@ class MediaScanner {
   Future<bool> scan(MediaScanParams params) async {
     final result =
         await _channel.invokeMethod("scan_media", params.toChannelParams());
+    return result > 0;
+  }
+
+  Future<bool> delete(DeleteMediaParams params) async {
+    final result =
+        await _channel.invokeMethod("delete_media", params.toChannelParams());
     return result > 0;
   }
 

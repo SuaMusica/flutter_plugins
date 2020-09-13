@@ -3,6 +3,7 @@ package com.suamusica.mediascanner.scanners
 import android.content.Context
 import android.database.Cursor
 import android.media.MediaMetadataRetriever
+import android.os.Build
 import android.provider.MediaStore.Audio
 import com.suamusica.mediascanner.input.MediaType
 import com.suamusica.mediascanner.model.Album
@@ -89,7 +90,7 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
 
                 var coverPath = it.getStringByColumnName(Audio.Albums.ALBUM_ART)
 
-                if (coverPath.isBlank()) {
+                if (coverPath.isBlank() && Build.VERSION.SDK_INT > 28) {
                     Timber.d("Cover path is not present in MediaStore for albumId: %s", albumId)
                     coverPath = createCover(albumId, filePath)
                 }
@@ -134,5 +135,13 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
         }
 
         return coverPath
+    }
+
+    override fun delete(id: Long) {
+        context.contentResolver.delete(
+                Audio.Media.EXTERNAL_CONTENT_URI,
+                Audio.Albums._ID + "=?",
+                arrayOf(id.toString())
+        )
     }
 }
