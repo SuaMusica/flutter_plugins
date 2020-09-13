@@ -16,4 +16,6 @@ class CookiesForCustomPolicy extends SignedCookies {
 
   String toHeaders() =>
       "${this.policy.key}=${this.policy.value};${this.signature.key}=${this.signature.value};${this.keyPairId.key}=${this.keyPairId.value}";
+  String toURL() =>
+      "?Expires=${this.expires.millisecondsSinceEpoch ~/ 1000} &Signature=${this.signature.value}&Key-Pair-Id=${this.keyPairId.value}";
 }
