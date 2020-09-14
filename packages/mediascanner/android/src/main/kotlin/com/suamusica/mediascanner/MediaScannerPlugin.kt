@@ -38,11 +38,17 @@ public class MediaScannerPlugin: FlutterPlugin, MethodCallHandler {
     when (call.method) {
       SCAN_MEDIA -> scanMedia(args = call.arguments, result = result)
       DELETE_MEDIA -> deleteMedia(args = call.arguments, result = result)
+      READ -> read(args = call.arguments as Map<String, String>, result = result)
       "getPlatformVersion" -> {
         result.success("Android ${Build.VERSION.RELEASE}")
       }
       else -> result.notImplemented()
     }
+  }
+
+  private fun read(args: Map<String, String>, result: Result) {
+    this.mediaScanner.read(args.get(URI)!!)
+    result.success(RequestStatusResult.SUCCESS)
   }
 
   private fun scanMedia(args: Any, result: Result) {
@@ -67,6 +73,8 @@ public class MediaScannerPlugin: FlutterPlugin, MethodCallHandler {
       channel.setMethodCallHandler(MediaScannerPlugin())
     }
 
+    private const val URI = "uri"
+    private const val READ = "read"
     private const val SCAN_MEDIA = "scan_media"
     private const val DELETE_MEDIA = "delete_media"
     private const val CHANNEL_NAME = "MediaScanner"

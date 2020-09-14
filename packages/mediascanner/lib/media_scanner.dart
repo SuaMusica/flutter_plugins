@@ -3,10 +3,14 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:mediascanner/model/delete_media_params.dart';
 import 'package:mediascanner/model/media_scan_params.dart';
+import 'package:mediascanner/model/read_result.dart';
 import 'package:mediascanner/model/scanned_media.dart';
 
 const ON_MEDIA_SCANNED_METHOD = "onMediaScanned";
 const ON_ALL_MEDIA_SCANNED_METHOD = "onAllMediaScanned";
+const ON_READ_METHOD = "onRead";
+
+const URI = "uri";
 
 class MediaScanner {
   MediaScanner._();
@@ -41,14 +45,29 @@ class MediaScanner {
   Stream<List<ScannedMedia>> get onListScannedMediaStream =>
       _onListScannedMediaStreamController.stream;
 
+  final StreamController<ReadResult> _onReadStreamController =
+      StreamController<ReadResult>.broadcast();
+
+  Stream<ReadResult> get onReadStream => _onReadStreamController.stream;
+
   dispose() async {
     _onScannedMediaStreamController.close();
     _onListScannedMediaStreamController.close();
+    _onReadStreamController.close();
   }
 
   Future<bool> scan(MediaScanParams params) async {
     final result =
         await _channel.invokeMethod("scan_media", params.toChannelParams());
+    return result > 0;
+  }
+
+  Future<bool> read(String uri) async {
+    final params = {
+      URI: uri,
+    };
+
+    final result = await _channel.invokeMethod("read", params);
     return result > 0;
   }
 
@@ -66,6 +85,10 @@ class MediaScanner {
       case ON_ALL_MEDIA_SCANNED_METHOD:
         _onAllMediaScanned(call.arguments);
         break;
+      case ON_READ_METHOD:
+        _onRead(call.arguments);
+        break;
+
       default:
         return;
     }
@@ -80,8 +103,13 @@ class MediaScanner {
 
   static void _onAllMediaScanned(arguments) {
     print("_onAllMediaScanned($arguments)");
-    final scannedMediaList =
-        ScannedMedia.fromList(arguments as List<dynamic>);
+    final scannedMediaList = ScannedMedia.fromList(arguments as List<dynamic>);
     instance._onListScannedMediaStreamController.add(scannedMediaList);
+  }
+
+  static void _onRead(arguments) {
+    print("_onRead($arguments)");
+    final readResult = ReadResult.fromMap(arguments);
+    instance._onReadStreamController.add(readResult);
   }
 }
