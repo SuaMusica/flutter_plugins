@@ -214,9 +214,10 @@ class Player {
   int get size => _queue.size;
   Media get top => _queue.top;
 
-  Future<int> load(Media media) async {
-    return _doLoad(_queue.current);
-  }
+  Future<int> load(Media media) async => _doPlay(
+        _queue.current,
+        shouldLoadOnly: true,
+      );
 
   Future<int> play(
     Media media, {
@@ -237,51 +238,24 @@ class Player {
     bool respectSilence = false,
     bool stayAwake = false,
     bool shallNotify = false,
+    bool loadOnly = false,
   }) async {
     Media media = _queue.item(pos);
     if (media != null) {
       final mediaUrl = (await localMediaValidator(media)) ?? media.url;
-
-      _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
+      if (!loadOnly) {
+        _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
+      }
       return _doPlay(
         _queue.move(pos),
         shallNotify: shallNotify,
         mediaUrl: mediaUrl,
+        shouldLoadOnly: loadOnly,
+        position: position,
       );
     } else {
       return NotOk;
     }
-  }
-
-  Future<int> _doLoad(
-    Media media, {
-    double volume = 1.0,
-    Duration position,
-    bool respectSilence = false,
-    bool stayAwake = false,
-    bool shallNotify = false,
-    String mediaUrl,
-  }) async {
-    mediaUrl ??= (await localMediaValidator(media)) ?? media.url;
-    // we need to update the value as it could have been
-    // downloading and is not downloaded
-    media.isLocal = !mediaUrl.startsWith("http");
-    media.url = mediaUrl;
-
-    return invokeLoad({
-      'albumId': media.albumId?.toString() ?? "0",
-      'albumTitle': media.albumTitle ?? "",
-      'name': media.name,
-      'author': media.author,
-      'url': mediaUrl,
-      'coverUrl': media.coverUrl,
-      'loadOnly': true,
-      'isLocal': media.isLocal,
-      'volume': volume,
-      'position': position?.inMilliseconds,
-      'respectSilence': respectSilence,
-      'stayAwake': stayAwake,
-    });
   }
 
   Future<int> _doPlay(
@@ -291,6 +265,7 @@ class Player {
     bool respectSilence = false,
     bool stayAwake = false,
     bool shallNotify = false,
+    bool shouldLoadOnly = false,
     String mediaUrl,
   }) async {
     if (shallNotify) {
@@ -313,8 +288,23 @@ class Player {
     // downloading and is not downloaded
     media.isLocal = !mediaUrl.startsWith("http");
     media.url = mediaUrl;
-
-    if (autoPlay) {
+    if (shouldLoadOnly) {
+      debugPrint("LOADING ONLY!");
+      return invokeLoad({
+        'albumId': media.albumId?.toString() ?? "0",
+        'albumTitle': media.albumTitle ?? "",
+        'name': media.name,
+        'author': media.author,
+        'url': mediaUrl,
+        'coverUrl': media.coverUrl,
+        'loadOnly': true,
+        'isLocal': media.isLocal,
+        'volume': volume,
+        'position': position?.inMilliseconds,
+        'respectSilence': respectSilence,
+        'stayAwake': stayAwake,
+      });
+    } else if (autoPlay) {
       _notifyBeforePlayEvent((loadOnly) => {});
 
       return invokePlay(media, {
@@ -824,7 +814,7 @@ class Player {
   }
 
   static void _addUsingPlayer(Player player, Event event) {
-    // print("_platformCallHandler _addUsingPlayer $event");
+    print("_platformCallHandler _addUsingPlayer $event");
     if (player._eventStreamController != null &&
         !player._eventStreamController.isClosed &&
         (player._shallSendEvents ||

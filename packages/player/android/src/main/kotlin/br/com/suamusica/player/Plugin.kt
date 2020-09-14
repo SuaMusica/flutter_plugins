@@ -128,9 +128,12 @@ class Plugin private constructor(private val channel: MethodChannel, private val
                 val author = call.argument<String>(AUTHOR_ARGUMENT)!!
                 val url = call.argument<String>(URL_ARGUMENT)!!
                 val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
-                val position = call.argument<Long>(POSITION_ARGUMENT)
+                val position = call.argument<Int>(POSITION_ARGUMENT)
                 val loadOnly = call.argument<Boolean>(LOAD_ONLY)!!
                 mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl))
+                position?.let {
+                    mediaSessionConnection?.seek(it.toLong(), false)
+                }
                 mediaSessionConnection?.sendNotification(name, author, url, coverUrl,null)
                 Log.i(TAG, "method: ${call.method} name: $name author: $author")
             }
@@ -154,7 +157,7 @@ class Plugin private constructor(private val channel: MethodChannel, private val
 
                 Log.i(TAG, "before prepare: cookie: $cookie")
                 position?.let {
-                    mediaSessionConnection?.seek(it.toLong())
+                    mediaSessionConnection?.seek(it.toLong(),true)
                 }
 
                 if (!loadOnly) {
@@ -175,7 +178,7 @@ class Plugin private constructor(private val channel: MethodChannel, private val
             }
             SEEK_METHOD -> {
                 val position = call.argument<Long>(POSITION_ARGUMENT)!!
-                mediaSessionConnection?.seek(position)
+                mediaSessionConnection?.seek(position,true)
             }
             REMOVE_NOTIFICATION_METHOD -> {
                 mediaSessionConnection?.removeNotification();

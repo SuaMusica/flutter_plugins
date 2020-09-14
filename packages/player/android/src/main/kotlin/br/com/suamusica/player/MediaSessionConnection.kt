@@ -66,9 +66,10 @@ class MediaSessionConnection(
         sendCommand("stop", null)
     }
 
-    fun seek(position: Long) {
+    fun seek(position: Long, playWhenReady: Boolean) {
         val bundle = Bundle()
         bundle.putLong("position", position)
+        bundle.putBoolean("playWhenReady", playWhenReady)
         sendCommand("seek", bundle)
     }
 

@@ -346,9 +346,9 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         removeNowPlayingNotification();
     }
 
-    fun seek(position: Long) {
+    fun seek(position: Long, playWhenReady: Boolean) {
         player?.seekTo(position)
-        player?.playWhenReady = true
+        player?.playWhenReady = playWhenReady
     }
 
     fun pause() {

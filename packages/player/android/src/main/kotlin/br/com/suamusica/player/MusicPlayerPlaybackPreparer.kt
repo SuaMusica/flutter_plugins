@@ -72,7 +72,8 @@ class MusicPlayerPlaybackPreparer(val mediaService: MediaService,
                 "seek" -> {
                     return extras?.let {
                         val position = it.getLong("position")
-                        mediaService.seek(position)
+                        val playWhenReady = it.getBoolean("playWhenReady")
+                        mediaService.seek(position, playWhenReady)
                         return@let true
                     } ?: false
                 }
