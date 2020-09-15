@@ -144,7 +144,7 @@ class NotificationBuilder(private val context: Context) {
              art = oldArtBitmap
         } else{
             art = getArt(context, artUri, NOTIFICATION_LARGE_ICON_SIZE)
-            oldArtUri = artUri
+            oldArtUri = if (artUri != null) artUri else ""
             oldArtBitmap = art
         }
         val notifyIntent = Intent("SUA_MUSICA_FLUTTER_NOTIFICATION_CLICK").apply {
