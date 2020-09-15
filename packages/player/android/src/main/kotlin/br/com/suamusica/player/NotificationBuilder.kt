@@ -85,7 +85,7 @@ class NotificationBuilder(private val context: Context) {
             }
 
             return runBlocking {
-                withTimeoutOrNull(500L) {
+                withTimeoutOrNull(150L) {
                     result.await()
                 }
                 return@runBlocking bitmap
