@@ -9,7 +9,10 @@ void main() {
     DateTime expiresOn = DateTime.now().add(Duration(hours: 12));
 
     CookiesForCustomPolicy cookies = await signer.getCookiesForCustomPolicy(
-        resourceUrl, keyPairId, expiresOn, null, null);
+      resourceUrlOrPath: resourceUrl,
+      keyPairId: keyPairId,
+      expiresOn: expiresOn,
+    );
 
     final cookie =
         "${cookies.policy.key}=${cookies.policy.value};${cookies.signature.key}=${cookies.signature.value};${cookies.keyPairId.key}=${cookies.keyPairId.value};";

@@ -23,6 +23,8 @@ enum EventType {
   SEEK_START,
   SEEK_END,
   BUFFER_EMPTY,
+  EXTERNAL_RESUME_REQUESTED,
+  EXTERNAL_PAUSE_REQUESTED,
 }
 
 enum PlayerErrorType {

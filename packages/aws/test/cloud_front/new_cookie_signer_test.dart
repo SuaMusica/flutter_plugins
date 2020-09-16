@@ -40,8 +40,7 @@ void main() {
       final subject = CookieSigner(
           privateKeyLoaderMock, policyBuilderMock, contentCleanerMock);
 
-      expect(subject.getCookiesForCustomPolicy(null, null, null, null, null),
-          throwsArgumentError);
+      expect(subject.getCookiesForCustomPolicy(), throwsArgumentError);
     });
 
     test('Key Pair Id must be provieded', () {
@@ -53,7 +52,8 @@ void main() {
 
       expect(
           subject.getCookiesForCustomPolicy(
-              resourceUrl, null, null, null, null),
+            resourceUrlOrPath: resourceUrl,
+          ),
           throwsArgumentError);
     });
 
@@ -69,16 +69,21 @@ void main() {
       when(privateKeyLoaderMock.load()).thenAnswer((_) async => privk);
 
       CookiesForCustomPolicy cookies = await subject.getCookiesForCustomPolicy(
-          resourceUrl, keyPairId, expiresOn, null, null);
+        resourceUrlOrPath: resourceUrl,
+        keyPairId: keyPairId,
+        expiresOn: expiresOn,
+      );
 
       expect(cookies.expires, expiresOn);
-      expect(cookies.isValid(), true);
+      expect(cookies.isValid, true);
       expect(cookies.keyPairId.key, CookieSigner.KeyPairIdKey);
       expect(cookies.keyPairId.value, keyPairId);
       expect(cookies.policy.key, CookieSigner.PolicyKey);
-      expect(cookies.policy.value, 'eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9hbmRyb2lkLnN1YW11c2ljYS5jb20uYnIqIiwiQ29uZGl0aW9uIjp7IkRhdGVMZXNzVGhhbiI6eyJBV1M6RXBvY2hUaW1lIjoxNjY1NjUxOTAwfX19XX0_');
+      expect(cookies.policy.value,
+          'eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9hbmRyb2lkLnN1YW11c2ljYS5jb20uYnIqIiwiQ29uZGl0aW9uIjp7IkRhdGVMZXNzVGhhbiI6eyJBV1M6RXBvY2hUaW1lIjoxNjY1NjUxOTAwfX19XX0_');
       expect(cookies.signature.key, CookieSigner.SignatureKey);
-      expect(cookies.signature.value, 'OkrKdCff0XQ7kXW91WMtOnRyrTKJKz5xNzLqTS6HqP~tsb6-aOJkLrQTSnDOVuVogrspvj-4iNJ-rBa7OJlGjsZM24~gIPeoPuxkCDZ-tlP25bVG6Zwl9IOvfuoA5WdYG0KZcqDEXhKolS418Fr3FXEJigVSguqgY1ETMN2sLZ4qVfYFwIkruEhJ-GN7HwLHQ77Rx8d3pnPqq3FeEw91vFmQy-jp1UYH7A3I-liH5OO9o~DG2k4AzrZ9ySEH202vd~ebdoV~LHcjH7bLFhjph3qeZXJ7W5rZxHXcDoGNUSQSywz-CEP9Yn6qRWWiM8L33iFkA9wyWrwNXlFYmaALFA__');
+      expect(cookies.signature.value,
+          'OkrKdCff0XQ7kXW91WMtOnRyrTKJKz5xNzLqTS6HqP~tsb6-aOJkLrQTSnDOVuVogrspvj-4iNJ-rBa7OJlGjsZM24~gIPeoPuxkCDZ-tlP25bVG6Zwl9IOvfuoA5WdYG0KZcqDEXhKolS418Fr3FXEJigVSguqgY1ETMN2sLZ4qVfYFwIkruEhJ-GN7HwLHQ77Rx8d3pnPqq3FeEw91vFmQy-jp1UYH7A3I-liH5OO9o~DG2k4AzrZ9ySEH202vd~ebdoV~LHcjH7bLFhjph3qeZXJ7W5rZxHXcDoGNUSQSywz-CEP9Yn6qRWWiM8L33iFkA9wyWrwNXlFYmaALFA__');
     });
   });
 }

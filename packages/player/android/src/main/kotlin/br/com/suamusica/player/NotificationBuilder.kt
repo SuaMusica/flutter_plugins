@@ -23,11 +23,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.FutureTarget
 import com.bumptech.glide.request.RequestOptions
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 
 const val NOW_PLAYING_CHANNEL: String = "br.com.suamusica.media.NOW_PLAYING"
 const val NOW_PLAYING_NOTIFICATION: Int = 0xb339
@@ -57,6 +53,8 @@ class NotificationBuilder(private val context: Context) {
             MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_SKIP_TO_NEXT))
     private val stopPendingIntent =
             MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_STOP)
+    private var oldArtBitmap: Bitmap? = null
+    private var oldArtUri: String = ""
 
     companion object {
         private val glideOptions = RequestOptions()
@@ -82,18 +80,20 @@ class NotificationBuilder(private val context: Context) {
                         else -> null
                     }
                 } catch (e: Exception) {
-                    null                
+                    null
                 }
             }
 
             return runBlocking {
-                result.await()
+                withTimeoutOrNull(150L) {
+                    result.await()
+                }
                 return@runBlocking bitmap
             }
         }
     }
 
-    fun buildNotification(mediaSession: MediaSessionCompat, media: Media, onGoing: Boolean): Notification? {
+    fun buildNotification(mediaSession: MediaSessionCompat, media: Media, onGoing: Boolean, isPlayingExternal: Boolean?): Notification? {
         if (shouldCreateNowPlayingChannel()) {
             createNowPlayingChannel()
         }
@@ -108,6 +108,13 @@ class NotificationBuilder(private val context: Context) {
         actions.add(1)
 
         when {
+            isPlayingExternal != null -> {
+                if (isPlayingExternal) {
+                    builder.addAction(pauseAction)
+                } else {
+                    builder.addAction(playAction)
+                }
+            }
             playbackState.isPlaying -> {
                 Log.i("NotificationBuilder", "Player is playing... onGoing: $onGoing")
                 builder.addAction(pauseAction)
@@ -132,10 +139,14 @@ class NotificationBuilder(private val context: Context) {
                 .setMediaSession(mediaSession.sessionToken)
 
         val artUri = media.coverUrl
-        Log.i("GetArt", "2")
-
-        val art = getArt(context, artUri, NOTIFICATION_LARGE_ICON_SIZE)
-
+        var art: Bitmap? = null
+        if(artUri == oldArtUri && this.oldArtBitmap !=null) {
+             art = oldArtBitmap
+        } else{
+            art = getArt(context, artUri, NOTIFICATION_LARGE_ICON_SIZE)
+            oldArtUri = if (artUri != null) artUri else ""
+            oldArtBitmap = art
+        }
         val notifyIntent = Intent("SUA_MUSICA_FLUTTER_NOTIFICATION_CLICK").apply {
             addCategory(Intent.CATEGORY_DEFAULT)
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP

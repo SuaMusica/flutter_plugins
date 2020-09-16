@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:smaws/aws.dart';
 import 'package:flutter/services.dart';
@@ -23,6 +24,8 @@ class Player {
   static Player player;
   static bool logEnabled = false;
 
+  bool _shallSendEvents = true;
+  bool externalPlayback = false;
   CookiesForCustomPolicy _cookies;
   PlayerState state = PlayerState.IDLE;
   Queue _queue = Queue();
@@ -37,6 +40,18 @@ class Player {
   final Future<CookiesForCustomPolicy> Function() cookieSigner;
   final Future<String> Function(Media) localMediaValidator;
   final bool autoPlay;
+  final chromeCastEnabledEvents = [
+    EventType.BEFORE_PLAY,
+    EventType.NEXT,
+    EventType.PREVIOUS,
+    EventType.POSITION_CHANGE,
+    EventType.REWIND,
+    EventType.PLAY_REQUESTED,
+    EventType.PAUSED,
+    EventType.PLAYING,
+    EventType.EXTERNAL_RESUME_REQUESTED,
+    EventType.EXTERNAL_PAUSE_REQUESTED
+  ];
 
   Stream<Event> _stream;
 
@@ -61,35 +76,24 @@ class Player {
     Map<String, dynamic> arguments,
   ]) async {
     arguments ??= const {};
+    if (_cookies == null || !_cookies.isValid) {
+      _log("Generating Cookies");
+      _cookies = await cookieSigner();
+    }
+    String cookie = _cookies.toHeaders();
+    if (method == "play") {
+      _log("Cookie: $cookie");
+    }
 
-    Future<bool> requiresCookie =
-        Future.value(true); // changing to always pass cookies
-    return requiresCookie.then((requires) {
-      Future<CookiesForCustomPolicy> cookies = Future.value(_cookies);
-      if (requires) {
-        if (_cookies == null || !_cookies.isValid()) {
-          cookies = (() async => await cookieSigner())();
-        }
-      }
+    final Map<String, dynamic> args = Map.of(arguments)
+      ..['playerId'] = playerId
+      ..['cookie'] = cookie
+      ..['shallSendEvents'] = _shallSendEvents
+      ..['externalplayback'] = externalPlayback;
 
-      return cookies.then((cookies) {
-        String cookie = "";
-        // we need to save it in order to reuse if it is still valid
-        if (requires) {
-          _cookies = cookies;
-          cookie =
-              "${cookies.policy.key}=${cookies.policy.value};${cookies.signature.key}=${cookies.signature.value};${cookies.keyPairId.key}=${cookies.keyPairId.value}";
-        }
-
-        final Map<String, dynamic> args = Map.of(arguments)
-          ..['playerId'] = playerId
-          ..['cookie'] = cookie;
-
-        return _channel
-            .invokeMethod(method, args)
-            .then((result) => (result as int));
-      });
-    });
+    return _channel
+        .invokeMethod(method, args)
+        .then((result) => (result as int));
   }
 
   Future<int> enqueue(
@@ -129,6 +133,55 @@ class Player {
     return Ok;
   }
 
+  int enableEvents() {
+    this._shallSendEvents = true;
+    return Ok;
+  }
+
+  int disableEvents() {
+    this._shallSendEvents = false;
+    return Ok;
+  }
+
+  Future<int> sendNotification({
+    bool isPlaying,
+    Duration position,
+    Duration duration,
+  }) async {
+    if (_queue.size > 0) {
+      if (_queue.current == null) {
+        _queue.move(0);
+      }
+      final media = _queue.current;
+      final data = {
+        'albumId': media.albumId?.toString() ?? "0",
+        'albumTitle': media.albumTitle ?? "",
+        'name': media.name,
+        'author': media.author,
+        'url': media.url,
+        'coverUrl': media.coverUrl,
+        'loadOnly': false,
+        'isLocal': media.isLocal,
+      };
+
+      if (position != null) {
+        data['position'] = position.inMilliseconds;
+      }
+
+      if (duration != null) {
+        data['duration'] = duration.inMilliseconds;
+      }
+
+      if (isPlaying != null) {
+        data['isPlaying'] = isPlaying;
+      }
+      await _invokeMethod('send_notification', data);
+      return Ok;
+    } else {
+      return Ok;
+    }
+  }
+
   Future<int> disableNotificatonCommands() async {
     await _invokeMethod('disable_notification_commands');
     return Ok;
@@ -139,7 +192,13 @@ class Player {
     return Ok;
   }
 
-  Media restartQueue() => _queue.restart();
+  Future<Media> restartQueue() async {
+    final media = _queue.restart();
+
+    await this.load(media);
+
+    return media;
+  }
 
   Future<int> reorder(int oldIndex, int newIndex,
       [bool isShuffle = false]) async {
@@ -154,6 +213,11 @@ class Player {
   int get queuePosition => _queue.index;
   int get size => _queue.size;
   Media get top => _queue.top;
+
+  Future<int> load(Media media) async => _doPlay(
+        _queue.current,
+        shouldLoadOnly: true,
+      );
 
   Future<int> play(
     Media media, {
@@ -174,16 +238,20 @@ class Player {
     bool respectSilence = false,
     bool stayAwake = false,
     bool shallNotify = false,
+    bool loadOnly = false,
   }) async {
     Media media = _queue.item(pos);
     if (media != null) {
       final mediaUrl = (await localMediaValidator(media)) ?? media.url;
-
-      _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
+      if (!loadOnly) {
+        _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
+      }
       return _doPlay(
         _queue.move(pos),
         shallNotify: shallNotify,
         mediaUrl: mediaUrl,
+        shouldLoadOnly: loadOnly,
+        position: position,
       );
     } else {
       return NotOk;
@@ -197,12 +265,21 @@ class Player {
     bool respectSilence = false,
     bool stayAwake = false,
     bool shallNotify = false,
+    bool shouldLoadOnly = false,
     String mediaUrl,
   }) async {
     if (shallNotify) {
       _notifyChangeToNext(media);
     }
     mediaUrl ??= (await localMediaValidator(media)) ?? media.url;
+    //If it is local, check if it exists before playing it.
+
+    if (!mediaUrl.startsWith("http")) {
+      if (!File(mediaUrl).existsSync() && media.fallbackUrl != null) {
+        //Should we remove from DB??
+        mediaUrl = media.fallbackUrl;
+      }
+    }
     volume ??= 1.0;
     respectSilence ??= false;
     stayAwake ??= false;
@@ -211,8 +288,23 @@ class Player {
     // downloading and is not downloaded
     media.isLocal = !mediaUrl.startsWith("http");
     media.url = mediaUrl;
-
-    if (autoPlay) {
+    if (shouldLoadOnly) {
+      debugPrint("LOADING ONLY!");
+      return invokeLoad({
+        'albumId': media.albumId?.toString() ?? "0",
+        'albumTitle': media.albumTitle ?? "",
+        'name': media.name,
+        'author': media.author,
+        'url': mediaUrl,
+        'coverUrl': media.coverUrl,
+        'loadOnly': true,
+        'isLocal': media.isLocal,
+        'volume': volume,
+        'position': position?.inMilliseconds,
+        'respectSilence': respectSilence,
+        'stayAwake': stayAwake,
+      });
+    } else if (autoPlay) {
       _notifyBeforePlayEvent((loadOnly) => {});
 
       return invokePlay(media, {
@@ -252,7 +344,13 @@ class Player {
   }
 
   Future<int> invokePlay(Media media, Map<String, dynamic> args) async {
+    print(args);
     final int result = await _invokeMethod('play', args);
+    return result;
+  }
+
+  Future<int> invokeLoad(Map<String, dynamic> args) async {
+    final int result = await _invokeMethod('load', args);
     return result;
   }
 
@@ -266,7 +364,7 @@ class Player {
       return NotOk;
     }
     _notifyRewind(media);
-    return seek(Duration(seconds: 0));
+    return player.externalPlayback ? 1 : seek(Duration(seconds: 0));
   }
 
   Future<int> forward() async {
@@ -386,9 +484,11 @@ class Player {
 
   Future<int> pause() async {
     _notifyPlayerStatusChangeEvent(EventType.PAUSE_REQUEST);
-    final int result = await _invokeMethod('pause');
-    return result;
+
+    return await _invokeMethod('pause');
   }
+
+  void addUsingPlayer(Event event) => _addUsingPlayer(player, event);
 
   Future<int> stop() async {
     _notifyPlayerStatusChangeEvent(EventType.STOP_REQUESTED);
@@ -576,12 +676,22 @@ class Player {
 
         break;
       case 'commandCenter.onNext':
-        print("Player : Command Center : Got a next request");
+        _log("Player : Command Center : Got a next request");
         player.next();
         break;
       case 'commandCenter.onPrevious':
-        print("Player : Command Center : Got a previous request");
+        _log("Player : Command Center : Got a previous request");
         player.previous();
+        break;
+      case 'externalPlayback.play':
+        print("Player: externalPlayback : Play");
+        _notifyPlayerStateChangeEvent(
+            player, EventType.EXTERNAL_RESUME_REQUESTED, "");
+        break;
+      case 'externalPlayback.pause':
+        print("Player: externalPlayback : Pause");
+        _notifyPlayerStateChangeEvent(
+            player, EventType.EXTERNAL_PAUSE_REQUESTED, "");
         break;
       default:
         _log('Unknown method ${call.method} ');
@@ -682,34 +792,39 @@ class Player {
   static _notifyPositionChangeEvent(
       Player player, Duration newPosition, Duration newDuration) {
     _addUsingPlayer(
-        player,
-        PositionChangeEvent(
-            media: player._queue.current,
-            queuePosition: player._queue.index,
-            position: newPosition,
-            duration: newDuration));
+      player,
+      PositionChangeEvent(
+          media: player._queue.current,
+          queuePosition: player._queue.index,
+          position: newPosition,
+          duration: newDuration),
+    );
   }
 
   static void _log(String param) {
-    print(param);
+    debugPrint(param);
   }
 
   void _add(Event event) {
-    if (_eventStreamController != null && !_eventStreamController.isClosed) {
+    if (_eventStreamController != null &&
+        !_eventStreamController.isClosed &&
+        (_shallSendEvents || chromeCastEnabledEvents.contains(event.type))) {
       _eventStreamController.add(event);
     }
   }
 
   static void _addUsingPlayer(Player player, Event event) {
+    print("_platformCallHandler _addUsingPlayer $event");
     if (player._eventStreamController != null &&
-        !player._eventStreamController.isClosed) {
+        !player._eventStreamController.isClosed &&
+        (player._shallSendEvents ||
+            player.chromeCastEnabledEvents.contains(event.type))) {
       player._eventStreamController.add(event);
     }
   }
 
   Future<void> dispose() async {
     List<Future> futures = [];
-
     if (!_eventStreamController.isClosed) {
       futures.add(_eventStreamController.close());
     }
