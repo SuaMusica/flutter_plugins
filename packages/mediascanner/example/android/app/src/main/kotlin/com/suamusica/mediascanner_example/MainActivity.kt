@@ -1,0 +1,6 @@
+package com.suamusica.mediascanner_example
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity: FlutterActivity() {
+}
