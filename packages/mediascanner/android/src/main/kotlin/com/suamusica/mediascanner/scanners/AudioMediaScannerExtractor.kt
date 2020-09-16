@@ -8,10 +8,10 @@ import android.provider.MediaStore.Audio
 import com.suamusica.mediascanner.input.MediaType
 import com.suamusica.mediascanner.model.Album
 import com.suamusica.mediascanner.output.ScannedMediaOutput
-import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import timber.log.Timber
 
 class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExtractor {
 
@@ -45,35 +45,65 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
     private val albumCache = mutableMapOf<Long, Album?>()
 
     override fun getScannedMediaFromCursor(cursor: Cursor): ScannedMediaOutput {
-        val albumId = cursor.getLongByColumnName(Audio.Media.ALBUM_ID)
-        val path = cursor.getStringByColumnName(Audio.Media.DATA)
+        cursor.getColumnNames().forEach {
+            Timber.d("$it: [${getString(cursor, it, "")}]")
+        }
+
+        val albumId = getLong(cursor, Audio.Media.ALBUM_ID, 0)
+        val path = getString(cursor, Audio.Media.DATA, "")
         return ScannedMediaOutput(
-                mediaId = cursor.getLongByColumnName(Audio.Media._ID),
-                title = cursor.getStringByColumnName(Audio.Media.TITLE),
-                artist = cursor.getStringByColumnName(Audio.Media.ARTIST),
+                mediaId = getLong(cursor, Audio.Media._ID, 0),
+                title = getString(cursor, Audio.Media.TITLE, 
+                    getString(cursor, Audio.Media.DISPLAY_NAME, "")),
+                artist = getString(cursor, Audio.Media.ARTIST, 
+                    getString(cursor, Audio.Media.COMPOSER, "")),
                 albumId = albumId,
-                album = cursor.getStringByColumnName(Audio.Media.ALBUM),
-                track = cursor.getStringByColumnName(Audio.Media.TRACK),
+                album = getString(cursor, Audio.Media.ALBUM, 
+                    getString(cursor, "_description", "")),
+                track = getString(cursor, Audio.Media.TRACK, ""),
                 path = path,
                 albumCoverPath = getAlbumById(albumId, path)?.coverPath ?: "",
-                createdAt = cursor.getLongByColumnName(Audio.Media.DATE_ADDED),
-                updatedAt = cursor.getLongByColumnName(Audio.Media.DATE_MODIFIED)
+                createdAt = getLong(cursor, Audio.Media.DATE_ADDED, 0),
+                updatedAt = getLong(cursor, Audio.Media.DATE_MODIFIED, 0)
         )
+    }
+
+    private fun getLong(cursor: Cursor, columnName: String, defaultValue: Long): Long {
+        try {
+            Timber.d("Getting the Column $columnName...")
+            val value = cursor.getLongByColumnName(columnName)
+            Timber.d("Got value [$value] for Column $columnName!")
+            return value
+        } catch (e: Throwable) {
+            Timber.e("Failed to get value for column $columnName using default [$defaultValue]", e)
+            return defaultValue
+        }
+    }
+
+    private fun getString(cursor: Cursor, columnName: String, defaultValue: String): String {
+        try {
+            Timber.d("Getting the Column $columnName...")
+            val value = cursor.getStringByColumnName(columnName)
+            Timber.d("Got value $value for Column $columnName!")
+            return value
+        } catch (e: Throwable) {
+            Timber.e("Failed to get value for column $columnName using default $defaultValue", e)
+            return defaultValue
+        }
     }
 
     @Synchronized
     private fun getAlbumById(albumId: Long, filePath: String): Album? {
-
         if (albumId <= 0) {
             albumCache[albumId] = null
         }
 
         if (albumCache.containsKey(albumId)) {
-            Timber.d("Album %s is present in cache", albumId)
+            Timber.d("Album $albumId is present in cache")
             return albumCache[albumId]
         }
 
-        Timber.d("Find album on android Media Store (albumId=%s)", albumId)
+        Timber.d("Find album on android Media Store (albumId=$albumId)")
 
         val cursor = context.contentResolver.query(
                 Audio.Albums.EXTERNAL_CONTENT_URI,
@@ -85,13 +115,12 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
 
         cursor?.use {
             if (it.moveToFirst()) {
-
-                Timber.d("Album %s founded.", albumId)
-
-                var coverPath = it.getStringByColumnName(Audio.Albums.ALBUM_ART)
+                Timber.d("Album $albumId founded.")
+                
+                var coverPath = getString(it, Audio.Albums.ALBUM_ART, "")
 
                 if (coverPath.isBlank() && Build.VERSION.SDK_INT > 28) {
-                    Timber.d("Cover path is not present in MediaStore for albumId: %s", albumId)
+                    Timber.d("Cover path is not present in MediaStore for albumId: $albumId")
                     coverPath = createCover(albumId, filePath)
                 }
 
@@ -101,13 +130,13 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
             }
         }
 
-        Timber.d("Album %s not founded.", albumId)
+        Timber.d("Album $albumId not founded.")
         albumCache[albumId] = null
         return null
     }
 
     private fun createCover(albumId: Long, filePath: String): String {
-        Timber.d("Trying create Album %s for file: %s", albumId, filePath)
+        Timber.d("Trying create Album $albumId for file: $filePath")
         var coverPath = ""
         try {
             val mmr = MediaMetadataRetriever()
@@ -125,13 +154,13 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
                     fos.write(it)
                     fos.close()
                 } catch (e: IOException) {
-                    Timber.e(e)
+                    Timber.e("Error", e)
                 }
                 coverPath = outputFile.path
                 Timber.d("cover created: $coverPath")
             } ?: Timber.d("no has embeddedPicture.")
         } catch (t: Throwable) {
-            Timber.e(t)
+            Timber.e("Error", t)
         }
 
         return coverPath

@@ -21,6 +21,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.database.Cursor
+import android.util.Log
 
 class MediaScanner(
         private val callback: ChannelCallback,
@@ -185,8 +186,13 @@ class MediaScanner(
             cursor = context.contentResolver.query(uri!!, null, selection, selectionArgs, null)
             cursor?.use { c ->
                 if (c.moveToNext()) {
-                    val scannedMedia = mediaScannerExtractors[0].getScannedMediaFromCursor(c)
-                    return scannedMedia
+                    if (c.getColumnNames().contains("mediaprovider_uri")) {
+                        val providerUri = c.getStringByColumnName("mediaprovider_uri")
+                        return readMediaFromContentProvider(context, Uri.parse(providerUri), selection, selectionArgs)
+                    } else {
+                        val scannedMedia = mediaScannerExtractors[0].getScannedMediaFromCursor(c)
+                        return scannedMedia
+                    }
                 }
             }
         } finally {
@@ -200,4 +206,7 @@ class MediaScanner(
     private fun isDownloadsDocument(authority: String): Boolean = "com.android.providers.downloads.documents" == authority
 
     private fun isMediaDocument(authority: String): Boolean = "com.android.providers.media.documents" == authority
+
+    fun Cursor.getStringByColumnName(columnName: String): String =
+            this.getString(this.getColumnIndex(columnName)) ?: ""
 }
