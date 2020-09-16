@@ -109,9 +109,11 @@ class MediaScanner(
             cursor?.use { c ->
                 while (c.moveToNext()) {
                     val scannedMedia = extractor.getScannedMediaFromCursor(c)
-                    val extension = ".".plus(scannedMedia.path.substringAfterLast("."))
-                    input.extensions.find { extension.contains(it) }?.let {
-                        allMediaScanned.add(scannedMedia)
+                    scannedMedia?.let {
+                        val extension = ".".plus(scannedMedia.path.substringAfterLast("."))
+                        input.extensions.find { extension.contains(it) }?.let {
+                            allMediaScanned.add(scannedMedia)
+                        }
                     }
                 }
             }

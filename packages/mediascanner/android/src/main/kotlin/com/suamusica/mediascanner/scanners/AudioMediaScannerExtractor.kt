@@ -44,22 +44,28 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
 
     private val albumCache = mutableMapOf<Long, Album?>()
 
-    override fun getScannedMediaFromCursor(cursor: Cursor): ScannedMediaOutput {
-        cursor.getColumnNames().forEach {
+    private fun isSuaMusicaMusic(path: String): Boolean {
+        return path.substringBeforeLast(".").split("_").last().toIntOrNull() != null
+    }
+
+    override fun getScannedMediaFromCursor(cursor: Cursor): ScannedMediaOutput? {
+        cursor.columnNames.forEach {
             Timber.d("$it: [${getString(cursor, it, "")}]")
         }
-
         val albumId = getLong(cursor, Audio.Media.ALBUM_ID, 0)
         val path = getString(cursor, Audio.Media.DATA, "")
+        if (isSuaMusicaMusic(path)) {
+            return null
+        }
         return ScannedMediaOutput(
                 mediaId = getLong(cursor, Audio.Media._ID, 0),
-                title = getString(cursor, Audio.Media.TITLE, 
-                    getString(cursor, Audio.Media.DISPLAY_NAME, "")),
-                artist = getString(cursor, Audio.Media.ARTIST, 
-                    getString(cursor, Audio.Media.COMPOSER, "")),
+                title = getString(cursor, Audio.Media.TITLE,
+                        getString(cursor, Audio.Media.DISPLAY_NAME, "")),
+                artist = getString(cursor, Audio.Media.ARTIST,
+                        getString(cursor, Audio.Media.COMPOSER, "")),
                 albumId = albumId,
-                album = getString(cursor, Audio.Media.ALBUM, 
-                    getString(cursor, "_description", "")),
+                album = getString(cursor, Audio.Media.ALBUM,
+                        getString(cursor, "_description", "")),
                 track = getString(cursor, Audio.Media.TRACK, ""),
                 path = path,
                 albumCoverPath = getAlbumById(albumId, path)?.coverPath ?: "",
@@ -69,26 +75,26 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
     }
 
     private fun getLong(cursor: Cursor, columnName: String, defaultValue: Long): Long {
-        try {
+        return try {
             Timber.d("Getting the Column $columnName...")
             val value = cursor.getLongByColumnName(columnName)
             Timber.d("Got value [$value] for Column $columnName!")
-            return value
+            value
         } catch (e: Throwable) {
-            Timber.e("Failed to get value for column $columnName using default [$defaultValue]", e)
-            return defaultValue
+            Timber.e(e,"Failed to get value for column $columnName using default [$defaultValue]")
+            defaultValue
         }
     }
 
     private fun getString(cursor: Cursor, columnName: String, defaultValue: String): String {
-        try {
+        return try {
             Timber.d("Getting the Column $columnName...")
             val value = cursor.getStringByColumnName(columnName)
             Timber.d("Got value $value for Column $columnName!")
-            return value
+            value
         } catch (e: Throwable) {
-            Timber.e("Failed to get value for column $columnName using default $defaultValue", e)
-            return defaultValue
+            Timber.e(e,"Failed to get value for column $columnName using default $defaultValue")
+            defaultValue
         }
     }
 
@@ -116,7 +122,7 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
         cursor?.use {
             if (it.moveToFirst()) {
                 Timber.d("Album $albumId founded.")
-                
+
                 var coverPath = getString(it, Audio.Albums.ALBUM_ART, "")
 
                 if (coverPath.isBlank() && Build.VERSION.SDK_INT > 28) {
@@ -154,13 +160,13 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
                     fos.write(it)
                     fos.close()
                 } catch (e: IOException) {
-                    Timber.e("Error", e)
+                    Timber.e(e,"Error")
                 }
                 coverPath = outputFile.path
                 Timber.d("cover created: $coverPath")
             } ?: Timber.d("no has embeddedPicture.")
         } catch (t: Throwable) {
-            Timber.e("Error", t)
+            Timber.e(t,"Error")
         }
 
         return coverPath
