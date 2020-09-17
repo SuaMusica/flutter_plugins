@@ -48,13 +48,13 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
         return path.substringBeforeLast(".").split("_").last().toIntOrNull() != null
     }
 
-    override fun getScannedMediaFromCursor(cursor: Cursor): ScannedMediaOutput? {
+    override fun getScannedMediaFromCursor(cursor: Cursor, ignoreOurMusics: Boolean): ScannedMediaOutput? {
         cursor.columnNames.forEach {
             Timber.d("$it: [${getString(cursor, it)}]")
         }
         val albumId = getLong(cursor, Audio.Media.ALBUM_ID)
         val path = getString(cursor, Audio.Media.DATA)
-        if (isSuaMusicaMusic(path)) {
+        if (ignoreOurMusics && isSuaMusicaMusic(path)) {
             return null
         }
         return ScannedMediaOutput(

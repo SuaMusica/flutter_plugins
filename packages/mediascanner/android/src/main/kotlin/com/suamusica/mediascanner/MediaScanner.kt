@@ -21,7 +21,9 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.database.Cursor
-import android.util.Log
+import java.io.FileOutputStream
+import java.io.IOException
+import kotlin.random.Random
 
 class MediaScanner(
         private val callback: ChannelCallback,
@@ -137,25 +139,21 @@ class MediaScanner(
                         val split = docId.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
                         val type = split[0]
 
+                        var path = ""
+
                         when {
                             "primary".equals(type, ignoreCase = true) -> {
-
+                                path = "${Environment.getExternalStorageDirectory()}/${split[1]}"
                             }
                             else -> {
                                 val splitDirectory = Environment.getExternalStorageDirectory().toString().split("/".toRegex())
                                 if (splitDirectory.size > 1) {
-
+                                    path = "${splitDirectory[0]}/$type/${split[1]}"
                                 }
                             }
                         }
 
-                        val c = context.contentResolver.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, null, null, null, null)
-                        while (c.moveToNext()) {
-                            val columns = c.columnNames
-                            Timber.i("${columns.toString()}")
-                        }
-
-                        return readMediaFromContentProvider(context, uri, null, null)
+                        return readMediaFromMediaMetadataRetriever(path)
                     }
                     isDownloadsDocument(authority) -> {
                         val id = DocumentsContract.getDocumentId(uri)
@@ -196,6 +194,53 @@ class MediaScanner(
         return null
     }
 
+    private fun readMediaFromMediaMetadataRetriever(path: String): ScannedMediaOutput? {
+        val mmr = MediaMetadataRetriever()
+        mmr.setDataSource(path)
+
+        val artist = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
+                ?: mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)
+                ?: "Artista Desconhecido"
+
+        val album = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)
+                ?: "Album Desconhecido"
+        val name =
+                mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
+                        ?: path.split("/").last().substringBeforeLast(".")
+
+        val outputFile = mmr.embeddedPicture?.let { pic -> createCoverImage("$artist-$name", pic) }
+
+        return ScannedMediaOutput(
+                mediaId = System.currentTimeMillis() * Random.nextLong(),
+                title = name,
+                artist = artist,
+                albumId = 0,
+                album = album,
+                track = "0",
+                path = path,
+                albumCoverPath = outputFile?.path ?: "",
+                createdAt = 0,
+                updatedAt = 0
+        )
+
+    }
+
+    private fun createCoverImage(fileName: String?, coverByteArray: ByteArray?): File? {
+        val outputFile = File.createTempFile(fileName, ".jpg", context.cacheDir)
+
+        if (outputFile.exists())
+            outputFile.delete()
+
+        val fos = FileOutputStream(outputFile.path)
+        try {
+            fos.write(coverByteArray)
+            fos.close()
+        } catch (e: IOException) {
+            Timber.e(e)
+        }
+        return outputFile
+    }
+
     private fun readMediaFromContentProvider(context: Context, uri: Uri?, selection: String?,
                                              selectionArgs: Array<String>?): ScannedMediaOutput? {
 
@@ -205,12 +250,12 @@ class MediaScanner(
             cursor = context.contentResolver.query(uri!!, null, selection, selectionArgs, null)
             cursor?.use { c ->
                 if (c.moveToNext()) {
-                    return if (c.columnNames.contains("mediaprovider_uri")) {
-                        val providerUri = c.getStringByColumnName("mediaprovider_uri")
+                    return if (c.columnNames.contains(MEDIA_PROVIDER_URI)) {
+                        val providerUri = c.getStringByColumnName(MEDIA_PROVIDER_URI)
                         readMediaFromContentProvider(context, Uri.parse(providerUri), selection, selectionArgs)
-                                ?: mediaScannerExtractors[0].getScannedMediaFromCursor(c)
+                                ?: mediaScannerExtractors[0].getScannedMediaFromCursor(c, false)
                     } else {
-                        mediaScannerExtractors[0].getScannedMediaFromCursor(c)
+                        mediaScannerExtractors[0].getScannedMediaFromCursor(c, false)
                     }
                 }
             }
@@ -228,4 +273,8 @@ class MediaScanner(
 
     fun Cursor.getStringByColumnName(columnName: String): String =
             this.getString(this.getColumnIndex(columnName)) ?: ""
+
+    companion object {
+        const val MEDIA_PROVIDER_URI = "mediaprovider_uri"
+    }
 }
