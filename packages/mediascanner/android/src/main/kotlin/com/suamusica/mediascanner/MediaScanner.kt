@@ -127,52 +127,69 @@ class MediaScanner(
             return null
 
         // DocumentProvider
-        if (DocumentsContract.isDocumentUri(context, uri)) {
-            val authority = uri.authority ?: ""
-            // ExternalStorageProvider
-            if (isExternalStorageDocument(authority)) {
-                val docId = DocumentsContract.getDocumentId(uri)
-                val split = docId.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                val type = split[0]
+        when {
+            DocumentsContract.isDocumentUri(context, uri) -> {
+                val authority = uri.authority ?: ""
+                // ExternalStorageProvider
+                when {
+                    isExternalStorageDocument(authority) -> {
+                        val docId = DocumentsContract.getDocumentId(uri)
+                        val split = docId.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                        val type = split[0]
 
-                if ("primary".equals(type, ignoreCase = true)) {
+                        when {
+                            "primary".equals(type, ignoreCase = true) -> {
 
-                } else {
-                    val splitDirectory = Environment.getExternalStorageDirectory().toString().split("/".toRegex())
-                    if (splitDirectory.size > 1) {
+                            }
+                            else -> {
+                                val splitDirectory = Environment.getExternalStorageDirectory().toString().split("/".toRegex())
+                                if (splitDirectory.size > 1) {
 
+                                }
+                            }
+                        }
+
+                        val c = context.contentResolver.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, null, null, null, null)
+                        while (c.moveToNext()) {
+                            val columns = c.columnNames
+                            Timber.i("${columns.toString()}")
+                        }
+
+                        return readMediaFromContentProvider(context, uri, null, null)
                     }
-                }
+                    isDownloadsDocument(authority) -> {
+                        val id = DocumentsContract.getDocumentId(uri)
+                        val contentUri = ContentUris.withAppendedId(
+                                Uri.parse("content://downloads/public_downloads"), java.lang.Long.valueOf(id))
 
+                        return readMediaFromContentProvider(context, contentUri, null, null)
+                    }
+                    isMediaDocument(authority) -> {
+                        val docId = DocumentsContract.getDocumentId(uri)
+                        val split = docId.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                        val type = split[0]
+
+                        var contentUri: Uri? = null
+                        when (type) {
+                            "image" -> contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+                            "video" -> contentUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+                            "audio" -> contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+                        }
+
+                        val selection = "_id=?"
+                        val selectionArgs = arrayOf(split[1])
+
+                        return readMediaFromContentProvider(context, contentUri, selection, selectionArgs)
+                    }
+                }// MediaProvider
+                // DownloadsProvider
+            }
+            "content".equals(uri.scheme, ignoreCase = true) -> {
                 return readMediaFromContentProvider(context, uri, null, null)
-            } else if (isDownloadsDocument(authority)) {
-                val id = DocumentsContract.getDocumentId(uri)
-                val contentUri = ContentUris.withAppendedId(
-                        Uri.parse("content://downloads/public_downloads"), java.lang.Long.valueOf(id))
-
-                return readMediaFromContentProvider(context, contentUri, null, null)
-            } else if (isMediaDocument(authority)) {
-                val docId = DocumentsContract.getDocumentId(uri)
-                val split = docId.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                val type = split[0]
-
-                var contentUri: Uri? = null
-                when (type) {
-                    "image" -> contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-                    "video" -> contentUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
-                    "audio" -> contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
-                }
-
-                val selection = "_id=?"
-                val selectionArgs = arrayOf(split[1])
-
-                return readMediaFromContentProvider(context, contentUri, selection, selectionArgs)
-            }// MediaProvider
-            // DownloadsProvider
-        } else if ("content".equals(uri.scheme, ignoreCase = true)) {
-            return readMediaFromContentProvider(context, uri, null, null)
-        } else if ("file".equals(uri.scheme, ignoreCase = true)) {
-            return readMediaFromContentProvider(context, uri, null, null)
+            }
+            "file".equals(uri.scheme, ignoreCase = true) -> {
+                return readMediaFromContentProvider(context, uri, null, null)
+            }
         }// File
         // MediaStore (and general)
 
@@ -188,12 +205,12 @@ class MediaScanner(
             cursor = context.contentResolver.query(uri!!, null, selection, selectionArgs, null)
             cursor?.use { c ->
                 if (c.moveToNext()) {
-                    if (c.getColumnNames().contains("mediaprovider_uri")) {
+                    return if (c.columnNames.contains("mediaprovider_uri")) {
                         val providerUri = c.getStringByColumnName("mediaprovider_uri")
-                        return readMediaFromContentProvider(context, Uri.parse(providerUri), selection, selectionArgs)
+                        readMediaFromContentProvider(context, Uri.parse(providerUri), selection, selectionArgs)
+                                ?: mediaScannerExtractors[0].getScannedMediaFromCursor(c)
                     } else {
-                        val scannedMedia = mediaScannerExtractors[0].getScannedMediaFromCursor(c)
-                        return scannedMedia
+                        mediaScannerExtractors[0].getScannedMediaFromCursor(c)
                     }
                 }
             }

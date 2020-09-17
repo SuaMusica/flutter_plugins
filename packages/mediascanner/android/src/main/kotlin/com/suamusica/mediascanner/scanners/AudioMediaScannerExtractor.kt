@@ -50,31 +50,28 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
 
     override fun getScannedMediaFromCursor(cursor: Cursor): ScannedMediaOutput? {
         cursor.columnNames.forEach {
-            Timber.d("$it: [${getString(cursor, it, "")}]")
+            Timber.d("$it: [${getString(cursor, it)}]")
         }
-        val albumId = getLong(cursor, Audio.Media.ALBUM_ID, 0)
-        val path = getString(cursor, Audio.Media.DATA, "")
+        val albumId = getLong(cursor, Audio.Media.ALBUM_ID)
+        val path = getString(cursor, Audio.Media.DATA)
         if (isSuaMusicaMusic(path)) {
             return null
         }
         return ScannedMediaOutput(
-                mediaId = getLong(cursor, Audio.Media._ID, 0),
-                title = getString(cursor, Audio.Media.TITLE,
-                        getString(cursor, Audio.Media.DISPLAY_NAME, "")),
-                artist = getString(cursor, Audio.Media.ARTIST,
-                        getString(cursor, Audio.Media.COMPOSER, "")),
+                mediaId = getLong(cursor, Audio.Media._ID),
+                title = getString(cursor, Audio.Media.TITLE) { getString(cursor, Audio.Media.DISPLAY_NAME) },
+                artist = getString(cursor, Audio.Media.ARTIST) { getString(cursor, Audio.Media.COMPOSER) },
                 albumId = albumId,
-                album = getString(cursor, Audio.Media.ALBUM,
-                        getString(cursor, "_description", "")),
-                track = getString(cursor, Audio.Media.TRACK, ""),
+                album = getString(cursor, Audio.Media.ALBUM) { getString(cursor, "_description") },
+                track = getString(cursor, Audio.Media.TRACK),
                 path = path,
                 albumCoverPath = getAlbumById(albumId, path)?.coverPath ?: "",
-                createdAt = getLong(cursor, Audio.Media.DATE_ADDED, 0),
-                updatedAt = getLong(cursor, Audio.Media.DATE_MODIFIED, 0)
+                createdAt = getLong(cursor, Audio.Media.DATE_ADDED),
+                updatedAt = getLong(cursor, Audio.Media.DATE_MODIFIED)
         )
     }
 
-    private fun getLong(cursor: Cursor, columnName: String, defaultValue: Long): Long {
+    private fun getLong(cursor: Cursor, columnName: String, defaultValue: () -> Long = { 0 }): Long {
         return try {
             Timber.d("Getting the Column $columnName...")
             val value = cursor.getLongByColumnName(columnName)
@@ -82,11 +79,11 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
             value
         } catch (e: Throwable) {
             Timber.e(e,"Failed to get value for column $columnName using default [$defaultValue]")
-            defaultValue
+            defaultValue.invoke()
         }
     }
 
-    private fun getString(cursor: Cursor, columnName: String, defaultValue: String): String {
+    private fun getString(cursor: Cursor, columnName: String, defaultValue: () -> String = { "" }): String {
         return try {
             Timber.d("Getting the Column $columnName...")
             val value = cursor.getStringByColumnName(columnName)
@@ -94,7 +91,7 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
             value
         } catch (e: Throwable) {
             Timber.e(e,"Failed to get value for column $columnName using default $defaultValue")
-            defaultValue
+            defaultValue.invoke()
         }
     }
 
@@ -123,7 +120,7 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
             if (it.moveToFirst()) {
                 Timber.d("Album $albumId founded.")
 
-                var coverPath = getString(it, Audio.Albums.ALBUM_ART, "")
+                var coverPath = getString(it, Audio.Albums.ALBUM_ART)
 
                 if (coverPath.isBlank() && Build.VERSION.SDK_INT > 28) {
                     Timber.d("Cover path is not present in MediaStore for albumId: $albumId")
