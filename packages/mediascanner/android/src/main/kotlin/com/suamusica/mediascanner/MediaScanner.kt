@@ -1,9 +1,18 @@
 package com.suamusica.mediascanner
 
 import android.annotation.SuppressLint
+import android.annotation.TargetApi
 import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.Context
+import android.database.Cursor
+import android.media.MediaMetadataRetriever
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.os.StatFs
+import android.provider.DocumentsContract
+import android.provider.MediaStore
 import com.suamusica.mediascanner.input.DeleteMediaMethodInput
 import com.suamusica.mediascanner.input.MediaType
 import com.suamusica.mediascanner.input.ScanMediaMethodInput
@@ -12,17 +21,11 @@ import com.suamusica.mediascanner.scanners.AudioMediaScannerExtractor
 import com.suamusica.mediascanner.scanners.MediaScannerExtractor
 import timber.log.Timber
 import java.io.File
-import java.util.concurrent.Executor
-import java.util.concurrent.Executors
-import android.provider.DocumentsContract
-import android.media.MediaMetadataRetriever
-import android.net.Uri
-import android.os.Build
-import android.os.Environment
-import android.provider.MediaStore
-import android.database.Cursor
 import java.io.FileOutputStream
 import java.io.IOException
+import java.util.*
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 import kotlin.random.Random
 
 class MediaScanner(
@@ -124,6 +127,29 @@ class MediaScanner(
         callback.onAllMediaScanned(allMediaScanned)
     }
 
+    private fun getExternalStorageAvailableData(context: Context): ArrayList<HashMap<*, *>>? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT)
+            return null
+
+        val appsDir = context.getExternalFilesDirs(null)
+        val extRootPaths = ArrayList<HashMap<*, *>>()
+        for (file in appsDir) {
+            val path = file.absolutePath
+            val statFs = StatFs(path)
+            val availableBytes = statFs.availableBlocksLong * statFs.blockSizeLong
+            val storageData = HashMap<String, Any>()
+            try {
+                val rootPath = file.parentFile.parentFile.parentFile.parentFile.absolutePath
+                storageData["rootPath"] = rootPath
+            } catch (e: Exception) {
+            }
+            storageData["path"] = path
+            storageData["availableBytes"] = availableBytes
+            extRootPaths.add(storageData)
+        }
+        return extRootPaths
+    }
+
     private fun readMediaFromUri(uri: Uri): ScannedMediaOutput? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT)
             return null
@@ -140,15 +166,26 @@ class MediaScanner(
                         val type = split[0]
 
                         var path = ""
-
                         when {
                             "primary".equals(type, ignoreCase = true) -> {
                                 path = "${Environment.getExternalStorageDirectory()}/${split[1]}"
                             }
                             else -> {
-                                val splitDirectory = Environment.getExternalStorageDirectory().toString().split("/".toRegex())
-                                if (splitDirectory.size > 1) {
-                                    path = "${splitDirectory[0]}/$type/${split[1]}"
+                                val storages = getExternalStorageAvailableData(context)
+                                var sdPath: String? = null
+
+                                storages?.forEach {
+                                    if ((it["rootPath"] as String).contains(type)) {
+                                        sdPath = it["rootPath"] as String + "/${docId.toString().substringAfterLast(type).substringAfterLast(":")}"
+                                    }
+                                }
+                                if (sdPath != null) {
+                                    path = sdPath as String
+                                } else {
+                                    val splitDirectory = Environment.getExternalStorageDirectory().toString().split("/".toRegex())
+                                    if (splitDirectory.size > 1) {
+                                        path = "${splitDirectory[0]}/$type/${split[1]}"
+                                    }
                                 }
                             }
                         }
@@ -157,10 +194,35 @@ class MediaScanner(
                     }
                     isDownloadsDocument(authority) -> {
                         val id = DocumentsContract.getDocumentId(uri)
+
+                        if (id.startsWith("raw:")) {
+                            return readMediaFromMediaMetadataRetriever(id.substringAfter("raw:"))
+                        }
+
                         val contentUri = ContentUris.withAppendedId(
                                 Uri.parse("content://downloads/public_downloads"), java.lang.Long.valueOf(id))
+                        try {
+                            return readMediaFromContentProvider(context, contentUri, null, null)
+                        } catch (t: Throwable) {
+                            var cursor: Cursor? = null
+                            try {
+                                cursor = context.contentResolver.query(uri, null, null, null, null)
 
-                        return readMediaFromContentProvider(context, contentUri, null, null)
+                                cursor?.use { c ->
+                                    if (c.moveToNext()) {
+                                        val scannedMedia = extractMedia(c, null, null)
+                                        if (scannedMedia?.path?.trim()?.isBlank() != false && scannedMedia?.title?.contains(".") != false) {
+                                            val newPath = "${Environment.getExternalStorageDirectory()}/Download/${scannedMedia!!.title}"
+                                            return readMediaFromMediaMetadataRetriever(newPath)
+                                        }
+
+                                    }
+                                }
+                            } finally {
+                                cursor?.close()
+                            }
+                            return null
+                        }
                     }
                     isMediaDocument(authority) -> {
                         val docId = DocumentsContract.getDocumentId(uri)
@@ -198,10 +260,12 @@ class MediaScanner(
         val mmr = MediaMetadataRetriever()
         mmr.setDataSource(path)
 
-        val artist = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
+        var artist = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
                 ?: mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)
                 ?: "Artista Desconhecido"
-
+        if (artist.isBlank() || artist.toLowerCase().contains("unknown")) {
+            artist = "Artista Desconhecido"
+        }
         val album = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)
                 ?: "Album Desconhecido"
         val name =
@@ -250,19 +314,25 @@ class MediaScanner(
             cursor = context.contentResolver.query(uri!!, null, selection, selectionArgs, null)
             cursor?.use { c ->
                 if (c.moveToNext()) {
-                    return if (c.columnNames.contains(MEDIA_PROVIDER_URI)) {
-                        val providerUri = c.getStringByColumnName(MEDIA_PROVIDER_URI)
-                        readMediaFromContentProvider(context, Uri.parse(providerUri), selection, selectionArgs)
-                                ?: mediaScannerExtractors[0].getScannedMediaFromCursor(c, false)
-                    } else {
-                        mediaScannerExtractors[0].getScannedMediaFromCursor(c, false)
-                    }
+                    return extractMedia(c, selection, selectionArgs)
                 }
             }
         } finally {
             cursor?.close()
         }
         return null
+    }
+
+    fun extractMedia(c: Cursor, selection: String?,
+                     selectionArgs: Array<String>?): ScannedMediaOutput? {
+        return if (c.columnNames.contains(MEDIA_PROVIDER_URI)) {
+            val providerUri = c.getStringByColumnName(MEDIA_PROVIDER_URI)
+            readMediaFromContentProvider(context, Uri.parse(providerUri), selection, selectionArgs)
+                    ?: mediaScannerExtractors[0].getScannedMediaFromCursor(c, false)
+        } else {
+            mediaScannerExtractors[0].getScannedMediaFromCursor(c, false)
+        }
+
     }
 
     private fun isExternalStorageDocument(authority: String): Boolean = "com.android.externalstorage.documents" == authority

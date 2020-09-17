@@ -57,10 +57,16 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
         if (ignoreOurMusics && isSuaMusicaMusic(path)) {
             return null
         }
+
+        val artist = getString(cursor, Audio.Media.ARTIST) {
+            getString(cursor, Audio.Media.COMPOSER) {
+                UNKNOWN_ARTIST
+            }
+        }
         return ScannedMediaOutput(
                 mediaId = getLong(cursor, Audio.Media._ID),
                 title = getString(cursor, Audio.Media.TITLE) { getString(cursor, Audio.Media.DISPLAY_NAME) },
-                artist = getString(cursor, Audio.Media.ARTIST) { getString(cursor, Audio.Media.COMPOSER) },
+                artist = if (artist.trim().isBlank() || artist.contains("unknown", ignoreCase = true)) UNKNOWN_ARTIST else artist,
                 albumId = albumId,
                 album = getString(cursor, Audio.Media.ALBUM) { getString(cursor, "_description") },
                 track = getString(cursor, Audio.Media.TRACK),
@@ -78,7 +84,7 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
             Timber.d("Got value [$value] for Column $columnName!")
             value
         } catch (e: Throwable) {
-            Timber.e(e,"Failed to get value for column $columnName using default [$defaultValue]")
+            Timber.e(e, "Failed to get value for column $columnName using default [$defaultValue]")
             defaultValue.invoke()
         }
     }
@@ -90,7 +96,7 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
             Timber.d("Got value $value for Column $columnName!")
             value
         } catch (e: Throwable) {
-            Timber.e(e,"Failed to get value for column $columnName using default $defaultValue")
+            Timber.e(e, "Failed to get value for column $columnName using default $defaultValue")
             defaultValue.invoke()
         }
     }
@@ -157,13 +163,13 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
                     fos.write(it)
                     fos.close()
                 } catch (e: IOException) {
-                    Timber.e(e,"Error")
+                    Timber.e(e, "Error")
                 }
                 coverPath = outputFile.path
                 Timber.d("cover created: $coverPath")
             } ?: Timber.d("no has embeddedPicture.")
         } catch (t: Throwable) {
-            Timber.e(t,"Error")
+            Timber.e(t, "Error")
         }
 
         return coverPath
@@ -175,5 +181,9 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
                 Audio.Albums._ID + "=?",
                 arrayOf(id.toString())
         )
+    }
+
+    companion object {
+        const val UNKNOWN_ARTIST = "Artista Desconhecido"
     }
 }
