@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:mediascanner/media_scanner.dart';
 import 'package:mediascanner/model/media_scan_params.dart';
+import 'package:mediascanner/model/media_type.dart';
 import 'package:mediascanner/model/scanned_media.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -20,7 +21,6 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
-  String _media = 'Unknown';
 
   @override
   void initState() {
@@ -38,7 +38,6 @@ class _MyAppState extends State<MyApp> {
   // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
     String platformVersion;
-    String media;
     // Platform messages may fail, so we use a try/catch PlatformException.
     try {
       platformVersion = await MediaScanner.platformVersion;

@@ -153,11 +153,11 @@ class MediaScanner(
     private fun readMediaFromUri(uri: Uri): ScannedMediaOutput? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT)
             return null
+        val authority = uri.authority ?: ""
 
         // DocumentProvider
         when {
             DocumentsContract.isDocumentUri(context, uri) -> {
-                val authority = uri.authority ?: ""
                 // ExternalStorageProvider
                 when {
                     isExternalStorageDocument(authority) -> {
@@ -245,6 +245,15 @@ class MediaScanner(
                 // DownloadsProvider
             }
             "content".equals(uri.scheme, ignoreCase = true) -> {
+                if(isXiaomi(authority)) {
+                    var path = ""
+                    if (uri.path.startsWith("/external_files")){
+                        path = "${Environment.getExternalStorageDirectory()}/${uri.path.substringAfter("/external_files")}"
+                    }
+                    if(path.isNotEmpty()) {
+                        return readMediaFromMediaMetadataRetriever(path)
+                    }
+                }
                 return readMediaFromContentProvider(context, uri, null, null)
             }
             "file".equals(uri.scheme, ignoreCase = true) -> {
@@ -336,6 +345,8 @@ class MediaScanner(
     }
 
     private fun isExternalStorageDocument(authority: String): Boolean = "com.android.externalstorage.documents" == authority
+
+    private fun isXiaomi(authority: String): Boolean = authority.startsWith("com.mi.android.globalFileexplorer.myprovider",ignoreCase = true)
 
     private fun isDownloadsDocument(authority: String): Boolean = "com.android.providers.downloads.documents" == authority
 
