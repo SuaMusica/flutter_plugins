@@ -34,6 +34,7 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
 import com.google.android.exoplayer2.upstream.FileDataSource
 import com.google.android.exoplayer2.util.Util
+import java.io.File
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -282,10 +283,10 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
         }
         mediaSessionConnector?.setQueueNavigator(timelineQueueNavigator)
-
         val url = media.url
         Log.i(TAG, "Player: URL: $url")
-        val uri = Uri.parse(url)
+
+        val uri = if(url.startsWith("/")) Uri.fromFile(File(url)) else Uri.parse(url)
 
         @C.ContentType val type = Util.inferContentType(uri)
         Log.i(TAG, "Player: Type: $type HLS: ${C.TYPE_HLS}")
