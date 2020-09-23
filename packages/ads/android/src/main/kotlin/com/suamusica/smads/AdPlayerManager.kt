@@ -1,17 +1,18 @@
 package com.suamusica.smads
 
 import android.content.Context
+import android.media.MediaCodecList
 import android.net.Uri
+import android.os.Build
+import android.os.Handler
 import android.view.ViewGroup
-import com.google.ads.interactivemedia.v3.api.AdErrorEvent
-import com.google.ads.interactivemedia.v3.api.AdEvent
-import com.google.ads.interactivemedia.v3.api.AdsManager
-import com.google.ads.interactivemedia.v3.api.AdsRenderingSettings
-import com.google.ads.interactivemedia.v3.api.CompanionAdSlot
-import com.google.ads.interactivemedia.v3.api.ImaSdkFactory
-import com.google.android.exoplayer2.C
-import com.google.android.exoplayer2.SimpleExoPlayer
+import androidx.annotation.RequiresApi
+import com.google.ads.interactivemedia.v3.api.*
+import com.google.android.exoplayer2.*
+import com.google.android.exoplayer2.drm.DrmSessionManager
+import com.google.android.exoplayer2.drm.FrameworkMediaCrypto
 import com.google.android.exoplayer2.ext.ima.ImaAdsLoader
+import com.google.android.exoplayer2.mediacodec.MediaCodecSelector
 import com.google.android.exoplayer2.source.MediaSourceFactory
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.source.ads.AdsMediaSource
@@ -22,10 +23,13 @@ import com.google.android.exoplayer2.ui.PlayerView
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
+import com.google.android.exoplayer2.video.VideoRendererEventListener
 import com.suamusica.smads.input.LoadMethodInput
 import io.reactivex.subjects.PublishSubject
 import timber.log.Timber
 
+
+@RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 class AdPlayerManager(
         context: Context,
         private val input: LoadMethodInput
@@ -43,7 +47,34 @@ class AdPlayerManager(
 
     init {
         dataSourceFactory = DefaultDataSourceFactory(context, Util.getUserAgent(context, "AdPlayer"))
-        player = SimpleExoPlayer.Builder(context).build()
+        if (true) {
+            val renderersFactory =  DefaultRenderersFactory(context)
+
+//                val renderersFactory: RenderersFactory = object : DefaultRenderersFactory(context) {
+//                override fun buildVideoRenderers(context: Context, extensionRendererMode: Int, mediaCodecSelector: MediaCodecSelector, drmSessionManager: DrmSessionManager<FrameworkMediaCrypto>?, playClearSamplesWithoutKeys: Boolean, enableDecoderFallback: Boolean, eventHandler: Handler, eventListener: VideoRendererEventListener, allowedVideoJoiningTimeMs: Long, out: java.util.ArrayList<Renderer>) {
+//                    out.add(
+//                            SMMediaCodecVideoRenderer(
+//                                    context,
+//                                    mediaCodecSelector,
+//                                    drmSessionManager,
+//                                    playClearSamplesWithoutKeys,
+//                                    enableDecoderFallback,
+//                                    eventHandler,
+//                                    eventListener,
+//                                    allowedVideoJoiningTimeMs,
+//                                    MAX_DROPPED_VIDEO_FRAME_COUNT_TO_NOTIFY))
+//                }
+//            }
+
+
+
+
+            renderersFactory.setMediaCodecSelector(BlackListMediaCodecSelector());
+            player = SimpleExoPlayer.Builder(context,renderersFactory)
+                    .build();
+        } else {
+            player = SimpleExoPlayer.Builder(context).build()
+        }
     }
 
     private fun getMediaSourceFactory(uri: Uri): MediaSourceFactory {
@@ -80,6 +111,27 @@ class AdPlayerManager(
 
         player?.prepare(mediaSourceWithAds)
     }
+
+//    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+//    fun getCodecsType(): ArrayList<String>? {
+//        val result: ArrayList<String> = ArrayList()
+//        Timber.v("CODEC: %s " ,MediaCodecList(MediaCodecList.REGULAR_CODECS).codecInfos.size)
+//        Timber.v("CODEC: %s %s" ,Build.DEVICE,Build.MODEL)
+//
+//
+//        for (codec in MediaCodecList(MediaCodecList.REGULAR_CODECS).codecInfos) {
+//            Timber.v("CODEC: %s, isEncoder: %s, supporttedTypes: %s" ,codec.name,codec.isEncoder,codec.supportedTypes.joinToString("//"))
+//
+////            if (!codec.isEncoder) {
+////                for (type in codec.supportedTypes) {
+////                    if (type.contains(CodecType!!)) {
+////                        result.add(codec.name)
+////                    }
+////                }
+////            }
+//        }
+//        return result
+//    }
 
     fun play() {
         Timber.v("play")
