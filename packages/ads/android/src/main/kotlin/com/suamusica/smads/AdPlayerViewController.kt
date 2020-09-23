@@ -1,11 +1,13 @@
 package com.suamusica.smads
 
 import android.content.Context
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.ProgressBar
+import androidx.annotation.RequiresApi
 import com.google.ads.interactivemedia.v3.api.AdErrorEvent
 import com.google.ads.interactivemedia.v3.api.AdEvent
 import com.google.android.exoplayer2.ui.PlayerView
@@ -42,6 +44,7 @@ class AdPlayerViewController(
     private var progressBar: ProgressBar? = null
     private val ignorePausedEvent = AtomicBoolean(true)
 
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun load(input: LoadMethodInput, adPlayerView: AdPlayerView) {
         Timber.v("load(input=%s)", input)
         this.adPlayerView = adPlayerView
@@ -56,17 +59,20 @@ class AdPlayerViewController(
         adPlayerManager?.load(adPlayerView.videoAdContainer, adPlayerView.companionAdSlot)
     }
 
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun play() {
         Timber.v("play()")
         ignorePausedEvent.set(false)
         adPlayerManager?.play()
     }
 
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun pause() {
         Timber.v("pause()")
         adPlayerManager?.pause()
     }
 
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun dispose() {
         Timber.v("dispose()")
         compositeDisposable.clear()
@@ -74,6 +80,7 @@ class AdPlayerViewController(
         isCompleted.set(false)
     }
 
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun configureAdPlayerEventObservers() {
         Timber.v("configureAdPlayerEventObservers")
         adPlayerManager?.let { adPlayerManager ->
@@ -93,6 +100,7 @@ class AdPlayerViewController(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun onAdEvent(adEvent: AdEvent) {
         when (adEvent.type) {
             AdEvent.AdEventType.COMPLETED,
