@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -358,6 +357,9 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
                 variantInfosForUrl.add(
                         new HlsTrackMetadataEntry.VariantInfo(
                                 bitrate, videoGroupId, audioGroupId, subtitlesGroupId, closedCaptionsGroupId));
+                                // variantInfosForUrl.add(
+                                //     new HlsTrackMetadataEntry.VariantInfo(
+                                //             bitrate,bitrate, videoGroupId, audioGroupId, subtitlesGroupId, closedCaptionsGroupId));
             }
         }
 
