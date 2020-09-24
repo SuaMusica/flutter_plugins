@@ -379,56 +379,56 @@ PlaylistItem *currentItem = nil;
                 result(@(Ok));
             },
         @"load":
-        ^{
-            NSLog(@"Player: load!");
-            NSString *albumId = call.arguments[@"albumId"];
-            NSString *albumTitle = call.arguments[@"albumTitle"];
-            NSString *name = call.arguments[@"name"];
-            NSString *author = call.arguments[@"author"];
-            NSString *url = call.arguments[@"url"];
-            NSString *coverUrl = call.arguments[@"coverUrl"];
-            NSString *cookie = call.arguments[@"cookie"];
-            if (albumId == nil)
-                result(0);
-            if (name == nil)
-                result(0);
-            if (author == nil)
-                result(0);
-            if (url == nil)
-                result(0);
-            if (cookie == nil)
-                result(0);
-            if (call.arguments[@"isLocal"] == nil)
-                result(0);
-            if (call.arguments[@"volume"] == nil)
-                result(0);
-            if (call.arguments[@"position"] == nil)
-                result(0);
-            if (call.arguments[@"respectSilence"] == nil)
-                result(0);
-            if (coverUrl == nil) {
-                coverUrl = DEFAULT_COVER;
-            }
-            int isLocal = [call.arguments[@"isLocal"]intValue] ;
-            float volume = (float)[call.arguments[@"volume"] doubleValue] ;
-            int milliseconds = call.arguments[@"position"] == [NSNull null] ? 0.0 : [call.arguments[@"position"] intValue] ;
-            bool respectSilence = [call.arguments[@"respectSilence"]boolValue] ;
-            CMTime time = CMTimeMakeWithSeconds(milliseconds / 1000,NSEC_PER_SEC);
-            
-            currentItem = [[PlaylistItem alloc] initWithAlbumId:albumId albumName:albumTitle title:name artist:author url:url coverUrl:coverUrl];
-            
-            lastName = name;
-            lastAuthor = author;
-            lastUrl = url;
-            lastCoverUrl = coverUrl;
-            lastCookie = cookie;
-            lastVolume = volume;
-            lastTime = time;
-            lastRespectSilence = respectSilence;
-            
-            int ret = [self load:playerId name:name author:author url:url coverUrl:coverUrl cookie:cookie isLocal:isLocal volume:volume time:time isNotification:respectSilence];
-            result(@(ret));
-        },
+            ^{
+                NSLog(@"Player: load!");
+                NSString *albumId = call.arguments[@"albumId"];
+                NSString *albumTitle = call.arguments[@"albumTitle"];
+                NSString *name = call.arguments[@"name"];
+                NSString *author = call.arguments[@"author"];
+                NSString *url = call.arguments[@"url"];
+                NSString *coverUrl = call.arguments[@"coverUrl"];
+                NSString *cookie = call.arguments[@"cookie"];
+                if (albumId == nil)
+                    result(0);
+                if (name == nil)
+                    result(0);
+                if (author == nil)
+                    result(0);
+                if (url == nil)
+                    result(0);
+                if (cookie == nil)
+                    result(0);
+                if (call.arguments[@"isLocal"] == nil)
+                    result(0);
+                if (call.arguments[@"volume"] == nil)
+                    result(0);
+                if (call.arguments[@"position"] == nil)
+                    result(0);
+                if (call.arguments[@"respectSilence"] == nil)
+                    result(0);
+                if (coverUrl == nil) {
+                    coverUrl = DEFAULT_COVER;
+                }
+                int isLocal = [call.arguments[@"isLocal"]intValue] ;
+                float volume = (float)[call.arguments[@"volume"] doubleValue] ;
+                int milliseconds = call.arguments[@"position"] == [NSNull null] ? 0.0 : [call.arguments[@"position"] intValue] ;
+                bool respectSilence = [call.arguments[@"respectSilence"]boolValue] ;
+                CMTime time = CMTimeMakeWithSeconds(milliseconds / 1000,NSEC_PER_SEC);
+                
+                currentItem = [[PlaylistItem alloc] initWithAlbumId:albumId albumName:albumTitle title:name artist:author url:url coverUrl:coverUrl];
+                
+                lastName = name;
+                lastAuthor = author;
+                lastUrl = url;
+                lastCoverUrl = coverUrl;
+                lastCookie = cookie;
+                lastVolume = volume;
+                lastTime = time;
+                lastRespectSilence = respectSilence;
+                
+                int ret = [self load:playerId name:name author:author url:url coverUrl:coverUrl cookie:cookie isLocal:isLocal volume:volume time:time isNotification:respectSilence];
+                result(@(ret));
+            },
         @"play":
             ^{
                 NSLog(@"Player: play!");
@@ -1467,7 +1467,7 @@ isNotification: (bool) respectSilence
        time: (CMTime) time
 isNotification: (bool) respectSilence
 {
-    loadOnly = true;
+    loadOnly = false;
     if ([self ensureConnected:playerId isLocal:isLocal] == -1) {
         return -1;
     }
@@ -1770,12 +1770,9 @@ isNotification: (bool) respectSilence
         AVPlayer *player = playerInfo[@"player"];
         NSNumber* newValue = [change objectForKey:NSKeyValueChangeNewKey];
         BOOL shouldStartPlaySoon = [newValue boolValue];
-        NSLog(@"Player: observeValueForKeyPath: %@ -- shouldStartPlaySoon: %s player.rate = %.2f shouldAutoStart = %s", keyPath, shouldStartPlaySoon ? "YES": "NO", player.rate, shouldAutoStart ? "YES": "NO");
-        if (shouldStartPlaySoon && player.rate == 0 && shouldAutoStart) {
+        NSLog(@"Player: observeValueForKeyPath: %@ -- shouldStartPlaySoon: %s player.rate = %.2f shouldAutoStart = %s loadOnly = %s", keyPath, shouldStartPlaySoon ? "YES": "NO", player.rate, shouldAutoStart ? "YES": "NO", loadOnly? "YES": "NO");
+        if (shouldStartPlaySoon && player.rate == 0 && shouldAutoStart && !loadOnly) {
             player.rate = 1.0;
-            if (loadOnly) {
-                player.rate = 0.0;
-            }
         }
         if (shouldStartPlaySoon && player.rate != 0) {
             [ playerInfo setObject:@true forKey:@"isPlaying" ];

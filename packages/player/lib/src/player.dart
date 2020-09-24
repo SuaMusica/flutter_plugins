@@ -814,7 +814,9 @@ class Player {
   }
 
   static void _addUsingPlayer(Player player, Event event) {
-    print("_platformCallHandler _addUsingPlayer $event");
+    if (event.type != EventType.POSITION_CHANGE) {
+      debugPrint("_platformCallHandler _addUsingPlayer $event");
+    }
     if (player._eventStreamController != null &&
         !player._eventStreamController.isClosed &&
         (player._shallSendEvents ||
