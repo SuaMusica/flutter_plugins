@@ -1006,6 +1006,9 @@ PlaylistItem *currentItem = nil;
     shallPlay: (bool) shallPlay
       onReady:(VoidCallback)onReady
 {
+    if([url containsString:@"silence://from-asset"]){
+        url = MINUTES_OF_SILENCE;
+    }
     NSLog(@"Player: setUrl url: %@ cookie: %@", url, cookie);
     currentResourceLoader = nil;
     [self disposePlayerItem:latestPlayerItemObserved];
@@ -1014,7 +1017,6 @@ PlaylistItem *currentItem = nil;
     [self configurePlayer: playerId url:url];
     
     __block AVPlayerItem *playerItem;
-    
     @try {
         if (!playerInfo || ![url isEqualToString:playerInfo[@"url"]] || [url containsString:@"silence.mp3"] ) {
             NSLog(@"Player: Loading new URL");
