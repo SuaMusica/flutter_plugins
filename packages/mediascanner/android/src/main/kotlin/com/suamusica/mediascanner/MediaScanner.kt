@@ -31,7 +31,8 @@ import kotlin.random.Random
 class MediaScanner(
         private val callback: ChannelCallback,
         private val context: Context,
-        private val executor: Executor = Executors.newSingleThreadExecutor(),
+        private val scanExecutor: Executor = Executors.newSingleThreadExecutor(),
+        private val readExecutor: Executor = Executors.newSingleThreadExecutor(),
         private val contentResolver: ContentResolver = context.contentResolver,
         private val mediaScannerExtractors: List<MediaScannerExtractor> = listOf(
                 AudioMediaScannerExtractor(context)
@@ -40,7 +41,7 @@ class MediaScanner(
 
     fun deleteFromMediaId(input: DeleteMediaMethodInput) {
 
-        executor.execute {
+        scanExecutor.execute {
 
             val file = File(input.fullPath)
             if (file.exists()) {
@@ -63,7 +64,7 @@ class MediaScanner(
 
     fun read(uri: String) {
         Timber.v("read(%s)", uri)
-        executor.execute {
+        readExecutor.execute {
             try {
                 readMediaFromAndroidApi(uri)
             } catch (e: Throwable) {
@@ -75,7 +76,7 @@ class MediaScanner(
 
     fun scan(input: ScanMediaMethodInput) {
         Timber.v("scan(%s)", input)
-        executor.execute {
+        scanExecutor.execute {
             try {
                 scanMediasFromAndroidApi(input)
             } catch (e: Throwable) {
