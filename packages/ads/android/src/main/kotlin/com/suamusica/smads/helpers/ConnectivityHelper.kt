@@ -43,7 +43,7 @@ object ConnectivityHelper {
             exception.printStackTrace()
             false
         }.also {
-            Timber.v("isReachable = %s", it)
+            Timber.d("isReachable = %s", it)
         }
     }
 }

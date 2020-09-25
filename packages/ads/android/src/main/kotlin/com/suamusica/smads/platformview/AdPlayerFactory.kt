@@ -9,7 +9,7 @@ import timber.log.Timber
 
 class AdPlayerFactory(private val controller: AdPlayerViewController): PlatformViewFactory(StandardMessageCodec.INSTANCE) {
   override fun create(context: Context, viewId: Int, args: Any): PlatformView {
-    Timber.v("create(viewId = %s, args=%s)", viewId, args)
+    Timber.d("create(viewId = %s, args=%s)", viewId, args)
     return AdPlayer(controller, AdPlayerParams(args))
   }
 }

@@ -11,7 +11,7 @@ class SmadsCallback(private val channel: MethodChannel,
                     private val handler: Handler = Handler(Looper.getMainLooper())) {
 
     fun onAddEvent(adEventOutput: AdEventOutput) {
-        Timber.v("onAddEvent(adEventOutput.type = %s)", adEventOutput.type)
+        Timber.d("onAddEvent(adEventOutput.type = %s)", adEventOutput.type)
         onAddEvent(adEventOutput.toResult())
     }
 
@@ -20,12 +20,12 @@ class SmadsCallback(private val channel: MethodChannel,
     }
 
     fun onComplete() {
-        Timber.v("onComplete()")
+        Timber.d("onComplete()")
         handler.post { channel.invokeMethod(ON_COMPLETE_METHOD, mapOf<Any, Any>()) }
     }
 
     fun onError(errorOutput: ErrorOutput) {
-        Timber.v("onError(error = %s)", errorOutput)
+        Timber.d("onError(error = %s)", errorOutput)
         handler.post { channel.invokeMethod(ON_ERROR_METHOD, errorOutput.toResult()) }
     }
 

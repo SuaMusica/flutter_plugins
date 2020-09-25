@@ -14,7 +14,7 @@ class AdPlayer(private val controller: AdPlayerViewController,
     }
 
     override fun dispose() {
-        Timber.v("dispose")
+        Timber.d("dispose")
     }
 
     companion object {

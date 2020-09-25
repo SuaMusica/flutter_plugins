@@ -30,7 +30,7 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         Initializer.run()
-        Timber.v("onAttachedToEngine")
+        Timber.d("onAttachedToEngine")
         this.channel = MethodChannel(flutterPluginBinding.binaryMessenger, CHANNEL_NAME)
         this.context = flutterPluginBinding.applicationContext
         this.callback = SmadsCallback(channel!!)
@@ -42,13 +42,13 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
-        Timber.v("onDetachedFromEngine")
+        Timber.d("onDetachedFromEngine")
         channel?.setMethodCallHandler(null)
         channel = null
     }
 
     override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
-        Timber.v("onMethodCall")
+        Timber.d("onMethodCall")
         Timber.d("call.method: %s", call.method)
         when (call.method) {
             LOAD_METHOD -> load(call.arguments, result)

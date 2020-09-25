@@ -63,7 +63,7 @@ class MediaScanner(
     }
 
     fun read(uri: String) {
-        Timber.v("read(%s)", uri)
+        Timber.d("read(%s)", uri)
         readExecutor.execute {
             try {
                 readMediaFromAndroidApi(uri)
@@ -75,7 +75,7 @@ class MediaScanner(
     }
 
     fun scan(input: ScanMediaMethodInput) {
-        Timber.v("scan(%s)", input)
+        Timber.d("scan(%s)", input)
         scanExecutor.execute {
             try {
                 scanMediasFromAndroidApi(input)
