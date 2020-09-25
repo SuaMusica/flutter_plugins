@@ -354,12 +354,10 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
                     variantInfosForUrl = new ArrayList<>();
                     urlToVariantInfos.put(uri, variantInfosForUrl);
                 }
-                variantInfosForUrl.add(
-                        new HlsTrackMetadataEntry.VariantInfo(
-                                bitrate, videoGroupId, audioGroupId, subtitlesGroupId, closedCaptionsGroupId));
-                                // variantInfosForUrl.add(
-                                //     new HlsTrackMetadataEntry.VariantInfo(
-                                //             bitrate,bitrate, videoGroupId, audioGroupId, subtitlesGroupId, closedCaptionsGroupId));
+                // variantInfosForUrl.add(new HlsTrackMetadataEntry.VariantInfo(bitrate, videoGroupId, audioGroupId, subtitlesGroupId, closedCaptionsGroupId));
+                                variantInfosForUrl.add(
+                                     new HlsTrackMetadataEntry.VariantInfo(
+                                             bitrate,bitrate, videoGroupId, audioGroupId, subtitlesGroupId, closedCaptionsGroupId));
             }
         }
 

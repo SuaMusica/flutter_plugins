@@ -46,7 +46,7 @@ class AdPlayerViewController(
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun load(input: LoadMethodInput, adPlayerView: AdPlayerView) {
-        Timber.v("load(input=%s)", input)
+        Timber.d("load(input=%s)", input)
         this.adPlayerView = adPlayerView
         this.view = adPlayerView.view
         this.videoAdContainer = adPlayerView.videoAdContainer
@@ -61,20 +61,20 @@ class AdPlayerViewController(
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun play() {
-        Timber.v("play()")
+        Timber.d("play()")
         ignorePausedEvent.set(false)
         adPlayerManager?.play()
     }
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun pause() {
-        Timber.v("pause()")
+        Timber.d("pause()")
         adPlayerManager?.pause()
     }
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun dispose() {
-        Timber.v("dispose()")
+        Timber.d("dispose()")
         compositeDisposable.clear()
         adPlayerManager?.release()
         isCompleted.set(false)
@@ -82,7 +82,7 @@ class AdPlayerViewController(
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun configureAdPlayerEventObservers() {
-        Timber.v("configureAdPlayerEventObservers")
+        Timber.d("configureAdPlayerEventObservers")
         adPlayerManager?.let { adPlayerManager ->
             adPlayerManager.adEventDispatcher
                 .observeOn(AndroidSchedulers.mainThread())
@@ -126,6 +126,9 @@ class AdPlayerViewController(
         }
 
         Timber.d("onAdEvent(%s)", adEvent.type)
+        if(adEvent.type == AdEvent.AdEventType.LOADED){
+            Timber.d("onAdEvent(%s)", adEvent)
+        }
         val duration = adPlayerManager?.adsDuration()?.toDouble()?.let { ceil(it).toLong() } ?: 0L
         val position = adPlayerManager?.adsCurrentPosition()?.toDouble()?.let { ceil(it).toLong() } ?: 0L
         Timber.d("onAdEvent(duration=%s, position=%s)", duration, position)
@@ -137,7 +140,7 @@ class AdPlayerViewController(
     }
 
     private fun onAdError(adErrorEvent: AdErrorEvent) {
-        Timber.v("onAdError($adErrorEvent)")
+        Timber.d("onAdError($adErrorEvent)")
         Timber.d("adErrorEvent.error.errorCode(${adErrorEvent.error.errorCode})")
         Timber.d("adErrorEvent.error.errorType(${adErrorEvent.error.errorType})")
         Timber.d("adErrorEvent.error.errorCodeNumber: %s", adErrorEvent.error.errorCodeNumber)
@@ -154,14 +157,14 @@ class AdPlayerViewController(
     }
 
     private fun showContent() {
-        Timber.v("showContent")
+        Timber.d("showContent")
         if (adPlayerManager?.isAudioAd == true) {
-            Timber.v("adPlayerManager?.isAudioAd: true")
+            Timber.d("adPlayerManager?.isAudioAd: true")
             this.view?.hide()
             videoAdContainer?.hide()
             companionAdSlot?.show()
         } else {
-            Timber.v("adPlayerManager?.isAudioAd: false")
+            Timber.d("adPlayerManager?.isAudioAd: false")
             view?.show()
             videoAdContainer?.show()
             companionAdSlot?.hide()
@@ -169,7 +172,7 @@ class AdPlayerViewController(
     }
 
     private fun onComplete() {
-        Timber.v("onComplete()")
+        Timber.d("onComplete()")
         if (isCompleted.getAndSet(true)) return
         callback.onComplete()
     }
