@@ -45,7 +45,8 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
     private val albumCache = mutableMapOf<Long, Album?>()
 
     private fun isSuaMusicaMusic(path: String): Boolean {
-        return path.substringBeforeLast(".").split("_").last().toIntOrNull() != null
+        val id = path.substringBeforeLast(".").split("_").last().toIntOrNull()
+        return  id != null && id > 1000
     }
 
     override fun getScannedMediaFromCursor(cursor: Cursor, ignoreOurMusics: Boolean): ScannedMediaOutput? {
