@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:smads/pre_roll_controller.dart';
 
@@ -32,12 +34,30 @@ class PreRoll extends StatelessWidget {
         maxHeight: maxHeight ?? MediaQuery.of(context).size.height,
       ),
       child: defaultTargetPlatform == TargetPlatform.android
-          ? AndroidView(
+          ? PlatformViewLink(
               key: _key,
               viewType: viewType,
-              creationParams: creationParams,
-              creationParamsCodec: const StandardMessageCodec(),
-              onPlatformViewCreated: _onPlatformViewCreated,
+              surfaceFactory:
+                  (BuildContext context, PlatformViewController controller) =>
+                      AndroidViewSurface(
+                controller: controller,
+                gestureRecognizers: const <
+                    Factory<OneSequenceGestureRecognizer>>{},
+                hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+              ),
+              onCreatePlatformView: (PlatformViewCreationParams params) =>
+                  PlatformViewsService.initSurfaceAndroidView(
+                id: params.id,
+                viewType: viewType,
+                layoutDirection: TextDirection.ltr,
+                creationParams: creationParams,
+                creationParamsCodec: const StandardMessageCodec(),
+              )
+                    ..addOnPlatformViewCreatedListener((int id) {
+                      params.onPlatformViewCreated(id);
+                      _onPlatformViewCreated(id);
+                    })
+                    ..create(),
             )
           : UiKitView(
               key: _key,
