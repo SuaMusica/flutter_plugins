@@ -3,6 +3,7 @@ package com.suamusica.mediascanner.scanners
 import android.content.Context
 import android.database.Cursor
 import android.media.MediaMetadataRetriever
+import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore.Audio
 import com.suamusica.mediascanner.input.MediaType
@@ -12,6 +13,12 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import timber.log.Timber
+import com.mpatric.mp3agic.ID3v1Tag;
+import com.mpatric.mp3agic.ID3v24Tag;
+import com.mpatric.mp3agic.InvalidDataException;
+import com.mpatric.mp3agic.Mp3File;
+import com.mpatric.mp3agic.NotSupportedException;
+import com.mpatric.mp3agic.UnsupportedTagException;
 
 class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExtractor {
 
@@ -51,24 +58,64 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
 
     override fun getScannedMediaFromCursor(cursor: Cursor, ignoreOurMusics: Boolean): ScannedMediaOutput? {
         cursor.columnNames.forEach {
-            Timber.d("$it: [${getString(cursor, it)}]")
+            Timber.d("Field $it: [${getString(cursor, it)}]")
         }
-        val albumId = getLong(cursor, Audio.Media.ALBUM_ID)
+        var albumId = getLong(cursor, Audio.Media.ALBUM_ID)
+        var playlistId = -1L;
+        var musicId = getLong(cursor, Audio.Media._ID);
         val path = getString(cursor, Audio.Media.DATA)
-        if (ignoreOurMusics && isSuaMusicaMusic(path)) {
-            return null
-        }
+        // if (ignoreOurMusics && isSuaMusicaMusic(path)) {
+        //     return null
+        // }
 
-        val artist = getString(cursor, Audio.Media.ARTIST) {
+        var artist = getString(cursor, Audio.Media.ARTIST) {
             getString(cursor, Audio.Media.COMPOSER) {
                 UNKNOWN_ARTIST
             }
         }
+        artist = if (artist.trim().isBlank() || artist.contains("unknown", ignoreCase = true)) UNKNOWN_ARTIST else artist
+
+        try {
+            Timber.i("Opening MP3 file...")
+            val mp3file = Mp3File(path)
+            if (mp3file.hasId3v2Tag()) {
+                Timber.i("Trying to read Id3 tags...")
+                val id3v2Tag = mp3file.id3v2Tag;
+
+                var url = id3v2Tag.url
+                Timber.d("SM_URL: [$url]")
+                url?.let {
+                    if (it.isNotEmpty()) {
+                        val uri = Uri.parse(url)
+                        uri.getQueryParameter("playlistId")?.let { value ->
+                            playlistId = value.toLong()
+                        }
+                        uri.getQueryParameter("albumId")?.let { value ->
+                            albumId = value.toLong()
+                        }
+                        uri.getQueryParameter("musicId")?.let { value ->
+                            musicId = value.toLong()
+                        }
+                    }
+                }
+                if (artist == UNKNOWN_ARTIST) {
+                    if (id3v2Tag.albumArtist.isNotEmpty()) {
+                        artist = id3v2Tag.albumArtist
+                    }
+                }
+            } else {
+                Timber.i("Id3 tags were not found $path")
+            }
+        } catch (e: Throwable) {
+            Timber.e(e, "Failed to get ID3 tags. Ignoring...");
+        }
+
         return ScannedMediaOutput(
-                mediaId = getLong(cursor, Audio.Media._ID),
+                mediaId = musicId,
                 title = getString(cursor, Audio.Media.TITLE) { getString(cursor, Audio.Media.DISPLAY_NAME) },
-                artist = if (artist.trim().isBlank() || artist.contains("unknown", ignoreCase = true)) UNKNOWN_ARTIST else artist,
+                artist = artist,
                 albumId = albumId,
+                playlistId = playlistId,
                 album = getString(cursor, Audio.Media.ALBUM) { getString(cursor, "_description") },
                 track = getString(cursor, Audio.Media.TRACK),
                 path = path,

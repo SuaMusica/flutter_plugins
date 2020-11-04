@@ -8,6 +8,7 @@ class ScannedMedia {
       this.track,
       this.path,
       this.albumCoverPath,
+      this.playlistId,
       this.createdAt,
       this.updatedAt);
 
@@ -18,6 +19,7 @@ class ScannedMedia {
   String album;
   String track;
   String path;
+  int playlistId;
   String albumCoverPath;
   DateTime createdAt;
   DateTime updatedAt;
@@ -31,6 +33,7 @@ class ScannedMedia {
         'albumId: $albumId, '
         'album: $album, '
         'track: $track, '
+        'playlistId: $playlistId, '
         'path: $path, '
         'albumCoverPath: $albumCoverPath, '
         'createdAt: $createdAt, '
@@ -48,6 +51,7 @@ class ScannedMedia {
       map["track"] as String,
       map["path"] as String,
       map["album_cover_path"] as String,
+      map["playlist"] as int,
       DateTime.fromMillisecondsSinceEpoch(map["created_at"] as int),
       DateTime.fromMillisecondsSinceEpoch(map["updated_at"] as int),
     );

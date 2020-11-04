@@ -289,6 +289,7 @@ class MediaScanner(
                 title = name,
                 artist = artist,
                 albumId = 0,
+                playlistId = 0,
                 album = album,
                 track = "0",
                 path = path,
