@@ -43,11 +43,11 @@ class MusicPlayerPlaybackPreparer(val mediaService: MediaService,
             return when (command) {
                 "prepare" -> {
                     return extras?.let {
-                        val cookie = it.getString("cookie")
-                        val name = it.getString("name")
-                        val author = it.getString("author")
-                        val url = it.getString("url")
-                        val coverUrl = it.getString("coverUrl")
+                        val cookie = it.getString("cookie")!!
+                        val name = it.getString("name")!!
+                        val author = it.getString("author")!!
+                        val url = it.getString("url")!!
+                        val coverUrl = it.getString("coverUrl")!!
                         mediaService.prepare(cookie, Media(name, author, url, coverUrl))
                         return@let true
                     } ?: false
@@ -83,10 +83,10 @@ class MusicPlayerPlaybackPreparer(val mediaService: MediaService,
                 }
                 "send_notification" -> {
                     return extras?.let {
-                        val name = it.getString("name")
-                        val author = it.getString("author")
-                        val url = it.getString("url")
-                        val coverUrl = it.getString("coverUrl")
+                        val name = it.getString("name")!!
+                        val author = it.getString("author")!!
+                        val url = it.getString("url")!!
+                        val coverUrl = it.getString("coverUrl")!!
                         var isPlaying:Boolean? = null;
                         if(it.containsKey("isPlaying")){
                             isPlaying = it.getBoolean("isPlaying")

@@ -91,7 +91,14 @@ class AdPlayerManager(
         playerView.player = player
         playerView.useController = false
         playerView.hideController()
-        setupCompanionAd(companionAdSlotView)
+
+        val companionAdSlot = ImaSdkFactory.getInstance().createCompanionAdSlot()
+        companionAdSlot.container = companionAdSlotView
+        companionAdSlot.setSize(300, 250)
+        val companionAdSlots = ArrayList<CompanionAdSlot>()
+        companionAdSlots.add(companionAdSlot)
+        adsLoader.adDisplayContainer?.companionSlots = companionAdSlots
+
         setupAdsLoader(playerView)
 
         player?.setMediaSource(AdsMediaSource(
@@ -128,16 +135,6 @@ class AdPlayerManager(
         adsManager?.destroy()
         adsLoader.release()
         adsLoader.setPlayer(null)
-    }
-
-    private fun setupCompanionAd(companionAdView: ViewGroup) {
-        Timber.d("setupCompanionAd")
-        val companionAdSlot = ImaSdkFactory.getInstance().createCompanionAdSlot()
-        companionAdSlot.container = companionAdView
-        companionAdSlot.setSize(300, 250)
-        val companionAdSlots = ArrayList<CompanionAdSlot>()
-        companionAdSlots.add(companionAdSlot)
-        adsLoader.adDisplayContainer?.companionSlots = companionAdSlots
     }
 
     private fun setContentType(adEvent: AdEvent) {
