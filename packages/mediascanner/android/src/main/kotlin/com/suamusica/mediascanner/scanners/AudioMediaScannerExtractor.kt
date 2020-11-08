@@ -72,9 +72,6 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
         var playlistId = -1L;
         var musicId = getLong(cursor, Audio.Media._ID);
         val path = getString(cursor, Audio.Media.DATA)
-        // if (ignoreOurMusics && isSuaMusicaMusic(path)) {
-        //     return null
-        // }
 
         var artist = getString(cursor, Audio.Media.ARTIST) {
             getString(cursor, Audio.Media.COMPOSER) {
