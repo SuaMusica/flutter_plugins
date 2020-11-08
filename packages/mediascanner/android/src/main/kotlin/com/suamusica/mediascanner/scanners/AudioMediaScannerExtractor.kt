@@ -52,8 +52,16 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
     private val albumCache = mutableMapOf<Long, Album?>()
 
     private fun isSuaMusicaMusic(path: String): Boolean {
-        val id = path.substringBeforeLast(".").split("_").last().toIntOrNull()
-        return  id != null && id > 1000
+        val id = path.substringBeforeLast(".").split("_").last().toLongOrNull()
+        return  id != null && id > 1000L
+    }
+
+    private fun getSuaMusicaId(path: String): Long? {
+        val id = path.substringBeforeLast(".").split("_").last().toLongOrNull()
+        if (id != null && id > 1000) {
+            return id
+        }
+        return null
     }
 
     override fun getScannedMediaFromCursor(cursor: Cursor, ignoreOurMusics: Boolean): ScannedMediaOutput? {
@@ -84,18 +92,21 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
 
                 var url = id3v2Tag.url
                 Timber.d("SM_URL: [$url]")
-                url?.let {
-                    if (it.isNotEmpty()) {
-                        val uri = Uri.parse(url)
-                        uri.getQueryParameter("playlistId")?.let { value ->
-                            playlistId = value.toLong()
-                        }
-                        uri.getQueryParameter("albumId")?.let { value ->
-                            albumId = value.toLong()
-                        }
-                        uri.getQueryParameter("musicId")?.let { value ->
-                            musicId = value.toLong()
-                        }
+                if (url != null && url.isNotEmpty()) {
+                    val uri = Uri.parse(url)
+                    uri.getQueryParameter("playlistId")?.let { value ->
+                        playlistId = value.toLong()
+                    }
+                    uri.getQueryParameter("albumId")?.let { value ->
+                        albumId = value.toLong()
+                    }
+                    uri.getQueryParameter("musicId")?.let { value ->
+                        musicId = value.toLong()
+                    }
+                } else {
+                    val id = getSuaMusicaId(path)
+                    id?.let {
+                        musicId = it
                     }
                 }
                 if (artist == UNKNOWN_ARTIST) {
@@ -105,9 +116,17 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
                 }
             } else {
                 Timber.i("Id3 tags were not found $path")
+                val id = getSuaMusicaId(path)
+                id?.let {
+                    musicId = it
+                }
             }
         } catch (e: Throwable) {
             Timber.e(e, "Failed to get ID3 tags. Ignoring...");
+            val id = getSuaMusicaId(path)
+            id?.let {
+                musicId = it
+            }
         }
 
         return ScannedMediaOutput(
