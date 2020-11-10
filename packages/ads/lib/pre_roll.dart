@@ -35,50 +35,58 @@ class PreRoll extends StatelessWidget {
         maxHeight: maxHeight ?? MediaQuery.of(context).size.height,
       ),
       child: defaultTargetPlatform == TargetPlatform.android
-          ? FutureBuilder(
-              future: DeviceInfoPlugin().androidInfo,
-              builder: (BuildContext context,
-                  AsyncSnapshot<AndroidDeviceInfo> snapshot) {
-                if (snapshot.hasError || !snapshot.hasData) {
-                  return Container();
-                }
-                return snapshot.data.version.sdkInt >= 28
-                    ? PlatformViewLink(
-                        key: _key,
-                        viewType: viewType,
-                        surfaceFactory: (BuildContext context,
-                                PlatformViewController controller) =>
-                            AndroidViewSurface(
-                          controller: controller,
-                          gestureRecognizers: const <
-                              Factory<OneSequenceGestureRecognizer>>{},
-                          hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-                        ),
-                        onCreatePlatformView:
-                            (PlatformViewCreationParams params) =>
-                                PlatformViewsService.initSurfaceAndroidView(
-                          id: params.id,
-                          viewType: viewType,
-                          layoutDirection: TextDirection.ltr,
-                          creationParams: creationParams,
-                          creationParamsCodec: const StandardMessageCodec(),
-                        )
-                                  ..addOnPlatformViewCreatedListener((int id) {
-                                    params.onPlatformViewCreated(id);
-                                    _onPlatformViewCreated(id);
-                                  })
-                                  ..create(),
-                      )
-                    : AndroidView(
-                        key: _key,
-                        viewType: viewType,
-                        creationParams: creationParams,
-                        creationParamsCodec: const StandardMessageCodec(),
-                        onPlatformViewCreated: _onPlatformViewCreated,
-                        clipBehavior: Clip.none,
-                      );
-              },
+          ? AndroidView(
+              key: _key,
+              viewType: viewType,
+              creationParams: creationParams,
+              creationParamsCodec: const StandardMessageCodec(),
+              onPlatformViewCreated: _onPlatformViewCreated,
+              clipBehavior: Clip.none,
             )
+          // FutureBuilder(
+          //     future: DeviceInfoPlugin().androidInfo,
+          //     builder: (BuildContext context,
+          //         AsyncSnapshot<AndroidDeviceInfo> snapshot) {
+          //       if (snapshot.hasError || !snapshot.hasData) {
+          //         return Container();
+          //       }
+          //       return snapshot.data.version.sdkInt >= 28
+          //           ? PlatformViewLink(
+          //               key: _key,
+          //               viewType: viewType,
+          //               surfaceFactory: (BuildContext context,
+          //                       PlatformViewController controller) =>
+          //                   AndroidViewSurface(
+          //                 controller: controller,
+          //                 gestureRecognizers: const <
+          //                     Factory<OneSequenceGestureRecognizer>>{},
+          //                 hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+          //               ),
+          //               onCreatePlatformView:
+          //                   (PlatformViewCreationParams params) =>
+          //                       PlatformViewsService.initSurfaceAndroidView(
+          //                 id: params.id,
+          //                 viewType: viewType,
+          //                 layoutDirection: TextDirection.ltr,
+          //                 creationParams: creationParams,
+          //                 creationParamsCodec: const StandardMessageCodec(),
+          //               )
+          //                         ..addOnPlatformViewCreatedListener((int id) {
+          //                           params.onPlatformViewCreated(id);
+          //                           _onPlatformViewCreated(id);
+          //                         })
+          //                         ..create(),
+          //             )
+          //           : AndroidView(
+          //               key: _key,
+          //               viewType: viewType,
+          //               creationParams: creationParams,
+          //               creationParamsCodec: const StandardMessageCodec(),
+          //               onPlatformViewCreated: _onPlatformViewCreated,
+          //               clipBehavior: Clip.none,
+          //             );
+          //     },
+          //   )
           : UiKitView(
               key: _key,
               viewType: viewType,
