@@ -51,11 +51,6 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
 
     private val albumCache = mutableMapOf<Long, Album?>()
 
-    private fun isSuaMusicaMusic(path: String): Boolean {
-        val id = path.substringBeforeLast(".").split("_").last().toLongOrNull()
-        return  id != null && id > 1000L
-    }
-
     private fun getSuaMusicaId(path: String): Long? {
         val id = path.substringBeforeLast(".").split("_").last().toLongOrNull()
         if (id != null && id > 1000) {
@@ -70,9 +65,14 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
         }
         var albumId = getLong(cursor, Audio.Media.ALBUM_ID)
         var playlistId = -1L;
-        var musicId = getLong(cursor, Audio.Media._ID);
-        val path = getString(cursor, Audio.Media.DATA)
 
+        var musicId = getLong(cursor, Audio.Media._ID) * -1;
+        val path = getString(cursor, Audio.Media.DATA)
+        getSuaMusicaId(path)?.let {
+            musicId = it
+        }
+
+        //TODO: otimizar MusicId + path sqlite @Nadilson
         var artist = getString(cursor, Audio.Media.ARTIST) {
             getString(cursor, Audio.Media.COMPOSER) {
                 UNKNOWN_ARTIST
@@ -81,10 +81,10 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
         artist = if (artist.trim().isBlank() || artist.contains("unknown", ignoreCase = true)) UNKNOWN_ARTIST else artist
 
         try {
-            Timber.i("Opening MP3 file...")
+            Timber.d("Opening MP3 file...")
             val mp3file = Mp3File(path)
             if (mp3file.hasId3v2Tag()) {
-                Timber.i("Trying to read Id3 tags...")
+                Timber.d("Trying to read Id3 tags...")
                 val id3v2Tag = mp3file.id3v2Tag;
 
                 var url = id3v2Tag.url
@@ -100,30 +100,18 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
                     uri.getQueryParameter("musicId")?.let { value ->
                         musicId = value.toLong()
                     }
-                } else {
-                    val id = getSuaMusicaId(path)
-                    id?.let {
-                        musicId = it
-                    }
                 }
+
                 if (artist == UNKNOWN_ARTIST) {
                     if (id3v2Tag.albumArtist.isNotEmpty()) {
                         artist = id3v2Tag.albumArtist
                     }
                 }
             } else {
-                Timber.i("Id3 tags were not found $path")
-                val id = getSuaMusicaId(path)
-                id?.let {
-                    musicId = it
-                }
+                Timber.d("Id3 tags were not found $path")
             }
         } catch (e: Throwable) {
             Timber.e(e, "Failed to get ID3 tags. Ignoring...");
-            val id = getSuaMusicaId(path)
-            id?.let {
-                musicId = it
-            }
         }
 
         return ScannedMediaOutput(
