@@ -73,8 +73,29 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
             musicId = it
         }
 
+        val appsDir = context.getExternalFilesDirs(null)
+        var rootPaths = mutableListOf<String>()
+        appsDir.forEach { appDir ->
+            val absPath = appDir.getAbsolutePath()
+            val index = absPath.indexOf("/Android/")
+            if (index > 0) {
+                val rootPath = absPath.substring(0, index)
+                Timber.d("MediaScanner: $rootPath")
+                rootPaths.add(rootPath)
+            }
+        }
+
         scannedMediaRepository?.let {
-            if (it.mediaExists(mediaId = musicId, mediaPath = path.replace("/storage/emulated/0", ""))) {
+            var workPath = path
+            if (musicId > 0) {
+                for (rootPath in rootPaths ) {
+                    if (workPath.startsWith(rootPath)) {
+                        workPath = workPath.replace(rootPath, "")
+                        break
+                    }
+                }
+            }
+            if (it.mediaExists(mediaId = musicId, mediaPath = workPath)) {
                 Timber.d("MediaScanner: Found that mediaId: $musicId with path $path was already processed")
                 return null
             } else {
