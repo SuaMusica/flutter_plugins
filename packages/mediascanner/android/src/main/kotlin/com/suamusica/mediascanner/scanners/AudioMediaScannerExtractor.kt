@@ -19,9 +19,9 @@ import com.mpatric.mp3agic.InvalidDataException;
 import com.mpatric.mp3agic.Mp3File;
 import com.mpatric.mp3agic.NotSupportedException;
 import com.mpatric.mp3agic.UnsupportedTagException;
+import com.suamusica.mediascanner.db.ScannedMediaRepository
 
 class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExtractor {
-
     override val mediaType: MediaType = MediaType.AUDIO
 
     override val uri = Audio.Media.EXTERNAL_CONTENT_URI!!
@@ -64,7 +64,9 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
         return null
     }
 
-    override fun getScannedMediaFromCursor(cursor: Cursor, ignoreOurMusics: Boolean): ScannedMediaOutput? {
+    override fun getScannedMediaFromCursor(cursor: Cursor,
+                                           ignoreOurMusics: Boolean,
+                                           scannedMediaRepository: ScannedMediaRepository?): ScannedMediaOutput? {
         cursor.columnNames.forEach {
             Timber.d("Field $it: [${getString(cursor, it)}]")
         }
