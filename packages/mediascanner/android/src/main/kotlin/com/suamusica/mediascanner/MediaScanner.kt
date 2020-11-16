@@ -220,7 +220,7 @@ class MediaScanner(
                                 cursor?.use { c ->
                                     if (c.moveToNext()) {
                                         val scannedMedia = extractMedia(c, null, null)
-                                        if (scannedMedia?.path?.trim()?.isBlank() != false && scannedMedia?.title?.contains(".") != false) {
+                                        if (scannedMedia != null && scannedMedia?.path?.trim()?.isBlank() && scannedMedia?.title?.contains(".")) {
                                             val newPath = "${Environment.getExternalStorageDirectory()}/Download/${scannedMedia!!.title}"
                                             return readMediaFromMediaMetadataRetriever(newPath)
                                         }
@@ -342,14 +342,14 @@ class MediaScanner(
         return null
     }
 
-    fun extractMedia(c: Cursor, selection: String?,
-                     selectionArgs: Array<String>?): ScannedMediaOutput? {
+    private fun extractMedia(c: Cursor, selection: String?,
+                             selectionArgs: Array<String>?): ScannedMediaOutput? {
         return if (c.columnNames.contains(MEDIA_PROVIDER_URI)) {
             val providerUri = c.getStringByColumnName(MEDIA_PROVIDER_URI)
             readMediaFromContentProvider(context, Uri.parse(providerUri), selection, selectionArgs)
-                    ?: mediaScannerExtractors[0].getScannedMediaFromCursor(c, false)
+                    ?: mediaScannerExtractors[0].getScannedMediaFromCursor(c)
         } else {
-            mediaScannerExtractors[0].getScannedMediaFromCursor(c, false)
+            mediaScannerExtractors[0].getScannedMediaFromCursor(c)
         }
 
     }

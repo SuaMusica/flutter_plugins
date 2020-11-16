@@ -6,13 +6,41 @@ class ScannedMediaRepository(dbHelper: ScannedMediaDbHelper) {
     private val dbHelper: ScannedMediaDbHelper = dbHelper
 
     fun mediaExists(mediaId: Long, mediaPath: String): Boolean {
+        return if (mediaId < 0) {
+            externalMediaExists(mediaId, mediaPath)
+        } else {
+            internalMediaExists(mediaId, mediaPath)
+        }
+    }
+
+    private fun externalMediaExists(mediaId: Long, mediaPath: String): Boolean {
         val db = dbHelper.readableDatabase
         var cursor: Cursor? = null
         try {
             cursor = db.query(
                     SCANNED_MEDIA_TABLE,
                     arrayOf(MEDIA_ID_FIELD),
-                    SELECTION,
+                    SCANNED_MEDIA_SELECTION,
+                    arrayOf(mediaId.toString(), mediaPath),
+                    null,
+                    null,
+                    null
+            )
+
+            return cursor?.moveToNext() ?: false
+        } finally {
+            cursor?.close()
+        }
+    }
+
+    private fun internalMediaExists(mediaId: Long, mediaPath: String): Boolean {
+        val db = dbHelper.readableDatabase
+        var cursor: Cursor? = null
+        try {
+            cursor = db.query(
+                    OFFLINE_MEDIA_TABLE,
+                    arrayOf(OFFLINE_MEDIA_ID_FIELD),
+                    OFFLINE_MEDIA_SELECTION,
                     arrayOf(mediaId.toString(), mediaPath),
                     null,
                     null,
@@ -26,9 +54,14 @@ class ScannedMediaRepository(dbHelper: ScannedMediaDbHelper) {
     }
 
     companion object {
-        val SCANNED_MEDIA_TABLE = "scanned_media"
-        val MEDIA_ID_FIELD = "media_id"
-        val PATH_FIELD = "path"
-        val SELECTION = "${SCANNED_MEDIA_TABLE}.${MEDIA_ID_FIELD} = ? AND ${SCANNED_MEDIA_TABLE}.\"${PATH_FIELD}\" = ?"
+        private const val SCANNED_MEDIA_TABLE = "scanned_media"
+        private const val MEDIA_ID_FIELD = "media_id"
+        private const val PATH_FIELD = "path"
+        private const val SCANNED_MEDIA_SELECTION = "${SCANNED_MEDIA_TABLE}.${MEDIA_ID_FIELD} = ? AND ${SCANNED_MEDIA_TABLE}.\"${PATH_FIELD}\" = ?"
+
+        private const val OFFLINE_MEDIA_TABLE = "offline_media_v2"
+        private const val OFFLINE_MEDIA_ID_FIELD = "id"
+        private const val OFFLINE_MEDIA_LOCAL_PATH_FIELD = "local_path"
+        private const val OFFLINE_MEDIA_SELECTION = "${OFFLINE_MEDIA_TABLE}.${OFFLINE_MEDIA_ID_FIELD} = ? AND ${OFFLINE_MEDIA_TABLE}.\"${OFFLINE_MEDIA_LOCAL_PATH_FIELD}\" = ?"
     }
 }

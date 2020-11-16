@@ -60,7 +60,6 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
     }
 
     override fun getScannedMediaFromCursor(cursor: Cursor,
-                                           ignoreOurMusics: Boolean,
                                            scannedMediaRepository: ScannedMediaRepository?): ScannedMediaOutput? {
         cursor.columnNames.forEach {
             Timber.d("Field $it: [${getString(cursor, it)}]")
@@ -72,6 +71,15 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
         val path = getString(cursor, Audio.Media.DATA)
         getSuaMusicaId(path)?.let {
             musicId = it
+        }
+
+        scannedMediaRepository?.let {
+            if (it.mediaExists(mediaId = musicId, mediaPath = path.replace("/storage/emulated/0", ""))) {
+                Timber.d("MediaScanner: Found that mediaId: $musicId with path $path was already processed")
+                return null
+            } else {
+                Timber.d("MediaScanner: mediaId: $musicId with path $path was not processed")
+            }
         }
 
         //TODO: otimizar MusicId + path sqlite @Nadilson

@@ -15,7 +15,6 @@ interface MediaScannerExtractor {
     val sortOrder: String?
 
     fun getScannedMediaFromCursor(cursor: Cursor,
-                                  ignoreOurMusics: Boolean = true,
                                   scannedMediaRepository: ScannedMediaRepository? = null): ScannedMediaOutput?
 
     fun Cursor.getStringByColumnName(columnName: String): String =
