@@ -2,8 +2,6 @@ package com.suamusica.smads
 
 import android.content.Context
 import android.os.Build
-import android.os.Handler
-import android.os.Looper
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.ProgressBar
@@ -32,11 +30,12 @@ class AdPlayerViewController(
         private val context: Context,
         private val callback: SmadsCallback
 ) {
+
+
     private var adPlayerManager: AdPlayerManager? = null
     private val isCompleted = AtomicBoolean(false)
     private val compositeDisposable: CompositeDisposable = CompositeDisposable()
     private fun Disposable.compose() = compositeDisposable.add(this)
-    private val handler = Handler(Looper.getMainLooper())
     var adPlayerView: AdPlayerView? = null
     private var view: View? = null
     private var videoAdContainer: PlayerView? = null
@@ -47,12 +46,12 @@ class AdPlayerViewController(
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun load(input: LoadMethodInput, adPlayerView: AdPlayerView) {
         Timber.d("load(input=%s)", input)
+        dispose()
         this.adPlayerView = adPlayerView
         this.view = adPlayerView.view
         this.videoAdContainer = adPlayerView.videoAdContainer
         this.companionAdSlot = adPlayerView.companionAdSlot
         this.progressBar = adPlayerView.progressBar
-        dispose()
         ignorePausedEvent.set(true)
         adPlayerManager = AdPlayerManager(context, input)
         configureAdPlayerEventObservers()
