@@ -13,6 +13,8 @@ import android.os.Environment
 import android.os.StatFs
 import android.provider.DocumentsContract
 import android.provider.MediaStore
+import com.suamusica.mediascanner.db.ScannedMediaDbHelper
+import com.suamusica.mediascanner.db.ScannedMediaRepository
 import com.suamusica.mediascanner.input.DeleteMediaMethodInput
 import com.suamusica.mediascanner.input.MediaType
 import com.suamusica.mediascanner.input.ScanMediaMethodInput
@@ -104,6 +106,12 @@ class MediaScanner(
                     || it.mediaType == input.mediaType
         }
 
+        val scannedMediaRepository = ScannedMediaRepository(
+                ScannedMediaDbHelper(context,
+                        input.databaseName,
+                        input.databaseVersion)
+        )
+
         extractors.forEach { extractor ->
             val cursor = contentResolver.query(
                     extractor.uri,
@@ -114,7 +122,7 @@ class MediaScanner(
             )
             cursor?.use { c ->
                 while (c.moveToNext()) {
-                    val scannedMedia = extractor.getScannedMediaFromCursor(c)
+                    val scannedMedia = extractor.getScannedMediaFromCursor(c, scannedMediaRepository)
                     scannedMedia?.let {
                         val extension = ".".plus(scannedMedia.path.substringAfterLast("."))
                         input.extensions.find { extension.contains(it) }?.let {
@@ -212,7 +220,7 @@ class MediaScanner(
                                 cursor?.use { c ->
                                     if (c.moveToNext()) {
                                         val scannedMedia = extractMedia(c, null, null)
-                                        if (scannedMedia?.path?.trim()?.isBlank() != false && scannedMedia?.title?.contains(".") != false) {
+                                        if (scannedMedia != null && scannedMedia?.path?.trim()?.isBlank() && scannedMedia?.title?.contains(".")) {
                                             val newPath = "${Environment.getExternalStorageDirectory()}/Download/${scannedMedia!!.title}"
                                             return readMediaFromMediaMetadataRetriever(newPath)
                                         }
@@ -289,6 +297,7 @@ class MediaScanner(
                 title = name,
                 artist = artist,
                 albumId = 0,
+                playlistId = 0,
                 album = album,
                 track = "0",
                 path = path,
@@ -333,14 +342,14 @@ class MediaScanner(
         return null
     }
 
-    fun extractMedia(c: Cursor, selection: String?,
-                     selectionArgs: Array<String>?): ScannedMediaOutput? {
+    private fun extractMedia(c: Cursor, selection: String?,
+                             selectionArgs: Array<String>?): ScannedMediaOutput? {
         return if (c.columnNames.contains(MEDIA_PROVIDER_URI)) {
             val providerUri = c.getStringByColumnName(MEDIA_PROVIDER_URI)
             readMediaFromContentProvider(context, Uri.parse(providerUri), selection, selectionArgs)
-                    ?: mediaScannerExtractors[0].getScannedMediaFromCursor(c, false)
+                    ?: mediaScannerExtractors[0].getScannedMediaFromCursor(c)
         } else {
-            mediaScannerExtractors[0].getScannedMediaFromCursor(c, false)
+            mediaScannerExtractors[0].getScannedMediaFromCursor(c)
         }
 
     }

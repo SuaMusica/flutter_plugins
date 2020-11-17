@@ -1,4 +1,6 @@
 const MEDIA_TYPE = "media_type";
+const DATABASE_NAME = "database_name";
+const DATABASE_VERSION = "database_version";
 
 enum MediaType { audio, video, all }
 

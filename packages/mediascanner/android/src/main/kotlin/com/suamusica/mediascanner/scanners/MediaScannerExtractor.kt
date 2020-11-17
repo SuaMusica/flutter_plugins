@@ -2,6 +2,7 @@ package com.suamusica.mediascanner.scanners
 
 import android.database.Cursor
 import android.net.Uri
+import com.suamusica.mediascanner.db.ScannedMediaRepository
 import com.suamusica.mediascanner.input.MediaType
 import com.suamusica.mediascanner.output.ScannedMediaOutput
 
@@ -13,7 +14,8 @@ interface MediaScannerExtractor {
     val selectionArgs: Array<String>
     val sortOrder: String?
 
-    fun getScannedMediaFromCursor(cursor: Cursor, ignoreOurMusics: Boolean = true): ScannedMediaOutput?
+    fun getScannedMediaFromCursor(cursor: Cursor,
+                                  scannedMediaRepository: ScannedMediaRepository? = null): ScannedMediaOutput?
 
     fun Cursor.getStringByColumnName(columnName: String): String =
             this.getString(this.getColumnIndex(columnName)) ?: ""
