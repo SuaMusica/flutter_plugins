@@ -112,6 +112,7 @@ class AdPlayerManager(
                 playerView
         ))
         player?.prepare()
+        player?.play()
     }
 
     fun play() {
