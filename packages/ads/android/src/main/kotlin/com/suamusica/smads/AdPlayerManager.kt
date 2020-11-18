@@ -37,7 +37,6 @@ class AdPlayerManager(
                     errorEventDispatcher.onNext(it)
                 }
             }.build()
-
     private val adTagUrl = Uri.parse(input.adTagUrl)
     private val dataSourceFactory: DataSource.Factory
     private var player: SimpleExoPlayer? = null
@@ -107,18 +106,17 @@ class AdPlayerManager(
 
         player?.setMediaSource(AdsMediaSource(
                 SilenceMediaSource(100),
-//                DataSpec(adTagUrl),
+                // DataSpec(adTagUrl),
                 ProgressiveMediaSource.Factory(dataSourceFactory),
                 adsLoader,
                 playerView
         ))
         player?.prepare()
-
     }
 
     fun play() {
         Timber.d("play")
-         player?.play()
+        player?.play()
     }
 
     fun pause() {
