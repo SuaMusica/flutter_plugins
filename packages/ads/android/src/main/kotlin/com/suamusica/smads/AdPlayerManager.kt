@@ -113,13 +113,12 @@ class AdPlayerManager(
                 playerView
         ))
         player?.prepare()
-        player?.play()
 
     }
 
     fun play() {
         Timber.d("play")
-        // player?.play()
+         player?.play()
     }
 
     fun pause() {

@@ -30,8 +30,6 @@ class AdPlayerViewController(
         private val context: Context,
         private val callback: SmadsCallback
 ) {
-
-
     private var adPlayerManager: AdPlayerManager? = null
     private val isCompleted = AtomicBoolean(false)
     private val compositeDisposable: CompositeDisposable = CompositeDisposable()
