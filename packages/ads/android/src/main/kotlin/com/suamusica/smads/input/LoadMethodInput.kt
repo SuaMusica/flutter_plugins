@@ -4,13 +4,11 @@ import com.suamusica.smads.extensions.getRequired
 
 class LoadMethodInput(
         tagUrl: String,
-        val contentUrl: String,
         queryParams: Map<String, Any>
 ) {
     private constructor(args: Map<String, Any>)
             : this(
             args.getRequired(AD_TAG_URL_KEY),
-            args.getRequired(CONTENT_URL_KEY),
             args.toQueryParams())
 
     @Suppress("UNCHECKED_CAST")
@@ -38,7 +36,6 @@ class LoadMethodInput(
 
     companion object {
         private const val AD_TAG_URL_KEY = "__URL__"
-        private const val CONTENT_URL_KEY = "__CONTENT__"
 
         private const val QUERY_CUSTOM_PARAMS_TAG = "cust_params="
         private const val AND_ENCODED = "%26"
@@ -52,6 +49,6 @@ class LoadMethodInput(
     }
 
     override fun toString(): String {
-        return "LoadMethodInput(adTagUrl='$adTagUrl', contentUrl='$contentUrl')"
+        return "LoadMethodInput(adTagUrl='$adTagUrl')"
     }
 }

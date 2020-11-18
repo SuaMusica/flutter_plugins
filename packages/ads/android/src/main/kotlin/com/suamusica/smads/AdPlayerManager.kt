@@ -9,10 +9,12 @@ import androidx.annotation.RequiresApi
 import com.google.ads.interactivemedia.v3.api.*
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.ext.ima.ImaAdsLoader
+import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.source.SilenceMediaSource
 import com.google.android.exoplayer2.source.ads.AdsMediaSource
 import com.google.android.exoplayer2.ui.PlayerView
 import com.google.android.exoplayer2.upstream.DataSource
+import com.google.android.exoplayer2.upstream.DataSpec
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
 import com.suamusica.smads.input.LoadMethodInput
@@ -34,7 +36,8 @@ class AdPlayerManager(
                 setAdErrorListener {
                     errorEventDispatcher.onNext(it)
                 }
-            }.buildForAdTag(Uri.parse(input.adTagUrl))
+            }.build()
+    private val adTagUrl = Uri.parse(input.adTagUrl)
     private val dataSourceFactory: DataSource.Factory
     private var player: SimpleExoPlayer? = null
     private var adsManager: AdsManager? = null
@@ -77,7 +80,6 @@ class AdPlayerManager(
         Timber.d("setupAdsLoader")
 
         adsLoader.setPlayer(player)
-        adsLoader.requestAds(playerView)
         adsLoader.adsLoader?.addAdsLoadedListener {
             Timber.d("onAdsManagerLoaded($it)")
             adsManager = it.adsManager
@@ -88,6 +90,7 @@ class AdPlayerManager(
 
     fun load(playerView: PlayerView, companionAdSlotView: ViewGroup) {
         Timber.d("load")
+        adsLoader.requestAds(DataSpec(adTagUrl),playerView)
         playerView.player = player
         playerView.useController = false
         playerView.hideController()
@@ -103,7 +106,8 @@ class AdPlayerManager(
 
         player?.setMediaSource(AdsMediaSource(
                 SilenceMediaSource(100),
-                dataSourceFactory,
+                // DataSpec(adTagUrl),
+                ProgressiveMediaSource.Factory(dataSourceFactory),
                 adsLoader,
                 playerView
         ))
