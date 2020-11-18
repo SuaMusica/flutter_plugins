@@ -11,7 +11,6 @@ import org.junit.jupiter.api.TestInstance
 internal class LoadMethodInputTest {
 
     private val urlKey = "__URL__"
-    private val contentUrlKey = "__CONTENT__"
     private val ageKey = "age"
     private val genderKey = "gender"
     private val typeAdKey = "typead"
@@ -27,17 +26,14 @@ internal class LoadMethodInputTest {
             argument = mapOf(urlKey to "")
             assertThrows(IllegalStateException::class.java) { LoadMethodInput(argument) }
 
-            argument = mapOf(contentUrlKey to "")
-            assertThrows(IllegalStateException::class.java) { LoadMethodInput(argument) }
         }
 
         @Test
         fun `With valid params Should construct an instance of LoadMethodInput to use`() {
-            val argument = mapOf(urlKey to "", contentUrlKey to "")
-            val expectedResult = LoadMethodInput("", "", mapOf())
+            val argument = mapOf(urlKey to "")
+            val expectedResult = LoadMethodInput("",  mapOf())
             val result = LoadMethodInput(argument)
             assertEquals(expectedResult.adTagUrl, result.adTagUrl)
-            assertEquals(expectedResult.contentUrl, result.contentUrl)
         }
 
         @Nested
@@ -53,7 +49,6 @@ internal class LoadMethodInputTest {
 
                 val argument = mapOf(
                         urlKey to adTagUrlMock,
-                        contentUrlKey to contentUrlMock,
                         ageKey to ageMock,
                         genderKey to genderMock,
                         typeAdKey to typeAdMock
@@ -73,7 +68,6 @@ internal class LoadMethodInputTest {
 
                 val argument = mapOf(
                         urlKey to adTagUrlMock,
-                        contentUrlKey to contentUrlMock,
                         ageKey to ageMock,
                         genderKey to genderMock,
                         typeAdKey to typeAdMock
@@ -97,7 +91,6 @@ internal class LoadMethodInputTest {
 
                 val argument = mapOf(
                         urlKey to adTagUrlMock,
-                        contentUrlKey to contentUrlMock,
                         ageKey to ageMock,
                         genderKey to genderMock,
                         typeAdKey to typeAdMock
@@ -110,14 +103,12 @@ internal class LoadMethodInputTest {
         @Test
         fun `When adTagUrl not contains a custom params Should return adTagUrl without query params`() {
             val adTagUrlMock = "url"
-            val contentUrlMock = "contentUrl"
             val ageMock = 36
             val genderMock = "genderMock"
             val typeAdMock = "typeAdMock"
 
             val argument = mapOf(
                     urlKey to adTagUrlMock,
-                    contentUrlKey to contentUrlMock,
                     ageKey to ageMock,
                     genderKey to genderMock,
                     typeAdKey to typeAdMock
