@@ -1,7 +1,6 @@
 package com.suamusica.smads.output
 
 import com.google.ads.interactivemedia.v3.api.AdEvent
-import kotlin.math.ceil
 
 data class AdEventOutput(
         val type: AdEventTypeOutput,
@@ -15,7 +14,9 @@ data class AdEventOutput(
         val creativeID: String = EMPTY_STRING,
         val dealID: String = EMPTY_STRING,
         val duration: String = EMPTY_STRING,
-        val position: String = EMPTY_STRING
+        val position: String = EMPTY_STRING,
+        val skippable: String = EMPTY_STRING,
+        val skipTime: String = EMPTY_STRING
 ) {
 
     fun toResult(): Map<String, String> {
@@ -31,7 +32,9 @@ data class AdEventOutput(
                 CREATIVE_ID_KEY to creativeID,
                 DEAL_ID_KEY to dealID,
                 DURATION_KEY to duration,
-                POSITION_KEY to position
+                POSITION_KEY to position,
+                SKIPPABLE_KEY to skippable,
+                SKIPTIME_KEY to skipTime
 
         )
     }
@@ -52,6 +55,8 @@ data class AdEventOutput(
         private const val ERROR_MESSAGE_KEY = "error.message"
         private const val DURATION_KEY = "duration"
         private const val POSITION_KEY = "position"
+        private const val SKIPPABLE_KEY = "skippable"
+        private const val SKIPTIME_KEY = "skiptime"
 
         private const val EMPTY_STRING = ""
 
@@ -63,7 +68,7 @@ data class AdEventOutput(
             )
         }
 
-        fun fromAdEvent(adEvent: AdEvent, duration: Long=0, position: Long = 0): AdEventOutput {
+        fun fromAdEvent(adEvent: AdEvent, duration: Long = 0, position: Long = 0): AdEventOutput {
             val ad = adEvent.ad
             val type = AdEventTypeOutput.getBy(adEvent.type)
             return ad?.let {
@@ -79,7 +84,9 @@ data class AdEventOutput(
                         creativeID = it.creativeId,
                         dealID = it.dealId,
                         duration = duration.toString(),
-                        position = position.toString()
+                        position = position.toString(),
+                        skippable = it.isSkippable.toString(),
+                        skipTime = it.skipTimeOffset.toString()
                 )
             } ?: AdEventOutput(type = type)
         }

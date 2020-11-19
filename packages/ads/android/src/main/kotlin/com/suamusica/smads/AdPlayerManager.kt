@@ -78,7 +78,6 @@ class AdPlayerManager(
 
     private fun setupAdsLoader(playerView: PlayerView) {
         Timber.d("setupAdsLoader")
-
         adsLoader.setPlayer(player)
         adsLoader.adsLoader?.addAdsLoadedListener {
             Timber.d("onAdsManagerLoaded($it)")
@@ -112,6 +111,11 @@ class AdPlayerManager(
                 playerView
         ))
         player?.prepare()
+    }
+
+    fun skipAd(){
+        Timber.d("Skip")
+        adsLoader.skipAd()
     }
 
     fun play() {

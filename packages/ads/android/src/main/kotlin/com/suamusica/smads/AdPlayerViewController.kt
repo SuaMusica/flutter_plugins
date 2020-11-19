@@ -64,6 +64,13 @@ class AdPlayerViewController(
     }
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    fun skipAd(){
+        Timber.d("skipAd()")
+        adPlayerManager?.skipAd()
+
+    }
+
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun pause() {
         Timber.d("pause()")
         adPlayerManager?.pause()
@@ -104,6 +111,9 @@ class AdPlayerViewController(
             AdEvent.AdEventType.SKIPPED -> onComplete()
             AdEvent.AdEventType.LOADED -> onAdLoaded()
             AdEvent.AdEventType.STARTED -> showContent()
+            AdEvent.AdEventType.SKIPPABLE_STATE_CHANGED ->{
+
+            }
             AdEvent.AdEventType.CONTENT_PAUSE_REQUESTED,
             AdEvent.AdEventType.PAUSED -> {
                 if (ignorePausedEvent.get()) {
@@ -150,6 +160,9 @@ class AdPlayerViewController(
     }
 
     private fun onAdLoaded() {
+        progressBar?.gone()
+    }
+    private fun canSkip() {
         progressBar?.gone()
     }
 

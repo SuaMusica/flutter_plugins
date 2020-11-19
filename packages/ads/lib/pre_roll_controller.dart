@@ -23,6 +23,10 @@ class PreRollController extends PreRollEventHandler {
     _channel.invokeMethod("play");
   }
 
+  void skip() {
+    _channel.invokeMethod("skip");
+  }
+
   void load(Map<String, dynamic> args) {
     _channel.invokeMethod("load", args ?? {});
   }

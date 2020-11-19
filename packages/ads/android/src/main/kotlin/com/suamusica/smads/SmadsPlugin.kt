@@ -55,6 +55,7 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
             PLAY_METHOD -> controller.play()
             PAUSE_METHOD -> controller.pause()
             DISPOSE_METHOD -> controller.dispose()
+            SKIP_METHOD -> controller.skipAd()
             SCREEN_STATUS_METHOD -> screenStatus(result)
             else -> result.notImplemented()
         }
@@ -96,6 +97,8 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
         private const val PLAY_METHOD = "play"
         private const val PAUSE_METHOD = "pause"
         private const val DISPOSE_METHOD = "dispose"
+        private const val SKIP_METHOD = "skip"
         private const val SCREEN_STATUS_METHOD = "screen_status"
+
     }
 }
