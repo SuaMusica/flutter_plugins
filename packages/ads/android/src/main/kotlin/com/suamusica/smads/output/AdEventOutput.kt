@@ -83,7 +83,7 @@ data class AdEventOutput(
                         creativeAdID = it.creativeAdId,
                         creativeID = it.creativeId,
                         dealID = it.dealId,
-                        duration =  it.duration.coerceAtLeast(duration.toDouble()).toString(),
+                        duration =  it.duration.coerceAtLeast(duration.toDouble()).toLong().toString(),
                         position = position.toString(),
                         skippable = it.isSkippable.toString(),
                         skipTime = it.skipTimeOffset.toString()
