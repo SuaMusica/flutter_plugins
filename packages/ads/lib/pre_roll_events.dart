@@ -142,6 +142,8 @@ extension ParseToString on PreRollEvent {
         return "AD_PERIOD_STARTED";
       case PreRollEvent.AD_PERIOD_ENDED:
         return "AD_PERIOD_ENDED";
+      case PreRollEvent.ERROR:
+        return "ERROR";
       default:
         return "Unknown";
     }
