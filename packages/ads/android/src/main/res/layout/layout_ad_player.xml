@@ -36,15 +36,14 @@
 
     <LinearLayout
         android:id="@+id/companionAdSlot"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_width="300dp"
+        android:layout_height="250dp"
         android:gravity="center"
         android:orientation="horizontal"
         android:textAlignment="center"
         android:visibility="invisible"
         app:layout_constraintDimensionRatio="h,16:9"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/view" />
 
