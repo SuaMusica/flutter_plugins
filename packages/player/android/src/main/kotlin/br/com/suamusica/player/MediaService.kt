@@ -296,6 +296,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                     .setAllowChunklessPreparation(true)
                     .createMediaSource(uri)
             C.TYPE_OTHER -> {
+                Log.i(TAG, "Player: URI: $uri")
                 val factory: DataSource.Factory =
                         if (uri.scheme != null && uri.scheme?.startsWith("http") == true) {
                             dataSourceFactory
@@ -303,20 +304,19 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                             FileDataSource.Factory()
                         }
 
-                ProgressiveMediaSource.Factory(factory)
-                        .createMediaSource(uri)
+                ProgressiveMediaSource.Factory(factory).createMediaSource(MediaItem.fromUri(uri))
             }
             else -> {
                 throw IllegalStateException("Unsupported type: $type")
             }
         }
-        player?.playWhenReady = false
+        player?.pause()
         player?.prepare(source)
     }
 
     fun play() {
         performAndEnableTracking {
-            player?.playWhenReady = true
+            player?.play()
         }
     }
 
@@ -354,19 +354,19 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
     fun pause() {
         performAndDisableTracking {
-            player?.playWhenReady = false
+            player?.pause()
         }
     }
 
     fun stop() {
         performAndDisableTracking {
-            player?.playWhenReady = false
+            player?.stop()
         }
     }
 
     fun release() {
         performAndDisableTracking {
-            player?.playWhenReady = false
+            player?.stop()
         }
     }
 
@@ -456,7 +456,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                 if (playWhenReady && playbackState == ExoPlayer.STATE_READY) {
                     //
                 } else {
-                    if (player?.playbackError != null) {
+                    if (player?.playerError != null) {
                         //
                     } else {
                         when (playbackState) {
