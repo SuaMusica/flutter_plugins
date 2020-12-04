@@ -7,7 +7,9 @@ import android.os.Build
 import android.view.ViewGroup
 import androidx.annotation.RequiresApi
 import com.google.ads.interactivemedia.v3.api.*
+import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.SimpleExoPlayer
+import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.ext.ima.ImaAdsLoader
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.source.SilenceMediaSource
@@ -42,6 +44,10 @@ class AdPlayerManager(
     private var player: SimpleExoPlayer? = null
     private var adsManager: AdsManager? = null
     private var supportedMimeTypes: List<String>? = null
+    private val uAmpAudioAttributes = AudioAttributes.Builder()
+            .setContentType(C.CONTENT_TYPE_MOVIE)
+            .setUsage(C.USAGE_MEDIA)
+            .build()
 
     val errorEventDispatcher = PublishSubject.create<AdErrorEvent>()
     val adEventDispatcher = PublishSubject.create<AdEvent>()
@@ -50,7 +56,7 @@ class AdPlayerManager(
 
     init {
         dataSourceFactory = DefaultDataSourceFactory(context, Util.getUserAgent(context, "AdPlayer"))
-        player = SimpleExoPlayer.Builder(context).build()
+        player = SimpleExoPlayer.Builder(context).setAudioAttributes(uAmpAudioAttributes,true).build()
         supportedMimeTypes = this.getCodecsType()
     }
 
