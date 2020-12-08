@@ -728,9 +728,24 @@ PlaylistItem *currentItem = nil;
             NSNumber *reason = [[notification userInfo] objectForKey:AVAudioSessionRouteChangeReasonKey];
             
             switch (reason.unsignedIntegerValue) {
-                case AVAudioSessionRouteChangeReasonOldDeviceUnavailable:{
+                case AVAudioSessionRouteChangeReasonCategoryChange:
+                    {
+                        NSString *category = [[AVAudioSession sharedInstance] category];
+                        
+                        if ([category isEqualToString:AVAudioSessionCategoryPlayAndRecord]) {
+                            NSLog(@"Category: %@ PAUSE", category);
+                            [self pause:_playerId];
+                        }
+                        if ([category isEqualToString:AVAudioSessionCategoryPlayback]) {
+                            NSLog(@"Category: %@ RESUME", category);
+                            [self resume:_playerId];
+                        }
+                    }
+                    break;
+                    
+                case AVAudioSessionRouteChangeReasonOldDeviceUnavailable:
                     [self pause:_playerId];
-                } break;
+                    break;
                 default:
                     break;
             }
