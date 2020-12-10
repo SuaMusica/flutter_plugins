@@ -1095,6 +1095,7 @@ PlaylistItem *currentItem = nil;
                         case AVKeyValueStatusUnknown:
                         case AVKeyValueStatusFailed:
                         case AVKeyValueStatusCancelled:
+                            NSLog(@"loadValuesAsynchronouslyForKeys: ERROR: %@", error);
                             playerItem = nil;
                             break;
                             
@@ -1769,7 +1770,7 @@ isNotification: (bool) respectSilence
             NSLog(@"Player: Unknown errorLog: extendedLogData: %@", [errorLog extendedLogData]);
             
             [self disposePlayerItem:[player currentItem]];
-            [self notifyOnError:_playerId errorType:PLAYER_ERROR_UNKNOWN];
+            // [self notifyOnError:_playerId errorType:PLAYER_ERROR_UNKNOWN];
         }
     } else if ([keyPath isEqualToString: @"playbackBufferEmpty"]) {
         NSMutableDictionary * playerInfo = players[_playerId];
@@ -1873,3 +1874,4 @@ isNotification: (bool) respectSilence
 }
 
 @end
+
