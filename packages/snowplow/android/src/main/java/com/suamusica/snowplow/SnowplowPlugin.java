@@ -48,6 +48,12 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
     this.tracker = this.stb.getTracker(this.applicationContext);
   }
 
+  @SuppressWarnings("deprecation")
+  public static void registerWith(Registrar registrar) {
+    final MethodChannel channel = new MethodChannel(registrar.messenger(), CHANNEL_NAME);
+    channel.setMethodCallHandler(new SnowplowPlugin(registrar.context()));
+  }
+
   @Override
   public void onMethodCall(MethodCall methodCall, final MethodChannel.Result result) {
     switch (methodCall.method) {
