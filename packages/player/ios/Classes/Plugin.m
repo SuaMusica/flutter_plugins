@@ -728,9 +728,24 @@ PlaylistItem *currentItem = nil;
             NSNumber *reason = [[notification userInfo] objectForKey:AVAudioSessionRouteChangeReasonKey];
             
             switch (reason.unsignedIntegerValue) {
-                case AVAudioSessionRouteChangeReasonOldDeviceUnavailable:{
+                case AVAudioSessionRouteChangeReasonCategoryChange:
+                    {
+                        NSString *category = [[AVAudioSession sharedInstance] category];
+                        
+                        if ([category isEqualToString:AVAudioSessionCategoryPlayAndRecord]) {
+                            NSLog(@"Category: %@ PAUSE", category);
+                            [self pause:_playerId];
+                        }
+                        if ([category isEqualToString:AVAudioSessionCategoryPlayback]) {
+                            NSLog(@"Category: %@ RESUME", category);
+                            [self resume:_playerId];
+                        }
+                    }
+                    break;
+                    
+                case AVAudioSessionRouteChangeReasonOldDeviceUnavailable:
                     [self pause:_playerId];
-                } break;
+                    break;
                 default:
                     break;
             }
@@ -1080,6 +1095,7 @@ PlaylistItem *currentItem = nil;
                         case AVKeyValueStatusUnknown:
                         case AVKeyValueStatusFailed:
                         case AVKeyValueStatusCancelled:
+                            NSLog(@"loadValuesAsynchronouslyForKeys: ERROR: %@", error);
                             playerItem = nil;
                             break;
                             
@@ -1754,7 +1770,7 @@ isNotification: (bool) respectSilence
             NSLog(@"Player: Unknown errorLog: extendedLogData: %@", [errorLog extendedLogData]);
             
             [self disposePlayerItem:[player currentItem]];
-            [self notifyOnError:_playerId errorType:PLAYER_ERROR_UNKNOWN];
+            // [self notifyOnError:_playerId errorType:PLAYER_ERROR_UNKNOWN];
         }
     } else if ([keyPath isEqualToString: @"playbackBufferEmpty"]) {
         NSMutableDictionary * playerInfo = players[_playerId];
@@ -1858,3 +1874,4 @@ isNotification: (bool) respectSilence
 }
 
 @end
+
