@@ -1,6 +1,8 @@
 package com.suamusica.mediascanner.db
 
 import android.database.Cursor
+import android.content.ContentValues
+import timber.log.Timber
 
 class ScannedMediaRepository(dbHelper: ScannedMediaDbHelper) {
     private val dbHelper: ScannedMediaDbHelper = dbHelper
@@ -12,6 +14,27 @@ class ScannedMediaRepository(dbHelper: ScannedMediaDbHelper) {
             internalMediaExists(mediaId, mediaPath)
         }
     }
+
+    fun markMediaAsPresent(mediaId: Long): Boolean {
+        val db = dbHelper.writableDatabase
+        try {
+            val values = ContentValues().apply {
+                put("still_present", "1")
+            }
+            val count = db.update(
+                    OFFLINE_MEDIA_TABLE,
+                    values,
+                    "id = ?",
+                    arrayOf(mediaId.toString())
+            )
+            Timber.d("Updated media ${mediaId} as present")
+            return count > 0
+        } catch (t: Throwable) {
+            Timber.e(t, "Error")
+            return false
+        }
+    }
+
 
     private fun externalMediaExists(mediaId: Long, mediaPath: String): Boolean {
         val db = dbHelper.readableDatabase
