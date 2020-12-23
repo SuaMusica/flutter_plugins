@@ -787,10 +787,7 @@ PlaylistItem *currentItem = nil;
             NSLog(@"Player: AVAudioSessionInterruptionNotification received. UserInfo: %@", dict);
             NSNumber *interruptionType = [[notification userInfo] objectForKey:AVAudioSessionInterruptionTypeKey];
             NSNumber *interruptionOption = [[notification userInfo] objectForKey:AVAudioSessionInterruptionOptionKey];
-            
-            AVAudioSessionCategory category = [AudioSessionManager category];
-            NSLog(@"Category %@", category);
-            
+                        
             NSMutableDictionary *playerInfo = players[_playerId];
             switch (interruptionType.unsignedIntegerValue) {
                 case AVAudioSessionInterruptionTypeBegan:{
@@ -874,7 +871,6 @@ PlaylistItem *currentItem = nil;
                                                                                 usingBlock:^(NSNotification* note){
             NSMutableDictionary * playerInfo = players[_playerId];
             [playerInfo setValue:@(false) forKey:@"isSeeking"];
-            AVAudioSessionCategory currentCategory = [AudioSessionManager category];
             int state = STATE_SEEK_END;
             [self notifyStateChange:_playerId state:state overrideBlock:false];
             NSLog(@"Player: AVPlayerItemTimeJumpedNotification: %@", [note object]);
