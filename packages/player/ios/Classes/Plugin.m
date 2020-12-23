@@ -649,6 +649,8 @@ PlaylistItem *currentItem = nil;
     NSMutableDictionary * playerInfo = players[playerId];
     if (!playerInfo) {
         players[playerId] = [@{@"isPlaying": @false,
+                               @"pausedByVoiceSearch": @false,
+                               @"pausedByInterruption": @false,
                                @"volume": @(1.0),
                                @"looping": @(false),
                                @"areNotificationCommandsEnabled": @(true),
@@ -726,22 +728,30 @@ PlaylistItem *currentItem = nil;
             NSDictionary *dict = notification.userInfo;
             NSLog(@"Player: AVAudioSessionRouteChangeNotification received. UserInfo: %@", dict);
             NSNumber *reason = [[notification userInfo] objectForKey:AVAudioSessionRouteChangeReasonKey];
-            
+            NSMutableDictionary *playerInfo = players[_playerId];
+
             switch (reason.unsignedIntegerValue) {
                 case AVAudioSessionRouteChangeReasonCategoryChange:
-                    {
-                        NSString *category = [[AVAudioSession sharedInstance] category];
-                        
-                        if ([category isEqualToString:AVAudioSessionCategoryPlayAndRecord]) {
-                            NSLog(@"Category: %@ PAUSE", category);
-                            [self pause:_playerId];
-                        }
-                        if ([category isEqualToString:AVAudioSessionCategoryPlayback]) {
-                            NSLog(@"Category: %@ RESUME", category);
+                {
+                    NSString *category = [[AVAudioSession sharedInstance] category];
+                    
+                    if ([category isEqualToString:AVAudioSessionCategoryPlayAndRecord]) {
+                        NSLog(@"Category: %@ PAUSE", category);
+                        [playerInfo setValue:@(true) forKey:@"pausedByVoiceSearch"];
+                        [self pause:_playerId];
+                    }
+                    if ([category isEqualToString:AVAudioSessionCategoryPlayback]) {
+                        NSLog(@"Category: %@ RESUME %@", category, playerInfo[@"pausedByVoiceSearch"]);
+                        int pausedByVoice = [playerInfo[@"pausedByVoiceSearch"] intValue];
+                        if (pausedByVoice == 1) {
+                            [playerInfo setValue:@(false) forKey:@"pausedByVoiceSearch"];
                             [self resume:_playerId];
+                        } else {
+                            NSLog(@"No operation required!");
                         }
                     }
-                    break;
+                }
+                break;
                     
                 case AVAudioSessionRouteChangeReasonOldDeviceUnavailable:
                     [self pause:_playerId];
@@ -749,8 +759,6 @@ PlaylistItem *currentItem = nil;
                 default:
                     break;
             }
-            
-            
         }];
         id avlostobserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVAudioSessionMediaServicesWereLostNotification
                                                                                 object: nil
@@ -779,19 +787,29 @@ PlaylistItem *currentItem = nil;
             NSLog(@"Player: AVAudioSessionInterruptionNotification received. UserInfo: %@", dict);
             NSNumber *interruptionType = [[notification userInfo] objectForKey:AVAudioSessionInterruptionTypeKey];
             NSNumber *interruptionOption = [[notification userInfo] objectForKey:AVAudioSessionInterruptionOptionKey];
-            
+                        
+            NSMutableDictionary *playerInfo = players[_playerId];
             switch (interruptionType.unsignedIntegerValue) {
                 case AVAudioSessionInterruptionTypeBegan:{
-                    [self pause:_playerId];
+                    int isPlaying = [playerInfo[@"isPlaying"] intValue];
+                    if (isPlaying == 1) {
+                        [playerInfo setValue:@(true) forKey:@"pausedByInterruption"];
+                        [self pause:_playerId];
+                    }
                 } break;
                 case AVAudioSessionInterruptionTypeEnded:{
                     if (interruptionOption.unsignedIntegerValue == AVAudioSessionInterruptionOptionShouldResume) {
-                        [self resume:_playerId];
+                        int pausedByInterruption = [playerInfo[@"pausedByInterruption"] intValue];
+                        if (pausedByInterruption == 1) {
+                            [playerInfo setValue:@(false) forKey:@"pausedByInterruption"];
+                            [self resume:_playerId];
+                        }
                     }
                 } break;
                 default:
                     break;
             }
+            
         }];
         
         [observers addObject:avlostobserver];
@@ -1874,4 +1892,5 @@ isNotification: (bool) respectSilence
 }
 
 @end
+
 
