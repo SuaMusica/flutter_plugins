@@ -30,7 +30,7 @@ class CustomEQ {
             equalizer?.setBandLevel(bandId.toShort(), level.toShort())
         }
 
-        val centerBandFrequency by lazy {
+        val centerBandFreqs by lazy {
             val n = equalizer?.numberOfBands?.toInt() ?: 0
             val bands = mutableListOf<Int>()
             for (i in 0 until n) {

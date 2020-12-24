@@ -43,7 +43,7 @@ class EqualizerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             "enable" -> CustomEQ.enable(call.arguments as Boolean)
             "release" -> CustomEQ.release()
             "getBandLevelRange" -> result.success(CustomEQ.bandLevelRange)
-            "getCenterBandFreqs" -> result.success(CustomEQ.centerBandFrequency)
+            "getCenterBandFreqs" -> result.success(CustomEQ.centerBandFreqs)
             "getPresetNames" -> result.success(CustomEQ.presetNames)
             "getBandLevel" -> result.success(CustomEQ.getBandLevel(call.arguments as Int))
             "setBandLevel" -> {
