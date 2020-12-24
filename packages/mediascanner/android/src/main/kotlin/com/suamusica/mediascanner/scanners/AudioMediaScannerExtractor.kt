@@ -104,6 +104,7 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
                 }
             }
             if ( it.mediaExists(mediaId = musicId, mediaPath = workPath)) {
+                it.markMediaAsPresent(mediaId = musicId)
                 Timber.d("MediaScanner: Found that mediaId: $musicId with path $path was already processed")
                 return null
             } else {
