@@ -15,8 +15,8 @@ class _EqualizerWidgetState extends State<EqualizerWidget> {
 
   @override
   void initState() {
-    super.initState();
     Equalizer.init(0);
+    super.initState();
   }
 
   @override
@@ -70,9 +70,12 @@ class _EqualizerWidgetState extends State<EqualizerWidget> {
         FutureBuilder<List<int>>(
           future: Equalizer.getBandLevelRange(),
           builder: (context, snapshot) {
-            return snapshot.connectionState == ConnectionState.done
-                ? CustomEQ(enableCustomEQ, snapshot.data)
-                : CircularProgressIndicator();
+
+            if (snapshot.hasError || !snapshot.hasData) {
+              return CircularProgressIndicator();
+            }
+
+            return CustomEQ(enableCustomEQ, snapshot.data);
           },
         ),
       ],
@@ -119,7 +122,7 @@ class _CustomEQState extends State<CustomEQ> {
                       padding: const EdgeInsets.only(top: 100),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: [...snapshot.data, ...snapshot.data]
+                        children: snapshot.data
                             .map((freq) => _buildSliderBand(freq, bandId++))
                             .toList(),
                       ),

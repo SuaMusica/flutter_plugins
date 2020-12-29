@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.media.audiofx.AudioEffect
+import android.util.Log
 import androidx.annotation.NonNull
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
@@ -26,6 +27,9 @@ class EqualizerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     }
 
     override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
+
+//        CustomEQ.initIfIsNotInitialized(0)
+        Log.d("JEF", "call.method: ${call.method}")
         when (call.method) {
             "open" -> {
                 val sessionId = call.argument<Int>("audioSessionId") ?: 0
@@ -41,6 +45,7 @@ class EqualizerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             "removeAudioSessionId" -> removeAudioSessionId(call.arguments as Int)
             "init" -> CustomEQ.init(call.arguments as Int)
             "enable" -> CustomEQ.enable(call.arguments as Boolean)
+            "isEnabled" -> result.success(CustomEQ.isEnabled)
             "release" -> CustomEQ.release()
             "getBandLevelRange" -> result.success(CustomEQ.bandLevelRange)
             "getCenterBandFreqs" -> result.success(CustomEQ.centerBandFreqs)

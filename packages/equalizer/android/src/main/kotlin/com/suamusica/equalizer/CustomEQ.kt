@@ -15,10 +15,16 @@ class CustomEQ {
             equalizer?.enabled = enable
         }
 
+        val isEnabled get() = equalizer?.enabled ?: false
+
         fun release() {
             equalizer?.release()
         }
 
+        /**
+         * Returns an array with two positions with range
+         * Example -10db and 10db
+         */
         val bandLevelRange: List<Int> get() =
             equalizer?.bandLevelRange?.map { it / 100 } ?: emptyList()
 

@@ -1,4 +1,3 @@
-
 import 'dart:async';
 
 import 'package:flutter/services.dart';
@@ -6,8 +5,7 @@ import 'package:flutter/services.dart';
 enum CONTENT_TYPE { MUSIC, MOVIE, GAME, VOICE }
 
 class Equalizer {
-  static const MethodChannel _channel =
-      const MethodChannel('equalizer');
+  static const MethodChannel _channel = const MethodChannel('equalizer');
 
   /// Open's the device equalizer.
   ///
@@ -52,6 +50,10 @@ class Equalizer {
   /// Enable/disable a custom equalizer.
   static Future<void> setEnabled(bool enabled) async {
     await _channel.invokeMethod('enable', enabled);
+  }
+
+  static Future<bool> isEnabled() async {
+    return await _channel.invokeMethod('isEnabled');
   }
 
   /// Returns the band level range in a list of integers represented in [dB].

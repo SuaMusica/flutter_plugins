@@ -18,21 +18,22 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('Equalizer example'),
         ),
-        body: Column(
-          children: [
-            FutureBuilder<bool>(
-              future: Equalizer.deviceHasEqualizer(0),
-              builder: (context, snapshot) => snapshot.hasData
-                  ? Center(
-                child: Text(
-                  "Device does ${snapshot.data ? '' : 'not '}support equalizer ",
-                ),
-              )
-                  : Container(),
-            ),
-            EqualizerWidget(),
-          ],
-        ),
+        body: EqualizerWidget(),
+        // body: Column(
+        //   children: [
+        //     FutureBuilder<bool>(
+        //       future: Equalizer.deviceHasEqualizer(0),
+        //       builder: (context, snapshot) => snapshot.hasData
+        //           ? Center(
+        //         child: Text(
+        //           "Device does ${snapshot.data ? '' : 'not '}support equalizer ",
+        //         ),
+        //       )
+        //           : Container(),
+        //     ),
+        //     EqualizerWidget(),
+        //   ],
+        // ),
       ),
     );
   }
