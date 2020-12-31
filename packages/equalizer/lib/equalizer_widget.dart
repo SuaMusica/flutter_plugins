@@ -113,6 +113,16 @@ class _CustomEQState extends State<CustomEQ> {
     return FutureBuilder<List<int>>(
       future: Equalizer.getCenterBandFreqs(),
       builder: (context, snapshot) {
+
+        var slideSize = 20.0;
+
+        if (snapshot.hasData) {
+          final width = MediaQuery.of(context).size.width - 60;
+          final totalSlide = snapshot.data.length;
+          final padding = 20 * totalSlide;
+          slideSize = (width - padding) / totalSlide;
+        }
+
         return snapshot.connectionState == ConnectionState.done
             ? Column(
                 children: [
@@ -123,7 +133,7 @@ class _CustomEQState extends State<CustomEQ> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: snapshot.data
-                            .map((freq) => _buildSliderBand(freq, bandId++))
+                            .map((freq) => _buildSliderBand(freq, bandId++, slideSize))
                             .toList(),
                       ),
                     ),
@@ -140,7 +150,7 @@ class _CustomEQState extends State<CustomEQ> {
     );
   }
 
-  Widget _buildSliderBand(int freq, int bandId) {
+  Widget _buildSliderBand(int freq, int bandId, double slideSize) {
     return Column(
       children: [
         SizedBox(
@@ -148,7 +158,13 @@ class _CustomEQState extends State<CustomEQ> {
           child: FutureBuilder<int>(
             future: Equalizer.getBandLevel(bandId),
             builder: (context, snapshot) {
+
+              print("JEF: getBandLevel BandId: $bandId - ${snapshot.data}");
+
+
               return FlutterSlider(
+                handlerHeight: slideSize,
+
                 disabled: !widget.enabled,
                 axis: Axis.vertical,
                 rtl: true,
@@ -162,9 +178,27 @@ class _CustomEQState extends State<CustomEQ> {
             },
           ),
         ),
-        Text('${freq ~/ 1000} Hz'),
+        Text(_formatFreq(freq)),
       ],
     );
+  }
+
+  String _formatFreq(int freq, {int count = 0}) {
+    if (freq >= 1000) {
+      return _formatFreq(freq ~/ 1000, count: ++count);
+    } else {
+      var freqUnit = "";
+      switch(count) {
+        case 2:
+          freqUnit = "k";
+          break;
+        case 3:
+          freqUnit = "G";
+          break;
+      }
+
+      return '$freq$freqUnit';
+    }
   }
 
   Widget _buildPresets() {
@@ -172,6 +206,9 @@ class _CustomEQState extends State<CustomEQ> {
       future: fetchPresets,
       builder: (context, snapshot) {
         if (snapshot.hasData) {
+
+          print("JEF presets: ${snapshot.data}");
+
           final presets = snapshot.data;
           if (presets.isEmpty) return Text('No presets available!');
           return DropdownButtonFormField(

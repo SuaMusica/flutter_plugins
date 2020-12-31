@@ -1,0 +1,36 @@
+//
+//  EqualizerPreference.swift
+//  equalizer
+//
+//  Created by Jeferson Krauss on 29/12/20.
+//
+
+import Foundation
+
+
+public class EqualizerPreferences {
+    
+    let preferences = UserDefaults.standard
+    static let PREFERENCE_NAME = "EqualizerPreferences."
+    static let CUSTOM_PRESET_KEY = PREFERENCE_NAME + "CustomPreset"
+    static let CURRENT_PRESET_POSITION_KEY = PREFERENCE_NAME + "CurrentPreset"
+    
+    func getCustomPreset() -> [Float] {
+        return preferences.array(forKey: EqualizerPreferences.CUSTOM_PRESET_KEY) as? [Float] ??
+            [10.0, 0.0, -10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    }
+    
+    func setCustomPreset(preset: [Float]) {
+        preferences.set(preset, forKey: EqualizerPreferences.CUSTOM_PRESET_KEY)
+        preferences.synchronize()
+    }
+    
+    func getCurrentPresetPosition() -> Int {
+        return preferences.integer(forKey: EqualizerPreferences.CURRENT_PRESET_POSITION_KEY)
+    }
+    
+    func setCurrentPresetPosition(pos: Int) {
+        preferences.setValue(pos, forKey: EqualizerPreferences.CURRENT_PRESET_POSITION_KEY)
+        preferences.synchronize()
+    }
+}
