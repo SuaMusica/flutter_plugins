@@ -1,5 +1,4 @@
-
-import 'package:equalizer/equalizer.dart';
+import 'package:equalizer/equalizer_controller.dart';
 import 'package:equalizer/equalizer_widget.dart';
 import 'package:flutter/material.dart';
 
@@ -11,6 +10,14 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  final EqualizerController equalizerController = EqualizerController();
+
+  @override
+  void initState() {
+    equalizerController.init(0);
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -18,7 +25,11 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('Equalizer example'),
         ),
-        body: EqualizerWidget(),
+        body: EqualizerWidget(
+          equalizerController,
+          titleEnabled: Text("Habilitado"),
+          titleDisabled: Text("Desabilitado"),
+        ),
         // body: Column(
         //   children: [
         //     FutureBuilder<bool>(

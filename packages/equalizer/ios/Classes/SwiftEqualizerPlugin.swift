@@ -41,34 +41,36 @@ public class SwiftEqualizerPlugin: NSObject, FlutterPlugin {
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-        do {
+//        do {
             
             if (call.method == "open") {
                 result(OK)
             } else if (call.method == "setAudioSessionId") {
                 
                 // do nothing
+                result(OK)
                 
             } else if (call.method == "removeAudioSessionId") {
                 
                 // do nothing
+                result(OK)
                 
             } else if (call.method == "init") {
                 
-                let presetsValues = presetsLevels
-                let presetPosition = preferences.getCurrentPresetPosition()
-                let preset = presetsValues[presetPosition]
-                setPresetIntoEqualizer(preset: preset)
+                initialize()
+                result(OK)
                 
             } else if (call.method == "enable") {
                 
                 let isToEnable = call.arguments as! Bool
-                try AVAudioSession.sharedInstance().setActive(isToEnable, options: [])
+//                try AVAudioSession.sharedInstance().setActive(isToEnable, options: [])
+                preferences.setEnabled(enable: isToEnable)
+                initialize()
+                result(OK)
                 
             } else if (call.method == "isEnabled") {
                 
-                // TODO Not Implemented yet
-                result(false)
+                result(preferences.isEnabled())
                 
             } else if (call.method == "release") {
                 
@@ -76,6 +78,7 @@ public class SwiftEqualizerPlugin: NSObject, FlutterPlugin {
                 let preset = presetsLevels[presetPosition]
                 setPresetIntoEqualizer(preset: preset)
                 preferences.setCurrentPresetPosition(pos: presetPosition)
+                result(OK)
                 
             } else if (call.method == "getBandLevelRange") {
                 
@@ -93,7 +96,7 @@ public class SwiftEqualizerPlugin: NSObject, FlutterPlugin {
                 
             } else if (call.method == "getCurrentPreset") {
                 
-                result(preferences.getCustomPreset())
+                result(preferences.getCurrentPresetPosition())
                 
             } else if (call.method == "getBandLevel") {
                 
@@ -109,6 +112,10 @@ public class SwiftEqualizerPlugin: NSObject, FlutterPlugin {
                 result(Int(preset[bandId]))
                                 
             } else if (call.method == "setBandLevel") {
+                
+                if (!preferences.isEnabled()) {
+                    return
+                }
                 
                 var preset = getCurrentPreset()
                 
@@ -126,7 +133,14 @@ public class SwiftEqualizerPlugin: NSObject, FlutterPlugin {
                                 
                 preferences.setCustomPreset(preset: preset)
                 
+                result(OK)
+                
             } else if (call.method == "setPreset") {
+                
+                if (!preferences.isEnabled()) {
+                    result(NOT_OK)
+                    return
+                }
                 
                 let presetName = call.arguments as! String
                 
@@ -151,12 +165,27 @@ public class SwiftEqualizerPlugin: NSObject, FlutterPlugin {
                     preferences.setCurrentPresetPosition(pos: presetPosition)
                 }
                 
+                result(OK)
+                
             } else {
                 result(FlutterMethodNotImplemented)
             }
             
-        } catch {
-            result(FlutterError(code: "-1", message: "An error occurred", details: ""))
+//        } catch {
+//            result(FlutterError(code: "-1", message: "An error occurred", details: ""))
+//        }
+    }
+    
+    fileprivate func initialize() {
+        if (preferences.isEnabled()) {
+            let presetsValues = presetsLevels
+            let presetPosition = preferences.getCurrentPresetPosition()
+            let preset = presetsValues[presetPosition]
+            setPresetIntoEqualizer(preset: preset)
+        } else {
+            let presetPosition = presetNames.firstIndex(of: NORMAL_PRESET_KEY)!
+            let preset = presetsLevels[presetPosition]
+            setPresetIntoEqualizer(preset: preset)
         }
     }
     
