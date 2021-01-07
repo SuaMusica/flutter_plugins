@@ -15,10 +15,11 @@ public class EqualizerPreferences {
     static let CUSTOM_PRESET_KEY = PREFERENCE_NAME + "CustomPreset"
     static let CURRENT_PRESET_POSITION_KEY = PREFERENCE_NAME + "CurrentPreset"
     static let IS_ENABLED_KEY = PREFERENCE_NAME + "isEnabled"
+    static let CUSTOM_PRESET_DEFAULT: [Float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     
     func getCustomPreset() -> [Float] {
         return preferences.array(forKey: EqualizerPreferences.CUSTOM_PRESET_KEY) as? [Float] ??
-            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+            EqualizerPreferences.CUSTOM_PRESET_DEFAULT
     }
     
     func setCustomPreset(preset: [Float]) {

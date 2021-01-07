@@ -33,7 +33,7 @@ class CustomEQ {
         }
 
         fun setBandLevel(bandId: Int, level: Int) {
-            equalizer?.setBandLevel(bandId.toShort(), level.toShort())
+            equalizer?.setBandLevel(bandId.toShort(), (level * 100).toShort())
         }
 
         val centerBandFreqs by lazy {

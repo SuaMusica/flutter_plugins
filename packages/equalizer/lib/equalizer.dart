@@ -77,7 +77,7 @@ class Equalizer {
     // the level in millibels.
     await _channel.invokeMethod(
       'setBandLevel',
-      {'bandId': bandId, 'level': level * 100},
+      {'bandId': bandId, 'level': level},
     );
   }
 

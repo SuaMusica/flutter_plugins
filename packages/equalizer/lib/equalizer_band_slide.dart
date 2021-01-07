@@ -105,7 +105,7 @@ class BandSlideItem extends StatelessWidget {
     return RotatedBox(
       quarterTurns: 3,
       child: Selector<ValueNotifier<List<int>>, int>(
-        selector: (_, notifier) => notifier.value[bandId],
+        selector: (_, notifier) => notifier.value.length > bandId ? notifier.value[bandId] : 0,
         builder: (context, data, _) {
           return Slider(
             label: "${data.toInt()} db",
