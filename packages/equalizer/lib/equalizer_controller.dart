@@ -1,21 +1,6 @@
 import 'package:equalizer/equalizer.dart';
 import 'package:flutter/material.dart';
 
-class DataNotifier<T> extends ChangeNotifier {
-  DataNotifier({this.data});
-
-  T data;
-
-  setData(T presets) {
-    this.data = presets;
-    this.notifyListeners();
-  }
-
-  notify() {
-    notifyListeners();
-  }
-}
-
 class Preset {
   Preset(this.index, this.name, this.checked);
 
@@ -43,9 +28,9 @@ class EqualizerController {
     await _notifyInitialData();
   }
 
-  DataNotifier equalizerPresetNotifier = DataNotifier<List<Preset>>(data: []);
-  DataNotifier enabledNotifier = DataNotifier<bool>(data: false);
-  DataNotifier bandLevelNotifier = DataNotifier<List<int>>(data: []);
+  ValueNotifier equalizerPresetNotifier = ValueNotifier<List<Preset>>([]);
+  ValueNotifier enabledNotifier = ValueNotifier<bool>(false);
+  ValueNotifier bandLevelNotifier = ValueNotifier<List<int>>([]);
 
   Future _notifyInitialData() async {
     await _notifyPresetNames();
@@ -60,7 +45,7 @@ class EqualizerController {
       final bandLevel = await Equalizer.getBandLevel(i);
       bandLevelList.add(bandLevel);
     }
-    bandLevelNotifier.setData(bandLevelList);
+    bandLevelNotifier.value = bandLevelList;
   }
 
   Future<BandData> getBandData() async {
@@ -78,7 +63,7 @@ class EqualizerController {
 
   Future setEnabled(bool value) async {
     await Equalizer.setEnabled(value);
-    enabledNotifier.setData(value);
+    enabledNotifier.value = value;
   }
 
   Future setBandLevel(int bandId, int level) async {
@@ -103,11 +88,11 @@ class EqualizerController {
         .map((name) =>
             Preset(presetNames.indexOf(name), name, name == currentPresetName))
         .toList();
-    equalizerPresetNotifier.setData(presetList);
+    equalizerPresetNotifier.value = presetList;
   }
 
   _notifyIsEnabled() async {
     final isEnabled = await Equalizer.isEnabled();
-    enabledNotifier.setData(isEnabled);
+    enabledNotifier.value = isEnabled;
   }
 }

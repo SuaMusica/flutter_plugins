@@ -1,4 +1,4 @@
-
+import 'package:equalizer/equalizer_band_slide.dart';
 import 'package:equalizer/equalizer_controller.dart';
 import 'package:equalizer/equalizer_preset_list.dart';
 import 'package:equalizer/equalizer_switch.dart';
@@ -20,14 +20,18 @@ class EqualizerWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     var equalizerPresetNotifier = _equalizerController.equalizerPresetNotifier;
     var enabledNotifier = _equalizerController.enabledNotifier;
+    var bandLevelNotifier = _equalizerController.bandLevelNotifier;
 
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<DataNotifier<List<Preset>>>.value(
+        ChangeNotifierProvider<ValueNotifier<List<Preset>>>.value(
           value: equalizerPresetNotifier,
         ),
-        ChangeNotifierProvider<DataNotifier<bool>>.value(
+        ChangeNotifierProvider<ValueNotifier<bool>>.value(
           value: enabledNotifier,
+        ),
+        ChangeNotifierProvider<ValueNotifier<List<int>>>.value(
+          value: bandLevelNotifier,
         )
       ],
       builder: (context, _) {
@@ -41,9 +45,10 @@ class EqualizerWidget extends StatelessWidget {
             ),
             EqualizerPresetList(
               _equalizerController,
-              context.select((DataNotifier<List<Preset>> n) => n.data),
-              context.select((DataNotifier<bool> n) => n.data),
+              context.select((ValueNotifier<List<Preset>> n) => n.value),
+              context.select((ValueNotifier<bool> n) => n.value),
             ),
+            EqualizerBandSlideGroup(_equalizerController),
           ],
         );
       },
