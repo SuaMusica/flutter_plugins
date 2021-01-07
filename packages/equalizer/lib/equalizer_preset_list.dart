@@ -1,58 +1,49 @@
 import 'package:equalizer/equalizer_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-class EqualizerPresetList extends StatefulWidget {
-  EqualizerPresetList(this.equalizerController, this.presetList, this.enabled);
+class EqualizerPresetList extends StatelessWidget {
+  EqualizerPresetList(this.equalizerController);
 
   final EqualizerController equalizerController;
-  final List<Preset> presetList;
-  final bool enabled;
-
-  @override
-  _EqualizerPresetListState createState() => _EqualizerPresetListState();
-}
-
-class _EqualizerPresetListState extends State<EqualizerPresetList> {
-  int groupValue = 0;
-
-  @override
-  void initState() {
-    widget.equalizerController.getCurrentPresetPosition().then((value) => {
-          setState(() {
-            groupValue = value;
-          })
-        });
-    super.initState();
-  }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ...widget.presetList.map((preset) => _presetTile(preset)).toList(),
-      ],
+    return Consumer<ValueNotifier<List<Preset>>>(
+      builder: (context, notifierPresetList, _) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ...notifierPresetList.value
+                .map((preset) => _presetTile(context, preset))
+                .toList(),
+          ],
+        );
+      },
     );
   }
 
-  Widget _presetTile(Preset preset) {
+  Widget _presetTile(BuildContext context, Preset preset) {
+    final enabled = context.select((ValueNotifier<bool> n) => n.value);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        RadioListTile<int>(
-          dense: true,
-          contentPadding: EdgeInsets.only(left: 12, right: 12),
-          title: Text(preset.name),
-          value: preset.index,
-          groupValue: groupValue,
-          onChanged: widget.enabled
-              ? (int value) {
-                  setState(() {
-                    groupValue = value;
-                  });
-                  widget.equalizerController.setPreset(preset.name);
-                }
-              : null,
+        Consumer<ValueNotifier<int>>(
+          builder: (context, currentPresetPositionNotifier, _) =>
+              RadioListTile<int>(
+            dense: true,
+            contentPadding: EdgeInsets.only(left: 12, right: 12),
+            title: Text(preset.name),
+            value: preset.index,
+            groupValue: currentPresetPositionNotifier.value,
+            onChanged: enabled
+                ? (int value) {
+                    final notifier = context.read<ValueNotifier<int>>();
+                    notifier.value = value;
+                    equalizerController.setPreset(preset.name);
+                  }
+                : null,
+          ),
         ),
         Divider(),
       ],

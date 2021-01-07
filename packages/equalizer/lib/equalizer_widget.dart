@@ -18,9 +18,10 @@ class EqualizerWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var equalizerPresetNotifier = _equalizerController.equalizerPresetNotifier;
-    var enabledNotifier = _equalizerController.enabledNotifier;
-    var bandLevelNotifier = _equalizerController.bandLevelNotifier;
+    final equalizerPresetNotifier = _equalizerController.equalizerPresetNotifier;
+    final enabledNotifier = _equalizerController.enabledNotifier;
+    final bandLevelNotifier = _equalizerController.bandLevelNotifier;
+    final currentPresetPositionNotifier = _equalizerController.currentPresetPositionNotifier;
 
     return MultiProvider(
       providers: [
@@ -32,7 +33,10 @@ class EqualizerWidget extends StatelessWidget {
         ),
         ChangeNotifierProvider<ValueNotifier<List<int>>>.value(
           value: bandLevelNotifier,
-        )
+        ),
+        ChangeNotifierProvider<ValueNotifier<int>>.value(
+          value: currentPresetPositionNotifier,
+        ),
       ],
       builder: (context, _) {
         return Column(
@@ -43,11 +47,7 @@ class EqualizerWidget extends StatelessWidget {
               titleDisabled: this.titleDisabled,
               titleEnabled: this.titleEnabled,
             ),
-            EqualizerPresetList(
-              _equalizerController,
-              context.select((ValueNotifier<List<Preset>> n) => n.value),
-              context.select((ValueNotifier<bool> n) => n.value),
-            ),
+            EqualizerPresetList(_equalizerController),
             EqualizerBandSlideGroup(_equalizerController),
           ],
         );
