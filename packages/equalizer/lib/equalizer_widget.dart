@@ -39,17 +39,20 @@ class EqualizerWidget extends StatelessWidget {
         ),
       ],
       builder: (context, _) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            EqualizerSwitch(
-              _equalizerController,
-              titleDisabled: this.titleDisabled,
-              titleEnabled: this.titleEnabled,
-            ),
-            EqualizerPresetList(_equalizerController),
-            EqualizerBandSlideGroup(_equalizerController),
-          ],
+        return SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              EqualizerSwitch(
+                _equalizerController,
+                titleDisabled: this.titleDisabled,
+                titleEnabled: this.titleEnabled,
+              ),
+              EqualizerPresetList(_equalizerController),
+              EqualizerBandSlideGroup(_equalizerController),
+              SizedBox(height: 40,)
+            ],
+          ),
         );
       },
     );
