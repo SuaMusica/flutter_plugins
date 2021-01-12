@@ -45,6 +45,8 @@ public class SwiftEqualizerPlugin: NSObject, FlutterPlugin {
             
             if (call.method == "open") {
                 result(OK)
+            } else if (call.method == "deviceHasEqualizer") {
+                result(true)
             } else if (call.method == "setAudioSessionId") {
                 
                 // do nothing
@@ -178,10 +180,7 @@ public class SwiftEqualizerPlugin: NSObject, FlutterPlugin {
     
     fileprivate func initialize() {
         if (preferences.isEnabled()) {
-            let presetsValues = presetsLevels
-            let presetPosition = preferences.getCurrentPresetPosition()
-            let preset = presetsValues[presetPosition]
-            setPresetIntoEqualizer(preset: preset)
+            setPresetIntoEqualizer(preset: getCurrentPreset())
         } else {
             let presetPosition = presetNames.firstIndex(of: NORMAL_PRESET_KEY)!
             let preset = presetsLevels[presetPosition]
