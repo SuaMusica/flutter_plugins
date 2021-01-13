@@ -30,7 +30,8 @@ public class SwiftEqualizerPlugin: NSObject, FlutterPlugin {
         [0, 0, 2, 5, -6, -2, -1, 2, -1],
         [0, 0, 1, 3, -10, -2, -1, 3, 3]
     ]
-        
+     
+    var audioEngine: AVAudioEngine!
     var eq = AVAudioUnitEQ(numberOfBands: 9)
     var audioManager = AVAudioUnitComponentManager.shared()
     
@@ -59,6 +60,8 @@ public class SwiftEqualizerPlugin: NSObject, FlutterPlugin {
                 
             } else if (call.method == "init") {
                 
+                self.audioEngine = AVAudioEngine.init()
+                self.audioEngine.attach(self.eq)
                 initialize()
                 result(OK)
                 
@@ -208,7 +211,11 @@ public class SwiftEqualizerPlugin: NSObject, FlutterPlugin {
     
     private func setPresetIntoEqualizer(preset: [Float]) {
         for i in 0..<preset.count {
-            eq.bands[i].gain = preset[i]
+            let band = eq.bands[i]
+            band.filterType = .parametric
+            band.gain = preset[i]
+            band.frequency = Float(frequencies[i] / 1000)
+            band.bypass = false
         }
     }
 }
