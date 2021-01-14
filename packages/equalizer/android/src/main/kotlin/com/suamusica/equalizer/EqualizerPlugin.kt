@@ -26,6 +26,7 @@ class EqualizerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     private var activity: Activity? = null
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+        applicationContext = flutterPluginBinding.applicationContext
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "equalizer")
         channel.setMethodCallHandler(this)
     }
