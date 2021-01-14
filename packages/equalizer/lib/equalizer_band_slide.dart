@@ -154,7 +154,7 @@ class BandSlideItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = context.select((ValueNotifier<bool> n) => n.value);
-
+    final theme = Theme.of(context);
     return SizedBox(
       width: width,
       height: 200,
@@ -169,7 +169,7 @@ class BandSlideItem extends StatelessWidget {
               for (var i = 0; i < (divisions / 2) + 1; i++)
                 Divider(
                   thickness: 1,
-                  color: Theme.of(context).dividerColor,
+                  color: enabled ? theme.dividerColor : theme.disabledColor,
                   height: 15.2,
                 ),
             ],
@@ -180,25 +180,32 @@ class BandSlideItem extends StatelessWidget {
                 selector: (_, notifier) =>
                     notifier.value.length > bandId ? notifier.value[bandId] : 0,
                 builder: (context, data, _) {
-                  return Slider(
-                    min: min,
-                    max: max,
-                    value: data.toDouble(),
-                    onChanged: enabled
-                        ? (value) {
-                            final notifier =
-                                context.read<ValueNotifier<List<int>>>();
-                            final levels =
-                                notifier.value.map((e) => e).toList();
-                            levels[bandId] = value.toInt();
-                            notifier.value = levels;
-                          }
-                        : null,
-                    onChangeEnd: enabled
-                        ? (value) {
-                            onChangeEnd?.call(value);
-                          }
-                        : null,
+                  return SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      disabledActiveTrackColor: theme.disabledColor,
+                      disabledInactiveTrackColor: theme.disabledColor,
+                      disabledThumbColor: theme.disabledColor,
+                    ),
+                    child: Slider(
+                      min: min,
+                      max: max,
+                      value: data.toDouble(),
+                      onChanged: enabled
+                          ? (value) {
+                              final notifier =
+                                  context.read<ValueNotifier<List<int>>>();
+                              final levels =
+                                  notifier.value.map((e) => e).toList();
+                              levels[bandId] = value.toInt();
+                              notifier.value = levels;
+                            }
+                          : null,
+                      onChangeEnd: enabled
+                          ? (value) {
+                              onChangeEnd?.call(value);
+                            }
+                          : null,
+                    ),
                   );
                 }),
           ),
