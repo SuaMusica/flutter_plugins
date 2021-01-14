@@ -45,7 +45,7 @@ class EqualizerPresetList extends StatelessWidget {
                 : null,
           ),
         ),
-        Divider(),
+        Divider(height: 4,),
       ],
     );
   }
