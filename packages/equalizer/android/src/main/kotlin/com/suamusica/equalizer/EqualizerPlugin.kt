@@ -17,6 +17,10 @@ import io.flutter.plugin.common.MethodChannel.Result
 /** EqualizerPlugin */
 class EqualizerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
+    companion object {
+        const val OK = 0
+    }
+
     private lateinit var channel: MethodChannel
     private var applicationContext: Context? = null
     private var activity: Activity? = null
@@ -28,7 +32,6 @@ class EqualizerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
     override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
 
-//        CustomEQ.initIfIsNotInitialized(0)
         Log.d("JEF", "call.method: ${call.method}")
         when (call.method) {
             "open" -> {
@@ -36,17 +39,29 @@ class EqualizerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                 val contentType = call.argument<Int>("contentType") ?: 0
                 displayDeviceEqualizer(sessionId, contentType, result)
             }
-            "setAudioSessionId" -> setAudioSessionId(call.arguments as Int)
+            "setAudioSessionId" -> {
+                setAudioSessionId(call.arguments as Int)
+                result.success(OK)
+            }
             "deviceHasEqualizer" -> {
                 val sessionId = call.argument<Int>("audioSessionId") ?: 0
                 val deviceHasEqualizer = deviceHasEqualizer(sessionId)
                 result.success(deviceHasEqualizer)
             }
             "removeAudioSessionId" -> removeAudioSessionId(call.arguments as Int)
-            "init" -> CustomEQ.init(call.arguments as Int)
-            "enable" -> CustomEQ.enable(call.arguments as Boolean)
+            "init" -> {
+                CustomEQ.init(call.arguments as Int)
+                result.success(OK)
+            }
+            "enable" -> {
+                CustomEQ.enable(call.arguments as Boolean)
+                result.success(OK)
+            }
             "isEnabled" -> result.success(CustomEQ.isEnabled)
-            "release" -> CustomEQ.release()
+            "release" -> {
+                CustomEQ.release()
+                result.success(OK)
+            }
             "getBandLevelRange" -> result.success(CustomEQ.bandLevelRange)
             "getCenterBandFreqs" -> result.success(CustomEQ.centerBandFreqs)
             "getPresetNames" -> result.success(CustomEQ.presetNames)
@@ -59,8 +74,12 @@ class EqualizerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                         CustomEQ.setBandLevel(bandId, level)
                     }
                 }
+                result.success(OK)
             }
-            "setPreset" -> CustomEQ.setPreset(call.arguments as String)
+            "setPreset" -> {
+                CustomEQ.setPreset(call.arguments as String)
+                result.success(OK)
+            }
             "getCurrentPreset" -> {
                 result.success(CustomEQ.currentPreset)
             }

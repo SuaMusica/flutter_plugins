@@ -157,23 +157,23 @@ class BandSlideItem extends StatelessWidget {
     final theme = Theme.of(context);
     return SizedBox(
       width: width,
-      height: 200,
+      // height: 400,
       child: Stack(
         children: [
-          Column(
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              SizedBox(
-                height: 16,
-              ),
-              for (var i = 0; i < (divisions / 2) + 1; i++)
-                Divider(
-                  thickness: 1,
-                  color: enabled ? theme.dividerColor : theme.disabledColor,
-                  height: 15.2,
-                ),
-            ],
-          ),
+          // Column(
+          //   mainAxisSize: MainAxisSize.max,
+          //   children: [
+          //     SizedBox(
+          //       height: 16,
+          //     ),
+          //     for (var i = 0; i < (divisions / 2) + 1; i++)
+          //       Divider(
+          //         thickness: 1,
+          //         color: enabled ? theme.dividerColor : theme.disabledColor,
+          //         height: 15.2,
+          //       ),
+          //   ],
+          // ),
           RotatedBox(
             quarterTurns: 3,
             child: Selector<ValueNotifier<List<int>>, int>(
