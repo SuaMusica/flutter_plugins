@@ -26,58 +26,9 @@ class EqualizerBandSlideGroup extends StatelessWidget {
             centerBandFrequencyList.length;
         var bandIdCount = 0;
         return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Padding(
-              padding: EdgeInsets.only(top: 14),
-              child: Container(
-                height: 168,
-                child: Column(
-                  children: [
-                    Expanded(
-                      flex: 1,
-                      child: Container(
-                        child: Align(
-                          child: Text(
-                            "${bandLevelRange.max.toInt()}dB",
-                            style: TextStyle(fontSize: 12),
-                          ),
-                          alignment: Alignment.topRight,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 1,
-                      child: Container(
-                        child: Align(
-                          child: Text(
-                            "0dB",
-                            style: TextStyle(fontSize: 12),
-                          ),
-                          alignment: Alignment.centerRight,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 1,
-                      child: Container(
-                        child: Align(
-                          child: Text(
-                            "${bandLevelRange.min.toInt()}dB",
-                            style: TextStyle(fontSize: 12),
-                          ),
-                          alignment: Alignment.bottomRight,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(
-              width: 8,
-            ),
             SingleChildScrollView(
               physics: ClampingScrollPhysics(),
               scrollDirection: Axis.horizontal,
@@ -95,14 +46,11 @@ class EqualizerBandSlideGroup extends StatelessWidget {
                           width: width,
                           divisions: divisions,
                           bandId: bandId,
+                          centerFreq: freq,
                           onChangeEnd: (value) {
                             controller.setBandLevel(bandId, value.toInt());
                           },
                         ),
-                        Text(
-                          _formatFreq(freq),
-                          style: TextStyle(fontSize: 12),
-                        )
                       ],
                     );
                   }),
@@ -112,6 +60,118 @@ class EqualizerBandSlideGroup extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class BandSlideItem extends StatelessWidget {
+  BandSlideItem({
+    Key key,
+    this.min = 0.0,
+    this.max = 1.0,
+    this.width = 40,
+    this.bandId,
+    this.centerFreq,
+    this.divisions,
+    this.onChanged,
+    this.onChangeEnd,
+  }) : super(key: key);
+
+  final Function(double) onChanged;
+  final Function(double) onChangeEnd;
+  final double min, max, width;
+  final int divisions, bandId, centerFreq;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = context.select((ValueNotifier<bool> n) => n.value);
+    final theme = Theme.of(context);
+    final over = max.toInt().isEven ? 3 : 1;
+    final totalDivider = (divisions / 2) + over;
+    final double slideHeight = 200;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (bandId == 0)
+              SizedBox(
+                width: 44,
+                child: _buildRangeFrequency(min, max),
+              ),
+            if (bandId == 0)
+              SizedBox(
+                width: 8,
+              ),
+            SizedBox(
+              width: width,
+              height: slideHeight,
+              child: Stack(
+                children: [
+                  Column(
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      for (var i = 0; i < totalDivider; i++)
+                        Expanded(
+                          child: (i == 0 || i == (totalDivider - 1)) ? Container() : Divider(
+                            thickness: 1,
+                            color: enabled
+                                ? theme.dividerColor
+                                : theme.disabledColor,
+                          ),
+                          flex: 1,
+                        ),
+                    ],
+                  ),
+                  RotatedBox(
+                    quarterTurns: 3,
+                    child: Selector<ValueNotifier<List<int>>, int>(
+                        selector: (_, notifier) =>
+                            notifier.value.length > bandId
+                                ? notifier.value[bandId]
+                                : 0,
+                        builder: (context, data, _) {
+                          return Slider(
+                            min: min,
+                            max: max,
+                            value: data.toDouble(),
+                            onChanged: enabled
+                                ? (value) {
+                                    final notifier = context
+                                        .read<ValueNotifier<List<int>>>();
+                                    final levels =
+                                        notifier.value.map((e) => e).toList();
+                                    levels[bandId] = value.toInt();
+                                    notifier.value = levels;
+                                  }
+                                : null,
+                            onChangeEnd: enabled
+                                ? (value) {
+                                    onChangeEnd?.call(value);
+                                  }
+                                : null,
+                          );
+                        }),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        Row(
+          children: [
+            SizedBox(width: bandId == 0 ? 52 : 0),
+            Text(
+              _formatFreq(centerFreq),
+              style: TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -132,75 +192,47 @@ class EqualizerBandSlideGroup extends StatelessWidget {
       return '$freq$freqUnit';
     }
   }
-}
 
-class BandSlideItem extends StatelessWidget {
-  BandSlideItem({
-    Key key,
-    this.min = 0.0,
-    this.max = 1.0,
-    this.width = 40,
-    this.bandId,
-    this.divisions,
-    this.onChanged,
-    this.onChangeEnd,
-  }) : super(key: key);
-
-  final Function(double) onChanged;
-  final Function(double) onChangeEnd;
-  final double min, max, width;
-  final int divisions, bandId;
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = context.select((ValueNotifier<bool> n) => n.value);
-    final theme = Theme.of(context);
-    return SizedBox(
-      width: width,
-      // height: 400,
-      child: Stack(
+  Widget _buildRangeFrequency(double min, double max) {
+    return Container(
+      height: 160,
+      child: Column(
         children: [
-          // Column(
-          //   mainAxisSize: MainAxisSize.max,
-          //   children: [
-          //     SizedBox(
-          //       height: 16,
-          //     ),
-          //     for (var i = 0; i < (divisions / 2) + 1; i++)
-          //       Divider(
-          //         thickness: 1,
-          //         color: enabled ? theme.dividerColor : theme.disabledColor,
-          //         height: 15.2,
-          //       ),
-          //   ],
-          // ),
-          RotatedBox(
-            quarterTurns: 3,
-            child: Selector<ValueNotifier<List<int>>, int>(
-                selector: (_, notifier) =>
-                    notifier.value.length > bandId ? notifier.value[bandId] : 0,
-                builder: (context, data, _) {
-                  return Slider(
-                    min: min,
-                    max: max,
-                    value: data.toDouble(),
-                    onChanged: enabled
-                        ? (value) {
-                            final notifier =
-                                context.read<ValueNotifier<List<int>>>();
-                            final levels =
-                                notifier.value.map((e) => e).toList();
-                            levels[bandId] = value.toInt();
-                            notifier.value = levels;
-                          }
-                        : null,
-                    onChangeEnd: enabled
-                        ? (value) {
-                            onChangeEnd?.call(value);
-                          }
-                        : null,
-                  );
-                }),
+          Expanded(
+            flex: 1,
+            child: Container(
+              child: Align(
+                child: Text(
+                  "${max.toInt()}dB",
+                  style: TextStyle(fontSize: 12),
+                ),
+                alignment: Alignment.topRight,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Container(
+              child: Align(
+                child: Text(
+                  "0dB",
+                  style: TextStyle(fontSize: 12),
+                ),
+                alignment: Alignment.centerRight,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Container(
+              child: Align(
+                child: Text(
+                  "${min.toInt()}dB",
+                  style: TextStyle(fontSize: 12),
+                ),
+                alignment: Alignment.bottomRight,
+              ),
+            ),
           ),
         ],
       ),
