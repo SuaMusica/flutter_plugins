@@ -149,6 +149,11 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
             } 
             
         } catch (e: Throwable) {
+            if (e is java.io.FileNotFoundException){
+                Timber.e(e, "File does not exist.. $path");
+                return null
+            }
+
             Timber.e(e, "Failed to get ID3 tags. Ignoring...");
         }
 
