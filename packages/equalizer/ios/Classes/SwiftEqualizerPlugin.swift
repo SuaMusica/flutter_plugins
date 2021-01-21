@@ -30,10 +30,14 @@ public class SwiftEqualizerPlugin: NSObject, FlutterPlugin {
         [0, 0, 2, 5, -6, -2, -1, 2, -1],
         [0, 0, 1, 3, -10, -2, -1, 3, 3]
     ]
-     
+    
+    var audioSession: AVAudioSession!
+    
+    var audioPlayer: AVAudioNode!
+    
     var audioEngine: AVAudioEngine!
-    var eq = AVAudioUnitEQ(numberOfBands: 9)
-    var audioManager = AVAudioUnitComponentManager.shared()
+    
+    var audioUnitEq: AVAudioUnitEQ!
     
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "equalizer", binaryMessenger: registrar.messenger())
@@ -42,143 +46,169 @@ public class SwiftEqualizerPlugin: NSObject, FlutterPlugin {
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-//        do {
+        
+//        if (self.audioUintEq == nil) {
+//            result(FlutterError(code: "-1", message: "Plugin was not initialized", details: ""))
+//            return
+//        }
+
+        if (call.method == "init") {
             
-            if (call.method == "open") {
-                result(OK)
-            } else if (call.method == "deviceHasEqualizer") {
-                result(true)
-            } else if (call.method == "setAudioSessionId") {
+            do {
+                self.audioSession = AVAudioSession.sharedInstance()
+//                try self.audioSession.setCategory(AVAudioSession.Category.playback)
+//                try self.audioSession.setActive(true, options: [])
                 
-                // do nothing
-                result(OK)
+//                self.audioPlayer = AVAudioNode.init()
                 
-            } else if (call.method == "removeAudioSessionId") {
+                // Creating nodes
+                self.audioUnitEq = AVAudioUnitEQ(numberOfBands: frequencies.count)
                 
-                // do nothing
-                result(OK)
-                
-            } else if (call.method == "init") {
-                
+                // Creating engine
                 self.audioEngine = AVAudioEngine.init()
-                self.audioEngine.attach(self.eq)
+                
+//                self.audioEngine.attach(self.audioPlayer)
+                self.audioEngine.attach(self.audioUnitEq)
+                
+//                self.audioEngine.connect(self.audioPlayer, to: self.audioUnitEq, format: nil)
+                self.audioEngine.connect(self.audioUnitEq, to: self.audioEngine.mainMixerNode, format: self.audioUnitEq.inputFormat(forBus: 0))
+                
+                self.audioEngine.prepare()
+                
+                try self.audioEngine.start()
+                
                 initialize()
+                
                 result(OK)
                 
-            } else if (call.method == "enable") {
+            } catch {
+                result(FlutterError(code: "-1", message: "An error occurred on init", details: error))
+            }
+            
+        } else if (call.method == "open") {
+            result(OK)
+        } else if (call.method == "deviceHasEqualizer") {
+            result(true)
+        } else if (call.method == "setAudioSessionId") {
+            
+            // do nothing
+            result(OK)
+            
+        } else if (call.method == "removeAudioSessionId") {
+            
+            // do nothing
+            result(OK)
+            
+        } else if (call.method == "enable") {
+            
+            let isToEnable = call.arguments as! Bool
+            //                try AVAudioSession.sharedInstance().setActive(isToEnable, options: [])
+            preferences.setEnabled(enable: isToEnable)
+            initialize()
+            result(OK)
+            
+        } else if (call.method == "isEnabled") {
+            
+            result(preferences.isEnabled())
+            
+        } else if (call.method == "release") {
+            
+            let presetPosition = presetNames.firstIndex(of: NORMAL_PRESET_KEY)!
+            let preset = presetsLevels[presetPosition]
+            setPresetIntoEqualizer(preset: preset)
+            preferences.setCurrentPresetPosition(pos: presetPosition)
+            result(OK)
+            
+        } else if (call.method == "getBandLevelRange") {
+            
+            result(bandLevelRange)
+            
+        } else if (call.method == "getCenterBandFreqs") {
+            
+            result(frequencies)
+            
+        } else if (call.method == "getPresetNames") {
+            
+            var presets = presetNames
+            presets += [CUSTOM_PRESET_KEY]
+            result(presets)
+            
+        } else if (call.method == "getCurrentPreset") {
+            
+            result(preferences.getCurrentPresetPosition())
+            
+        } else if (call.method == "getBandLevel") {
+            
+            let bandId = call.arguments as! Int;
+            let preset = getCurrentPreset()
+            
+            if (bandId >= preset.count) {
+                let details = "bandId \(bandId) not found, there is \(preset.count) bands"
+                result(FlutterError(code: "-1", message: "Invalid argument for getBandLevel method", details: details))
+                return
+            }
+            
+            result(Int(preset[bandId]))
+            
+        } else if (call.method == "setBandLevel") {
+            
+            if (!preferences.isEnabled()) {
+                return
+            }
+            
+            var preset = getCurrentPreset()
+            
+            // Changing current preset to custom
+            let customPresetPosition = presetsLevels.count
+            preferences.setCurrentPresetPosition(pos: customPresetPosition)
+            
+            let args = call.arguments as! [String: Any]
+            let bandId = args["bandId"] as! Int
+            let level = args["level"] as! Float
+            
+            preset[bandId] = level
+            
+            setPresetIntoEqualizer(preset: preset)
+            
+            preferences.setCustomPreset(preset: preset)
+            
+            result(OK)
+            
+        } else if (call.method == "setPreset") {
+            
+            if (!preferences.isEnabled()) {
+                result(NOT_OK)
+                return
+            }
+            
+            let presetName = call.arguments as! String
+            
+            if (CUSTOM_PRESET_KEY == presetName) {
                 
-                let isToEnable = call.arguments as! Bool
-//                try AVAudioSession.sharedInstance().setActive(isToEnable, options: [])
-                preferences.setEnabled(enable: isToEnable)
-                initialize()
-                result(OK)
-                
-            } else if (call.method == "isEnabled") {
-                
-                result(preferences.isEnabled())
-                
-            } else if (call.method == "release") {
-                
-                let presetPosition = presetNames.firstIndex(of: NORMAL_PRESET_KEY)!
-                let preset = presetsLevels[presetPosition]
-                setPresetIntoEqualizer(preset: preset)
-                preferences.setCurrentPresetPosition(pos: presetPosition)
-                result(OK)
-                
-            } else if (call.method == "getBandLevelRange") {
-                
-                result(bandLevelRange)
-                
-            } else if (call.method == "getCenterBandFreqs") {
-                
-                result(frequencies)
-                
-            } else if (call.method == "getPresetNames") {
-                
-                var presets = presetNames
-                presets += [CUSTOM_PRESET_KEY]
-                result(presets)
-                
-            } else if (call.method == "getCurrentPreset") {
-                
-                result(preferences.getCurrentPresetPosition())
-                
-            } else if (call.method == "getBandLevel") {
-                
-                let bandId = call.arguments as! Int;
-                let preset = getCurrentPreset()
-                
-                if (bandId >= preset.count) {
-                    let details = "bandId \(bandId) not found, there is \(preset.count) bands"
-                    result(FlutterError(code: "-1", message: "Invalid argument for getBandLevel method", details: details))
-                    return
-                }
-                
-                result(Int(preset[bandId]))
-                                
-            } else if (call.method == "setBandLevel") {
-                
-                if (!preferences.isEnabled()) {
-                    return
-                }
-                
-                var preset = getCurrentPreset()
-                
-                // Changing current preset to custom
+                let customPreset = preferences.getCustomPreset()
+                setPresetIntoEqualizer(preset: customPreset)
                 let customPresetPosition = presetsLevels.count
                 preferences.setCurrentPresetPosition(pos: customPresetPosition)
                 
-                let args = call.arguments as! [String: Any]
-                let bandId = args["bandId"] as! Int
-                let level = args["level"] as! Float
+            } else {
                 
-                preset[bandId] = level
-                
-                setPresetIntoEqualizer(preset: preset)
-                                
-                preferences.setCustomPreset(preset: preset)
-                
-                result(OK)
-                
-            } else if (call.method == "setPreset") {
-                
-                if (!preferences.isEnabled()) {
-                    result(NOT_OK)
+                if (!presetNames.contains(presetName)) {
+                    let details = "there is no \(presetName) preset"
+                    result(FlutterError(code: "-1", message: "Invalid preset name", details: details))
                     return
                 }
                 
-                let presetName = call.arguments as! String
-                
-                if (CUSTOM_PRESET_KEY == presetName) {
-                    
-                    let customPreset = preferences.getCustomPreset()
-                    setPresetIntoEqualizer(preset: customPreset)
-                    let customPresetPosition = presetsLevels.count
-                    preferences.setCurrentPresetPosition(pos: customPresetPosition)
-                    
-                } else {
-                    
-                    if (!presetNames.contains(presetName)) {
-                        let details = "there is no \(presetName) preset"
-                        result(FlutterError(code: "-1", message: "Invalid preset name", details: details))
-                        return
-                    }
-                    
-                    let presetPosition = presetNames.firstIndex(of: presetName)!
-                    let preset = presetsLevels[presetPosition]
-                    setPresetIntoEqualizer(preset: preset)
-                    preferences.setCurrentPresetPosition(pos: presetPosition)
-                }
-                
-                result(OK)
-                
-            } else {
-                result(FlutterMethodNotImplemented)
+                let presetPosition = presetNames.firstIndex(of: presetName)!
+                let preset = presetsLevels[presetPosition]
+                setPresetIntoEqualizer(preset: preset)
+                preferences.setCurrentPresetPosition(pos: presetPosition)
             }
             
-//        } catch {
-//            result(FlutterError(code: "-1", message: "An error occurred", details: ""))
-//        }
+            result(OK)
+            
+        } else {
+            result(FlutterMethodNotImplemented)
+        }
     }
     
     fileprivate func initialize() {
@@ -211,7 +241,7 @@ public class SwiftEqualizerPlugin: NSObject, FlutterPlugin {
     
     private func setPresetIntoEqualizer(preset: [Float]) {
         for i in 0..<preset.count {
-            let band = eq.bands[i]
+            let band = audioUnitEq.bands[i]
             band.filterType = .parametric
             band.gain = preset[i]
             band.frequency = Float(frequencies[i] / 1000)
