@@ -19,6 +19,7 @@ class EqualizerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
     companion object {
         const val OK = 0
+        const val TAG = "EqualizerPlugin"
     }
 
     private lateinit var channel: MethodChannel
@@ -33,7 +34,7 @@ class EqualizerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
     override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
 
-        Log.d("JEF", "call.method: ${call.method}")
+        Log.d(TAG, "call.method: ${call.method}")
         when (call.method) {
             "open" -> {
                 val sessionId = call.argument<Int>("audioSessionId") ?: 0
