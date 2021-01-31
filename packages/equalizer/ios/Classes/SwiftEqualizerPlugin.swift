@@ -88,7 +88,7 @@ public class SwiftEqualizerPlugin: NSObject, FlutterPlugin {
         } else if (call.method == "open") {
             result(OK)
         } else if (call.method == "deviceHasEqualizer") {
-            result(true)
+            result(false)
         } else if (call.method == "setAudioSessionId") {
             
             // do nothing
