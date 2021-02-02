@@ -22,6 +22,11 @@ class BandData {
 }
 
 class EqualizerController {
+
+  EqualizerController({ @required int audioSessionId }) {
+    this.init(audioSessionId);
+  }
+
   init(int audioSessionId) async {
     await Equalizer.init(audioSessionId);
     await _notifyInitialData();
