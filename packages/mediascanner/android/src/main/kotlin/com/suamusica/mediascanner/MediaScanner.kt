@@ -256,8 +256,9 @@ class MediaScanner(
             "content".equals(uri.scheme, ignoreCase = true) -> {
                 if(isXiaomi(authority)) {
                     var path = ""
-                    if (uri.path.startsWith("/external_files")){
-                        path = "${Environment.getExternalStorageDirectory()}/${uri.path.substringAfter("/external_files")}"
+                    var uripath = uri.path!!
+                    if (uripath.startsWith("/external_files")){
+                        path = "${Environment.getExternalStorageDirectory()}/${uripath.substringAfter("/external_files")}"
                     }
                     if(path.isNotEmpty()) {
                         return readMediaFromMediaMetadataRetriever(path)

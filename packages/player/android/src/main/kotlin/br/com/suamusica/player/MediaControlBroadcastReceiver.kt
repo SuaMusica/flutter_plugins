@@ -14,8 +14,7 @@ class MediaControlBroadcastReceiver : BroadcastReceiver() {
         }
         val ke = intent.getParcelableExtra<KeyEvent>(Intent.EXTRA_KEY_EVENT)
         Log.i("Player", "Key: $ke")
-
-        when (ke.keyCode) {
+        when (ke!!.keyCode) {
             KeyEvent.KEYCODE_MEDIA_PLAY -> {
                 Plugin.play()
             }
