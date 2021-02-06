@@ -8,9 +8,12 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
+import android.media.MediaMetadata
+import android.net.Uri
 import android.os.AsyncTask
 import android.os.Build
 import android.provider.Settings
+import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat.*
@@ -140,13 +143,25 @@ class NotificationBuilder(private val context: Context) {
 
         val artUri = media.coverUrl
         var art: Bitmap? = null
-        if(artUri == oldArtUri && this.oldArtBitmap !=null) {
-             art = oldArtBitmap
-        } else{
+        if (artUri == oldArtUri && this.oldArtBitmap != null) {
+            art = oldArtBitmap
+        } else {
             art = getArt(context, artUri, NOTIFICATION_LARGE_ICON_SIZE)
-            oldArtUri = if (artUri != null) artUri else ""
+            oldArtUri = artUri
             oldArtBitmap = art
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                mediaSession.setMetadata(
+                        MediaMetadataCompat.Builder()
+                                .putString(MediaMetadata.METADATA_KEY_TITLE, media.name)
+                                .putString(MediaMetadata.METADATA_KEY_ARTIST, media.author)
+                                .putBitmap(
+                                        MediaMetadata.METADATA_KEY_ALBUM_ART, art)
+                                //.putLong(MediaMetadata.METADATA_KEY_DURATION, if(media.duration != null) media.duration!! else -1L) // 4
+                                .build())
+            }
         }
+
+
         val notifyIntent = Intent("SUA_MUSICA_FLUTTER_NOTIFICATION_CLICK").apply {
             addCategory(Intent.CATEGORY_DEFAULT)
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -154,16 +169,12 @@ class NotificationBuilder(private val context: Context) {
         val notifyPendingIntent = PendingIntent.getActivity(
                 context, 0, notifyIntent, PendingIntent.FLAG_UPDATE_CURRENT
         )
-
         val notification = builder.apply {
             setContentIntent(notifyPendingIntent)
             setStyle(mediaStyle)
             setCategory(NotificationCompat.CATEGORY_PROGRESS)
             setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             setShowWhen(false)
-            setContentTitle(media.name)
-            setContentText(media.author)
-            setLargeIcon(art)
             setColorized(true)
             setOnlyAlertOnce(false)
             setAutoCancel(false)
@@ -175,6 +186,12 @@ class NotificationBuilder(private val context: Context) {
             } else {
                 setDefaults(Notification.DEFAULT_LIGHTS)
             }
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                setLargeIcon(art)
+                setContentTitle(media.name)
+                setContentText(media.author)
+            }
+
         }.build()
 
         if (onGoing) {

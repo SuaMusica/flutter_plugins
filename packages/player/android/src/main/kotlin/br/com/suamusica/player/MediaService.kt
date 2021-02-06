@@ -372,9 +372,10 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
     private fun removeNowPlayingNotification() {
         Log.d(TAG, "removeNowPlayingNotification")
-        AsyncTask.execute {
+        Thread(Runnable {
             notificationManager?.cancel(NOW_PLAYING_NOTIFICATION)
-        }
+        }).start()
+
     }
 
 
