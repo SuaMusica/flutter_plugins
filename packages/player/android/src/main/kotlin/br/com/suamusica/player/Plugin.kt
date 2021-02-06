@@ -4,16 +4,17 @@ import android.content.ComponentName
 import android.content.Context
 import android.os.Handler
 import android.os.Message
-import android.os.ResultReceiver
 import android.util.Log
+import androidx.annotation.NonNull
 import br.com.suamusica.player.MediaService.MessageType.NEXT
 import br.com.suamusica.player.MediaService.MessageType.PREVIOUS
+import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
-import io.flutter.plugin.common.PluginRegistry.Registrar
 
-class Plugin private constructor(private val channel: MethodChannel, private val context: Context) : MethodCallHandler {
+class Plugin : MethodCallHandler, FlutterPlugin {
+
     companion object {
         // Argument names
         const val NAME_ARGUMENT = "name"
@@ -55,24 +56,12 @@ class Plugin private constructor(private val channel: MethodChannel, private val
         @JvmStatic
         var externalPlayback: Boolean? = false
 
-        @JvmStatic
-        fun registerWith(registrar: Registrar) {
-            Log.i(TAG, "registerWith: START")
-            channel = MethodChannel(registrar.messenger(), "smplayer")
-            channel?.setMethodCallHandler(Plugin(channel!!, registrar.context()))
-
-            val context = registrar.context()
-
-            createMediaSessionConnection(context)
-
-            Log.i(TAG, "registerWith: END")
-        }
-
         private fun createMediaSessionConnection(context: Context) {
             mediaSessionConnection = MediaSessionConnection(context,
                     ComponentName(context, MediaService::class.java),
                     PlayerChangeNotifier(MethodChannelManager(channel!!)))
         }
+
 
         @JvmStatic
         fun play() {
@@ -88,19 +77,18 @@ class Plugin private constructor(private val channel: MethodChannel, private val
             if (externalPlayback!!) {
                 channel?.invokeMethod("externalPlayback.pause", emptyMap<String, String>())
             } else {
-
                 mediaSessionConnection?.pause()
             }
         }
 
         @JvmStatic
         fun previous() {
-            channel?.invokeMethod("commandCenter.onPrevious", emptyMap<String, String>())
+            channel.let { it!!.invokeMethod("commandCenter.onPrevious", emptyMap<String, String>()) }
         }
 
         @JvmStatic
         fun next() {
-            channel?.invokeMethod("commandCenter.onNext", emptyMap<String, String>())
+            channel.let { it!!.invokeMethod("commandCenter.onNext", emptyMap<String, String>()) }
         }
 
         @JvmStatic
@@ -109,6 +97,18 @@ class Plugin private constructor(private val channel: MethodChannel, private val
         }
     }
 
+    override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+        Log.i(TAG, "onAttachedToEngine")
+        channel = MethodChannel(flutterPluginBinding.binaryMessenger, "smplayer")
+        channel!!.setMethodCallHandler(this)
+        createMediaSessionConnection(flutterPluginBinding.applicationContext)
+    }
+
+    override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
+        Log.i(TAG, "onDetachedFromEngine")
+        channel?.setMethodCallHandler(null)
+        channel = null
+    }
     override fun onMethodCall(call: MethodCall, response: MethodChannel.Result) {
         try {
             handleMethodCall(call, response)
@@ -120,7 +120,7 @@ class Plugin private constructor(private val channel: MethodChannel, private val
 
     private fun handleMethodCall(call: MethodCall, response: MethodChannel.Result) {
         val cookie = call.argument<String>("cookie")
-        Plugin.externalPlayback = call.argument<Boolean>("externalplayback")
+        externalPlayback = call.argument<Boolean>("externalplayback")
         Log.i(TAG, "method: ${call.method} cookie: $cookie externalPlayback: $externalPlayback")
         when (call.method) {
             LOAD_METHOD -> {
