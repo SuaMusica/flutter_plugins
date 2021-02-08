@@ -67,7 +67,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
         @JvmStatic
         fun play() {
             if (externalPlayback!!) {
-                channel?.let { it.invokeMethod("externalPlayback.play", emptyMap<String, String>()) }
+                channel?.invokeMethod("externalPlayback.play", emptyMap<String, String>())
             } else {
                 mediaSessionConnection?.play()
             }
@@ -76,7 +76,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
         @JvmStatic
         fun pause() {
             if (externalPlayback!!) {
-                channel?.let { it.invokeMethod("externalPlayback.pause", emptyMap<String, String>()) }
+                channel?.invokeMethod("externalPlayback.pause", emptyMap<String, String>())
             } else {
                 mediaSessionConnection?.pause()
             }
@@ -84,12 +84,12 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
 
         @JvmStatic
         fun previous() {
-            channel?.let { it.invokeMethod("commandCenter.onPrevious", emptyMap<String, String>()) }
+            channel?.invokeMethod("commandCenter.onPrevious", emptyMap<String, String>())
         }
 
         @JvmStatic
         fun next() {
-            channel?.let { it.invokeMethod("commandCenter.onNext", emptyMap<String, String>()) }
+            channel?.invokeMethod("commandCenter.onNext", emptyMap<String, String>())
         }
 
         @JvmStatic
@@ -216,21 +216,5 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
             }
         }
         response.success(Ok)
-    }
-
-    private class CallbackHandler : Handler() {
-        override fun handleMessage(msg: Message) {
-            Log.i(TAG, "Got msg: $msg")
-
-            when (msg.what) {
-                NEXT.ordinal -> {
-                    channel?.invokeMethod("commandCenter.onNext", mapOf<String, String>())
-                }
-                PREVIOUS.ordinal -> {
-                    channel?.invokeMethod("commandCenter.onPrevious", mapOf<String, String>())
-                }
-            }
-            super.handleMessage(msg)
-        }
     }
 }
