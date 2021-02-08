@@ -16,21 +16,22 @@ class MediaControlBroadcastReceiver : BroadcastReceiver() {
         Log.i("Player", "Key: $ke")
         when (ke!!.keyCode) {
             KeyEvent.KEYCODE_MEDIA_PLAY -> {
-                Plugin.play()
+                PlayerPlugin.play()
             }
             KeyEvent.KEYCODE_MEDIA_PAUSE -> {
-                Plugin.pause()
+                PlayerPlugin.pause()
             }
             KeyEvent.KEYCODE_MEDIA_NEXT -> {
                 Log.i("Player", "Player: Key Code : Next")
-                Plugin.next()
+                PlayerPlugin.next()
+
             }
             KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
                 Log.i("Player", "Player: Key Code : Previous")
-                Plugin.previous()
+                PlayerPlugin.previous()
             }
             KeyEvent.KEYCODE_MEDIA_STOP -> {
-                Plugin.stop()
+                PlayerPlugin.stop()
             }
         }
 

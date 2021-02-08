@@ -7,12 +7,8 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.drawable.Drawable
 import android.media.MediaMetadata
-import android.net.Uri
-import android.os.AsyncTask
 import android.os.Build
-import android.provider.Settings
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
@@ -24,9 +20,11 @@ import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.request.FutureTarget
 import com.bumptech.glide.request.RequestOptions
-import kotlinx.coroutines.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 
 const val NOW_PLAYING_CHANNEL: String = "br.com.suamusica.media.NOW_PLAYING"
 const val NOW_PLAYING_NOTIFICATION: Int = 0xb339
@@ -96,7 +94,7 @@ class NotificationBuilder(private val context: Context) {
         }
     }
 
-    fun buildNotification(mediaSession: MediaSessionCompat, media: Media, onGoing: Boolean, isPlayingExternal: Boolean?): Notification? {
+    fun buildNotification(mediaSession: MediaSessionCompat, media: Media, onGoing: Boolean, isPlayingExternal: Boolean?, mediaDuration: Long?): Notification? {
         if (shouldCreateNowPlayingChannel()) {
             createNowPlayingChannel()
         }
@@ -105,7 +103,10 @@ class NotificationBuilder(private val context: Context) {
         val playbackState = controller.playbackState
         val builder = NotificationCompat.Builder(context, NOW_PLAYING_CHANNEL)
         val actions = mutableListOf(0)
+        val duration = mediaDuration ?: 0L
+        val currentDuration = mediaSession.controller.metadata.getLong(MediaMetadata.METADATA_KEY_DURATION)
         var playPauseIndex = 0
+        val shouldUseMetadata = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R;
         builder.addAction(skipToPreviousAction)
         ++playPauseIndex
         actions.add(1)
@@ -149,17 +150,20 @@ class NotificationBuilder(private val context: Context) {
             art = getArt(context, artUri, NOTIFICATION_LARGE_ICON_SIZE)
             oldArtUri = artUri
             oldArtBitmap = art
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                mediaSession.setMetadata(
-                        MediaMetadataCompat.Builder()
-                                .putString(MediaMetadata.METADATA_KEY_TITLE, media.name)
-                                .putString(MediaMetadata.METADATA_KEY_ARTIST, media.author)
-                                .putBitmap(
-                                        MediaMetadata.METADATA_KEY_ALBUM_ART, art)
-                                //.putLong(MediaMetadata.METADATA_KEY_DURATION, if(media.duration != null) media.duration!! else -1L) // 4
-                                .build())
-            }
         }
+
+        if (shouldUseMetadata &&  currentDuration != duration) {
+            mediaSession.setMetadata(
+                    MediaMetadataCompat.Builder()
+                            .putString(MediaMetadata.METADATA_KEY_TITLE, media.name)
+                            .putString(MediaMetadata.METADATA_KEY_ARTIST, media.author)
+                            .putBitmap(
+                                    MediaMetadata.METADATA_KEY_ALBUM_ART, art)
+                            .putLong(MediaMetadata.METADATA_KEY_DURATION, duration) // 4
+                            .build())
+        }
+
+
 
 
         val notifyIntent = Intent("SUA_MUSICA_FLUTTER_NOTIFICATION_CLICK").apply {
@@ -186,7 +190,7 @@ class NotificationBuilder(private val context: Context) {
             } else {
                 setDefaults(Notification.DEFAULT_LIGHTS)
             }
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            if (!shouldUseMetadata) {
                 setLargeIcon(art)
                 setContentTitle(media.name)
                 setContentText(media.author)
@@ -219,7 +223,7 @@ class NotificationBuilder(private val context: Context) {
                 .apply {
                     description = context.getString(R.string.notification_channel_description)
                     if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-                        this.setVibrationPattern(longArrayOf(0))
+                        this.vibrationPattern = longArrayOf(0)
                         this.enableVibration(true)
                     }
                 }
