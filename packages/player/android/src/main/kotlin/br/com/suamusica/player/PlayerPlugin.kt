@@ -52,12 +52,14 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
         var mediaSessionConnection: MediaSessionConnection? = null
 
         private fun createAll(messenger: BinaryMessenger, context: Context) {
-            channel = MethodChannel(messenger, "smplayer")
-            channel?.let {
-                it.setMethodCallHandler(PlayerPlugin())
-                mediaSessionConnection = MediaSessionConnection(context,
-                        ComponentName(context, MediaService::class.java),
-                        PlayerChangeNotifier(MethodChannelManager(it)))
+            if(channel == null){
+                channel = MethodChannel(messenger, "smplayer")
+                channel?.let {
+                    it.setMethodCallHandler(PlayerPlugin())
+                    mediaSessionConnection = MediaSessionConnection(context,
+                            ComponentName(context, MediaService::class.java),
+                            PlayerChangeNotifier(MethodChannelManager(it)))
+                }
             }
         }
 
