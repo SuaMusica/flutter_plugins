@@ -51,14 +51,14 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
 
         var mediaSessionConnection: MediaSessionConnection? = null
 
-        private fun createMediaSessionConnection(context: Context) {
-            mediaSessionConnection = MediaSessionConnection(context,
-                    ComponentName(context, MediaService::class.java),
-                    PlayerChangeNotifier(MethodChannelManager(channel!!)))
-        }
-
-        private fun createChanel(messenger: BinaryMessenger) {
+        private fun createAll(messenger: BinaryMessenger, context: Context) {
             channel = MethodChannel(messenger, "smplayer")
+            channel?.let {
+                it.setMethodCallHandler(PlayerPlugin())
+                mediaSessionConnection = MediaSessionConnection(context,
+                        ComponentName(context, MediaService::class.java),
+                        PlayerChangeNotifier(MethodChannelManager(it)))
+            }
         }
 
         @JvmStatic
@@ -67,7 +67,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
         @JvmStatic
         fun play() {
             if (externalPlayback!!) {
-                channel?.invokeMethod("externalPlayback.play", emptyMap<String, String>())
+                channel?.let { it.invokeMethod("externalPlayback.play", emptyMap<String, String>()) }
             } else {
                 mediaSessionConnection?.play()
             }
@@ -76,7 +76,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
         @JvmStatic
         fun pause() {
             if (externalPlayback!!) {
-                channel?.invokeMethod("externalPlayback.pause", emptyMap<String, String>())
+                channel?.let { it.invokeMethod("externalPlayback.pause", emptyMap<String, String>()) }
             } else {
                 mediaSessionConnection?.pause()
             }
@@ -84,12 +84,12 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
 
         @JvmStatic
         fun previous() {
-            channel?.invokeMethod("commandCenter.onPrevious", emptyMap<String, String>())
+            channel?.let { it.invokeMethod("commandCenter.onPrevious", emptyMap<String, String>()) }
         }
 
         @JvmStatic
         fun next() {
-            channel?.invokeMethod("commandCenter.onNext", emptyMap<String, String>())
+            channel?.let { it.invokeMethod("commandCenter.onNext", emptyMap<String, String>()) }
         }
 
         @JvmStatic
@@ -100,9 +100,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         Log.i(TAG, "onAttachedToEngine")
-        createChanel(flutterPluginBinding.binaryMessenger)
-        channel?.let { it.setMethodCallHandler(this) }
-        createMediaSessionConnection(flutterPluginBinding.applicationContext)
+        createAll(flutterPluginBinding.binaryMessenger, flutterPluginBinding.applicationContext)
     }
 
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
