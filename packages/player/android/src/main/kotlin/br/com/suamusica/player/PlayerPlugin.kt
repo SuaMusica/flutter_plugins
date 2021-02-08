@@ -1,17 +1,15 @@
 package br.com.suamusica.player
 
-import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
 import android.os.Handler
 import android.os.Message
 import android.util.Log
-import android.view.KeyEvent
 import androidx.annotation.NonNull
 import br.com.suamusica.player.MediaService.MessageType.NEXT
 import br.com.suamusica.player.MediaService.MessageType.PREVIOUS
 import io.flutter.embedding.engine.plugins.FlutterPlugin
+import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
@@ -59,6 +57,10 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
                     PlayerChangeNotifier(MethodChannelManager(channel!!)))
         }
 
+        private fun createChanel(messenger: BinaryMessenger) {
+            channel = MethodChannel(messenger, "smplayer")
+        }
+
         @JvmStatic
         var externalPlayback: Boolean? = false
 
@@ -76,7 +78,6 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
             if (externalPlayback!!) {
                 channel?.invokeMethod("externalPlayback.pause", emptyMap<String, String>())
             } else {
-
                 mediaSessionConnection?.pause()
             }
         }
@@ -95,13 +96,12 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
         fun stop() {
             mediaSessionConnection?.stop()
         }
-
     }
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         Log.i(TAG, "onAttachedToEngine")
-        channel = MethodChannel(flutterPluginBinding.binaryMessenger, "smplayer")
-        channel!!.setMethodCallHandler(this)
+        createChanel(flutterPluginBinding.binaryMessenger)
+        channel?.let { it.setMethodCallHandler(this) }
         createMediaSessionConnection(flutterPluginBinding.applicationContext)
     }
 
