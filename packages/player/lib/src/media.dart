@@ -18,6 +18,7 @@ class Media {
   final String shareUrl;
   final int playlistId;
   final bool isSpot;
+  final bool isFavorite;
   String fallbackUrl;
   Media({
     @required this.id,
@@ -36,6 +37,7 @@ class Media {
     this.playlistId,
     this.isSpot,
     this.fallbackUrl,
+    this.isFavorite,
   }) : super() {
     fallbackUrl = fallbackUrl ?? url;
   }
@@ -55,6 +57,7 @@ class Media {
         'playlist_id': playlistId,
         'fallbackUrl': fallbackUrl,
         'is_spot': isSpot,
+        'isFavorite': isFavorite,
       };
 
   @override
@@ -78,6 +81,7 @@ class Media {
           shareUrl == other.shareUrl &&
           playlistId == other.playlistId &&
           fallbackUrl == other.fallbackUrl &&
+          isFavorite == other.isFavorite &&
           isSpot == other.isSpot;
 
   @override
@@ -95,5 +99,6 @@ class Media {
         shareUrl,
         playlistId,
         isSpot,
+        isFavorite,
       ].hashCode;
 }

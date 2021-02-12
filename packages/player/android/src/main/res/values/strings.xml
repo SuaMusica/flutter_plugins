@@ -8,8 +8,10 @@
   <string name="notification_skip_to_previous">Voltar a música anterior</string>
   <string name="notification_skip_to_next">Ir a próxima música</string>
   <string name="notification_play">Tocar</string>
-  <string name="notification_pause">Pausar</string>
-  
+    <string name="notification_pause">Pausar</string>
+    <string name="notification_favorite">Favoritar</string>
+    <string name="notification_unfavorite">Desfavoritar</string>
+
   <!-- Error messages -->
   <string name="error_media_not_found">Não foi possível localizar a mídia selecionada.</string>
   
