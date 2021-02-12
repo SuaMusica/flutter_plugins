@@ -145,6 +145,7 @@ class Player {
 
   Future<int> sendNotification({
     bool isPlaying,
+    bool isFavorite,
     Duration position,
     Duration duration,
   }) async {
@@ -175,6 +176,10 @@ class Player {
       if (isPlaying != null) {
         data['isPlaying'] = isPlaying;
       }
+      if (isFavorite != null) {
+        data['isFavorite'] = isFavorite;
+      }
+
       await _invokeMethod('send_notification', data);
       return Ok;
     } else {
@@ -303,6 +308,7 @@ class Player {
         'position': position?.inMilliseconds,
         'respectSilence': respectSilence,
         'stayAwake': stayAwake,
+        'isFavorite': media.isFavorite
       });
     } else if (autoPlay) {
       _notifyBeforePlayEvent((loadOnly) => {});
@@ -320,6 +326,7 @@ class Player {
         'position': position?.inMilliseconds,
         'respectSilence': respectSilence,
         'stayAwake': stayAwake,
+        'isFavorite': media.isFavorite
       });
     } else {
       _notifyBeforePlayEvent((loadOnly) {
@@ -336,6 +343,7 @@ class Player {
           'position': position?.inMilliseconds,
           'respectSilence': respectSilence,
           'stayAwake': stayAwake,
+          'isFavorite': media.isFavorite
         });
       });
 
@@ -691,7 +699,20 @@ class Player {
       case 'externalPlayback.pause':
         print("Player: externalPlayback : Pause");
         _notifyPlayerStateChangeEvent(
-            player, EventType.EXTERNAL_PAUSE_REQUESTED, "");
+          player,
+          EventType.EXTERNAL_PAUSE_REQUESTED,
+          "",
+        );
+        break;
+      case 'commandCenter.onFavorite':
+        final favorite = callArgs['favorite'];
+        print("Player: onFavorite : $favorite");
+        _notifyPlayerStateChangeEvent(
+          player,
+          favorite ? EventType.FAVORITE_MUSIC : EventType.UNFAVORITE_MUSIC,
+          "",
+        );
+
         break;
       default:
         _log('Unknown method ${call.method} ');

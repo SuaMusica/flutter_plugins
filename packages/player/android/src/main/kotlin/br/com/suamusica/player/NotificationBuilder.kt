@@ -25,6 +25,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
+import java.util.*
 
 const val NOW_PLAYING_CHANNEL: String = "br.com.suamusica.media.NOW_PLAYING"
 const val NOW_PLAYING_NOTIFICATION: Int = 0xb339
@@ -37,19 +38,37 @@ class NotificationBuilder(private val context: Context) {
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
     private val skipToPreviousAction = NotificationCompat.Action(
-            handlePlayerIcons(R.drawable.old_prev_button, R.drawable.ic_prev_notification_player),
+            R.drawable.ic_prev_notification_player,
             context.getString(R.string.notification_skip_to_previous),
             MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_SKIP_TO_PREVIOUS))
     private val playAction = NotificationCompat.Action(
-            handlePlayerIcons(R.drawable.old_play_button, R.drawable.ic_play_notification_player),
+            R.drawable.ic_play_notification_player,
             context.getString(R.string.notification_play),
             MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_PLAY))
     private val pauseAction = NotificationCompat.Action(
-            handlePlayerIcons(R.drawable.old_pause_button, R.drawable.ic_pause_notification_player),
+            R.drawable.ic_pause_notification_player,
             context.getString(R.string.notification_pause),
             MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_PAUSE))
+
+    private val favoriteAction = NotificationCompat.Action(
+            R.drawable.ic_favorite_notification_player,
+            context.getString(R.string.notification_favorite),
+            PendingIntent.getBroadcast(context, UUID.randomUUID().hashCode()
+                    , Intent(context, MediaControlBroadcastReceiver::class.java).apply {
+                putExtra("favorite", true)
+            }, 0)
+    )
+
+    private val unFavoriteAction = NotificationCompat.Action(
+            R.drawable.ic_unfavorite_notification_player,
+            context.getString(R.string.notification_unfavorite),
+            PendingIntent.getBroadcast(context, UUID.randomUUID().hashCode(), Intent(context, MediaControlBroadcastReceiver::class.java).apply {
+                putExtra("favorite", false)
+            }, 0)
+    )
+
     private val skipToNextAction = NotificationCompat.Action(
-            handlePlayerIcons(R.drawable.old_next_button, R.drawable.ic_next_notification_player),
+            R.drawable.ic_next_notification_player,
             context.getString(R.string.notification_skip_to_next),
             MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_SKIP_TO_NEXT))
     private val stopPendingIntent =
@@ -94,7 +113,7 @@ class NotificationBuilder(private val context: Context) {
         }
     }
 
-    fun buildNotification(mediaSession: MediaSessionCompat, media: Media, onGoing: Boolean, isPlayingExternal: Boolean?, mediaDuration: Long?): Notification? {
+    fun buildNotification(mediaSession: MediaSessionCompat, media: Media, onGoing: Boolean, isPlayingExternal: Boolean?, isFavorite: Boolean?, mediaDuration: Long?): Notification? {
         if (shouldCreateNowPlayingChannel()) {
             createNowPlayingChannel()
         }
@@ -102,14 +121,16 @@ class NotificationBuilder(private val context: Context) {
         val controller = MediaControllerCompat(context, mediaSession.sessionToken)
         val playbackState = controller.playbackState
         val builder = NotificationCompat.Builder(context, NOW_PLAYING_CHANNEL)
-        val actions = mutableListOf(0)
+        val actions = if (isFavorite == null) mutableListOf(0, 1, 2) else mutableListOf(0, 2, 3) // favorite,play/pause,next
         val duration = mediaDuration ?: 0L
         val currentDuration = mediaSession.controller.metadata.getLong(MediaMetadata.METADATA_KEY_DURATION)
-        var playPauseIndex = 0
         val shouldUseMetadata = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R;
+
+        isFavorite?.let {
+            builder.addAction(if (it) unFavoriteAction else favoriteAction)
+        }
+
         builder.addAction(skipToPreviousAction)
-        ++playPauseIndex
-        actions.add(1)
 
         when {
             isPlayingExternal != null -> {
@@ -134,7 +155,6 @@ class NotificationBuilder(private val context: Context) {
         }
 
         builder.addAction(skipToNextAction)
-        actions.add(playPauseIndex + 1)
 
         val mediaStyle = MediaStyle()
                 .setCancelButtonIntent(stopPendingIntent)
@@ -152,7 +172,7 @@ class NotificationBuilder(private val context: Context) {
             oldArtBitmap = art
         }
 
-        if (shouldUseMetadata &&  currentDuration != duration) {
+        if (shouldUseMetadata && currentDuration != duration) {
             mediaSession.setMetadata(
                     MediaMetadataCompat.Builder()
                             .putString(MediaMetadata.METADATA_KEY_TITLE, media.name)
@@ -162,8 +182,6 @@ class NotificationBuilder(private val context: Context) {
                             .putLong(MediaMetadata.METADATA_KEY_DURATION, duration) // 4
                             .build())
         }
-
-
 
 
         val notifyIntent = Intent("SUA_MUSICA_FLUTTER_NOTIFICATION_CLICK").apply {
@@ -230,11 +248,5 @@ class NotificationBuilder(private val context: Context) {
 
         platformNotificationManager.createNotificationChannel(notificationChannel)
     }
-
-    private fun handlePlayerIcons(old: Int, new: Int): Int =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-                new
-            else
-                old
 }
 

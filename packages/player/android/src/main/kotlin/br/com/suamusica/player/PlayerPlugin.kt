@@ -23,6 +23,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
         const val URL_ARGUMENT = "url"
         const val COVER_URL_ARGUMENT = "coverUrl"
         const val IS_PLAYING_ARGUMENT = "isPlaying"
+        const val IS_FAVORITE_ARGUMENT = "isFavorite"
         const val POSITION_ARGUMENT = "position"
         const val LOAD_ONLY = "loadOnly"
         const val RELEASE_MODE_ARGUMENT = "releaseMode"
@@ -98,15 +99,23 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
         fun stop() {
             mediaSessionConnection?.stop()
         }
+        @JvmStatic
+        fun favorite(shouldFavorite:Boolean) {
+            Log.d(TAG, "Should Favorite: $shouldFavorite")
+            mediaSessionConnection?.favorite(shouldFavorite)
+            val args = mutableMapOf<String, Any>()
+            args["favorite"] = shouldFavorite
+            channel?.invokeMethod("commandCenter.onFavorite", args)
+        }
     }
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-        Log.i(TAG, "onAttachedToEngine")
+        Log.d(TAG, "onAttachedToEngine")
         createAll(flutterPluginBinding.binaryMessenger, flutterPluginBinding.applicationContext)
     }
 
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
-        Log.i(TAG, "onDetachedFromEngine")
+        Log.d(TAG, "onDetachedFromEngine")
         channel?.setMethodCallHandler(null)
         channel = null
     }
@@ -123,7 +132,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
     private fun handleMethodCall(call: MethodCall, response: MethodChannel.Result) {
         val cookie = call.argument<String>("cookie")
         externalPlayback = call.argument<Boolean>("externalplayback")
-        Log.i(TAG, "method: ${call.method} cookie: $cookie externalPlayback: $externalPlayback")
+        Log.d(TAG, "method: ${call.method} cookie: $cookie externalPlayback: $externalPlayback")
         when (call.method) {
             LOAD_METHOD -> {
                 val name = call.argument<String>(NAME_ARGUMENT)!!
@@ -132,20 +141,23 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
                 val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
                 val position = call.argument<Int>(POSITION_ARGUMENT)
                 val loadOnly = call.argument<Boolean>(LOAD_ONLY)!!
-                mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl))
+                var isFavorite: Boolean? = call.argument<Boolean>(IS_FAVORITE_ARGUMENT) ?: null
+
+                mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl, isFavorite))
                 position?.let {
                     mediaSessionConnection?.seek(it.toLong(), false)
                 }
-                mediaSessionConnection?.sendNotification(name, author, url, coverUrl, null)
-                Log.i(TAG, "method: ${call.method} name: $name author: $author")
+                mediaSessionConnection?.sendNotification(name, author, url, coverUrl, null, isFavorite)
+                Log.d(TAG, "method: ${call.method} name: $name author: $author")
             }
             SEND_NOTIFICATION -> {
                 val name = call.argument<String>(NAME_ARGUMENT)!!
                 val author = call.argument<String>(AUTHOR_ARGUMENT)!!
                 val url = call.argument<String>(URL_ARGUMENT)!!
                 val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
-                var isPlaying: Boolean? = call.argument<Boolean>(IS_PLAYING_ARGUMENT) ?: null
-                mediaSessionConnection?.sendNotification(name, author, url, coverUrl, isPlaying)
+                val isPlaying: Boolean? = call.argument<Boolean>(IS_PLAYING_ARGUMENT) ?: null
+                val isFavorite: Boolean? = call.argument<Boolean>(IS_FAVORITE_ARGUMENT) ?: null
+                mediaSessionConnection?.sendNotification(name, author, url, coverUrl, isPlaying, isFavorite)
             }
             PLAY_METHOD -> {
                 val name = call.argument<String>(NAME_ARGUMENT)!!
@@ -154,10 +166,10 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
                 val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
                 val position = call.argument<Int>(POSITION_ARGUMENT)
                 val loadOnly = call.argument<Boolean>(LOAD_ONLY)!!
+                val isFavorite: Boolean? = call.argument<Boolean>(IS_FAVORITE_ARGUMENT) ?: null
 
-                mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl))
-
-                Log.i(TAG, "before prepare: cookie: $cookie")
+                mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl, isFavorite))
+                Log.d(TAG, "before prepare: cookie: $cookie")
                 position?.let {
                     mediaSessionConnection?.seek(it.toLong(), true)
                 }

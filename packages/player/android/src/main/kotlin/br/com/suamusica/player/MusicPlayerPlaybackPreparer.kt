@@ -48,11 +48,14 @@ class MusicPlayerPlaybackPreparer(val mediaService: MediaService,
                         val author = it.getString("author")!!
                         val url = it.getString("url")!!
                         val coverUrl = it.getString("coverUrl")!!
-                        mediaService.prepare(cookie, Media(name, author, url, coverUrl))
+                        var isFavorite:Boolean? = null;
+                        if(it.containsKey("isFavorite")){
+                            isFavorite = it.getBoolean("isFavorite")
+                        }
+                        mediaService.prepare(cookie, Media(name, author, url, coverUrl, isFavorite))
                         return@let true
                     } ?: false
                 }
-
                 "play" -> {
                     mediaService.play()
                     true
@@ -88,11 +91,23 @@ class MusicPlayerPlaybackPreparer(val mediaService: MediaService,
                         val url = it.getString("url")!!
                         val coverUrl = it.getString("coverUrl")!!
                         var isPlaying:Boolean? = null;
+                        var isFavorite:Boolean? = null;
                         if(it.containsKey("isPlaying")){
                             isPlaying = it.getBoolean("isPlaying")
                         }
-                        mediaService.sendNotification(Media(name, author, url, coverUrl),isPlaying)
+                        if(it.containsKey("isFavorite")){
+                            isFavorite = it.getBoolean("isFavorite")
+                        }
+                        mediaService.sendNotification(Media(name, author, url, coverUrl, isFavorite),isPlaying)
                         return true
+                    } ?: false
+                }
+                "favorite" -> {
+                    return extras?.let {
+                        if(it.containsKey("isFavorite")){
+                            mediaService.setFavorite(it.getBoolean("isFavorite"))
+                        }
+                        return@let true
                     } ?: false
                 }
                 else -> false

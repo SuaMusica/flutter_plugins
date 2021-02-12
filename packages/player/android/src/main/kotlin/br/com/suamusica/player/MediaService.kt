@@ -286,7 +286,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         val url = media.url
         Log.i(TAG, "Player: URL: $url")
 
-        val uri = if(url.startsWith("/")) Uri.fromFile(File(url)) else Uri.parse(url)
+        val uri = if (url.startsWith("/")) Uri.fromFile(File(url)) else Uri.parse(url)
 
         @C.ContentType val type = Util.inferContentType(uri)
         Log.i(TAG, "Player: Type: $type HLS: ${C.TYPE_HLS}")
@@ -327,16 +327,23 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
     }
 
-    fun sendNotification(media: Media,isPlayingExternal:Boolean?) {
+    fun setFavorite(favorite: Boolean?) {
+        media?.let {
+            this.media = Media(it.name, it.author, it.url, it.coverUrl, favorite)
+            sendNotification(this.media!! , null)
+        }
+    }
+
+    fun sendNotification(media: Media, isPlayingExternal: Boolean?) {
         mediaSession?.let {
-            var onGoing:Boolean
-            onGoing = if(isPlayingExternal==null) {
+            var onGoing: Boolean
+            onGoing = if (isPlayingExternal == null) {
                 val state = player?.playbackState ?: PlaybackStateCompat.STATE_NONE
                 state == PlaybackStateCompat.STATE_PLAYING || state == PlaybackStateCompat.STATE_BUFFERING
-            } else{
+            } else {
                 isPlayingExternal
             }
-            val notification = notificationBuilder?.buildNotification(it, media, onGoing,isPlayingExternal, player?.duration)
+            val notification = notificationBuilder?.buildNotification(it, media, onGoing, isPlayingExternal, media.isFavorite, player?.duration)
             notification?.let {
                 notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
             }
@@ -426,7 +433,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
     private fun buildNotification(updatedState: Int, onGoing: Boolean): Notification? {
         return if (updatedState != PlaybackStateCompat.STATE_NONE) {
-            mediaSession?.let { notificationBuilder?.buildNotification(it, media!!, onGoing, null, player?.duration) }
+            mediaSession?.let { notificationBuilder?.buildNotification(it, media!!, onGoing, null, media!!.isFavorite, player?.duration) }
         } else {
             null
         }
