@@ -49,8 +49,8 @@ class MusicPlayerPlaybackPreparer(val mediaService: MediaService,
                         val url = it.getString("url")!!
                         val coverUrl = it.getString("coverUrl")!!
                         var isFavorite:Boolean? = null;
-                        if(it.containsKey("isFavorite")){
-                            isFavorite = it.getBoolean("isFavorite")
+                        if(it.containsKey(PlayerPlugin.IS_FAVORITE_ARGUMENT)){
+                            isFavorite = it.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT)
                         }
                         mediaService.prepare(cookie, Media(name, author, url, coverUrl, isFavorite))
                         return@let true
@@ -92,20 +92,20 @@ class MusicPlayerPlaybackPreparer(val mediaService: MediaService,
                         val coverUrl = it.getString("coverUrl")!!
                         var isPlaying:Boolean? = null;
                         var isFavorite:Boolean? = null;
-                        if(it.containsKey("isPlaying")){
-                            isPlaying = it.getBoolean("isPlaying")
+                        if(it.containsKey(PlayerPlugin.IS_PLAYING_ARGUMENT)){
+                            isPlaying = it.getBoolean(PlayerPlugin.IS_PLAYING_ARGUMENT)
                         }
-                        if(it.containsKey("isFavorite")){
-                            isFavorite = it.getBoolean("isFavorite")
+                        if(it.containsKey(PlayerPlugin.IS_FAVORITE_ARGUMENT)){
+                            isFavorite = it.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT)
                         }
                         mediaService.sendNotification(Media(name, author, url, coverUrl, isFavorite),isPlaying)
                         return true
                     } ?: false
                 }
-                "favorite" -> {
+                FAVORITE -> {
                     return extras?.let {
-                        if(it.containsKey("isFavorite")){
-                            mediaService.setFavorite(it.getBoolean("isFavorite"))
+                        if(it.containsKey(PlayerPlugin.IS_FAVORITE_ARGUMENT)){
+                            mediaService.setFavorite(it.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT))
                         }
                         return@let true
                     } ?: false

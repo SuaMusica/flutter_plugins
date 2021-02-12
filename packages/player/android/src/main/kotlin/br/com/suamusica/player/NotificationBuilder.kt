@@ -29,6 +29,7 @@ import java.util.*
 
 const val NOW_PLAYING_CHANNEL: String = "br.com.suamusica.media.NOW_PLAYING"
 const val NOW_PLAYING_NOTIFICATION: Int = 0xb339
+const val FAVORITE: String = "favorite"
 
 /**
  * Helper class to encapsulate code for building notifications.
@@ -55,7 +56,7 @@ class NotificationBuilder(private val context: Context) {
             context.getString(R.string.notification_favorite),
             PendingIntent.getBroadcast(context, UUID.randomUUID().hashCode()
                     , Intent(context, MediaControlBroadcastReceiver::class.java).apply {
-                putExtra("favorite", true)
+                putExtra(FAVORITE, true)
             }, 0)
     )
 
@@ -63,7 +64,7 @@ class NotificationBuilder(private val context: Context) {
             R.drawable.ic_unfavorite_notification_player,
             context.getString(R.string.notification_unfavorite),
             PendingIntent.getBroadcast(context, UUID.randomUUID().hashCode(), Intent(context, MediaControlBroadcastReceiver::class.java).apply {
-                putExtra("favorite", false)
+                putExtra(FAVORITE, false)
             }, 0)
     )
 

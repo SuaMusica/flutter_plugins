@@ -14,6 +14,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 
+
 class PlayerPlugin : MethodCallHandler, FlutterPlugin {
 
     companion object {
@@ -104,7 +105,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
             Log.d(TAG, "Should Favorite: $shouldFavorite")
             mediaSessionConnection?.favorite(shouldFavorite)
             val args = mutableMapOf<String, Any>()
-            args["favorite"] = shouldFavorite
+            args[FAVORITE] = shouldFavorite
             channel?.invokeMethod("commandCenter.onFavorite", args)
         }
     }

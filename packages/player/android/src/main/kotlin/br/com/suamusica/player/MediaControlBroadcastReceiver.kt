@@ -8,7 +8,7 @@ import android.view.KeyEvent
 
 class MediaControlBroadcastReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
-        if (intent == null || (Intent.ACTION_MEDIA_BUTTON != intent.action && !intent.hasExtra(Intent.EXTRA_KEY_EVENT) && !intent.hasExtra("favorite"))) {
+        if (intent == null || (Intent.ACTION_MEDIA_BUTTON != intent.action && !intent.hasExtra(Intent.EXTRA_KEY_EVENT) && !intent.hasExtra(FAVORITE))) {
             return
         }
         if (Intent.ACTION_MEDIA_BUTTON == intent.action) {
@@ -35,8 +35,8 @@ class MediaControlBroadcastReceiver : BroadcastReceiver() {
                 }
             }
         } else {
-            if (intent.hasExtra("favorite")) {
-                PlayerPlugin.favorite(intent.getBooleanExtra("favorite", false)
+            if (intent.hasExtra(FAVORITE)) {
+                PlayerPlugin.favorite(intent.getBooleanExtra(FAVORITE, false)
                 )
             }
 

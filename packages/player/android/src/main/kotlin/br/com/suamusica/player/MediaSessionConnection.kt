@@ -52,7 +52,7 @@ class MediaSessionConnection(
         bundle.putString("url", media.url)
         bundle.putString("coverUrl", media.coverUrl)
         if (media.isFavorite != null) {
-            bundle.putBoolean("isFavorite", media.isFavorite)
+            bundle.putBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT, media.isFavorite)
         }
         sendCommand("prepare", bundle)
     }
@@ -67,8 +67,8 @@ class MediaSessionConnection(
 
     fun favorite(shouldFavorite:Boolean) {
         val bundle = Bundle()
-        bundle.putBoolean("isFavorite", shouldFavorite)
-        sendCommand("favorite", bundle)
+        bundle.putBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT, shouldFavorite)
+        sendCommand(FAVORITE, bundle)
     }
 
     fun stop() {
@@ -93,10 +93,10 @@ class MediaSessionConnection(
         bundle.putString("url", url)
         bundle.putString("coverUrl", coverUrl)
         if (isPlaying != null) {
-            bundle.putBoolean("isPlaying", isPlaying)
+            bundle.putBoolean(PlayerPlugin.IS_PLAYING_ARGUMENT, isPlaying)
         }
         if (isFavorite != null) {
-            bundle.putBoolean("isPlaying", isFavorite)
+            bundle.putBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT, isFavorite)
         }
         sendCommand("send_notification", bundle)
     }
