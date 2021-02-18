@@ -7,7 +7,7 @@
 #import "smplayer-Swift.h"
 #endif
 
-#import "Plugin.h"
+#import "PlayerPlugin.h"
 #import "NSString+MD5.h"
 
 #import <UIKit/UIKit.h>
@@ -61,7 +61,7 @@ NSString *MINUTES_OF_SILENCE = @"";
 
 BOOL notifiedBufferEmptyWithNoConnection = false;
 
-@interface Plugin()
+@interface PlayerPlugin()
 -(int) pause: (NSString *) playerId;
 -(void) stop: (NSString *) playerId;
 -(int) seek: (NSString *) playerId time: (CMTime) time;
@@ -70,7 +70,7 @@ BOOL notifiedBufferEmptyWithNoConnection = false;
 -(void) onTimeInterval: (NSString *) playerId time: (CMTime) time;
 @end
 
-@implementation Plugin {
+@implementation PlayerPlugin {
     FlutterResult _result;
 }
 
@@ -78,7 +78,7 @@ typedef void (^VoidCallback)(NSString * playerId);
 
 NSMutableSet *timeobservers;
 FlutterMethodChannel *_channel_player = nil;
-Plugin* instance = nil;
+PlayerPlugin* instance = nil;
 NSString* _playerId = nil;
 BOOL alreadyInAudioSession = false;
 BOOL isLoadingComplete = false;
@@ -118,12 +118,12 @@ PlaylistItem *currentItem = nil;
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
     @synchronized(self) {
         if (instance == nil) {
-            instance = [[Plugin alloc] init];
+            instance = [[PlayerPlugin alloc] init];
             FlutterMethodChannel* channel = [FlutterMethodChannel
                                              methodChannelWithName:CHANNEL_NAME
                                              binaryMessenger:[registrar messenger]];
             [registrar addMethodCallDelegate:instance channel:channel];
-            [Plugin saveDefaultCover:registrar];
+            [PlayerPlugin saveDefaultCover:registrar];
             _channel_player = channel;
             
             NSString* minutesOfSilenceKey = [registrar lookupKeyForAsset:@"assets/30-minutes-of-silence.mp3"];
