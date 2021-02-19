@@ -1,6 +1,6 @@
 import Foundation
 import SnowplowTracker
-
+import UUIDKit
 class SnowplowUtils {
     static func trackScreenViewWithTracker(with tracker: SPTracker, andScreenName screenName: String) {
         let event = SPScreenView.build({ (builder : SPScreenViewBuilder?) -> Void in
@@ -9,13 +9,22 @@ class SnowplowUtils {
         tracker.track(event)
     }
 
-    static func trackStructuredEventWithTracker(with tracker: SPTracker, andCategory category: String, andAction action: String, andLabel label: String,  andProperty property: String,andValue value: Int) {
+    static func trackStructuredEventWithTracker(with tracker: SPTracker, andCategory category: String, andAction action: String, andLabel label: String,  andProperty property: String,andValue value: Int, andPagename pagename: String) {
         let event = SPStructured.build({ (builder : SPStructuredBuilder?) -> Void in
             builder!.setCategory(category)
             builder!.setAction(action)
             builder!.setLabel(label)
             if(value>0){
                 builder!.setValue(Double(value))
+            }
+            if(pagename != ""){
+                let id = UUID.v3(name: pagename, namespace: .dns)
+                let data : [String:Any] = ["name": pagename, "id": id]
+                let eventData = SPSelfDescribingJson(schema: "iglu:com.snowplowanalytics.mobile/screen/jsonschema/1-0-0", andData: data as NSObject?)
+                var contexts: [SPSelfDescribingJson] = []
+                contexts.append(eventData!)
+                builder!.setContexts(NSMutableArray(array: contexts))
+                // builder!.customContext(NSMutableArray(array: contexts))
             }
             builder!.setProperty(property)
         })
