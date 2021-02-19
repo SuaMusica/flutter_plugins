@@ -2,10 +2,13 @@ package com.suamusica.snowplow;
 
 import com.snowplowanalytics.snowplow.tracker.Subject;
 import com.snowplowanalytics.snowplow.tracker.Tracker;
+import com.snowplowanalytics.snowplow.tracker.constants.Parameters;
+import com.snowplowanalytics.snowplow.tracker.constants.TrackerConstants;
 import com.snowplowanalytics.snowplow.tracker.events.SelfDescribing;
 import com.snowplowanalytics.snowplow.tracker.events.Structured;
 import com.snowplowanalytics.snowplow.tracker.payload.SelfDescribingJson;
 import com.snowplowanalytics.snowplow.tracker.events.ScreenView;
+import com.snowplowanalytics.snowplow.tracker.payload.TrackerPayload;
 
 import android.content.Context;
 import android.util.Log;
@@ -85,7 +88,6 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
 
     private void trackEvent(final MethodChannel.Result result, String category, String action,
                             String label, String property, Integer value, String pageName) {
-
         Structured.Builder struct =
                 Structured.builder().category(category).action(action).label(label).property(property);
         if (value > 0) {
@@ -93,15 +95,15 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
         }
         if (pageName != "") {
             List<SelfDescribingJson> contexts = new ArrayList<>();
-            Map<String, Object> eventMap = new HashMap<>();
-            eventMap.put("name", pageName);
-            eventMap.put("id", UUID.nameUUIDFromBytes(pageName.getBytes()).toString());
-            // Create your event data
-            contexts.add(new SelfDescribingJson(
-                    "iglu:com.snowplowanalytics.mobile/screen/jsonschema/1-0-0", eventMap));
-            struct.customContext(contexts);
+            TrackerPayload contextPayload = new TrackerPayload();
+            contextPayload.add(Parameters.SCREEN_ID, UUID.nameUUIDFromBytes(pageName.getBytes()).toString());
+            contextPayload.add(Parameters.SCREEN_NAME, pageName);
+            contexts.add(new SelfDescribingJson("pageName",TrackerConstants.SCHEMA_SCREEN, contextPayload));
+            // struct.customContext(contexts);
+            tracker.addGlobalContext(contexts.get(0));
         }
         tracker.track(struct.build());
+        tracker.removeGlobalContext("pageName");
         result.success(true);
     }
 
