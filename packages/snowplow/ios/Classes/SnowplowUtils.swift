@@ -1,6 +1,6 @@
 import Foundation
 import SnowplowTracker
-import UUIDKit
+import UUIDNamespaces
 class SnowplowUtils {
     static func trackScreenViewWithTracker(with tracker: SPTracker, andScreenName screenName: String) {
         let event = SPScreenView.build({ (builder : SPScreenViewBuilder?) -> Void in
@@ -18,14 +18,21 @@ class SnowplowUtils {
                 builder!.setValue(Double(value))
             }
             if(pagename != ""){
-                let id = UUID.v3(name: pagename, namespace: .dns)
-                let data : [String:Any] = ["name": pagename, "id": id]
+                let id = UUID(name: pagename, namespace: UUID.DNS, version: .v3)
+                print("TESTE2" + "pagename: " + pagename + " id: " + id.uuidString);
+                let data : [String:Any] = ["name": pagename, "id": id.uuidString]
                 let eventData = SPSelfDescribingJson(schema: "iglu:com.snowplowanalytics.mobile/screen/jsonschema/1-0-0", andData: data as NSObject?)
                 var contexts: [SPSelfDescribingJson] = []
                 contexts.append(eventData!)
                 builder!.setContexts(NSMutableArray(array: contexts))
-                // builder!.customContext(NSMutableArray(array: contexts))
             }
+//            //################
+//            if (pageName != "") {
+//            Log.i("TESTE2", "pagename: "+ pageName);
+//            tracker.getScreenState().updateScreenState(UUID.nameUUIDFromBytes(pageName.getBytes()).toString(), pageName, "", "");
+//        }
+            //################
+            
             builder!.setProperty(property)
         })
         tracker.track(event)
