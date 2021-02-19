@@ -94,16 +94,9 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
             struct.value(Double.valueOf(value));
         }
         if (pageName != "") {
-            List<SelfDescribingJson> contexts = new ArrayList<>();
-            TrackerPayload contextPayload = new TrackerPayload();
-            contextPayload.add(Parameters.SCREEN_ID, UUID.nameUUIDFromBytes(pageName.getBytes()).toString());
-            contextPayload.add(Parameters.SCREEN_NAME, pageName);
-            contexts.add(new SelfDescribingJson("pageName",TrackerConstants.SCHEMA_SCREEN, contextPayload));
-            // struct.customContext(contexts);
-            tracker.addGlobalContext(contexts.get(0));
+            tracker.getScreenState().updateScreenState(UUID.nameUUIDFromBytes(pageName.getBytes()).toString(), pageName, "", "");
         }
         tracker.track(struct.build());
-        tracker.removeGlobalContext("pageName");
         result.success(true);
     }
 
