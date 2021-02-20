@@ -47,7 +47,8 @@ public class SwiftSnowplowPlugin: NSObject, FlutterPlugin {
           let action = args["action"] as! String;
           let label = args["label"] as! String;
           let value = args["value"] as! Int;
-          let property = args["property"] as! String;          let pagename = args["pageName"] as! String;
+          let property = args["property"] as! String;
+          let pagename = args["pageName"] as! String;
           trackEvent(result: result, category, action, label, property, value, pagename);
         default:
             result(FlutterError(code: "-1", message: "Operation not supported", details: nil))
