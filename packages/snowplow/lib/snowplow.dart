@@ -50,6 +50,7 @@ class Snowplow {
     String label,
     String property,
     int value,
+    String pageName,
   }) async {
     try {
       Map<String, dynamic> args = <String, dynamic>{
@@ -57,7 +58,8 @@ class Snowplow {
         'action': action,
         'label': label,
         'property': property,
-        'value': value
+        'value': value,
+        'pageName': pageName,
       };
       return _channel.invokeMethod('trackEvent', args);
     } catch (e) {
