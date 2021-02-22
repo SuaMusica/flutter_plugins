@@ -1,6 +1,6 @@
 import Foundation
 import SnowplowTracker
-import UUIDNamespaces
+
 class SnowplowUtils {
     static func trackScreenViewWithTracker(with tracker: SPTracker, andScreenName screenName: String) {
         let event = SPScreenView.build({ (builder : SPScreenViewBuilder?) -> Void in
