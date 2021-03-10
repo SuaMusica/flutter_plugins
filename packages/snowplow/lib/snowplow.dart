@@ -61,7 +61,7 @@ class Snowplow {
         'action': action ?? "",
         'label': label ?? "",
         'property': property ?? "",
-        'value': value ?? "",
+        'value': value ?? 0,
         'pageName': pageName ?? "",
       };
       return await _channel.invokeMethod('trackEvent', args) ?? false;
