@@ -94,9 +94,7 @@ class Migration {
 
         break;
       case 'androidDownloadedContent':
-        if (instance != null &&
-            instance._androidDownloadedStreamController != null &&
-            !instance._androidDownloadedStreamController.isClosed) {
+        if (!instance._androidDownloadedStreamController.isClosed) {
           final content = AndroidDownloadedContent.fromJson(
               (call.arguments as Map<dynamic, dynamic>));
 
