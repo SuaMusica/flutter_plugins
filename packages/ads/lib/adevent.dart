@@ -1,30 +1,30 @@
-import 'package:flutter/material.dart';
+import 'package:collection/collection.dart' show IterableExtension;
 import 'package:smads/adevent_type.dart';
 
 class AdEvent {
   AdEvent({
-    @required this.type,
-    @required this.id,
-    @required this.title,
-    @required this.description,
-    @required this.system,
-    @required this.advertiserName,
-    @required this.contentType,
-    @required this.creativeAdID,
-    @required this.creativeID,
-    @required this.dealID,
+    required this.type,
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.system,
+    required this.advertiserName,
+    required this.contentType,
+    required this.creativeAdID,
+    required this.creativeID,
+    required this.dealID,
   });
 
-  final AdEventType type;
-  final String id;
-  final String title;
-  final String description;
-  final String system;
-  final String advertiserName;
-  final String contentType;
-  final String creativeAdID;
-  final String creativeID;
-  final String dealID;
+  final AdEventType? type;
+  final String? id;
+  final String? title;
+  final String? description;
+  final String? system;
+  final String? advertiserName;
+  final String? contentType;
+  final String? creativeAdID;
+  final String? creativeID;
+  final String? dealID;
 
   @override
   String toString() =>
@@ -53,7 +53,7 @@ class AdEvent {
 
   factory AdEvent.fromMap(Map<dynamic, dynamic> args) {
     final type = AdEventType.values
-        .firstWhere((e) => e.toString().endsWith(args["type"]), orElse: () => null);
+        .firstWhereOrNull((e) => e.toString().endsWith(args["type"]));
     final id = args["ad.id"];
     final title = args["ad.title"];
     final description = args["ad.description"];

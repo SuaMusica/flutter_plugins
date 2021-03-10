@@ -1,13 +1,12 @@
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:smads/adevent.dart';
 
 class SMAds {
   SMAds({
-    @required this.adUrl,
-    @required this.contentUrl,
+    required this.adUrl,
+    required this.contentUrl,
   });
 
   final adUrl;
@@ -21,37 +20,37 @@ class SMAds {
   static final MethodChannel _channel = MethodChannel('smads')
     ..setMethodCallHandler(platformCallHandler);
 
-  static SMAds lastAd;
-  Function onComplete;
-  Function(int) onError;
+  static SMAds? lastAd;
+  Function? onComplete;
+  Function(int?)? onError;
 
   final StreamController<AdEvent> _eventStreamController =
       StreamController<AdEvent>();
 
-  Stream<AdEvent> _stream;
+  Stream<AdEvent>? _stream;
 
-  Stream<AdEvent> get onEvent {
+  Stream<AdEvent>? get onEvent {
     if (_stream == null) {
       _stream = _eventStreamController.stream.asBroadcastStream();
     }
     return _stream;
   }
 
-  Future<int> load(
+  Future<int?> load(
     Map<String, dynamic> args, {
-    Function onComplete,
-    Function(int) onError,
+    Function? onComplete,
+    Function(int?)? onError,
   }) async {
     this.onComplete = onComplete;
     this.onError = onError;
     SMAds.lastAd = this;
     args["__URL__"] = adUrl;
     args["__CONTENT__"] = contentUrl;
-    final int result = await _channel.invokeMethod('load', args);
+    final int? result = await _channel.invokeMethod('load', args);
     return result;
   }
 
-  Future<int> get screenStatus async =>
+  Future<int?> get screenStatus async =>
       await _channel.invokeMethod('screen_status');
 
   static void _log(String param) {
@@ -71,31 +70,29 @@ class SMAds {
   }
 
   static Future<void> _doHandlePlatformCall(MethodCall call) async {
-    final Map<dynamic, dynamic> callArgs =
-        call.arguments as Map<dynamic, dynamic>;
+    final Map<dynamic, dynamic>? callArgs =
+        call.arguments as Map<dynamic, dynamic>?;
     _log('_platformCallHandler call ${call.method} $callArgs');
 
     switch (call.method) {
       case 'onAdEvent':
-        if (lastAd != null &&
-            lastAd._eventStreamController != null &&
-            !lastAd._eventStreamController.isClosed) {
-          lastAd._eventStreamController.add(AdEvent.fromMap(callArgs));
+        if (lastAd != null && !lastAd!._eventStreamController.isClosed) {
+          lastAd!._eventStreamController.add(AdEvent.fromMap(callArgs!));
         }
 
         break;
 
       case 'onComplete':
-        if (lastAd != null && lastAd.onComplete != null) {
-          lastAd.onComplete();
+        if (lastAd != null && lastAd!.onComplete != null) {
+          lastAd!.onComplete!();
         }
 
         break;
 
       case 'onError':
-        if (lastAd != null && lastAd.onError != null) {
-          final error = callArgs["error"] as int;
-          lastAd.onError(error);
+        if (lastAd != null && lastAd!.onError != null) {
+          final error = callArgs!["error"] as int?;
+          lastAd!.onError!(error);
         }
 
         break;

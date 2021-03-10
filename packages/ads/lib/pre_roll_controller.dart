@@ -8,11 +8,9 @@ class PreRollController extends PreRollEventHandler {
   PreRollController(Function(PreRollEvent, Map<String, dynamic>) listener)
       : _channel = MethodChannel('suamusica/pre_roll'),
         super(listener) {
-    if (listener != null) {
-      _channel.setMethodCallHandler(handleEvent);
-    }
+    _channel.setMethodCallHandler(handleEvent);
   }
-  Future<int> get screenStatus async =>
+  Future<int?> get screenStatus async =>
       await _channel.invokeMethod('screen_status');
 
   void pause() {
@@ -27,7 +25,7 @@ class PreRollController extends PreRollEventHandler {
     _channel.invokeMethod("skip");
   }
 
-  void load(Map<String, dynamic> args) {
+  void load(Map<String, dynamic>? args) {
     _channel.invokeMethod("load", args ?? {});
   }
 
