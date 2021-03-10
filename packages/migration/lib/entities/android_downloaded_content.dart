@@ -13,10 +13,10 @@ class AndroidDownloadedContent {
     this.medias,
     this.id3,
   });
-  final List<Album> albums;
-  final List<Playlist> playlists;
-  final List<Media> medias;
-  final List<Id3> id3;
+  final List<Album>? albums;
+  final List<Playlist>? playlists;
+  final List<Media>? medias;
+  final List<Id3>? id3;
   factory AndroidDownloadedContent.fromJson(Map<dynamic, dynamic> json) =>
       AndroidDownloadedContent(
         albums: (json['albums'] as List<dynamic>)

@@ -7,14 +7,14 @@ class Id3 {
     this.path,
   }) : super();
 
-  final String artist;
-  final String album;
-  final String path;
+  final String? artist;
+  final String? album;
+  final String? path;
 
   factory Id3.fromJson(Map<dynamic, dynamic> json) => Id3(
-        artist: json['artist'] as String,
-        album: json['album'] as String,
-        path: json['path'] as String,
+        artist: json['artist'] ?? "",
+        album: json['album'] ?? "",
+        path: json['path'] ?? "",
       );
 
   Map<String, dynamic> toJson() => {
