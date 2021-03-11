@@ -12,17 +12,17 @@ class ScannedMedia {
       this.createdAt,
       this.updatedAt);
 
-  int mediaId;
-  String title;
-  String artist;
-  int albumId;
-  String album;
-  String track;
-  String path;
-  int playlistId;
-  String albumCoverPath;
-  DateTime createdAt;
-  DateTime updatedAt;
+  int? mediaId;
+  String? title;
+  String? artist;
+  int? albumId;
+  String? album;
+  String? track;
+  String? path;
+  int? playlistId;
+  String? albumCoverPath;
+  DateTime? createdAt;
+  DateTime? updatedAt;
 
   @override
   String toString() {

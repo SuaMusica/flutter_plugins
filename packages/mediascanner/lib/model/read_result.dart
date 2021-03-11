@@ -2,12 +2,12 @@ import 'package:mediascanner/model/scanned_media.dart';
 
 class ReadResult {
   ReadResult(
-    this.scannedMedia,
-    this.error,
-  );
+      this.scannedMedia,
+      this.error,
+      );
 
   ScannedMedia scannedMedia;
-  String error;
+  String? error;
 
   @override
   String toString() {
@@ -20,7 +20,7 @@ class ReadResult {
   static ReadResult fromMap(Map<dynamic, dynamic> map) {
     return ReadResult(
       ScannedMedia.fromMap(map["media"] as Map<dynamic, dynamic>),
-      map["error"] as String,
+      map["error"],
     );
   }
 }

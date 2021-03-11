@@ -1,11 +1,11 @@
 name: mediascanner
 description: A new flutter plugin project.
 version: 0.0.1
-author:
-homepage:
+author: Sua Música
+homepage: https://github.com/suamusica
 
 environment:
-  sdk: ">=2.7.0 <3.0.0"
+  sdk: ">=2.12.0 <3.0.0"
   flutter: ">=1.17.0 <2.0.0"
 
 dependencies:

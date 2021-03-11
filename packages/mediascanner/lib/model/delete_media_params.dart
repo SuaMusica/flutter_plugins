@@ -7,8 +7,8 @@ class DeleteMediaParams {
   DeleteMediaParams(this.mediaType, this.id, this.fullPath);
 
   MediaType mediaType;
-  int id;
-  String fullPath;
+  int? id;
+  String? fullPath;
 
   Map<String, dynamic> toChannelParams() {
     return {
