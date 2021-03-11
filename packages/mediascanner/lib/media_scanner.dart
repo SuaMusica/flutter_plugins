@@ -15,38 +15,36 @@ const URI = "uri";
 class MediaScanner {
   MediaScanner._();
 
-  static MediaScanner _instance;
+  static MediaScanner? _instance;
 
   static MediaScanner get instance {
-    if (_instance == null) {
-      _instance = MediaScanner._();
-    }
-    return _instance;
+    _instance ??= MediaScanner._();
+    return _instance!;
   }
 
   static final MethodChannel _channel = const MethodChannel('MediaScanner')
     ..setMethodCallHandler(_callbackHandler);
 
   static Future<String> get platformVersion async {
-    final String version = await _channel.invokeMethod('getPlatformVersion');
+    final String version = await _channel.invokeMethod('getPlatformVersion') ?? '';
     return version;
   }
 
   final StreamController<ScannedMedia> _onScannedMediaStreamController =
-      StreamController<ScannedMedia>.broadcast();
+  StreamController<ScannedMedia>.broadcast();
 
   Stream<ScannedMedia> get onScannedMediaStream =>
       _onScannedMediaStreamController.stream;
 
   final StreamController<List<ScannedMedia>>
-      _onListScannedMediaStreamController =
-      StreamController<List<ScannedMedia>>.broadcast();
+  _onListScannedMediaStreamController =
+  StreamController<List<ScannedMedia>>.broadcast();
 
   Stream<List<ScannedMedia>> get onListScannedMediaStream =>
       _onListScannedMediaStreamController.stream;
 
   final StreamController<ReadResult> _onReadStreamController =
-      StreamController<ReadResult>.broadcast();
+  StreamController<ReadResult>.broadcast();
 
   Stream<ReadResult> get onReadStream => _onReadStreamController.stream;
 
@@ -57,8 +55,7 @@ class MediaScanner {
   }
 
   Future<bool> scan(MediaScanParams params) async {
-    final result =
-        await _channel.invokeMethod("scan_media", params.toChannelParams());
+    final result = await _channel.invokeMethod<int?>("scan_media", params.toChannelParams()) ?? 0;
     return result > 0;
   }
 
@@ -66,14 +63,12 @@ class MediaScanner {
     final params = {
       URI: uri,
     };
-
-    final result = await _channel.invokeMethod("read", params);
+    final result = await _channel.invokeMethod<int?>("read", params) ?? 0;
     return result > 0;
   }
 
   Future<bool> delete(DeleteMediaParams params) async {
-    final result =
-        await _channel.invokeMethod("delete_media", params.toChannelParams());
+    final result = await _channel.invokeMethod<int?>("delete_media", params.toChannelParams()) ?? 0;
     return result > 0;
   }
 
@@ -97,7 +92,7 @@ class MediaScanner {
   static void _onMediaScanned(arguments) {
     print("_onMediaScanned($arguments)");
     final scannedMedia =
-        ScannedMedia.fromMap(arguments as Map<dynamic, dynamic>);
+    ScannedMedia.fromMap(arguments as Map<dynamic, dynamic>);
     instance._onScannedMediaStreamController.add(scannedMedia);
   }
 

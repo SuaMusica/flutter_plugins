@@ -4,11 +4,11 @@ const SUPPORTED_EXTENSIONS = "supported_extensions";
 
 class MediaScanParams {
   MediaScanParams(
-    this.mediaType,
-    this.supportedExtensions,
-    this.databaseName,
-    this.databaseVersion,
-  );
+      this.mediaType,
+      this.supportedExtensions,
+      this.databaseName,
+      this.databaseVersion,
+      );
 
   MediaType mediaType;
   List<String> supportedExtensions;
