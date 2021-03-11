@@ -2,9 +2,9 @@ import 'package:mediascanner/model/scanned_media.dart';
 
 class ReadResult {
   ReadResult(
-      this.scannedMedia,
-      this.error,
-      );
+    this.scannedMedia,
+    this.error,
+  );
 
   ScannedMedia scannedMedia;
   String? error;
