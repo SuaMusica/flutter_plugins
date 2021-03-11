@@ -5,8 +5,8 @@ import 'package:smads/adevent.dart';
 
 class SMAds {
   SMAds({
-    required this.adUrl,
-    required this.contentUrl,
+    this.adUrl,
+    this.contentUrl,
   });
 
   final adUrl;
@@ -27,7 +27,7 @@ class SMAds {
   final StreamController<AdEvent> _eventStreamController =
       StreamController<AdEvent>();
 
-  Stream<AdEvent> _stream;
+  late Stream<AdEvent> _stream;
 
   Stream<AdEvent> get onEvent {
     _stream = _eventStreamController.stream.asBroadcastStream();
@@ -69,30 +69,23 @@ class SMAds {
   }
 
   static Future<void> _doHandlePlatformCall(MethodCall call) async {
-    final Map<dynamic, dynamic>? callArgs =
-        call.arguments as Map<dynamic, dynamic>?;
+    final Map<dynamic, dynamic> callArgs = call.arguments;
     _log('_platformCallHandler call ${call.method} $callArgs');
 
     switch (call.method) {
       case 'onAdEvent':
-        if (lastAd != null && !lastAd!._eventStreamController.isClosed) {
-          lastAd!._eventStreamController.add(AdEvent.fromMap(callArgs!));
-        }
+        lastAd?._eventStreamController.add(AdEvent.fromMap(callArgs));
 
         break;
 
       case 'onComplete':
-        if (lastAd != null && lastAd!.onComplete != null) {
-          lastAd!.onComplete!();
-        }
+        lastAd?.onComplete?.call();
 
         break;
 
       case 'onError':
-        if (lastAd != null && lastAd!.onError != null) {
-          final error = callArgs!["error"] as int?;
-          lastAd!.onError!(error);
-        }
+        final error = callArgs["error"];
+        lastAd!.onError?.call(error);
 
         break;
 
