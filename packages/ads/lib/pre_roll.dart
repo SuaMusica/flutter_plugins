@@ -80,6 +80,6 @@ class PreRoll extends StatelessWidget {
   }
 
   void _onPlatformViewCreated(int id) {
-    controller!.play();
+    controller?.play();
   }
 }

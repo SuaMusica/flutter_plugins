@@ -12,7 +12,7 @@ abstract class PreRollEventHandler {
   Future<dynamic> handleEvent(MethodCall call) async {
     if (call.method == "onAdEvent") {
       final args = Map<String, dynamic>.from(call.arguments);
-      final type = args["type"] as String?;
+      final String? type = args["type"];
       _listener(type!.toPreRollEvent(), args);
     }
     return null;

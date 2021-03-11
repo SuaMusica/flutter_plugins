@@ -10,7 +10,7 @@ class PreRollController extends PreRollEventHandler {
         super(listener) {
     _channel.setMethodCallHandler(handleEvent);
   }
-  Future<int?> get screenStatus async =>
+  Future<int> get screenStatus async =>
       await _channel.invokeMethod('screen_status');
 
   void pause() {

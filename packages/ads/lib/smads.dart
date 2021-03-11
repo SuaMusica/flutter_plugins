@@ -27,12 +27,11 @@ class SMAds {
   final StreamController<AdEvent> _eventStreamController =
       StreamController<AdEvent>();
 
-  Stream<AdEvent>? _stream;
+  Stream<AdEvent> _stream;
 
-  Stream<AdEvent>? get onEvent {
-    if (_stream == null) {
-      _stream = _eventStreamController.stream.asBroadcastStream();
-    }
+  Stream<AdEvent> get onEvent {
+    _stream = _eventStreamController.stream.asBroadcastStream();
+
     return _stream;
   }
 
@@ -46,7 +45,7 @@ class SMAds {
     SMAds.lastAd = this;
     args["__URL__"] = adUrl;
     args["__CONTENT__"] = contentUrl;
-    final int? result = await _channel.invokeMethod('load', args);
+    final int result = await _channel.invokeMethod('load', args) ?? 0;
     return result;
   }
 
