@@ -1,13 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
-import 'package:flutter/material.dart';
 
 class Comscore {
   static const MethodChannel _channel = const MethodChannel('comscore');
 
   static Future<bool> initialize({
-    @required String publisherId,
+    required String publisherId,
     bool secureTransmissionEnabled = false,
   }) async {
     Map<String, dynamic> arguments = const {};

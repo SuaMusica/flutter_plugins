@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:comscore/comscore.dart';
+import '../lib/comscore.dart';
 
 void main() {
   const MethodChannel channel = MethodChannel('comscore');
