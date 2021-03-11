@@ -17,7 +17,7 @@ class BandLevelRange {
 class BandData {
   BandData(this.centerBandFrequencyList, this.bandLevelRange);
 
-  List<int> centerBandFrequencyList = [];
+  List<int> centerBandFrequencyList;
   BandLevelRange bandLevelRange;
 }
 
