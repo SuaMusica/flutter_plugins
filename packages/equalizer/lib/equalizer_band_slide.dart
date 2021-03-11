@@ -16,12 +16,12 @@ class EqualizerBandSlideGroup extends StatelessWidget {
           return Container();
         }
 
-        final bandData = snapshot.data!;
-        final bandLevelRange = bandData.bandLevelRange;
+        final bandData = snapshot.data;
+        final bandLevelRange = bandData!.bandLevelRange;
         final divisions =
             bandLevelRange.max.toInt() - bandLevelRange.min.toInt();
 
-        final centerBandFrequencyList = bandData.centerBandFrequencyList!;
+        final centerBandFrequencyList = bandData.centerBandFrequencyList;
         final width = (MediaQuery.of(context).size.width - 128) /
             centerBandFrequencyList.length;
         var bandIdCount = 0;
