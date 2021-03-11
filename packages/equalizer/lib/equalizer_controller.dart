@@ -17,13 +17,12 @@ class BandLevelRange {
 class BandData {
   BandData(this.centerBandFrequencyList, this.bandLevelRange);
 
-  List<int> centerBandFrequencyList;
+  List<int> centerBandFrequencyList = [];
   BandLevelRange bandLevelRange;
 }
 
 class EqualizerController {
-
-  EqualizerController({ @required int audioSessionId }) {
+  EqualizerController({required int audioSessionId}) {
     this.init(audioSessionId);
   }
 
@@ -32,10 +31,11 @@ class EqualizerController {
     await _notifyInitialData();
   }
 
-  ValueNotifier equalizerPresetNotifier = ValueNotifier<List<Preset>>([]);
-  ValueNotifier enabledNotifier = ValueNotifier<bool>(false);
-  ValueNotifier bandLevelNotifier = ValueNotifier<List<int>>([]);
-  ValueNotifier currentPresetPositionNotifier = ValueNotifier<int>(0);
+  ValueNotifier<List<Preset>> equalizerPresetNotifier =
+      ValueNotifier<List<Preset>>([]);
+  ValueNotifier<bool> enabledNotifier = ValueNotifier<bool>(false);
+  ValueNotifier<List<int>> bandLevelNotifier = ValueNotifier<List<int>>([]);
+  ValueNotifier<int> currentPresetPositionNotifier = ValueNotifier<int>(0);
 
   Future _notifyInitialData() async {
     await _notifyPresetNames();
@@ -45,7 +45,7 @@ class EqualizerController {
   }
 
   Future _notifyBandLevel() async {
-    final centerBandFrequencyList = await Equalizer.getCenterBandFreqs();
+    final centerBandFrequencyList = await (Equalizer.getCenterBandFreqs());
     final List<int> bandLevelList = [];
     for (var i = 0; i < centerBandFrequencyList.length; i++) {
       final bandLevel = await Equalizer.getBandLevel(i);
@@ -56,7 +56,7 @@ class EqualizerController {
 
   Future<BandData> getBandData() async {
     final centerBandFrequencyList = await Equalizer.getCenterBandFreqs();
-    final bandLevelRangeList = await Equalizer.getBandLevelRange();
+    final bandLevelRangeList = await (Equalizer.getBandLevelRange());
     final bandLevelRange = BandLevelRange(
         bandLevelRangeList[0].toDouble(), bandLevelRangeList[1].toDouble());
 
@@ -88,10 +88,9 @@ class EqualizerController {
   }
 
   _notifyPresetNames() async {
-    final presetNames = await Equalizer.getPresetNames();
+    final presetNames = await (Equalizer.getPresetNames());
     var presetList = presetNames
-        .map((name) =>
-            Preset(presetNames.indexOf(name), name))
+        .map((name) => Preset(presetNames.indexOf(name), name))
         .toList();
     equalizerPresetNotifier.value = presetList;
   }

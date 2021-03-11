@@ -4,14 +4,14 @@ import 'package:flutter/material.dart';
 class EqualizerSwitch extends StatefulWidget {
   EqualizerSwitch(
     this.controller, {
-    Key key,
+    Key? key,
     this.titleDisabled,
     this.titleEnabled,
   }) : super(key: key);
 
   final EqualizerController controller;
-  final Widget titleDisabled;
-  final Widget titleEnabled;
+  final Widget? titleDisabled;
+  final Widget? titleEnabled;
 
   @override
   _EqualizerSwitchState createState() => _EqualizerSwitchState();

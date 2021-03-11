@@ -53,7 +53,7 @@ class Equalizer {
   }
 
   static Future<bool> isEnabled() async {
-    return await _channel.invokeMethod('isEnabled');
+    return await _channel.invokeMethod('isEnabled') ?? false;
   }
 
   /// Returns the band level range in a list of integers represented in [dB].
@@ -65,7 +65,7 @@ class Equalizer {
 
   /// Returns the band level in [dB].
   static Future<int> getBandLevel(int bandId) async {
-    return await _channel.invokeMethod('getBandLevel', bandId);
+    return await _channel.invokeMethod('getBandLevel', bandId) ?? 0;
   }
 
   /// Set the band level for a custom equalizer.
@@ -83,12 +83,13 @@ class Equalizer {
 
   /// Returns the center band frequencies in milliHertz.
   static Future<List<int>> getCenterBandFreqs() async {
-    return (await _channel.invokeMethod('getCenterBandFreqs')).cast<int>();
+    return (await _channel.invokeMethod('getCenterBandFreqs')).cast<int>() ??
+        [];
   }
 
   /// Returns the preset names available on device.
   static Future<List<String>> getPresetNames() async {
-    return (await _channel.invokeMethod('getPresetNames')).cast<String>();
+    return (await _channel.invokeMethod('getPresetNames')).cast<String>() ?? [];
   }
 
   /// Set the preset name.
@@ -98,13 +99,14 @@ class Equalizer {
 
   /// Get current preset.
   static Future<int> getCurrentPreset() async {
-    return (await _channel.invokeMethod('getCurrentPreset'));
+    return (await _channel.invokeMethod('getCurrentPreset')) ?? 0;
   }
 
   static Future<bool> deviceHasEqualizer(int audioSessionId) async {
     return await _channel.invokeMethod(
-      'deviceHasEqualizer',
-      {'audioSessionId': audioSessionId},
-    );
+          'deviceHasEqualizer',
+          {'audioSessionId': audioSessionId},
+        ) ??
+        false;
   }
 }

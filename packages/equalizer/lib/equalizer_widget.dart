@@ -8,8 +8,8 @@ import 'package:provider/provider.dart';
 class EqualizerWidget extends StatelessWidget {
   EqualizerWidget(
     this._equalizerController, {
-    this.titleDisabled,
-    this.titleEnabled,
+    required this.titleDisabled,
+    required this.titleEnabled,
   });
 
   final EqualizerController _equalizerController;
@@ -18,10 +18,12 @@ class EqualizerWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final equalizerPresetNotifier = _equalizerController.equalizerPresetNotifier;
+    final equalizerPresetNotifier =
+        _equalizerController.equalizerPresetNotifier;
     final enabledNotifier = _equalizerController.enabledNotifier;
     final bandLevelNotifier = _equalizerController.bandLevelNotifier;
-    final currentPresetPositionNotifier = _equalizerController.currentPresetPositionNotifier;
+    final currentPresetPositionNotifier =
+        _equalizerController.currentPresetPositionNotifier;
 
     return MultiProvider(
       providers: [
@@ -50,7 +52,9 @@ class EqualizerWidget extends StatelessWidget {
               ),
               EqualizerPresetList(_equalizerController),
               EqualizerBandSlideGroup(_equalizerController),
-              SizedBox(height: 40,)
+              SizedBox(
+                height: 40,
+              )
             ],
           ),
         );
