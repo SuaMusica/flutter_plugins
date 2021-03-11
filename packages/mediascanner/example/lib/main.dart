@@ -32,7 +32,7 @@ class _MyAppState extends State<MyApp> {
   Future<void> scanMedias() async {
     await Permission.storage.request();
     MediaScanner.instance
-        .scan(MediaScanParams(MediaType.audio, [".mp3", ".wav"]));
+        .scan(MediaScanParams(MediaType.audio, [".mp3", ".wav"], "", 0));
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.

@@ -37,15 +37,17 @@ class EqualizerPresetList extends StatelessWidget {
             value: preset.index,
             groupValue: currentPresetPositionNotifier.value,
             onChanged: enabled
-                ? (int value) {
-                    final notifier = context.read<ValueNotifier<int>>();
+                ? (int? value) {
+                    final notifier = context.read<ValueNotifier<int?>>();
                     notifier.value = value;
                     equalizerController.setPreset(preset.name);
                   }
                 : null,
           ),
         ),
-        Divider(height: 4,),
+        Divider(
+          height: 4,
+        ),
       ],
     );
   }

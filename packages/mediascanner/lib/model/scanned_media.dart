@@ -1,28 +1,29 @@
 class ScannedMedia {
-  ScannedMedia(
-      this.mediaId,
-      this.title,
-      this.artist,
-      this.albumId,
-      this.album,
-      this.track,
-      this.path,
-      this.albumCoverPath,
-      this.playlistId,
-      this.createdAt,
-      this.updatedAt);
+  const ScannedMedia(
+    this.mediaId,
+    this.title,
+    this.artist,
+    this.albumId,
+    this.album,
+    this.track,
+    this.path,
+    this.albumCoverPath,
+    this.playlistId,
+    this.createdAt,
+    this.updatedAt,
+  );
 
-  int mediaId;
-  String title;
-  String artist;
-  int albumId;
-  String album;
-  String track;
-  String path;
-  int playlistId;
-  String albumCoverPath;
-  DateTime createdAt;
-  DateTime updatedAt;
+  final int mediaId;
+  final String title;
+  final String artist;
+  final int albumId;
+  final String album;
+  final String? track;
+  final String path;
+  final int playlistId;
+  final String? albumCoverPath;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   @override
   String toString() {

@@ -10,7 +10,8 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final EqualizerController equalizerController = EqualizerController();
+  final EqualizerController equalizerController =
+      EqualizerController(audioSessionId: 0);
 
   @override
   void initState() {
@@ -30,21 +31,6 @@ class _MyAppState extends State<MyApp> {
           titleEnabled: Text("Habilitado"),
           titleDisabled: Text("Desabilitado"),
         ),
-        // body: Column(
-        //   children: [
-        //     FutureBuilder<bool>(
-        //       future: Equalizer.deviceHasEqualizer(0),
-        //       builder: (context, snapshot) => snapshot.hasData
-        //           ? Center(
-        //         child: Text(
-        //           "Device does ${snapshot.data ? '' : 'not '}support equalizer ",
-        //         ),
-        //       )
-        //           : Container(),
-        //     ),
-        //     EqualizerWidget(),
-        //   ],
-        // ),
       ),
     );
   }
