@@ -10,9 +10,7 @@ class Migration {
   static Migration? _instance;
 
   static Migration get instance {
-    if (_instance == null) {
-      _instance = Migration._();
-    }
+    _instance ??= Migration._();
     return _instance!;
   }
 

@@ -4,12 +4,12 @@ class Id3 {
   Id3({
     this.artist,
     this.album,
-    this.path,
+    required this.path,
   }) : super();
 
   final String? artist;
   final String? album;
-  final String? path;
+  final String path;
 
   factory Id3.fromJson(Map<dynamic, dynamic> json) => Id3(
         artist: json['artist'] ?? "",
