@@ -16,8 +16,9 @@ class EqualizerBandSlideGroup extends StatelessWidget {
           return Container();
         }
 
-        final bandData = snapshot.data;
-        final bandLevelRange = bandData!.bandLevelRange;
+        // null-aware operation "!" cria um warning no app, como sei que ele nunca será null fiz esse tratamento para evitar isso.
+        final bandData = snapshot.data ?? BandData([], BandLevelRange(0, 0));
+        final bandLevelRange = bandData.bandLevelRange;
         final divisions =
             bandLevelRange.max.toInt() - bandLevelRange.min.toInt();
 
