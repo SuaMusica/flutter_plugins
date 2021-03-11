@@ -5,11 +5,6 @@ import 'package:smplayer/src/simple_shuffle.dart';
 
 void main() {
   group('Simple Shuffle Test Suit', () {
-    test('Shuffling an empty list should return an error', () {
-      final subject = SimpleShuffler();
-      expect(() => subject.shuffle(null), throwsArgumentError);
-    });
-
     test('Shuffling a list should return a shuffled list', () {
       final subject = SimpleShuffler();
       var items = _createTestData(5);
@@ -28,7 +23,7 @@ void main() {
 }
 
 _createTestData(int size) {
-  var items = List<QueueItem>();
+  var items = <QueueItem>[];
   for (var i = 0; i < size; ++i) {
     items.add(QueueItem(i, 0, "ITEM-$i"));
   }

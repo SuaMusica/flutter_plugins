@@ -9,18 +9,20 @@ import 'package:smplayer_example/ui_data.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class SMPlayer extends StatefulWidget {
-  SMPlayer({Key key}) : super(key: key);
+  SMPlayer({
+    Key? key,
+  }) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => _SMPlayerState();
 }
 
 class _SMPlayerState extends State<SMPlayer> {
-  Player _player;
-  Media currentMedia;
+  late Player _player;
+  Media? currentMedia;
   String mediaLabel = '';
-  var duration = Duration(seconds: 0);
-  var position = Duration(seconds: 0);
+  Duration? duration = Duration(seconds: 0);
+  Duration? position = Duration(seconds: 0);
   var _shuffled = false;
 
   @override
@@ -143,55 +145,58 @@ class _SMPlayerState extends State<SMPlayer> {
     DateTime expiresOn = DateTime.now().add(Duration(hours: 12));
 
     final cookies = await signer.getCookiesForCustomPolicy(
-        resource, keyPairId, expiresOn, null, null);
+      resourceUrlOrPath: resource,
+      keyPairId: keyPairId,
+      expiresOn: expiresOn,
+    );
 
     return cookies;
   }
 
   String get positionText {
-    var minutes = position.inMinutes.toString().padLeft(2, "0");
-    var seconds = (position.inSeconds % 60).toString().padLeft(2, "0");
-    return minutes + ":" + seconds;
+    var minutes = position?.inMinutes.toString().padLeft(2, "0");
+    var seconds = (position?.inSeconds ?? 0 % 60).toString().padLeft(2, "0");
+    return (minutes ?? "00") + ":" + seconds;
   }
 
   String get durationText {
-    var minutes = duration.inMinutes.toString().padLeft(2, "0");
-    var seconds = (duration.inSeconds % 60).toString().padLeft(2, "0");
-    return minutes + ":" + seconds;
+    var minutes = duration?.inMinutes.toString().padLeft(2, "0");
+    var seconds = (duration?.inSeconds ?? 0 % 60).toString().padLeft(2, "0");
+    return (minutes ?? "00") + ":" + seconds;
   }
 
   void playOrPause() async {
     print("Player State: ${_player.state}");
 
     if (_player.state == PlayerState.IDLE && _player.current != null) {
-      int result = await _player.play(_player.current);
+      int result = await _player.play(_player.current!);
       if (result == Player.Ok) {
-        Scaffold.of(context)
+        ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Audio is now playing!!!!')));
       }
     } else if (_player.state == PlayerState.BUFFERING &&
         _player.current != null) {
       int result = await _player.resume();
       if (result == Player.Ok) {
-        Scaffold.of(context)
+        ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Audio is now playing!!!!')));
       }
     } else if (_player.state == PlayerState.PLAYING) {
       int result = await _player.pause();
       if (result == Player.Ok) {
-        Scaffold.of(context)
+        ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Audio is now paused!!!!')));
       }
     } else if (_player.state == PlayerState.PAUSED) {
       int result = await _player.resume();
       if (result == Player.Ok) {
-        Scaffold.of(context).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Audio is now playing again!!!!')));
       }
     } else {
-      int result = await _player.next();
+      int? result = await _player.next();
       if (result == Player.Ok) {
-        Scaffold.of(context).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Audio is now playing again!!!!')));
       }
     }
@@ -201,7 +206,7 @@ class _SMPlayerState extends State<SMPlayer> {
     setState(() {
       position = Duration(milliseconds: p.round());
       if (_player.state != PlayerState.STOPPED) {
-        _player.seek(position);
+        _player.seek(position!);
       }
     });
   }
@@ -228,7 +233,7 @@ class _SMPlayerState extends State<SMPlayer> {
 
   toMediaLabel() {
     if (currentMedia != null) {
-      return "Tocando: ${currentMedia.author} - ${currentMedia.name}";
+      return "Tocando: ${currentMedia!.author} - ${currentMedia!.name}";
     } else {
       return '';
     }
@@ -306,8 +311,8 @@ class _SMPlayerState extends State<SMPlayer> {
                           activeColor: AppColors.redPink,
                           inactiveColor: AppColors.inactiveColor,
                           min: 0.0,
-                          max: duration.inMilliseconds.toDouble(),
-                          value: position?.inMilliseconds?.toDouble() ?? 0.0,
+                          max: duration?.inMilliseconds.toDouble() ?? 0,
+                          value: position?.inMilliseconds.toDouble() ?? 0.0,
                           onChanged: (double value) {
                             seek(value);
                           },

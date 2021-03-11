@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/widgets.dart';
-
 class Media {
   final int id;
   final String name;
@@ -11,31 +9,31 @@ class Media {
   final String author;
   String url;
   bool isLocal;
-  final String localPath;
+  final String? localPath;
   final String coverUrl;
   final String bigCoverUrl;
   final bool isVerified;
-  final String shareUrl;
-  final int playlistId;
+  final String? shareUrl;
+  final int? playlistId;
   final bool isSpot;
-  final bool isFavorite;
-  String fallbackUrl;
+  final bool? isFavorite;
+  String? fallbackUrl;
   Media({
-    @required this.id,
-    @required this.name,
-    @required this.ownerId,
-    @required this.author,
-    @required this.url,
-    @required this.albumId,
-    @required this.albumTitle,
-    this.isLocal,
-    @required this.coverUrl,
-    @required this.bigCoverUrl,
-    this.isVerified,
+    required this.id,
+    required this.name,
+    required this.ownerId,
+    required this.author,
+    required this.url,
+    required this.albumId,
+    required this.albumTitle,
+    this.isLocal = false,
+    required this.coverUrl,
+    required this.bigCoverUrl,
+    this.isVerified = false,
     this.localPath,
     this.shareUrl,
     this.playlistId,
-    this.isSpot,
+    this.isSpot = false,
     this.fallbackUrl,
     this.isFavorite,
   }) : super() {
