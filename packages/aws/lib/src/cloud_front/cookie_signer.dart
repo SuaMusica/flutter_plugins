@@ -31,17 +31,13 @@ class CookieSigner {
       privateKeyPath, CustomPolicyBuilder(), DefaultContentCleaner());
 
   Future<CookiesForCustomPolicy> getCookiesForCustomPolicy({
-    String resourceUrlOrPath,
-    String keyPairId,
-    int difference = 0,
-    DateTime expiresOn,
-    DateTime activeFrom,
-    String ipRange,
+    required String resourceUrlOrPath,
+    required String keyPairId,
+    int? difference,
+    required DateTime expiresOn,
+    DateTime? activeFrom,
+    String? ipRange,
   }) async {
-    ArgumentError.checkNotNull(resourceUrlOrPath);
-    ArgumentError.checkNotNull(keyPairId);
-    ArgumentError.checkNotNull(expiresOn);
-
     final String policy =
         _buildPolicy(resourceUrlOrPath, expiresOn, activeFrom, ipRange);
 
@@ -63,15 +59,18 @@ class CookieSigner {
   }
 
   _buildPolicy(String resourceUrlOrPath, DateTime expiresOn,
-          DateTime activeFrom, String ipRange) =>
+          DateTime? activeFrom, String? ipRange) =>
       this
           .policyBuilder
           .build(resourceUrlOrPath, expiresOn, activeFrom, ipRange);
 
-  Future<Signature> _signWithSha1RSA(Uint8List dataToSign) async {
+  Future<pointycastle.RSASignature> _signWithSha1RSA(
+      Uint8List dataToSign) async {
     var signer = pointycastle.Signer("SHA-1/RSA");
     var privateKey = await privateKeyLoader.load();
-
+    if (privateKey == null) {
+      throw NullThrownError();
+    }
     var privk = pointycastle.RSAPrivateKey(privateKey.modulus,
         privateKey.privateExponent, privateKey.prime1, privateKey.prime2);
 
@@ -81,7 +80,7 @@ class CookieSigner {
 
     signer.reset();
     signer.init(true, privParams);
-    return signer.generateSignature(dataToSign);
+    return signer.generateSignature(dataToSign) as pointycastle.RSASignature;
   }
 
   String _makeBytesUrlSafe(Uint8List content) =>

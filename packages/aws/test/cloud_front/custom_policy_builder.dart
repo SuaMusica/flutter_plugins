@@ -10,31 +10,35 @@ void main() {
   group('Custom Policy Builder Test Suit', () {
     test('Resource must not be null', () {
       final subject = CustomPolicyBuilder();
-      expect(() => subject.build(null, null, null, null), throwsArgumentError);
+      expect(() => subject.build("", DateTime.now(), null, null),
+          throwsArgumentError);
     });
 
     test('Expires on must not be null', () {
       final subject = CustomPolicyBuilder();
-      expect(() => subject.build(resource, null, null, null), throwsArgumentError);
+      expect(() => subject.build(resource, DateTime.now(), null, null),
+          throwsArgumentError);
     });
 
     test('Test success policy build', () {
       final subject = CustomPolicyBuilder();
       final policy = subject.build(resource, expiresOn, null, null);
-      expect(policy, '{"Statement":[{"Resource":"https://android.suamusica.com.br*","Condition":{"DateLessThan":{"AWS:EpochTime":1665651900}}}]}');
+      expect(policy,
+          '{"Statement":[{"Resource":"https://android.suamusica.com.br*","Condition":{"DateLessThan":{"AWS:EpochTime":1665651900}}}]}');
     });
 
     test('Test activeFrom being used', () {
       final subject = CustomPolicyBuilder();
       final policy = subject.build(resource, expiresOn, activeFrom, null);
-      expect(policy, '{"Statement":[{"Resource":"https://android.suamusica.com.br*","Condition":{"DateLessThan":{"AWS:EpochTime":1665651900},"DateGreaterThan":{"AWS:EpochTime":1546300800}}}]}');
+      expect(policy,
+          '{"Statement":[{"Resource":"https://android.suamusica.com.br*","Condition":{"DateLessThan":{"AWS:EpochTime":1665651900},"DateGreaterThan":{"AWS:EpochTime":1546300800}}}]}');
     });
 
     test('Test ipRange being used', () {
       final subject = CustomPolicyBuilder();
       final policy = subject.build(resource, expiresOn, activeFrom, ipRange);
-      expect(policy, '{"Statement":[{"Resource":"https://android.suamusica.com.br*","Condition":{"DateLessThan":{"AWS:EpochTime":1665651900},"IpAddress":{"AWS:SourceIp":"*"},"DateGreaterThan":{"AWS:EpochTime":1546300800}}}]}');
+      expect(policy,
+          '{"Statement":[{"Resource":"https://android.suamusica.com.br*","Condition":{"DateLessThan":{"AWS:EpochTime":1665651900},"IpAddress":{"AWS:SourceIp":"*"},"DateGreaterThan":{"AWS:EpochTime":1546300800}}}]}');
     });
   });
-
 }

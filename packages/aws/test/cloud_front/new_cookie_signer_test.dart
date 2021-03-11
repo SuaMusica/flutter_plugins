@@ -26,11 +26,9 @@ void main() {
   final q = BigInt.parse(
       "143028293421514654659358549214971921584534096938352096320458818956414890934365483375293202045679474764569937266017713262196941957149321696805368542065644090886347646782188634885321277533175667840285448510687854061424867903968633218073060468434469761149335255007464091258725753837522484082998329871306803923137");
 
-  var privk = new RSAPrivateKey();
-  privk.modulus = modulus;
-  privk.privateExponent = privateExponent;
-  privk.prime1 = p;
-  privk.prime2 = q;
+  final mockValue = 1 as BigInt;
+  var privk = RSAPrivateKey(
+      1, modulus, 1, privateExponent, p, q, mockValue, mockValue, mockValue);
 
   group('Cookie Signer Test Suit', () {
     test('Resource Url must be provieded', () {
@@ -40,7 +38,13 @@ void main() {
       final subject = CookieSigner(
           privateKeyLoaderMock, policyBuilderMock, contentCleanerMock);
 
-      expect(subject.getCookiesForCustomPolicy(), throwsArgumentError);
+      expect(
+          subject.getCookiesForCustomPolicy(
+            expiresOn: DateTime.now(),
+            resourceUrlOrPath: "",
+            keyPairId: "",
+          ),
+          throwsArgumentError);
     });
 
     test('Key Pair Id must be provieded', () {
@@ -53,6 +57,8 @@ void main() {
       expect(
           subject.getCookiesForCustomPolicy(
             resourceUrlOrPath: resourceUrl,
+            expiresOn: DateTime.now(),
+            keyPairId: '',
           ),
           throwsArgumentError);
     });

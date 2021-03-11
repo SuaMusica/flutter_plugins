@@ -2,7 +2,7 @@ import 'package:smaws/src/cloud_front/policy_builder.dart';
 
 class CustomPolicyBuilder implements PolicyBuilder {
   String build(String resourceUrlOrPath, DateTime expiresOn,
-      DateTime activeFrom, String ipRange) {
+      DateTime? activeFrom, String? ipRange) {
     ArgumentError.checkNotNull(resourceUrlOrPath);
     ArgumentError.checkNotNull(expiresOn);
 
