@@ -24,17 +24,19 @@ class Album {
   final DateTime? createdAt;
 
   factory Album.fromJson(Map<dynamic, dynamic> json) => Album(
-      id: json.parseToInt('id') ?? -1,
-      name: json['name'] as String,
-      coverUrl: json['cover_url'] as String?,
-      artistName: json['artist_name'] as String,
-      artistId: json.parseToInt('artist_id') ?? -1,
-      shareUrl: json['share_url'] as String?,
-      isVerified: json['is_verified'] as bool?,
-      createdAt: json['created_at'] == null
-          ? null
-          : DateTime.fromMillisecondsSinceEpoch(
-              json.parseToInt('created_at')!));
+        id: json.parseToInt('id'),
+        name: json['name'] as String,
+        coverUrl: json['cover_url'] as String?,
+        artistName: json['artist_name'] as String,
+        artistId: json.parseToInt('artist_id'),
+        shareUrl: json['share_url'] as String?,
+        isVerified: json['is_verified'] as bool?,
+        createdAt: json['created_at'] == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(
+                json.parseToInt('created_at'),
+              ),
+      );
 
   Map<String, dynamic> toJson() => {
         'id': this.id,

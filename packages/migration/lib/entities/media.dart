@@ -36,10 +36,10 @@ class Media {
   final DateTime? createdAt;
 
   factory Media.fromJson(Map<dynamic, dynamic> json) => Media(
-        id: json.parseToInt('id') ?? -1,
+        id: json.parseToInt('id'),
         name: json['name'] ?? "",
-        albumId: json.parseToInt('album_id') ?? -1,
-        playlistId: json.parseToInt('playlist_id') ?? -1,
+        albumId: json.parseToInt('album_id'),
+        playlistId: json.parseToInt('playlist_id'),
         downloadId: json['download_id'] ?? "",
         isExternal: json['is_external'] ?? false,
         indexInAlbum: json.parseToInt('index_in_album'),
@@ -51,7 +51,7 @@ class Media {
         createdAt: json['created_at'] == null
             ? null
             : DateTime.fromMillisecondsSinceEpoch(
-                json.parseToInt('created_at')!),
+                json.parseToInt('created_at')),
         downloadProgress: json.parseToInt('download_progress'),
         downloadStatus: json.parseToInt('download_status'),
       );

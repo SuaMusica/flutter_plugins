@@ -23,17 +23,17 @@ class Playlist {
   final DateTime? createdAt;
 
   factory Playlist.fromJson(Map<dynamic, dynamic> json) => Playlist(
-        id: json.parseToInt('id') ?? -1,
+        id: json.parseToInt('id'),
         name: json['name'],
         coverUrl: json['cover_url'] ?? "",
         artistName: json['artist_name'],
-        artistId: json.parseToInt('artist_id') ?? -1,
+        artistId: json.parseToInt('artist_id'),
         shareUrl: json['share_url'] ?? "",
         isVerified: json['is_verified'] ?? false,
         createdAt: json['created_at'] == null
             ? null
             : DateTime.fromMillisecondsSinceEpoch(
-                json.parseToInt('created_at')!,
+                json.parseToInt('created_at'),
               ),
       );
 
