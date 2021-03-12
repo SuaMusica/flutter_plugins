@@ -17,9 +17,9 @@ class QueueItem<T> {
   int get hashCode => [originalPosition, position, item].hashCode;
 
   QueueItem<T> copyWith({
-    int originalPosition,
-    int position,
-    T item,
+    int? originalPosition,
+    int? position,
+    T? item,
   }) {
     return QueueItem<T>(
       originalPosition ?? this.originalPosition,
