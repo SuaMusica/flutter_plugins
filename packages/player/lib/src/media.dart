@@ -101,4 +101,42 @@ class Media {
         isSpot,
         isFavorite,
       ].hashCode;
+
+  Media copyWith({
+    int id,
+    String name,
+    int ownerId,
+    int albumId,
+    String albumTitle,
+    String author,
+    String url,
+    bool isLocal,
+    String localPath,
+    String coverUrl,
+    String bigCoverUrl,
+    bool isVerified,
+    String shareUrl,
+    int playlistId,
+    bool isSpot,
+    bool isFavorite,
+    String fallbackUrl,
+  }) =>
+      Media(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        ownerId: ownerId ?? this.ownerId,
+        albumId: albumId ?? this.albumId,
+        albumTitle: albumTitle ?? this.albumTitle,
+        author: author ?? this.author,
+        url: url ?? this.url,
+        isLocal: isLocal ?? this.isLocal,
+        coverUrl: coverUrl ?? this.coverUrl,
+        bigCoverUrl: bigCoverUrl ?? this.bigCoverUrl,
+        isVerified: isVerified ?? this.isVerified,
+        shareUrl: shareUrl ?? this.shareUrl,
+        playlistId: playlistId ?? this.playlistId,
+        fallbackUrl: fallbackUrl ?? this.fallbackUrl,
+        isSpot: isSpot ?? this.isSpot,
+        isFavorite: isFavorite ?? this.isFavorite,
+      );
 }

@@ -47,6 +47,8 @@ class Queue {
     index = 0;
   }
 
+  replaceCurrent(Media media) =>
+      storage[index] = storage[index].copyWith(item: media);
   add(Media media) {
     ArgumentError.checkNotNull(media);
     int pos = _nextPosition();

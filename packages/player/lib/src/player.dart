@@ -214,6 +214,7 @@ class Player {
   Future<int> clear() async => removeAll();
 
   Media get current => _queue.current;
+  set current(Media media) => _queue.replaceCurrent(media);
   List<Media> get items => _queue.items;
   int get queuePosition => _queue.index;
   int get size => _queue.size;
