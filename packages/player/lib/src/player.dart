@@ -734,7 +734,10 @@ class Player {
   }
 
   _notifyPlayerStatusChangeEvent(EventType type) {
-    _add(Event(type: type, media: _queue.current, queuePosition: _queue.index));
+    if (_queue.current != null) {
+      _add(Event(
+          type: type, media: _queue.current!, queuePosition: _queue.index));
+    }
   }
 
   _notifyBeforePlayEvent(Function(bool) operation) {

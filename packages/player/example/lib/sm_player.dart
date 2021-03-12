@@ -21,8 +21,8 @@ class _SMPlayerState extends State<SMPlayer> {
   late Player _player;
   Media? currentMedia;
   String mediaLabel = '';
-  Duration? duration = Duration(seconds: 0);
-  Duration? position = Duration(seconds: 0);
+  Duration duration = Duration(seconds: 0);
+  Duration position = Duration(seconds: 0);
   var _shuffled = false;
 
   @override
@@ -154,15 +154,15 @@ class _SMPlayerState extends State<SMPlayer> {
   }
 
   String get positionText {
-    var minutes = position?.inMinutes.toString().padLeft(2, "0");
-    var seconds = (position?.inSeconds ?? 0 % 60).toString().padLeft(2, "0");
-    return (minutes ?? "00") + ":" + seconds;
+    var minutes = position.inMinutes.toString().padLeft(2, "0");
+    var seconds = (position.inSeconds % 60).toString().padLeft(2, "0");
+    return (minutes) + ":" + seconds;
   }
 
   String get durationText {
-    var minutes = duration?.inMinutes.toString().padLeft(2, "0");
-    var seconds = (duration?.inSeconds ?? 0 % 60).toString().padLeft(2, "0");
-    return (minutes ?? "00") + ":" + seconds;
+    var minutes = duration.inMinutes.toString().padLeft(2, "0");
+    var seconds = (duration.inSeconds % 60).toString().padLeft(2, "0");
+    return (minutes) + ":" + seconds;
   }
 
   void playOrPause() async {
@@ -206,7 +206,7 @@ class _SMPlayerState extends State<SMPlayer> {
     setState(() {
       position = Duration(milliseconds: p.round());
       if (_player.state != PlayerState.STOPPED) {
-        _player.seek(position!);
+        _player.seek(position);
       }
     });
   }
@@ -295,28 +295,26 @@ class _SMPlayerState extends State<SMPlayer> {
                 ),
               ],
             ),
-            duration == null
-                ? Container()
-                : Container(
-                    width: double.infinity,
-                    margin: EdgeInsets.only(top: 5.0),
-                    child: SliderTheme(
-                        data: SliderTheme.of(context).copyWith(
-                          trackHeight: 2.0,
-                          thumbShape: const RoundSliderThumbShape(
-                              enabledThumbRadius: 7.0),
-                          showValueIndicator: ShowValueIndicator.always,
-                        ),
-                        child: Slider(
-                          activeColor: AppColors.redPink,
-                          inactiveColor: AppColors.inactiveColor,
-                          min: 0.0,
-                          max: duration?.inMilliseconds.toDouble() ?? 0,
-                          value: position?.inMilliseconds.toDouble() ?? 0.0,
-                          onChanged: (double value) {
-                            seek(value);
-                          },
-                        ))),
+            Container(
+                width: double.infinity,
+                margin: EdgeInsets.only(top: 5.0),
+                child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      trackHeight: 2.0,
+                      thumbShape:
+                          const RoundSliderThumbShape(enabledThumbRadius: 7.0),
+                      showValueIndicator: ShowValueIndicator.always,
+                    ),
+                    child: Slider(
+                      activeColor: AppColors.redPink,
+                      inactiveColor: AppColors.inactiveColor,
+                      min: 0.0,
+                      max: duration.inMilliseconds.toDouble(),
+                      value: position.inMilliseconds.toDouble(),
+                      onChanged: (double value) {
+                        seek(value);
+                      },
+                    ))),
           ]),
           Row(
             children: [

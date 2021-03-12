@@ -4,7 +4,7 @@ import 'package:smplayer/src/media.dart';
 class Event {
   Event({
     required this.type,
-    this.media,
+    required this.media,
     required this.queuePosition,
     this.error,
     this.errorType,
@@ -13,7 +13,7 @@ class Event {
   });
 
   final EventType type;
-  final Media? media;
+  final Media media;
   final String? error;
   final PlayerErrorType? errorType;
   final int queuePosition;
