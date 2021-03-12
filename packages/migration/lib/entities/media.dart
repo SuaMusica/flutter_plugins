@@ -6,7 +6,7 @@ class Media {
     this.name,
     required this.albumId,
     this.downloadId,
-    this.isExternal,
+    required this.isExternal,
     this.indexInAlbum,
     this.path,
     this.streamPath,
@@ -23,7 +23,7 @@ class Media {
   final String? name;
   final int albumId;
   final String? downloadId;
-  final bool? isExternal;
+  final bool isExternal;
   final int? indexInAlbum;
   final int? indexInPlaylist;
   final int playlistId;
@@ -62,7 +62,7 @@ class Media {
         'album_id': this.albumId,
         'playlist_id': this.playlistId,
         'download_id': '0',
-        'is_external': this.isExternal ?? false,
+        'is_external': this.isExternal,
         'index_in_album': this.indexInAlbum ?? -1,
         'index_in_playlist': this.indexInPlaylist ?? -1,
         'download_progress': this.downloadProgress ?? 100,

@@ -9,7 +9,7 @@ class Playlist {
     this.shareUrl,
     required this.artistName,
     required this.artistId,
-    this.isVerified,
+    required this.isVerified,
     this.createdAt,
   }) : super();
 
@@ -19,7 +19,7 @@ class Playlist {
   final String? shareUrl;
   final String artistName;
   final int artistId;
-  final bool? isVerified;
+  final bool isVerified;
   final DateTime? createdAt;
 
   factory Playlist.fromJson(Map<dynamic, dynamic> json) => Playlist(
@@ -44,7 +44,7 @@ class Playlist {
         'shareurl': this.shareUrl,
         'username': this.artistName,
         'dono': this.artistId,
-        'isverified': this.isVerified ?? false ? 1 : 0,
+        'isverified': this.isVerified ? 1 : 0,
         'created_at': this.createdAt?.toIso8601String(),
       };
 }

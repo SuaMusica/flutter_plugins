@@ -79,11 +79,10 @@ class Migration {
       case 'downloadedContent':
         if (!instance._downloadedStreamController.isClosed) {
           _log("Migration.downloadedContent: ${call.arguments}");
-          final content = (call.arguments as List<dynamic>)
+          final content = (call.arguments)
               .where((item) => item is Map<dynamic, dynamic>)
               .map(
-                (item) =>
-                    DownloadedContent.fromJson(item as Map<dynamic, dynamic>),
+                (item) => DownloadedContent.fromJson(item),
               )
               .toList();
 
@@ -93,8 +92,7 @@ class Migration {
         break;
       case 'androidDownloadedContent':
         if (!instance._androidDownloadedStreamController.isClosed) {
-          final content = AndroidDownloadedContent.fromJson(
-              (call.arguments as Map<dynamic, dynamic>));
+          final content = AndroidDownloadedContent.fromJson((call.arguments));
 
           instance._androidDownloadedStreamController.add(content);
         }
