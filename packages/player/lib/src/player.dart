@@ -21,12 +21,12 @@ class Player {
   static final MethodChannel _channel = const MethodChannel('smplayer')
     ..setMethodCallHandler(platformCallHandler);
 
-  static Player player;
+  static late Player player;
   static bool logEnabled = false;
 
   bool _shallSendEvents = true;
   bool externalPlayback = false;
-  CookiesForCustomPolicy _cookies;
+  CookiesForCustomPolicy? _cookies;
   PlayerState state = PlayerState.IDLE;
   Queue _queue = Queue();
   RepeatMode repeatMode = RepeatMode.NONE;
@@ -38,7 +38,7 @@ class Player {
       StreamController<Event>();
 
   final Future<CookiesForCustomPolicy> Function() cookieSigner;
-  final Future<String> Function(Media) localMediaValidator;
+  final Future<String?> Function(Media)? localMediaValidator;
   final bool autoPlay;
   final chromeCastEnabledEvents = [
     EventType.BEFORE_PLAY,
@@ -53,19 +53,17 @@ class Player {
     EventType.EXTERNAL_PAUSE_REQUESTED
   ];
 
-  Stream<Event> _stream;
+  Stream<Event>? _stream;
 
   Stream<Event> get onEvent {
-    if (_stream == null) {
-      _stream = _eventStreamController.stream.asBroadcastStream();
-    }
-    return _stream;
+    _stream ??= _eventStreamController.stream.asBroadcastStream();
+    return _stream!;
   }
 
   Player({
-    @required this.playerId,
-    @required this.cookieSigner,
-    @required this.localMediaValidator,
+    required this.playerId,
+    required this.cookieSigner,
+    required this.localMediaValidator,
     this.autoPlay = false,
   }) {
     player = this;
@@ -73,14 +71,14 @@ class Player {
 
   Future<int> _invokeMethod(
     String method, [
-    Map<String, dynamic> arguments,
+    Map<String, dynamic>? arguments,
   ]) async {
     arguments ??= const {};
-    if (_cookies == null || !_cookies.isValid) {
+    if (_cookies == null || !_cookies!.isValid) {
       _log("Generating Cookies");
       _cookies = await cookieSigner();
     }
-    String cookie = _cookies.toHeaders();
+    String cookie = _cookies!.toHeaders();
     if (method == "play") {
       _log("Cookie: $cookie");
     }
@@ -97,23 +95,15 @@ class Player {
   }
 
   Future<int> enqueue(
-    Media media, {
-    double volume = 1.0,
-    Duration position,
-    bool respectSilence = false,
-    bool stayAwake = false,
-  }) async {
+    Media media,
+  ) async {
     _queue.add(media);
     return Ok;
   }
 
   Future<int> enqueueAll(
-    List<Media> items, {
-    double volume = 1.0,
-    Duration position,
-    bool respectSilence = false,
-    bool stayAwake = false,
-  }) async {
+    List<Media> items,
+  ) async {
     _queue.addAll(items);
     return Ok;
   }
@@ -144,19 +134,19 @@ class Player {
   }
 
   Future<int> sendNotification({
-    bool isPlaying,
-    bool isFavorite,
-    Duration position,
-    Duration duration,
+    bool? isPlaying,
+    bool? isFavorite,
+    Duration? position,
+    Duration? duration,
   }) async {
     if (_queue.size > 0) {
       if (_queue.current == null) {
         _queue.move(0);
       }
-      final media = _queue.current;
+      final media = _queue.current!;
       final data = {
-        'albumId': media.albumId?.toString() ?? "0",
-        'albumTitle': media.albumTitle ?? "",
+        'albumId': media.albumId.toString(),
+        'albumTitle': media.albumTitle,
         'name': media.name,
         'author': media.author,
         'url': media.url,
@@ -213,47 +203,52 @@ class Player {
 
   Future<int> clear() async => removeAll();
 
-  Media get current => _queue.current;
-  set current(Media media) => _queue.replaceCurrent(media);
+  Media? get current => _queue.current;
+  set current(Media? media) {
+    if (media != null) {
+      _queue.replaceCurrent(media);
+    }
+  }
+
   List<Media> get items => _queue.items;
   int get queuePosition => _queue.index;
   int get size => _queue.size;
-  Media get top => _queue.top;
+  Media? get top => _queue.top;
 
   Future<int> load(Media media) async => _doPlay(
-        _queue.current,
+        _queue.current!,
         shouldLoadOnly: true,
       );
 
   Future<int> play(
     Media media, {
     double volume = 1.0,
-    Duration position,
+    Duration? position,
     bool respectSilence = false,
     bool stayAwake = false,
   }) async {
     _queue.play(media);
     _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
-    return _doPlay(_queue.current);
+    return _doPlay(_queue.current!);
   }
 
   Future<int> playFromQueue(
     int pos, {
     double volume = 1.0,
-    Duration position,
+    Duration? position,
     bool respectSilence = false,
     bool stayAwake = false,
     bool shallNotify = false,
     bool loadOnly = false,
   }) async {
-    Media media = _queue.item(pos);
+    Media? media = _queue.item(pos);
     if (media != null) {
-      final mediaUrl = (await localMediaValidator(media)) ?? media.url;
+      final mediaUrl = (await localMediaValidator?.call(media)) ?? media.url;
       if (!loadOnly) {
         _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
       }
       return _doPlay(
-        _queue.move(pos),
+        _queue.move(pos)!,
         shallNotify: shallNotify,
         mediaUrl: mediaUrl,
         shouldLoadOnly: loadOnly,
@@ -266,18 +261,24 @@ class Player {
 
   Future<int> _doPlay(
     Media media, {
-    double volume = 1.0,
-    Duration position,
-    bool respectSilence = false,
-    bool stayAwake = false,
-    bool shallNotify = false,
-    bool shouldLoadOnly = false,
-    String mediaUrl,
+    double? volume,
+    Duration? position,
+    bool? respectSilence,
+    bool? stayAwake,
+    bool? shallNotify,
+    bool? shouldLoadOnly,
+    String? mediaUrl,
   }) async {
+    volume ??= 1.0;
+    respectSilence ??= false;
+    stayAwake ??= false;
+    shallNotify ??= false;
+    shouldLoadOnly ??= false;
+
     if (shallNotify) {
       _notifyChangeToNext(media);
     }
-    mediaUrl ??= (await localMediaValidator(media)) ?? media.url;
+    mediaUrl ??= (await localMediaValidator?.call(media)) ?? media.url;
     //If it is local, check if it exists before playing it.
 
     if (!mediaUrl.startsWith("http")) {
@@ -286,19 +287,16 @@ class Player {
         mediaUrl = media.fallbackUrl;
       }
     }
-    volume ??= 1.0;
-    respectSilence ??= false;
-    stayAwake ??= false;
 
     // we need to update the value as it could have been
     // downloading and is not downloaded
-    media.isLocal = !mediaUrl.startsWith("http");
+    media.isLocal = !mediaUrl!.startsWith("http");
     media.url = mediaUrl;
     if (shouldLoadOnly) {
       debugPrint("LOADING ONLY!");
       return invokeLoad({
-        'albumId': media.albumId?.toString() ?? "0",
-        'albumTitle': media.albumTitle ?? "",
+        'albumId': media.albumId.toString(),
+        'albumTitle': media.albumTitle,
         'name': media.name,
         'author': media.author,
         'url': mediaUrl,
@@ -315,8 +313,8 @@ class Player {
       _notifyBeforePlayEvent((loadOnly) => {});
 
       return invokePlay(media, {
-        'albumId': media.albumId?.toString() ?? "0",
-        'albumTitle': media.albumTitle ?? "",
+        'albumId': media.albumId.toString(),
+        'albumTitle': media.albumTitle,
         'name': media.name,
         'author': media.author,
         'url': mediaUrl,
@@ -332,8 +330,8 @@ class Player {
     } else {
       _notifyBeforePlayEvent((loadOnly) {
         invokePlay(media, {
-          'albumId': media.albumId.toString() ?? "0",
-          'albumTitle': media.albumTitle ?? "",
+          'albumId': media.albumId.toString(),
+          'albumTitle': media.albumTitle,
           'name': media.name,
           'author': media.author,
           'url': mediaUrl,
@@ -368,20 +366,23 @@ class Player {
     return _rewind(media);
   }
 
-  Future<int> _rewind(Media media) async {
+  Future<int> _rewind(Media? media) async {
     if (media == null) {
       return NotOk;
     }
     _notifyRewind(media);
-    return player.externalPlayback ? 1 : seek(Duration(seconds: 0));
+    return player.externalPlayback ? 1 : await seek(Duration(seconds: 0));
   }
 
   Future<int> forward() async {
     var media = _queue.current;
+    if (media == null) {
+      return NotOk;
+    }
     return _forward(media);
   }
 
-  Future<int> _forward(Media media) async {
+  Future<int> _forward(Media? media) async {
     if (media == null) {
       return NotOk;
     }
@@ -392,35 +393,27 @@ class Player {
   }
 
   Future<int> previous() async {
-    Media media = _queue.possiblePrevious();
-    if (media != null) {
-      final mediaUrl = (await localMediaValidator(media)) ?? media.url;
-      final current = _queue.current;
-      var previous = _queue.previous();
-      if (previous == null) {
-        return NotOk;
-      }
-
-      if (previous == current) {
-        return _rewind(current);
-      } else {
-        _notifyChangeToPrevious(previous);
-        return _doPlay(
-          previous,
-          mediaUrl: mediaUrl,
-        );
-      }
+    Media? media = _queue.possiblePrevious();
+    final mediaUrl = (await localMediaValidator?.call(media)) ?? media.url;
+    final current = _queue.current;
+    var previous = _queue.previous();
+    if (previous == current) {
+      return _rewind(current);
     } else {
-      return NotOk;
+      _notifyChangeToPrevious(previous);
+      return _doPlay(
+        previous,
+        mediaUrl: mediaUrl,
+      );
     }
   }
 
-  Future<int> next({
+  Future<int?> next({
     bool shallNotify = true,
   }) async {
     final media = _queue.possibleNext(repeatMode);
     if (media != null) {
-      final mediaUrl = (await localMediaValidator(media)) ?? media.url;
+      final mediaUrl = (await localMediaValidator?.call(media)) ?? media.url;
 
       return _doNext(
         shallNotify: shallNotify,
@@ -432,11 +425,11 @@ class Player {
   }
 
   Future<int> _doNext({
-    bool shallNotify,
-    String mediaUrl,
+    bool? shallNotify,
+    String? mediaUrl,
   }) async {
     final current = _queue.current;
-    Media next;
+    Media? next;
 
     // first case, nothing has yet played
     // therefore, we need to play the first
@@ -459,10 +452,6 @@ class Player {
 
     next = _queue.next();
     if (next == null) {
-      if (current == null) {
-        return NotOk;
-      }
-
       if ((state == PlayerState.PLAYING || state == PlayerState.PAUSED) &&
           repeatMode == RepeatMode.NONE) {
         return _forward(current);
@@ -585,11 +574,6 @@ class Player {
   static Future<void> _doHandlePlatformCall(MethodCall call) async {
     final Map<dynamic, dynamic> callArgs = call.arguments as Map;
     _log('_platformCallHandler call ${call.method} $callArgs');
-
-    if (player == null) {
-      return;
-    }
-
     switch (call.method) {
       case 'audio.onDuration':
         final duration = callArgs['duration'];
@@ -756,12 +740,15 @@ class Player {
   }
 
   _notifyPlayerStatusChangeEvent(EventType type) {
-    _add(Event(type: type, media: _queue.current, queuePosition: _queue.index));
+    if (_queue.current != null) {
+      _add(Event(
+          type: type, media: _queue.current!, queuePosition: _queue.index));
+    }
   }
 
   _notifyBeforePlayEvent(Function(bool) operation) {
     _add(BeforePlayEvent(
-        media: _queue.current,
+        media: _queue.current!,
         queuePosition: _queue.index,
         operation: operation));
   }
@@ -770,7 +757,7 @@ class Player {
     _addUsingPlayer(
         player,
         DurationChangeEvent(
-            media: player._queue.current,
+            media: player._queue.current!,
             queuePosition: player._queue.index,
             duration: newDuration));
   }
@@ -791,7 +778,7 @@ class Player {
       player,
       Event(
         type: eventType,
-        media: player._queue.current,
+        media: player._queue.current!,
         queuePosition: player._queue.index,
       ),
     );
@@ -803,7 +790,7 @@ class Player {
       player,
       Event(
         type: EventType.ERROR_OCCURED,
-        media: player._queue.current,
+        media: player._queue.current!,
         queuePosition: player._queue.index,
         error: error,
         errorType: errorType,
@@ -816,10 +803,11 @@ class Player {
     _addUsingPlayer(
       player,
       PositionChangeEvent(
-          media: player._queue.current,
-          queuePosition: player._queue.index,
-          position: newPosition,
-          duration: newDuration),
+        media: player._queue.current!,
+        queuePosition: player._queue.index,
+        position: newPosition,
+        duration: newDuration,
+      ),
     );
   }
 
@@ -828,8 +816,7 @@ class Player {
   }
 
   void _add(Event event) {
-    if (_eventStreamController != null &&
-        !_eventStreamController.isClosed &&
+    if (!_eventStreamController.isClosed &&
         (_shallSendEvents || chromeCastEnabledEvents.contains(event.type))) {
       _eventStreamController.add(event);
     }
@@ -839,8 +826,7 @@ class Player {
     if (event.type != EventType.POSITION_CHANGE) {
       debugPrint("_platformCallHandler _addUsingPlayer $event");
     }
-    if (player._eventStreamController != null &&
-        !player._eventStreamController.isClosed &&
+    if (!player._eventStreamController.isClosed &&
         (player._shallSendEvents ||
             player.chromeCastEnabledEvents.contains(event.type))) {
       player._eventStreamController.add(event);

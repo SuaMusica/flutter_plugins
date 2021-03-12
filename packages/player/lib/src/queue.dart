@@ -7,13 +7,13 @@ import 'package:smplayer/src/repeat_mode.dart';
 class Queue {
   var index = -1;
   final Shuffler _shuffler;
-  var storage = List<QueueItem<Media>>();
+  var storage = <QueueItem<Media>>[];
 
-  DateTime _lastPrevious;
+  DateTime? _lastPrevious;
 
   Queue({shuffler, mode}) : _shuffler = shuffler ?? SimpleShuffler();
 
-  Media get current {
+  Media? get current {
     if (storage.length > 0 && index >= 0) {
       return storage.elementAt(index).item;
     } else {
@@ -29,7 +29,7 @@ class Queue {
 
   int get size => storage.length;
 
-  Media get top {
+  Media? get top {
     if (this.size > 0) {
       return storage[0].item;
     }
@@ -37,7 +37,6 @@ class Queue {
   }
 
   play(Media media) {
-    ArgumentError.checkNotNull(media);
     if (storage.length > 0) {
       storage.replaceRange(0, 1, [QueueItem(0, 0, media)]);
     } else {
@@ -50,13 +49,11 @@ class Queue {
   replaceCurrent(Media media) =>
       storage[index] = storage[index].copyWith(item: media);
   add(Media media) {
-    ArgumentError.checkNotNull(media);
     int pos = _nextPosition();
     storage.add(QueueItem(pos, pos, media));
   }
 
   addAll(List<Media> items) {
-    ArgumentError.checkNotNull(items);
     for (var media in items) {
       int pos = _nextPosition();
       storage.add(QueueItem(pos, pos, media));
@@ -64,7 +61,6 @@ class Queue {
   }
 
   remove(Media media) {
-    ArgumentError.checkNotNull(media);
     final itemToBeRemoved = storage.firstWhere((i) => i.item == media);
     if (itemToBeRemoved.position < index) {
       --index;
@@ -125,7 +121,7 @@ class Queue {
       _lastPrevious = now;
       return rewind();
     } else {
-      final diff = now.difference(_lastPrevious).inMilliseconds;
+      final diff = now.difference(_lastPrevious!).inMilliseconds;
       print("diff: $diff");
       if (diff < 3000) {
         if (index > 0) {
@@ -145,7 +141,7 @@ class Queue {
     if (_lastPrevious == null) {
       return storage.elementAt(index).item;
     } else {
-      final diff = now.difference(_lastPrevious).inMilliseconds;
+      final diff = now.difference(_lastPrevious!).inMilliseconds;
       if (diff < 3000) {
         var workIndex = index;
         if (index > 0) {
@@ -158,7 +154,7 @@ class Queue {
     }
   }
 
-  Media next() {
+  Media? next() {
     if (storage.length == 0) {
       throw AssertionError("Queue is empty");
     } else if (storage.length > 0 && index < storage.length - 1) {
@@ -169,7 +165,7 @@ class Queue {
     }
   }
 
-  Media possibleNext(RepeatMode repeatMode) {
+  Media? possibleNext(RepeatMode repeatMode) {
     if (repeatMode == RepeatMode.NONE || repeatMode == RepeatMode.TRACK) {
       return _next();
     } else if (repeatMode == RepeatMode.QUEUE) {
@@ -183,7 +179,7 @@ class Queue {
     }
   }
 
-  Media _next() {
+  Media? _next() {
     if (storage.length == 0) {
       return null;
     } else if (storage.length > 0 && index < storage.length - 1) {
@@ -194,7 +190,7 @@ class Queue {
     }
   }
 
-  Media move(int pos) {
+  Media? move(int pos) {
     if (storage.length == 0) {
       throw AssertionError("Queue is empty");
     } else if (storage.length > 0 && pos <= storage.length - 1) {
@@ -206,7 +202,7 @@ class Queue {
     }
   }
 
-  Media item(int pos) {
+  Media? item(int pos) {
     if (storage.length == 0) {
       return null;
     } else if (storage.length > 0 && pos <= storage.length - 1) {
