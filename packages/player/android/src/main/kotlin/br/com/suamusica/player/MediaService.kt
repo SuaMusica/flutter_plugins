@@ -343,6 +343,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             } else {
                 isPlayingExternal
             }
+            this.media = media
             val notification = notificationBuilder?.buildNotification(it, media, onGoing, isPlayingExternal, media.isFavorite, player?.duration)
             notification?.let {
                 notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
@@ -433,7 +434,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
     private fun buildNotification(updatedState: Int, onGoing: Boolean): Notification? {
         return if (updatedState != PlaybackStateCompat.STATE_NONE) {
-            mediaSession?.let { notificationBuilder?.buildNotification(it, media!!, onGoing, null, media!!.isFavorite, player?.duration) }
+            mediaSession?.let {notificationBuilder?.buildNotification(it, media!!, onGoing, null, media!!.isFavorite, player?.duration) }
         } else {
             null
         }

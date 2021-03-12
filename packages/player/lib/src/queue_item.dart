@@ -16,6 +16,19 @@ class QueueItem<T> {
   @override
   int get hashCode => [originalPosition, position, item].hashCode;
 
+  QueueItem<T> copyWith({
+    int originalPosition,
+    int position,
+    T item,
+  }) {
+    return QueueItem<T>(
+      originalPosition ?? this.originalPosition,
+      position ?? this.position,
+      item ?? this.item,
+    );
+  }
+
   @override
-  String toString() => "original: $originalPosition - position: $position -> $item";
+  String toString() =>
+      "original: $originalPosition - position: $position -> $item";
 }
