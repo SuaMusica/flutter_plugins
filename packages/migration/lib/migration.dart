@@ -7,13 +7,11 @@ import 'package:migration/entities/android_downloaded_content.dart';
 class Migration {
   Migration._();
 
-  static Migration _instance;
+  static Migration? _instance;
 
   static Migration get instance {
-    if (_instance == null) {
-      _instance = Migration._();
-    }
-    return _instance;
+    _instance ??= Migration._();
+    return _instance!;
   }
 
   static final MethodChannel _channel = const MethodChannel('migration')
@@ -51,13 +49,13 @@ class Migration {
       _androidDownloadedStreamController.stream;
 
   Future<int> getLegacyDownloadContent() async {
-    final int result = await _channel.invokeMethod('requestDownloadedContent');
+    final int? result = await _channel.invokeMethod('requestDownloadedContent');
     _log("DownloadedContents.getLegacyDownloadContent: $result");
     return result ?? 0;
   }
 
   Future<int> getArtWorks(List<Map<String, String>> items) async {
-    final int result =
+    final int? result =
         await _channel.invokeMethod('extractArt', {"items": items});
     return result ?? 0;
   }
@@ -68,7 +66,7 @@ class Migration {
     return result;
   }
 
-  Future<Map<dynamic, dynamic>> requestLoggedUser() async {
+  Future<Map<dynamic, dynamic>?> requestLoggedUser() async {
     final result = await _channel.invokeMethod('requestLoggedUser');
     if (result != null && result is Map<dynamic, dynamic>) {
       return result;
@@ -79,15 +77,12 @@ class Migration {
   static Future<void> _doHandlePlatformCall(MethodCall call) async {
     switch (call.method) {
       case 'downloadedContent':
-        if (instance != null &&
-            instance._downloadedStreamController != null &&
-            !instance._downloadedStreamController.isClosed) {
+        if (!instance._downloadedStreamController.isClosed) {
           _log("Migration.downloadedContent: ${call.arguments}");
-          final content = (call.arguments as List<dynamic>)
+          final content = (call.arguments)
               .where((item) => item is Map<dynamic, dynamic>)
               .map(
-                (item) =>
-                    DownloadedContent.fromJson(item as Map<dynamic, dynamic>),
+                (item) => DownloadedContent.fromJson(item),
               )
               .toList();
 
@@ -96,11 +91,8 @@ class Migration {
 
         break;
       case 'androidDownloadedContent':
-        if (instance != null &&
-            instance._androidDownloadedStreamController != null &&
-            !instance._androidDownloadedStreamController.isClosed) {
-          final content = AndroidDownloadedContent.fromJson(
-              (call.arguments as Map<dynamic, dynamic>));
+        if (!instance._androidDownloadedStreamController.isClosed) {
+          final content = AndroidDownloadedContent.fromJson((call.arguments));
 
           instance._androidDownloadedStreamController.add(content);
         }
