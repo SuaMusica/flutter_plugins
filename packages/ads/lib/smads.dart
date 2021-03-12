@@ -85,7 +85,7 @@ class SMAds {
 
       case 'onError':
         final error = callArgs["error"];
-        lastAd!.onError?.call(error);
+        lastAd?.onError?.call(error);
 
         break;
 
