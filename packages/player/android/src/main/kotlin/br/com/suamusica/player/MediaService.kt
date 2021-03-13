@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class MediaService : androidx.media.MediaBrowserServiceCompat() {
     private val TAG = "Player"
-    val userAgent = "SuaMusica/player (Linux; Android ${Build.VERSION.SDK_INT}; ${Build.BRAND}/${Build.MODEL})"
+    private val userAgent = "SuaMusica/player (Linux; Android ${Build.VERSION.SDK_INT}; ${Build.BRAND}/${Build.MODEL})"
     private var packageValidator: PackageValidator? = null
 
     private var mediaSession: MediaSessionCompat? = null
@@ -65,13 +65,6 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
     private var progressTracker: ProgressTracker? = null
 
     private var previousState: Int = -1
-
-    /*
-
-
-
-     */
-
 
     private val BROWSABLE_ROOT = "/"
     private val EMPTY_ROOT = "@empty@"
@@ -455,7 +448,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             }
 
             override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
-                Log.i(TAG, "onPlayerStateChanged: playWhenReady: $playWhenReady playbackState: $playbackState currentPlaybackState: ${player?.getPlaybackState()}")
+                Log.i(TAG, "onPlayerStateChanged: playWhenReady: $playWhenReady playbackState: $playbackState currentPlaybackState: ${player?.playbackState}")
                 if (playWhenReady) {
                     val duration = player?.duration ?: 0L
                     acquireLock(if (duration > 1L) duration + TimeUnit.MINUTES.toMillis(2) else TimeUnit.MINUTES.toMillis(3))
