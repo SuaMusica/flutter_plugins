@@ -34,5 +34,5 @@ android {
 }
 dependencies {
     implementation 'com.squareup.okhttp3:okhttp:4.2.2'
-    implementation 'com.snowplowanalytics:snowplow-android-tracker:1.4.+@aar'
+    implementation 'com.snowplowanalytics:snowplow-android-tracker:1.7.+@aar'
 }
