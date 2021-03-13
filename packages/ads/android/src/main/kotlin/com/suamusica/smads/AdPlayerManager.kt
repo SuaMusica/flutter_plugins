@@ -51,12 +51,13 @@ class AdPlayerManager(
 
     val errorEventDispatcher = PublishSubject.create<AdErrorEvent>()
     val adEventDispatcher = PublishSubject.create<AdEvent>()
+    private var _adsID = 0;
     var isAudioAd = false
         private set
 
     init {
         dataSourceFactory = DefaultDataSourceFactory(context, Util.getUserAgent(context, "AdPlayer"))
-        player = SimpleExoPlayer.Builder(context).setAudioAttributes(uAmpAudioAttributes,true).build()
+        player = SimpleExoPlayer.Builder(context).setAudioAttributes(uAmpAudioAttributes, true).build()
         supportedMimeTypes = this.getCodecsType()
     }
 
@@ -95,7 +96,8 @@ class AdPlayerManager(
 
     fun load(playerView: PlayerView, companionAdSlotView: ViewGroup) {
         Timber.d("load")
-        adsLoader.requestAds(DataSpec(adTagUrl),playerView)
+        val dataSpec = DataSpec(adTagUrl)
+        adsLoader.requestAds(dataSpec, ++_adsID, playerView)
         playerView.player = player
         playerView.useController = false
         playerView.hideController()
@@ -109,17 +111,20 @@ class AdPlayerManager(
 
         setupAdsLoader(playerView)
 
-        player?.setMediaSource(AdsMediaSource(
-                SilenceMediaSource(100),
-                // DataSpec(adTagUrl),
-                ProgressiveMediaSource.Factory(dataSourceFactory),
-                adsLoader,
-                playerView
-        ))
+        player?.setMediaSource(
+
+                AdsMediaSource(
+                        SilenceMediaSource(100),
+                        dataSpec,
+                        _adsID,
+                        ProgressiveMediaSource.Factory(dataSourceFactory),
+                        adsLoader,
+                        playerView
+                ))
         player?.prepare()
     }
 
-    fun skipAd(){
+    fun skipAd() {
         Timber.d("Skip")
         adsLoader.skipAd()
     }
