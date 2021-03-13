@@ -55,11 +55,6 @@ void main() {
       shareUrl: "");
 
   group('Queue operations', () {
-    test('Adding null media shall throw exception', () {
-      final subject = Queue();
-      expect(() => subject.add(null), throwsArgumentError);
-    });
-
     test('Adding media to an empty queue shall make it the queue top', () {
       final subject = Queue();
       subject.add(media1);
@@ -87,10 +82,7 @@ void main() {
       expect(subject.top, media3);
       expect(subject.items, [media3, media2]);
     });
-    test('Removing null media shall throw exception', () {
-      final subject = Queue();
-      expect(() => subject.remove(null), throwsArgumentError);
-    });
+
     test('Removing a media shall be supported', () {
       final subject = Queue();
       subject.add(media1);
@@ -104,13 +96,9 @@ void main() {
       expect(subject.items, [media1, media3]);
     });
 
-    test('Add all with null list shall throw an exception', () {
-      final subject = Queue();
-      expect(() => subject.addAll(null), throwsArgumentError);
-    });
     test('Add all shall be supported', () {
       final subject = Queue();
-      final items = List<Media>();
+      final items = <Media>[];
       for (int i = 0; i < 10; ++i) {
         items.addAll([media1, media2, media3]);
       }
@@ -122,7 +110,7 @@ void main() {
 
     test('Shuffle shall be supported', () {
       final subject = Queue();
-      final items = List<Media>();
+      final items = <Media>[];
       final interactions = 100;
       for (int i = 0; i < interactions; ++i) {
         items.addAll([media1, media2, media3]);
@@ -137,7 +125,7 @@ void main() {
 
     test('Unshuffle shall be supported', () {
       final subject = Queue();
-      final items = List<Media>();
+      final items = <Media>[];
       final interactions = 100;
       for (int i = 0; i < interactions; ++i) {
         items.addAll([media1, media2, media3]);
@@ -333,7 +321,7 @@ void main() {
     });
     test('Clear shall remove all tracks from queue', () {
       final subject = Queue();
-      final items = List<Media>();
+      final items = <Media>[];
       final interactions = 100;
       for (int i = 0; i < interactions; ++i) {
         items.addAll([media1, media2, media3]);

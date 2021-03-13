@@ -70,10 +70,6 @@ void main() {
       shareUrl: "");
 
   group('Player operations', () {
-    test('Adding null media shall throw exception', () async {
-      final subject = createPlayer();
-      expect(() => subject.enqueue(null), throwsArgumentError);
-    });
     test('Adding media to an empty queue shall make it the queue top',
         () async {
       final subject = createPlayer();
@@ -99,10 +95,7 @@ void main() {
       expect(subject.top, media3);
       expect(subject.items, [media3, media2]);
     });
-    test('Removing null media shall throw exception', () async {
-      final subject = createPlayer();
-      expect(() => subject.remove(null), throwsArgumentError);
-    });
+
     test('Removing a media shall be supported', () async {
       final subject = createPlayer();
       subject.enqueue(media1);
@@ -115,13 +108,10 @@ void main() {
       expect(subject.top, media1);
       expect(subject.items, [media1, media3]);
     });
-    test('Add all with null list shall throw an exception', () async {
-      final subject = createPlayer();
-      expect(() => subject.enqueueAll(null), throwsArgumentError);
-    });
+
     test('Add all shall be supported', () async {
       final subject = createPlayer();
-      final items = List<Media>();
+      final items = <Media>[];
       for (int i = 0; i < 10; ++i) {
         items.addAll([media1, media2, media3]);
       }
@@ -132,7 +122,7 @@ void main() {
     });
     test('Shuffle shall be supported', () async {
       final subject = createPlayer();
-      final items = List<Media>();
+      final items = <Media>[];
       final interactions = 100;
       for (int i = 0; i < interactions; ++i) {
         items.addAll([media1, media2, media3]);
@@ -146,7 +136,7 @@ void main() {
     });
     test('Unshuffle shall be supported', () async {
       final subject = createPlayer();
-      final items = List<Media>();
+      final items = <Media>[];
       final interactions = 100;
       for (int i = 0; i < interactions; ++i) {
         items.addAll([media1, media2, media3]);
@@ -330,7 +320,7 @@ void main() {
     test('Clear shall remove all tracks from queue', () async {
       final subject = createPlayer();
 
-      final items = List<Media>();
+      final items = <Media>[];
       final interactions = 100;
       for (int i = 0; i < interactions; ++i) {
         items.addAll([media1, media2, media3]);
@@ -400,7 +390,10 @@ Future<CookiesForCustomPolicy> cookieSigner() async {
 class SMPlayer extends StatefulWidget {
   final player;
 
-  SMPlayer({Key key, this.player}) : super(key: key);
+  SMPlayer({
+    Key? key,
+    this.player,
+  }) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => _SMPlayerState(player);

@@ -4,50 +4,50 @@ class Media {
   Media({
     this.id,
     this.name,
-    this.albumId,
+    required this.albumId,
     this.downloadId,
-    this.isExternal,
+    required this.isExternal,
     this.indexInAlbum,
     this.path,
     this.streamPath,
     this.shareUrl,
-    this.localPath,
+    required this.localPath,
     this.createdAt,
     this.downloadProgress,
     this.downloadStatus,
     this.indexInPlaylist,
-    this.playlistId,
+    required this.playlistId,
   }) : super();
 
-  final int id;
-  final String name;
+  final int? id;
+  final String? name;
   final int albumId;
-  final String downloadId;
+  final String? downloadId;
   final bool isExternal;
-  final int indexInAlbum;
-  final int indexInPlaylist;
+  final int? indexInAlbum;
+  final int? indexInPlaylist;
   final int playlistId;
-  final int downloadProgress;
-  final String path;
-  final String streamPath;
+  final int? downloadProgress;
+  final String? path;
+  final String? streamPath;
   final String localPath;
-  final String shareUrl;
-  final int downloadStatus;
-  final DateTime createdAt;
+  final String? shareUrl;
+  final int? downloadStatus;
+  final DateTime? createdAt;
 
   factory Media.fromJson(Map<dynamic, dynamic> json) => Media(
         id: json.parseToInt('id'),
-        name: json['name'] as String,
+        name: json['name'] ?? "",
         albumId: json.parseToInt('album_id'),
         playlistId: json.parseToInt('playlist_id'),
-        downloadId: json['download_id'] as String,
-        isExternal: json['is_external'] as bool,
+        downloadId: json['download_id'] ?? "",
+        isExternal: json['is_external'] ?? false,
         indexInAlbum: json.parseToInt('index_in_album'),
         indexInPlaylist: json.parseToInt('index_in_playlist'),
-        path: json['path'] as String,
-        streamPath: json['stream_path'] as String,
-        shareUrl: json['share_url'] as String,
-        localPath: json['local_path'] as String,
+        path: json['path'] ?? null,
+        streamPath: json['stream_path'] ?? "",
+        shareUrl: json['share_url'] ?? "",
+        localPath: json['local_path'] ?? "",
         createdAt: json['created_at'] == null
             ? null
             : DateTime.fromMillisecondsSinceEpoch(
@@ -60,9 +60,9 @@ class Media {
         'id': this.id,
         'name': this.name,
         'album_id': this.albumId,
-        'playlist_id': this.playlistId ?? -1,
+        'playlist_id': this.playlistId,
         'download_id': '0',
-        'is_external': this.isExternal ?? false,
+        'is_external': this.isExternal,
         'index_in_album': this.indexInAlbum ?? -1,
         'index_in_playlist': this.indexInPlaylist ?? -1,
         'download_progress': this.downloadProgress ?? 100,
