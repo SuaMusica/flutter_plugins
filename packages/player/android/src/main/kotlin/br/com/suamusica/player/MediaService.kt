@@ -117,7 +117,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             // setWakeMode(C.WAKE_MODE_NETWORK)
             setHandleAudioBecomingNoisy(true)
         }
-
+        player?.setThrowsWhenUsingWrongThread(false);
         mediaSession?.let { mediaSession ->
             val sessionToken = mediaSession.sessionToken
 
