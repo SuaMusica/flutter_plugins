@@ -1,24 +1,26 @@
 name: smaws
 description: AWS SDK related functionality.
-version: 0.0.1
-author:
-homepage:
+version: 1.0.0
+author:  Sua Música
+homepage: https://github.com/suamusica
+publish_to: none
 
 environment:
-  sdk: ">=2.2.0 <3.0.0"
+  sdk: ">=2.12.0 <3.0.0"
 
 dependencies:
+  convert: ^3.0.0
   flutter:
     sdk: flutter
-  convert: ^2.1.1
-  rsa_pkcs: ^1.1.4  
-  pointycastle: ^2.0.0
-
+  pointycastle: ^3.0.0-nullsafety.2
+  rsa_pkcs:
+    git: 
+      url: https://github.com/memolight/rsa_pkcs
+      ref: nnbd_support
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
-  mockito: ^4.1.2
+  mockito: ^5.0.0
 
 flutter:
   assets:

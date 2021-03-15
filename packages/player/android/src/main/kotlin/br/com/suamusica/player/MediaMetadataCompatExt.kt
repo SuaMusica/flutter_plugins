@@ -114,7 +114,7 @@ inline val MediaMetadataCompat.playlistId
 inline val MediaMetadataCompat.artistId
     get() = getString("METADATA_KEY_ARTIST_ID")
 
-@MediaItem.Flags
+// @MediaItem.Flags
 inline val MediaMetadataCompat.flag
     get() = this.getLong(METADATA_KEY_UAMP_FLAGS).toInt()
 
@@ -283,7 +283,7 @@ inline var Builder.artistId: String?
  * Custom property for storing whether a [MediaMetadataCompat] item represents an
  * item that is [MediaItem.FLAG_BROWSABLE] or [MediaItem.FLAG_PLAYABLE].
  */
-@MediaItem.Flags
+// @MediaItem.Flags
 inline var Builder.flag: Int
     @Deprecated(NO_GET, level = DeprecationLevel.ERROR)
     get() = throw IllegalAccessException("Cannot get from MediaMetadataCompat.Builder")

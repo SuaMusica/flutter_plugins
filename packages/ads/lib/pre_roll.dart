@@ -4,14 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:smads/pre_roll_controller.dart';
-// import 'package:device_info/device_info.dart';
 
 class PreRoll extends StatelessWidget {
-  final double maxHeight;
-  final PreRollController controller;
+  final double? maxHeight;
+  final PreRollController? controller;
   final bool usePlatformLink;
   PreRoll({
-    Key key,
+    Key? key,
     this.maxHeight,
     this.controller,
     this.usePlatformLink = false,
@@ -43,7 +42,7 @@ class PreRoll extends StatelessWidget {
                   surfaceFactory: (BuildContext context,
                           PlatformViewController controller) =>
                       AndroidViewSurface(
-                    controller: controller,
+                    controller: controller as AndroidViewController,
                     gestureRecognizers: const <
                         Factory<OneSequenceGestureRecognizer>>{},
                     hitTestBehavior: PlatformViewHitTestBehavior.opaque,
@@ -81,50 +80,6 @@ class PreRoll extends StatelessWidget {
   }
 
   void _onPlatformViewCreated(int id) {
-    controller.play();
+    controller?.play();
   }
 }
-// FutureBuilder(
-//     future: DeviceInfoPlugin().androidInfo,
-//     builder: (BuildContext context,
-//         AsyncSnapshot<AndroidDeviceInfo> snapshot) {
-//       if (snapshot.hasError || !snapshot.hasData) {
-//         return Container();
-//       }
-//       return snapshot.data.version.sdkInt >= 28
-//           ? PlatformViewLink(
-//               key: _key,
-//               viewType: viewType,
-//               surfaceFactory: (BuildContext context,
-//                       PlatformViewController controller) =>
-//                   AndroidViewSurface(
-//                 controller: controller,
-//                 gestureRecognizers: const <
-//                     Factory<OneSequenceGestureRecognizer>>{},
-//                 hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-//               ),
-//               onCreatePlatformView:
-//                   (PlatformViewCreationParams params) =>
-//                       PlatformViewsService.initSurfaceAndroidView(
-//                 id: params.id,
-//                 viewType: viewType,
-//                 layoutDirection: TextDirection.ltr,
-//                 creationParams: creationParams,
-//                 creationParamsCodec: const StandardMessageCodec(),
-//               )
-//                         ..addOnPlatformViewCreatedListener((int id) {
-//                           params.onPlatformViewCreated(id);
-//                           _onPlatformViewCreated(id);
-//                         })
-//                         ..create(),
-//             )
-//           : AndroidView(
-//               key: _key,
-//               viewType: viewType,
-//               creationParams: creationParams,
-//               creationParamsCodec: const StandardMessageCodec(),
-//               onPlatformViewCreated: _onPlatformViewCreated,
-//               clipBehavior: Clip.none,
-//             );
-//     },
-//   )

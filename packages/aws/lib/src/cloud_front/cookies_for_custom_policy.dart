@@ -7,11 +7,11 @@ class CookiesForCustomPolicy extends SignedCookies {
   final Entry<String, String> signature;
 
   CookiesForCustomPolicy({
-    DateTime expires,
-    int difference,
-    this.policy,
-    this.keyPairId,
-    this.signature,
+    required DateTime expires,
+    int? difference,
+    required this.policy,
+    required this.keyPairId,
+    required this.signature,
   }) : super(difference, expires);
 
   String toHeaders() =>

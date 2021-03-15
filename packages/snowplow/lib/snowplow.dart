@@ -11,7 +11,7 @@ class Snowplow {
       Map<String, String> args = <String, String>{
         'userId': userId,
       };
-      return _channel.invokeMethod('setUserId', args);
+      return await _channel.invokeMethod<bool?>('setUserId', args) ?? false;
     } on PlatformException catch (e) {
       print("Failed ${e.message}");
       return Future.value(false);
@@ -23,21 +23,24 @@ class Snowplow {
       Map<String, String> args = <String, String>{
         'screenName': name,
       };
-      return _channel.invokeMethod('trackPageview', args);
+
+      return await _channel.invokeMethod('trackPageview', args) ?? false;
     } on PlatformException catch (e) {
       print("Failed ${e.message}");
       return Future.value(false);
     }
   }
 
-  Future<bool> trackCustomEvent(
-      {String customScheme, Map<String, Object> eventMap}) async {
+  Future<bool> trackCustomEvent({
+    required String customScheme,
+    required Map<String, Object> eventMap,
+  }) async {
     try {
       Map<String, dynamic> args = <String, dynamic>{
         'customScheme': customScheme,
         'eventMap': eventMap,
       };
-      return _channel.invokeMethod('trackCustomEvent', args);
+      return await _channel.invokeMethod('trackCustomEvent', args) ?? false;
     } on PlatformException catch (e) {
       print("Failed ${e.message}");
       return Future.value(false);
@@ -45,25 +48,25 @@ class Snowplow {
   }
 
   Future<bool> trackEvent({
-    String category,
-    String action,
-    String label,
-    String property,
-    int value,
-    String pageName,
+    String? category,
+    String? action,
+    String? label,
+    String? property,
+    int? value,
+    String? pageName,
   }) async {
     try {
       Map<String, dynamic> args = <String, dynamic>{
-        'category': category,
-        'action': action,
-        'label': label,
-        'property': property,
-        'value': value,
-        'pageName': pageName,
+        'category': category ?? "",
+        'action': action ?? "",
+        'label': label ?? "",
+        'property': property ?? "",
+        'value': value ?? 0,
+        'pageName': pageName ?? "",
       };
-      return _channel.invokeMethod('trackEvent', args);
+      return await _channel.invokeMethod('trackEvent', args) ?? false;
     } catch (e) {
-      print("Failed ${e.message}");
+      print("Failed $e");
       return Future.value(false);
     }
   }

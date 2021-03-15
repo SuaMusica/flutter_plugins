@@ -7,7 +7,7 @@ class DefaultPrivateKeyLoader implements PrivateKeyLoader {
 
   DefaultPrivateKeyLoader(this.privateKeyPath);
 
-  Future<RSAPrivateKey> load() async {
+  Future<RSAPrivateKey?> load() async {
     String pem = await rootBundle.loadString(privateKeyPath);
     final RSAPKCSParser parser = RSAPKCSParser();
     final RSAKeyPair pair = parser.parsePEM(pem);

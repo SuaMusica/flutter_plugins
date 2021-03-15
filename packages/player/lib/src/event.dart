@@ -1,24 +1,24 @@
-import 'package:flutter/material.dart';
 import 'package:smplayer/src/event_type.dart';
 import 'package:smplayer/src/media.dart';
 
 class Event {
-  Event(
-      {@required this.type,
-      @required this.media,
-      @required this.queuePosition,
-      this.error,
-      this.errorType,
-      this.position,
-      this.duration});
+  Event({
+    required this.type,
+    required this.media,
+    required this.queuePosition,
+    this.error,
+    this.errorType,
+    this.position,
+    this.duration,
+  });
 
   final EventType type;
   final Media media;
-  final String error;
-  final PlayerErrorType errorType;
+  final String? error;
+  final PlayerErrorType? errorType;
   final int queuePosition;
-  final Duration position;
-  final Duration duration;
+  final Duration? position;
+  final Duration? duration;
 
   @override
   String toString() =>

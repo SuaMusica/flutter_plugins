@@ -16,7 +16,7 @@ class EqualizerBandSlideGroup extends StatelessWidget {
           return Container();
         }
 
-        final bandData = snapshot.data;
+        final bandData = snapshot.data!;
         final bandLevelRange = bandData.bandLevelRange;
         final divisions =
             bandLevelRange.max.toInt() - bandLevelRange.min.toInt();
@@ -66,18 +66,18 @@ class EqualizerBandSlideGroup extends StatelessWidget {
 
 class BandSlideItem extends StatelessWidget {
   BandSlideItem({
-    Key key,
+    Key? key,
     this.min = 0.0,
     this.max = 1.0,
     this.width = 40,
-    this.bandId,
-    this.centerFreq,
-    this.divisions,
+    required this.bandId,
+    required this.centerFreq,
+    required this.divisions,
     this.onChanged,
-    this.onChangeEnd,
+    required this.onChangeEnd,
   }) : super(key: key);
 
-  final Function(double) onChanged;
+  final Function(double)? onChanged;
   final Function(double) onChangeEnd;
   final double min, max, width;
   final int divisions, bandId, centerFreq;
@@ -117,12 +117,14 @@ class BandSlideItem extends StatelessWidget {
                     children: [
                       for (var i = 0; i < totalDivider; i++)
                         Expanded(
-                          child: (i == 0 || i == (totalDivider - 1)) ? Container() : Divider(
-                            thickness: 1,
-                            color: enabled
-                                ? theme.dividerColor
-                                : theme.disabledColor,
-                          ),
+                          child: (i == 0 || i == (totalDivider - 1))
+                              ? Container()
+                              : Divider(
+                                  thickness: 1,
+                                  color: enabled
+                                      ? theme.dividerColor
+                                      : theme.disabledColor,
+                                ),
                           flex: 1,
                         ),
                     ],
@@ -151,7 +153,7 @@ class BandSlideItem extends StatelessWidget {
                                 : null,
                             onChangeEnd: enabled
                                 ? (value) {
-                                    onChangeEnd?.call(value);
+                                    onChangeEnd.call(value);
                                   }
                                 : null,
                           );

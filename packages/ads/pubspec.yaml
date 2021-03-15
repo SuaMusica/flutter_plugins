@@ -1,16 +1,17 @@
 name: smads
 description: A new flutter plugin project.
-version: 0.0.1
+version: 1.0.0
 author: Sua Musica
-homepage: www.suamusica.com.br
+homepage: https://github.com/suamusica
 
 environment:
-  sdk: ">=2.7.0 <3.0.0"
+  sdk: ">=2.12.0 <3.0.0"
 
 dependencies:
-  device_info: ^1.0.0
+  device_info: ^2.0.0
   flutter:
     sdk: flutter
+  collection: ^1.15.0-nullsafety.4
 
 dev_dependencies:
   flutter_test:

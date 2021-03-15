@@ -3,7 +3,7 @@ description: Demonstrates how to use the suamusica_player plugin.
 publish_to: 'none'
 
 environment:
-  sdk: ">=2.2.0 <3.0.0"
+  sdk: ">=2.12.0 <3.0.0"
 
 dependencies:
   flutter:
@@ -13,9 +13,10 @@ dependencies:
     git:
       url: https://github.com/SuaMusica/flutter_plugins.git 
       path: packages/aws/
+      ref: feature/nullSafetyUpgrade
 
-  flutter_svg: ^0.14.1
-  cupertino_icons: ^0.1.2
+  flutter_svg: ^0.21.0-nullsafety.0
+  cupertino_icons: ^1.0.2
 
 dev_dependencies:
   flutter_test:

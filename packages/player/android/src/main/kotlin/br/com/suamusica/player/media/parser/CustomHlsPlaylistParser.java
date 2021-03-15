@@ -354,7 +354,7 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
                     variantInfosForUrl = new ArrayList<>();
                     urlToVariantInfos.put(uri, variantInfosForUrl);
                 }
-                variantInfosForUrl.add(new HlsTrackMetadataEntry.VariantInfo(bitrate,bitrate, videoGroupId, audioGroupId, subtitlesGroupId, closedCaptionsGroupId));
+                variantInfosForUrl.add(new HlsTrackMetadataEntry.VariantInfo(bitrate, bitrate, videoGroupId, audioGroupId, subtitlesGroupId, closedCaptionsGroupId));
             }
         }
 
@@ -574,6 +574,10 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
         TreeMap<String, DrmInitData.SchemeData> currentSchemeDatas = new TreeMap<>();
         String encryptionScheme = null;
         DrmInitData cachedDrmInitData = null;
+        List<HlsMediaPlaylist.Part> trailingParts = new ArrayList<>();
+        Map<Uri, HlsMediaPlaylist.RenditionReport> renditionReports = new HashMap<>();
+        HlsMediaPlaylist.ServerControl serverControl = new HlsMediaPlaylist.ServerControl(0,false,0,0,false);
+        List<HlsMediaPlaylist.Part> updatedParts = new ArrayList<>();
 
         String line;
         while (iterator.hasNext()) {
@@ -743,7 +747,8 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
                                 segmentEncryptionIV,
                                 segmentByteRangeOffset,
                                 segmentByteRangeLength,
-                                hasGapTag));
+                                hasGapTag,
+                                updatedParts));
                 segmentStartTimeUs += segmentDurationUs;
                 segmentDurationUs = 0;
                 segmentTitle = "";
@@ -766,11 +771,12 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
                 mediaSequence,
                 version,
                 targetDurationUs,
+                targetDurationUs,
                 hasIndependentSegmentsTag,
                 hasEndTag,
                 /* hasProgramDateTime= */ playlistStartTimeUs != 0,
                 playlistProtectionSchemes,
-                segments);
+                segments, trailingParts, serverControl, renditionReports);
     }
 
     @C.SelectionFlags
@@ -871,7 +877,8 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
         }
     }
 
-    private static @Nullable String parseOptionalStringAttr(
+    private static @Nullable
+    String parseOptionalStringAttr(
             String line, Pattern pattern, Map<String, String> variableDefinitions) {
         return parseOptionalStringAttr(line, pattern, null, variableDefinitions);
     }
