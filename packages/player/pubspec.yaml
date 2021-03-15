@@ -16,7 +16,6 @@ dependencies:
     git: 
       url: https://github.com/SuaMusica/flutter_plugins.git 
       path: packages/aws/
-      ref: feature/nullSafetyUpgrade
   uuid: ^3.0.1
 
 
