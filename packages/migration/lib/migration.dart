@@ -79,7 +79,7 @@ class Migration {
       case 'downloadedContent':
         if (!instance._downloadedStreamController.isClosed) {
           _log("Migration.downloadedContent: ${call.arguments}");
-          final content = (call.arguments)
+          final List<DownloadedContent> content = call.arguments
               .where((item) => item is Map<dynamic, dynamic>)
               .map(
                 (item) => DownloadedContent.fromJson(item),
