@@ -17,10 +17,10 @@ class SnowplowUtils {
             if(value>0){
                 builder!.setValue(Double(value))
             }
-            if(pagename != ""){
-                //We have no way of updating pageName without a pageview on iOS.
-                trackScreenViewWithTracker(with: tracker, andScreenName: pagename)
-            }
+            // if(pagename != ""){
+            //     //We have no way of updating pageName without a pageview on iOS.
+            //     trackScreenViewWithTracker(with: tracker, andScreenName: pagename)
+            // }
             builder!.setProperty(property)
         })
         tracker.track(event)
