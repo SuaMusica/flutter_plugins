@@ -754,12 +754,14 @@ class Player {
   }
 
   static _notifyDurationChangeEvent(Player player, Duration newDuration) {
-    _addUsingPlayer(
-        player,
-        DurationChangeEvent(
-            media: player._queue.current!,
-            queuePosition: player._queue.index,
-            duration: newDuration));
+    if (player._queue.current != null) {
+      _addUsingPlayer(
+          player,
+          DurationChangeEvent(
+              media: player._queue.current!,
+              queuePosition: player._queue.index,
+              duration: newDuration));
+    }
   }
 
   static _notifyPlayerStateChangeEvent(
@@ -774,41 +776,47 @@ class Player {
         PlayerErrorType.INFORMATION,
       );
     }
-    _addUsingPlayer(
-      player,
-      Event(
-        type: eventType,
-        media: player._queue.current!,
-        queuePosition: player._queue.index,
-      ),
-    );
+    if (player._queue.current != null) {
+      _addUsingPlayer(
+        player,
+        Event(
+          type: eventType,
+          media: player._queue.current!,
+          queuePosition: player._queue.index,
+        ),
+      );
+    }
   }
 
   static _notifyPlayerErrorEvent(Player player, String error,
       [PlayerErrorType errorType = PlayerErrorType.UNDEFINED]) {
-    _addUsingPlayer(
-      player,
-      Event(
-        type: EventType.ERROR_OCCURED,
-        media: player._queue.current!,
-        queuePosition: player._queue.index,
-        error: error,
-        errorType: errorType,
-      ),
-    );
+    if (player._queue.current != null) {
+      _addUsingPlayer(
+        player,
+        Event(
+          type: EventType.ERROR_OCCURED,
+          media: player._queue.current!,
+          queuePosition: player._queue.index,
+          error: error,
+          errorType: errorType,
+        ),
+      );
+    }
   }
 
   static _notifyPositionChangeEvent(
       Player player, Duration newPosition, Duration newDuration) {
-    _addUsingPlayer(
-      player,
-      PositionChangeEvent(
-        media: player._queue.current!,
-        queuePosition: player._queue.index,
-        position: newPosition,
-        duration: newDuration,
-      ),
-    );
+    if (player._queue.current != null) {
+      _addUsingPlayer(
+        player,
+        PositionChangeEvent(
+          media: player._queue.current!,
+          queuePosition: player._queue.index,
+          position: newPosition,
+          duration: newDuration,
+        ),
+      );
+    }
   }
 
   static void _log(String param) {
