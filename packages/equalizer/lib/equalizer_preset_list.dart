@@ -9,7 +9,7 @@ class EqualizerPresetList extends StatelessWidget {
   );
 
   final EqualizerController equalizerController;
-  final Function(String) trackSelectType;
+  final Function(String)? trackSelectType;
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +28,7 @@ class EqualizerPresetList extends StatelessWidget {
   }
 
   Widget _presetTile(
-      BuildContext context, Preset preset, Function(String) trackSelectType) {
+      BuildContext context, Preset preset, Function(String)? trackSelectType) {
     final enabled = context.select((ValueNotifier<bool> n) => n.value);
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -47,7 +47,7 @@ class EqualizerPresetList extends StatelessWidget {
                       final notifier = context.read<ValueNotifier<int>>();
                       notifier.value = value;
                       equalizerController.setPreset(preset.name);
-                      trackSelectType(preset.name);
+                      trackSelectType ?? (String value) {}(preset.name);
                     }
                   }
                 : null,

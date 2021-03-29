@@ -10,15 +10,15 @@ class EqualizerWidget extends StatelessWidget {
     this._equalizerController, {
     required this.titleDisabled,
     required this.titleEnabled,
-    required this.trackSwitch,
-    required this.trackSelectType,
+    this.trackSwitch,
+    this.trackSelectType,
   });
 
   final EqualizerController _equalizerController;
   final Widget titleDisabled;
   final Widget titleEnabled;
-  final Function(bool) trackSwitch;
-  final Function(String) trackSelectType;
+  final Function(bool)? trackSwitch;
+  final Function(String)? trackSelectType;
   @override
   Widget build(BuildContext context) {
     final equalizerPresetNotifier =
@@ -52,8 +52,8 @@ class EqualizerWidget extends StatelessWidget {
                 _equalizerController,
                 titleDisabled: this.titleDisabled,
                 titleEnabled: this.titleEnabled,
-                trackSwitch: this.trackSwitch,
-                trackSelectType: this.trackSelectType,
+                onSwitch: this.trackSwitch,
+                onSelectType: this.trackSelectType,
               ),
               EqualizerPresetList(_equalizerController, trackSelectType),
               EqualizerBandSlideGroup(_equalizerController),
