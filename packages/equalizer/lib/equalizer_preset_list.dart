@@ -28,7 +28,7 @@ class EqualizerPresetList extends StatelessWidget {
   }
 
   Widget _presetTile(
-      BuildContext context, Preset preset, Function(String)? trackSelectType) {
+      BuildContext context, Preset preset, Function(String)? onSelectType) {
     final enabled = context.select((ValueNotifier<bool> n) => n.value);
     return Column(
       mainAxisSize: MainAxisSize.min,
