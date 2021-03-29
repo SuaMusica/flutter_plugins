@@ -30,6 +30,12 @@ class _MyAppState extends State<MyApp> {
           equalizerController,
           titleEnabled: Text("Habilitado"),
           titleDisabled: Text("Desabilitado"),
+          trackSwitch: (value) {
+            debugPrint("Test trackSwitch $value");
+          },
+          trackSelectType: (value) {
+            debugPrint("Test trackSelectType $value");
+          },
         ),
       ),
     );

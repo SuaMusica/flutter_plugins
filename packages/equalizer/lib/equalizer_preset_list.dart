@@ -3,9 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class EqualizerPresetList extends StatelessWidget {
-  EqualizerPresetList(this.equalizerController);
+  EqualizerPresetList(
+    this.equalizerController,
+    this.trackSelectType,
+  );
 
   final EqualizerController equalizerController;
+  final Function(String) trackSelectType;
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +19,7 @@ class EqualizerPresetList extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             ...notifierPresetList.value
-                .map((preset) => _presetTile(context, preset))
+                .map((preset) => _presetTile(context, preset, trackSelectType))
                 .toList(),
           ],
         );
@@ -23,7 +27,8 @@ class EqualizerPresetList extends StatelessWidget {
     );
   }
 
-  Widget _presetTile(BuildContext context, Preset preset) {
+  Widget _presetTile(
+      BuildContext context, Preset preset, Function(String) trackSelectType) {
     final enabled = context.select((ValueNotifier<bool> n) => n.value);
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -42,6 +47,7 @@ class EqualizerPresetList extends StatelessWidget {
                       final notifier = context.read<ValueNotifier<int>>();
                       notifier.value = value;
                       equalizerController.setPreset(preset.name);
+                      trackSelectType(preset.name);
                     }
                   }
                 : null,
