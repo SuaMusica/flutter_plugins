@@ -47,7 +47,7 @@ class EqualizerPresetList extends StatelessWidget {
                       final notifier = context.read<ValueNotifier<int>>();
                       notifier.value = value;
                       equalizerController.setPreset(preset.name);
-                      onSelectType ?? (String value) {}(preset.name);
+                      onSelectType?.call(preset.name);
                     }
                   }
                 : null,

@@ -1,3 +1,4 @@
+import 'package:equalizer/equalizer.dart';
 import 'package:equalizer/equalizer_controller.dart';
 import 'package:flutter/material.dart';
 
@@ -38,10 +39,12 @@ class _EqualizerSwitchState extends State<EqualizerSwitch> {
     return SwitchListTile.adaptive(
       title: isEnabled ? widget.titleEnabled : widget.titleDisabled,
       value: isEnabled,
-      onChanged: (value) {
-        widget.onSwitch ?? (bool value) {}(value);
+      onChanged: (value) async {
+        final style = await Equalizer.getPresetNames();
+        widget.onSwitch?.call(value);
         if (value) {
-          widget.onSelectType ?? (String value) {}("Normal");
+          widget.onSelectType?.call(
+              style[widget.controller.currentPresetPositionNotifier.value]);
         }
         widget.controller.setEnabled(value);
         setState(() {
