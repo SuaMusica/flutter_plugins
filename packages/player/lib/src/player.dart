@@ -37,7 +37,7 @@ class Player {
   final StreamController<Event> _eventStreamController =
       StreamController<Event>();
 
-  final Future<CookiesForCustomPolicy> Function() cookieSigner;
+  final Future<CookiesForCustomPolicy?> Function() cookieSigner;
   final Future<String?> Function(Media)? localMediaValidator;
   final bool autoPlay;
   final chromeCastEnabledEvents = [
