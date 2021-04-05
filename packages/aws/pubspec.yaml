@@ -11,12 +11,12 @@ dependencies:
   convert: ^3.0.0
   flutter:
     sdk: flutter
-  pointycastle: ^3.0.0-nullsafety.2
+  pointycastle: ^3.0.1
   rsa_pkcs: ^2.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  mockito: ^5.0.0
+  mockito: ^5.0.3
 
 flutter:
   assets:
