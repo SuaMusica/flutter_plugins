@@ -74,6 +74,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
                 channel?.invokeMethod("externalPlayback.play", emptyMap<String, String>())
             } else {
                 mediaSessionConnection?.play()
+                channel?.invokeMethod("commandCenter.onPlay", emptyMap<String, String>())
             }
         }
 
@@ -83,6 +84,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
                 channel?.invokeMethod("externalPlayback.pause", emptyMap<String, String>())
             } else {
                 mediaSessionConnection?.pause()
+                channel?.invokeMethod("commandCenter.onPause", emptyMap<String, String>())
             }
         }
 
