@@ -671,10 +671,54 @@ class Player {
       case 'commandCenter.onNext':
         _log("Player : Command Center : Got a next request");
         player.next();
+        if (player.current != null) {
+          _addUsingPlayer(
+            player,
+            Event(
+              type: EventType.NEXT_NOTIFICATION,
+              media: player.current!,
+              queuePosition: player._queue.index,
+            ),
+          );
+        }
         break;
       case 'commandCenter.onPrevious':
         _log("Player : Command Center : Got a previous request");
+        if (player.current != null) {
+          _addUsingPlayer(
+            player,
+            Event(
+              type: EventType.PREVIOUS_NOTIFICATION,
+              media: player.current!,
+              queuePosition: player._queue.index,
+            ),
+          );
+        }
         player.previous();
+        break;
+      case 'commandCenter.onPlay':
+        if (player.current != null) {
+          _addUsingPlayer(
+            player,
+            Event(
+              type: EventType.PLAY_NOTIFICATION,
+              media: player.current!,
+              queuePosition: player._queue.index,
+            ),
+          );
+        }
+        break;
+      case 'commandCenter.onPause':
+        if (player.current != null) {
+          _addUsingPlayer(
+            player,
+            Event(
+              type: EventType.PAUSED_NOTIFICATION,
+              media: player.current!,
+              queuePosition: player._queue.index,
+            ),
+          );
+        }
         break;
       case 'externalPlayback.play':
         print("Player: externalPlayback : Play");

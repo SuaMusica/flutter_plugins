@@ -228,6 +228,7 @@ PlaylistItem *currentItem = nil;
                 [self resume:_playerId];
                 int state = STATE_PLAYING;
                 [self notifyStateChange:_playerId state:state overrideBlock:true];
+                [_channel_player invokeMethod:@"commandCenter.onPlay" arguments:@{@"playerId": _playerId}];
             } else {
                 NSLog(@"Player: Remote Command Play: Disabled");
             }
@@ -248,6 +249,7 @@ PlaylistItem *currentItem = nil;
                 [self pause:_playerId];
                 int state = STATE_PAUSED;
                 [self notifyStateChange:_playerId state:state overrideBlock:true];
+                [_channel_player invokeMethod:@"commandCenter.onPause" arguments:@{@"playerId": _playerId}];
             } else {
                 NSLog(@"Player: Remote Command Pause: Disabled");
             }
