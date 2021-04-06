@@ -269,11 +269,8 @@ PlaylistItem *currentItem = nil;
                 AVPlayer *player = playerInfo[@"player"];
                 if (player.rate == 0.0) {
                     [self resume:_playerId];
-                    [_channel_player invokeMethod:@"commandCenter.onPlay" arguments:@{@"playerId": _playerId}];
                 } else {
                     [self pause:_playerId];
-                    [_channel_player invokeMethod:@"commandCenter.onPause" arguments:@{@"playerId": _playerId}];
-
                 }
             } else {
                 NSLog(@"Player: Remote Command TooglePlayPause: Disabled");
