@@ -6,6 +6,8 @@ import android.content.Intent
 import android.media.audiofx.AudioEffect
 import android.util.Log
 import androidx.annotation.NonNull
+import com.suamusica.equalizer.external.presets.ExternalPresetsEQMethodCallHandler
+import com.suamusica.equalizer.external.presets.ExternalPresetsEQPreferences
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -25,16 +27,27 @@ class EqualizerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     private lateinit var channel: MethodChannel
     private var applicationContext: Context? = null
     private var activity: Activity? = null
+    private lateinit var externalPresetsEQMethodCallHandler: ExternalPresetsEQMethodCallHandler
+    private lateinit var audioEffectUtil: AudioEffectUtil
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         applicationContext = flutterPluginBinding.applicationContext
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "equalizer")
         channel.setMethodCallHandler(this)
+        audioEffectUtil = AudioEffectUtil(flutterPluginBinding.applicationContext)
+        val externalPresetsEQPreferences = ExternalPresetsEQPreferences(flutterPluginBinding.applicationContext)
+        externalPresetsEQMethodCallHandler = ExternalPresetsEQMethodCallHandler(externalPresetsEQPreferences, audioEffectUtil)
     }
 
     override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
 
         Log.d(TAG, "call.method: ${call.method}")
+
+        if (call.method.startsWith("external.preset.")) {
+            externalPresetsEQMethodCallHandler.onMethodCall(call, result)
+            return
+        }
+
         when (call.method) {
             "open" -> {
                 val sessionId = call.argument<Int>("audioSessionId") ?: 0
@@ -42,15 +55,15 @@ class EqualizerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                 displayDeviceEqualizer(sessionId, contentType, result)
             }
             "setAudioSessionId" -> {
-                setAudioSessionId(call.arguments as Int)
+                audioEffectUtil.setAudioSessionId(call.arguments as Int)
                 result.success(OK)
             }
             "deviceHasEqualizer" -> {
                 val sessionId = call.argument<Int>("audioSessionId") ?: 0
-                val deviceHasEqualizer = deviceHasEqualizer(sessionId)
+                val deviceHasEqualizer = audioEffectUtil.deviceHasEqualizer(sessionId)
                 result.success(deviceHasEqualizer)
             }
-            "removeAudioSessionId" -> removeAudioSessionId(call.arguments as Int)
+            "removeAudioSessionId" -> audioEffectUtil.removeAudioSessionId(call.arguments as Int)
             "init" -> {
                 CustomEQ.init(call.arguments as Int)
                 result.success(OK)
@@ -102,28 +115,6 @@ class EqualizerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
                     "This device may lack equalizer functionality."
             )
         }
-    }
-
-    private fun deviceHasEqualizer(sessionId: Int): Boolean {
-        val intent = Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL)
-        intent.putExtra(AudioEffect.EXTRA_PACKAGE_NAME, applicationContext?.packageName)
-        intent.putExtra(AudioEffect.EXTRA_AUDIO_SESSION, sessionId)
-        return applicationContext?.packageManager?.let { intent.resolveActivity(it) != null }
-                ?: false
-    }
-
-    private fun setAudioSessionId(sessionId: Int) {
-        val i = Intent(AudioEffect.ACTION_OPEN_AUDIO_EFFECT_CONTROL_SESSION)
-        i.putExtra(AudioEffect.EXTRA_PACKAGE_NAME, applicationContext?.packageName)
-        i.putExtra(AudioEffect.EXTRA_AUDIO_SESSION, sessionId)
-        applicationContext?.sendBroadcast(i)
-    }
-
-    private fun removeAudioSessionId(sessionId: Int) {
-        val i = Intent(AudioEffect.ACTION_CLOSE_AUDIO_EFFECT_CONTROL_SESSION)
-        i.putExtra(AudioEffect.EXTRA_PACKAGE_NAME, applicationContext?.packageName)
-        i.putExtra(AudioEffect.EXTRA_AUDIO_SESSION, sessionId)
-        applicationContext?.sendBroadcast(i)
     }
 
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
