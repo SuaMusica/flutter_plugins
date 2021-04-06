@@ -228,6 +228,7 @@ PlaylistItem *currentItem = nil;
                 [self resume:_playerId];
                 int state = STATE_PLAYING;
                 [self notifyStateChange:_playerId state:state overrideBlock:true];
+                [_channel_player invokeMethod:@"commandCenter.onPlay" arguments:@{@"playerId": _playerId}];
             } else {
                 NSLog(@"Player: Remote Command Play: Disabled");
             }
@@ -248,9 +249,9 @@ PlaylistItem *currentItem = nil;
                 [self pause:_playerId];
                 int state = STATE_PAUSED;
                 [self notifyStateChange:_playerId state:state overrideBlock:true];
+                [_channel_player invokeMethod:@"commandCenter.onPause" arguments:@{@"playerId": _playerId}];
             } else {
                 NSLog(@"Player: Remote Command Pause: Disabled");
-                [_channel_player invokeMethod:@"commandCenter.onPause" arguments:@{@"playerId": _playerId}];
             }
         }
         NSLog(@"Player: Remote Command Pause: END");
@@ -268,12 +269,14 @@ PlaylistItem *currentItem = nil;
                 AVPlayer *player = playerInfo[@"player"];
                 if (player.rate == 0.0) {
                     [self resume:_playerId];
+                    [_channel_player invokeMethod:@"commandCenter.onPlay" arguments:@{@"playerId": _playerId}];
                 } else {
                     [self pause:_playerId];
+                    [_channel_player invokeMethod:@"commandCenter.onPause" arguments:@{@"playerId": _playerId}];
+
                 }
             } else {
                 NSLog(@"Player: Remote Command TooglePlayPause: Disabled");
-                [_channel_player invokeMethod:@"commandCenter.onPlay" arguments:@{@"playerId": _playerId}];
             }
         }
         NSLog(@"Player: Remote Command TooglePlayPause: END");
