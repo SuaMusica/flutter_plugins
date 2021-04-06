@@ -697,24 +697,28 @@ class Player {
         player.previous();
         break;
       case 'commandCenter.onPlay':
-        _addUsingPlayer(
-          player,
-          Event(
-            type: EventType.PLAY_NOTIFICATION,
-            media: player.current!,
-            queuePosition: player._queue.index,
-          ),
-        );
+        if (player.current != null) {
+          _addUsingPlayer(
+            player,
+            Event(
+              type: EventType.PLAY_NOTIFICATION,
+              media: player.current!,
+              queuePosition: player._queue.index,
+            ),
+          );
+        }
         break;
       case 'commandCenter.onPause':
-        _addUsingPlayer(
-          player,
-          Event(
-            type: EventType.PAUSED_NOTIFICATION,
-            media: player.current!,
-            queuePosition: player._queue.index,
-          ),
-        );
+        if (player.current != null) {
+          _addUsingPlayer(
+            player,
+            Event(
+              type: EventType.PAUSED_NOTIFICATION,
+              media: player.current!,
+              queuePosition: player._queue.index,
+            ),
+          );
+        }
         break;
       case 'externalPlayback.play':
         print("Player: externalPlayback : Play");
