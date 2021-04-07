@@ -37,7 +37,7 @@ class ExternalPresetsEQPreferences(context: Context) {
         preferences.edit().putString(PRESETS_KEY, jsonString).apply()
     }
 
-    private fun getAvailablePresets(): List<Preset> {
+    fun getAvailablePresets(): List<Preset> {
         val jsonString = preferences.getString(PRESETS_KEY, null)
         val typeToken = object : TypeToken<List<Preset>>() {}
         val result = mutableListOf<Preset>()

@@ -1,10 +1,16 @@
 package com.suamusica.equalizer.external.presets.domain
 
 import com.suamusica.equalizer.extensions.getRequired
+import kotlin.math.absoluteValue
 
-data class Band(val position: Int, val levelPercent: Int) {
+data class Band(val desiredLevel: Int, val levelPercent: Int) {
 
     fun getLevel(maxDb: Int): Int {
+
+        if (desiredLevel.absoluteValue <= maxDb) {
+            return desiredLevel
+        }
+
         return maxDb * levelPercent / 100
     }
 
@@ -20,14 +26,13 @@ data class Band(val position: Int, val levelPercent: Int) {
 
 
     companion object {
-        private const val POSITION = "band.position"
+        private const val POSITION = "band.desired_level"
         private const val LEVEL_PERCENT = "band.level_percent"
     }
 
 }
 
-data class AndroidEqualizerLevelRange(val min: Int, val max: Int)
-data class AndroidEqualizerBand(val position: Int, val level: Int)
+data class AndroidEqualizerBand(val id: Int, val level: Int, val levelPercent: Int)
 
 val Int.isEven get() = (this % 2 == 0)
 
@@ -38,7 +43,7 @@ fun List<Band>.toAndroidEqualizerBand(
 
     when {
         numberOfAndroidBands == this.size -> {
-            return this.mapIndexed { index, band -> AndroidEqualizerBand(index, band.getLevel(maxDb)) }
+            return this.mapIndexed { index, band -> AndroidEqualizerBand(index, band.getLevel(maxDb), band.levelPercent) }
         }
         numberOfAndroidBands > this.size -> {
 
@@ -54,13 +59,13 @@ fun List<Band>.toAndroidEqualizerBand(
                 endIndex = numberOfAndroidBands - startIndex - 1
             }
 
-            val leftFlatBands = (0 until startIndex).map { AndroidEqualizerBand(it, 0) }
+            val leftFlatBands = (0 until startIndex).map { AndroidEqualizerBand(it, 0, 0) }
             val customizedBands = (startIndex until endIndex).map {
                 val bandIndex = it - startIndex
                 val band = this[bandIndex]
-                AndroidEqualizerBand(it, band.getLevel(maxDb))
+                AndroidEqualizerBand(it, band.getLevel(maxDb), band.levelPercent)
             }
-            val rightFlatBands = (endIndex until numberOfAndroidBands).map { AndroidEqualizerBand(it, 0) }
+            val rightFlatBands = (endIndex until numberOfAndroidBands).map { AndroidEqualizerBand(it, 0, 0) }
 
             return mutableListOf<AndroidEqualizerBand>().also {
                 it.addAll(leftFlatBands)
@@ -85,7 +90,7 @@ fun List<Band>.toAndroidEqualizerBand(
 
             return (startIndex until endIndex).mapIndexed { index, it ->
                 val band = this[it]
-                AndroidEqualizerBand(index, band.getLevel(maxDb))
+                AndroidEqualizerBand(index, band.getLevel(maxDb), band.levelPercent)
             }
         }
     }

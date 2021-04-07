@@ -2,8 +2,9 @@ package com.suamusica.equalizer.external.presets
 
 import com.suamusica.equalizer.AudioEffectUtil
 import com.suamusica.equalizer.CustomEQ
-import com.suamusica.equalizer.external.presets.domain.AndroidEqualizerLevelRange
+import com.suamusica.equalizer.external.presets.domain.Band
 import com.suamusica.equalizer.external.presets.domain.InitInput
+import com.suamusica.equalizer.external.presets.domain.Preset
 import com.suamusica.equalizer.external.presets.domain.toAndroidEqualizerBand
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -33,13 +34,25 @@ class ExternalPresetsEQMethodCallHandler(
             "removeAudioSessionId" -> audioEffectUtil.removeAudioSessionId(call.arguments as Int)
             "init" -> {
                 val initInput = InitInput(call.arguments)
-                externalPresetsEQPreferences.init(initInput.presets)
+
                 CustomEQ.init(initInput.sessionId)
                 CustomEQ.enable(externalPresetsEQPreferences.isEnabled())
-                val currentPreset = externalPresetsEQPreferences.getCurrentPreset()
+                val numberOfAndroidBands = CustomEQ.numberOfBands
                 val levelRange = CustomEQ.bandLevelRange
-                val androidEqualizerBandList = currentPreset.bands.toAndroidEqualizerBand(CustomEQ.numberOfBands, levelRange.last())
-                androidEqualizerBandList.forEach { CustomEQ.setBandLevel(it.position, it.level) }
+                val maxDb = levelRange.last()
+
+                val presets = initInput.presets.map { preset ->
+                    val bands: List<Band> = preset.bands.toAndroidEqualizerBand(numberOfAndroidBands, maxDb)
+                            .map { androidEQBand ->
+                                Band(desiredLevel = androidEQBand.level, levelPercent = androidEQBand.levelPercent)
+                            }
+                    Preset(name = preset.name, bands = bands)
+                }
+
+                externalPresetsEQPreferences.init(presets)
+                val currentPreset = externalPresetsEQPreferences.getCurrentPreset()
+                currentPreset.bands.forEachIndexed { id, band -> CustomEQ.setBandLevel(id, band.getLevel(maxDb))}
+
                 result.success(OK)
             }
             "enable" -> {
@@ -55,13 +68,21 @@ class ExternalPresetsEQMethodCallHandler(
             }
             "getBandLevelRange" -> result.success(CustomEQ.bandLevelRange)
             "getCenterBandFreqs" -> result.success(CustomEQ.centerBandFreqs)
-            "getPresetNames" -> result.success(CustomEQ.presetNames)
-            "getBandLevel" -> result.success(CustomEQ.getBandLevel(call.arguments as Int))
+            "getPresetNames" -> result.success(externalPresetsEQPreferences.getAvailablePresets().map { it.name })
+            "getBandLevel" -> {
+                val bandId = call.arguments as Int
+                val levelRange = CustomEQ.bandLevelRange
+                val level = externalPresetsEQPreferences.getCurrentPreset()
+                        .bands[bandId].getLevel(maxDb = levelRange.last())
+                result.success(level)
+            }
             "setBandLevel" -> {
                 val bandId = call.argument<Int>("bandId")
                 val level = call.argument<Int>("level")
                 bandId?.let {
                     level?.let {
+                        // TODO()
+                        externalPresetsEQPreferences.getCurrentPreset()
                         CustomEQ.setBandLevel(bandId, level)
                     }
                 }
