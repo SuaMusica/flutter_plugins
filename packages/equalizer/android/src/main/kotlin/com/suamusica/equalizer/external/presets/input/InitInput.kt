@@ -1,13 +1,13 @@
-package com.suamusica.equalizer.external.presets.domain
+package com.suamusica.equalizer.external.presets.input
 
 import com.suamusica.equalizer.extensions.getRequired
 
-data class InitInput(val sessionId: Int, val presets: List<Preset>) {
+data class InitInput(val sessionId: Int, val presetInputs: List<PresetInput>) {
 
     private constructor(args: Map<String, Any>)
             : this(
             args.getRequired(SESSION_ID),
-            args.getRequired<List<Any>>(PRESETS).map { Preset(it) }
+            args.getRequired<List<Any>>(PRESETS).map { PresetInput(it) }
     )
 
     @Suppress("UNCHECKED_CAST")

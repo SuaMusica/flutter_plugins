@@ -29,6 +29,7 @@ class EqualizerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     private var activity: Activity? = null
     private lateinit var externalPresetsEQMethodCallHandler: ExternalPresetsEQMethodCallHandler
     private lateinit var audioEffectUtil: AudioEffectUtil
+    private lateinit var vibratorHelper: VibratorHelper
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         applicationContext = flutterPluginBinding.applicationContext
@@ -36,14 +37,15 @@ class EqualizerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         channel.setMethodCallHandler(this)
         audioEffectUtil = AudioEffectUtil(flutterPluginBinding.applicationContext)
         val externalPresetsEQPreferences = ExternalPresetsEQPreferences(flutterPluginBinding.applicationContext)
-        externalPresetsEQMethodCallHandler = ExternalPresetsEQMethodCallHandler(externalPresetsEQPreferences, audioEffectUtil)
+        vibratorHelper = VibratorHelper(flutterPluginBinding.applicationContext)
+        externalPresetsEQMethodCallHandler = ExternalPresetsEQMethodCallHandler(externalPresetsEQPreferences, audioEffectUtil, vibratorHelper)
     }
 
     override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
 
         Log.d(TAG, "call.method: ${call.method}")
 
-        if (call.method.startsWith("external.preset.")) {
+        if (call.method.startsWith("external.presets.")) {
             externalPresetsEQMethodCallHandler.onMethodCall(call, result)
             return
         }
@@ -97,6 +99,12 @@ class EqualizerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             }
             "getCurrentPreset" -> {
                 result.success(CustomEQ.currentPreset)
+            }
+            "vibrate" -> {
+                val milliseconds = call.argument<Long>("milliseconds") ?: 0
+                val amplitude = call.argument<Int>("amplitude") ?: 0
+                vibratorHelper.vibrate(milliseconds = milliseconds, amplitude = amplitude)
+                result.success(ExternalPresetsEQMethodCallHandler.OK)
             }
             else -> result.notImplemented()
         }
