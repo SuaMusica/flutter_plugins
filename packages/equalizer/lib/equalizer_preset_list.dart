@@ -13,7 +13,7 @@ class EqualizerPresetList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ValueNotifier<List<Preset>>>(
+    return Consumer<ValueNotifier<List<PresetData>>>(
       builder: (context, notifierPresetList, _) {
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -28,7 +28,7 @@ class EqualizerPresetList extends StatelessWidget {
   }
 
   Widget _presetTile(
-      BuildContext context, Preset preset, Function(String)? onSelectType) {
+      BuildContext context, PresetData preset, Function(String)? onSelectType) {
     final enabled = context.select((ValueNotifier<bool> n) => n.value);
     return Column(
       mainAxisSize: MainAxisSize.min,

@@ -47,6 +47,7 @@ class EqualizerBandSlideGroup extends StatelessWidget {
                           divisions: divisions,
                           bandId: bandId,
                           centerFreq: freq,
+                          onChanged: (_) => controller.vibrate(5, 80),
                           onChangeEnd: (value) {
                             controller.setBandLevel(bandId, value.toInt());
                           },
@@ -149,6 +150,7 @@ class BandSlideItem extends StatelessWidget {
                                         notifier.value.map((e) => e).toList();
                                     levels[bandId] = value.toInt();
                                     notifier.value = levels;
+                                    onChanged?.call(value);
                                   }
                                 : null,
                             onChangeEnd: enabled

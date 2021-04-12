@@ -30,7 +30,7 @@ class EqualizerWidget extends StatelessWidget {
 
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<ValueNotifier<List<Preset>>>.value(
+        ChangeNotifierProvider<ValueNotifier<List<PresetData>>>.value(
           value: equalizerPresetNotifier,
         ),
         ChangeNotifierProvider<ValueNotifier<bool>>.value(

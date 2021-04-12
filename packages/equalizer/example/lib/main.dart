@@ -15,7 +15,6 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void initState() {
-    equalizerController.init(0);
     super.initState();
   }
 
