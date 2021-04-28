@@ -662,7 +662,7 @@ class Player {
             break;
 
           case PlayerState.ERROR:
-            final error = callArgs['error'] as String;
+            final error = callArgs['error'] ?? "Unknown from Source";
             _notifyPlayerErrorEvent(player, error);
             break;
         }
