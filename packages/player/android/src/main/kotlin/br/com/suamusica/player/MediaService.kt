@@ -571,9 +571,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
         override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
             Log.d(TAG, "onPlaybackStateChanged state: $state")
-            AsyncTask.execute {
-                updateNotification(state!!)
-            }
+            updateNotification(state!!)
         }
 
         override fun onQueueChanged(queue: MutableList<MediaSessionCompat.QueueItem>?) {
