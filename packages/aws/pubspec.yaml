@@ -18,6 +18,3 @@ dev_dependencies:
     sdk: flutter
   mockito: ^5.0.3
 
-flutter:
-  assets:
-    - assets/
