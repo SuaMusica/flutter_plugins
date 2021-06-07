@@ -1,35 +1,49 @@
 import Foundation
 import SnowplowTracker
 
-class SnowplowTrackerBuilder: NSObject, SPRequestCallback {    
+class SnowplowTrackerBuilder: NSObject, RequestCallback {
     let kNamespace = "sm"
     let kAppId     = "1"
     
-    func getTracker(_ url: String, method: SPRequestOptions, protocol _protocol: SPProtocol) -> SPTracker {
-        let emitter = SPEmitter.build({ (builder : SPEmitterBuilder?) -> Void in
-            builder!.setUrlEndpoint(url)
-            builder!.setHttpMethod(method)
-            builder!.setProtocol(_protocol)
-            builder!.setCallback(self)
-            builder!.setEmitRange(500)
-            builder!.setEmitThreadPoolSize(20)
-            builder!.setByteLimitPost(52000)
-        })
-        let subject = SPSubject(platformContext: true, andGeoContext: false)
-        subject?.setUserId("0")
-        let newTracker = SPTracker.build({ (builder : SPTrackerBuilder?) -> Void in
-            builder!.setEmitter(emitter)
-            builder!.setAppId(self.kAppId)
-            builder!.setTrackerNamespace(self.kNamespace)
-            // builder!.setBase64Encoded(false)
-            builder!.setLifecycleEvents(true)
-            builder!.setInstallEvent(true)
-            builder!.setScreenContext(true)
-            builder!.setSessionContext(true)
-            builder!.setApplicationContext(true)
-            builder!.setSubject(subject)
-        })
-        return newTracker!
+    func getTracker(_ url: String) -> TrackerController {
+        var configurations : [Configuration] = []
+        
+        let networkConfig = NetworkConfiguration(endpoint: url, method: .post)
+        
+        configurations.append(networkConfig)
+        
+        let trackerConfiguration = TrackerConfiguration()
+            .appId(kAppId)
+            .base64Encoding(true)
+            .sessionContext(true)
+            .platformContext(true)
+            .lifecycleAutotracking(true)
+            .screenViewAutotracking(true)
+            .screenContext(true)
+            .applicationContext(true)
+            .exceptionAutotracking(true)
+            .installAutotracking(true)
+        
+        configurations.append(trackerConfiguration)
+        
+        let emitterConfiguration = EmitterConfiguration()
+        emitterConfiguration.requestCallback = self
+        
+        configurations.append(emitterConfiguration)
+    
+        if #available(iOS 10, *) {
+            let sessionConfiguration = SessionConfiguration(foregroundTimeout: Measurement(value: 30, unit: .seconds), backgroundTimeout: Measurement(value: 30, unit: .seconds))
+            configurations.append(sessionConfiguration)
+        } else {
+            // Fallback on earlier versions
+        }
+        
+        let subjectConfiguration = SubjectConfiguration()
+        subjectConfiguration.userId = "0"
+        
+        configurations.append(subjectConfiguration)
+        
+        return Snowplow.createTracker(namespace: kNamespace, network: networkConfig, configurations: configurations)
     }
         
     func onSuccess(withCount successCount: Int) {
