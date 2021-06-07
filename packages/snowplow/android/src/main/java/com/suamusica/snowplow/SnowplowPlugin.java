@@ -1,22 +1,14 @@
 package com.suamusica.snowplow;
 
-import com.snowplowanalytics.snowplow.tracker.Subject;
-import com.snowplowanalytics.snowplow.tracker.Tracker;
-import com.snowplowanalytics.snowplow.tracker.constants.Parameters;
-import com.snowplowanalytics.snowplow.tracker.constants.TrackerConstants;
-import com.snowplowanalytics.snowplow.tracker.events.SelfDescribing;
-import com.snowplowanalytics.snowplow.tracker.events.Structured;
-import com.snowplowanalytics.snowplow.tracker.payload.SelfDescribingJson;
-import com.snowplowanalytics.snowplow.tracker.events.ScreenView;
-import com.snowplowanalytics.snowplow.tracker.payload.TrackerPayload;
+import com.snowplowanalytics.snowplow.controller.*;
+import com.snowplowanalytics.snowplow.event.*;
+import com.snowplowanalytics.snowplow.payload.*;
 
 import android.content.Context;
-import android.util.Log;
 
 import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 import androidx.annotation.NonNull;
 
@@ -34,7 +26,7 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
     private static final String CHANNEL_NAME = "com.suamusica.br/snowplow";
     private MethodChannel channel;
     private SnowplowTrackerBuilder stb;
-    private Tracker tracker;
+    private TrackerController tracker;
     private Context applicationContext;
 
     public SnowplowPlugin() {
@@ -93,8 +85,10 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
         if (value > 0) {
             struct.value(Double.valueOf(value));
         }
-        if (pageName != "") {
-            tracker.getScreenState().updateScreenState(UUID.nameUUIDFromBytes(pageName.getBytes()).toString(), pageName, "", "");
+        if (!pageName.equals("")) {
+            // TODO: (nferreira) find a way to implement this.
+            // Now this implemented as an package internal thing that we do not have access to it
+            //tracker.getScreenState().updateScreenState(UUID.nameUUIDFromBytes(pageName.getBytes()).toString(), pageName, "", "");
         }
         tracker.track(struct.build());
         result.success(true);
@@ -105,14 +99,17 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
         SelfDescribingJson eventData = new SelfDescribingJson(customScheme, eventMap);
         List<SelfDescribingJson> contexts = new ArrayList<>();
         contexts.add(eventData);
-        tracker.track(SelfDescribing.builder().eventData(eventData).customContext(contexts).build());
+        // TODO: find a way to do it. This is not available anymore
+        // tracker.track(SelfDescribing.builder().eventData(eventData).customContext(contexts).build());
+        tracker.track(SelfDescribing.builder().eventData(eventData).build());
         result.success(true);
     }
 
     private void setUserId(final MethodChannel.Result result, String userId) {
-        Subject sbj = tracker.getSubject();
+        SubjectController sbj = tracker.getSubject();
         sbj.setUserId(userId);
-        tracker.setSubject(sbj);
+        // TODO: NFerreira, checking the source code it seems it is not necessary any longer
+        // tracker.setSubject(sbj);
         result.success(true);
     }
 
