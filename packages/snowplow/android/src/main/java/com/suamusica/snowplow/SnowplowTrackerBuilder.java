@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 public class SnowplowTrackerBuilder {
     // TODO: this URL is wrong. I need to get the right one.
-    public static final String HTTPS_SNOWPLOW_COLLECTOR_URL_COM = "https://snowplow-collector-url.com";
+    public static final String HTTPS_SNOWPLOW_COLLECTOR_URL_COM = "https://snowplow.suamusica.com.br";
 
     public static TrackerController getTracker(Context context) {
         NetworkConfiguration networkConfig = new NetworkConfiguration(HTTPS_SNOWPLOW_COLLECTOR_URL_COM, HttpMethod.POST);
