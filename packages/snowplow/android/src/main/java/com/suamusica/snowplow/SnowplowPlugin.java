@@ -1,17 +1,22 @@
 package com.suamusica.snowplow;
 
-import com.snowplowanalytics.snowplow.controller.*;
-import com.snowplowanalytics.snowplow.event.*;
-import com.snowplowanalytics.snowplow.payload.*;
-
 import android.content.Context;
-
-import java.util.Map;
-import java.util.List;
-import java.util.ArrayList;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.snowplowanalytics.snowplow.Snowplow;
+import com.snowplowanalytics.snowplow.controller.SubjectController;
+import com.snowplowanalytics.snowplow.controller.TrackerController;
+import com.snowplowanalytics.snowplow.event.Event;
+import com.snowplowanalytics.snowplow.event.ScreenView;
+import com.snowplowanalytics.snowplow.event.SelfDescribing;
+import com.snowplowanalytics.snowplow.event.Structured;
+import com.snowplowanalytics.snowplow.payload.SelfDescribingJson;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
@@ -25,10 +30,9 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
     private static final String CHANNEL_NAME = "com.suamusica.br/snowplow";
     private MethodChannel channel;
-    private SnowplowTrackerBuilder stb;
     private TrackerController tracker;
     private Context applicationContext;
-
+    private String userId = "0";
     public SnowplowPlugin() {
     }
 
@@ -36,8 +40,7 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
     public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
         applicationContext = flutterPluginBinding.getApplicationContext();
         channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), CHANNEL_NAME);
-        stb = new SnowplowTrackerBuilder();
-        tracker = stb.getTracker(applicationContext);
+        tracker = new SnowplowTrackerBuilder().getTracker(applicationContext);
         channel.setMethodCallHandler(this);
     }
 
@@ -73,6 +76,7 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
 
 
     private void trackPageView(final MethodChannel.Result result, String screenName) {
+        tracker.getSubject().setUserId(userId);
         tracker.track(ScreenView.builder().name(screenName)
                 .id(UUID.nameUUIDFromBytes(screenName.getBytes()).toString()).build());
         result.success(true);
@@ -90,6 +94,7 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
             // Now this implemented as an package internal thing that we do not have access to it
             //tracker.getScreenState().updateScreenState(UUID.nameUUIDFromBytes(pageName.getBytes()).toString(), pageName, "", "");
         }
+        tracker.getSubject().setUserId(userId);
         tracker.track(struct.build());
         result.success(true);
     }
@@ -99,25 +104,19 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
         SelfDescribingJson eventData = new SelfDescribingJson(customScheme, eventMap);
         List<SelfDescribingJson> contexts = new ArrayList<>();
         contexts.add(eventData);
-        // TODO: find a way to do it. This is not available anymore
-        // tracker.track(SelfDescribing.builder().eventData(eventData).customContext(contexts).build());
-        tracker.track(SelfDescribing.builder().eventData(eventData).build());
+        tracker.getSubject().setUserId(userId);
+        tracker.track(SelfDescribing.builder().eventData(eventData).contexts(contexts).build());
         result.success(true);
     }
 
     private void setUserId(final MethodChannel.Result result, String userId) {
-        SubjectController sbj = tracker.getSubject();
-        sbj.setUserId(userId);
-        // TODO: NFerreira, checking the source code it seems it is not necessary any longer
-        // tracker.setSubject(sbj);
+        this.userId = userId;
         result.success(true);
     }
-
 
     @Override
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
         channel.setMethodCallHandler(null);
         applicationContext = null;
-
     }
 }

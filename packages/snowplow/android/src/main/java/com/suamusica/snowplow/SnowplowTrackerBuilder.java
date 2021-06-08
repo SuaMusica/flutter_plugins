@@ -5,6 +5,7 @@ import com.snowplowanalytics.snowplow.configuration.*;
 import com.snowplowanalytics.snowplow.controller.*;
 import com.snowplowanalytics.snowplow.*;
 import com.snowplowanalytics.snowplow.network.HttpMethod;
+import com.snowplowanalytics.snowplow.tracker.LogLevel;
 import com.snowplowanalytics.snowplow.util.TimeMeasure;
 
 import android.content.Context;
@@ -12,7 +13,6 @@ import android.content.Context;
 import java.util.concurrent.TimeUnit;
 
 public class SnowplowTrackerBuilder {
-    // TODO: this URL is wrong. I need to get the right one.
     public static final String HTTPS_SNOWPLOW_COLLECTOR_URL_COM = "https://snowplow.suamusica.com.br";
 
     public static TrackerController getTracker(Context context) {
@@ -32,8 +32,9 @@ public class SnowplowTrackerBuilder {
                 new TimeMeasure(30, TimeUnit.SECONDS),
                 new TimeMeasure(30, TimeUnit.SECONDS)
         );
-        SubjectConfiguration subjectConfiguration = new SubjectConfiguration();
-        subjectConfiguration.userId = "0";
+
+        SubjectConfiguration subjectConfiguration = new SubjectConfiguration().userId("0");
+
         return Snowplow.createTracker(context,
                 "sm",
                 networkConfig,
