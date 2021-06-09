@@ -12,6 +12,7 @@ import com.snowplowanalytics.snowplow.event.Event;
 import com.snowplowanalytics.snowplow.event.ScreenView;
 import com.snowplowanalytics.snowplow.event.SelfDescribing;
 import com.snowplowanalytics.snowplow.event.Structured;
+import com.snowplowanalytics.snowplow.globalcontexts.GlobalContext;
 import com.snowplowanalytics.snowplow.payload.SelfDescribingJson;
 
 import java.util.ArrayList;
@@ -102,10 +103,10 @@ public class SnowplowPlugin implements FlutterPlugin, MethodCallHandler {
     private void trackCustomEvent(final MethodChannel.Result result, String customScheme,
                                   Map<String, Object> eventMap) {
         SelfDescribingJson eventData = new SelfDescribingJson(customScheme, eventMap);
-        List<SelfDescribingJson> contexts = new ArrayList<>();
-        contexts.add(eventData);
         tracker.getSubject().setUserId(userId);
-        tracker.track(SelfDescribing.builder().eventData(eventData).contexts(contexts).build());
+        final SelfDescribing event = new SelfDescribing(eventData);
+        event.customContexts.add(eventData);
+        tracker.track(event);
         result.success(true);
     }
 
