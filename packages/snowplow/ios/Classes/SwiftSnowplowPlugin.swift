@@ -6,6 +6,7 @@ import SnowplowTracker
 public class SwiftSnowplowPlugin: NSObject, FlutterPlugin {
     static var channel: FlutterMethodChannel?
     static var tracker: TrackerController?
+    var userId: String = "0"
     
     public static func register(with registrar: FlutterPluginRegistrar) {
         SwiftSnowplowPlugin.synced(self) {
@@ -55,22 +56,22 @@ public class SwiftSnowplowPlugin: NSObject, FlutterPlugin {
     }
     
     public func trackPageview(result: @escaping FlutterResult, _ screenName: String) {
-        SnowplowUtils.trackScreenViewWithTracker(with: SwiftSnowplowPlugin.tracker!, andScreenName: screenName)
+        SnowplowUtils.trackScreenViewWithTracker(with: SwiftSnowplowPlugin.tracker!, andUserId: self.userId, andScreenName: screenName)
         result(true)
     }
     
     public func setUserId(result: @escaping FlutterResult, _ userId: String) {
-        SwiftSnowplowPlugin.tracker!.subject?.userId = userId
+        self.userId = userId
         result(true)
     }
     
     public func trackCustomEvent(result: @escaping FlutterResult, _ customSchema: String, _ eventMap: [String: Any]) {
-        SnowplowUtils.trackCustomEventWithTracker(with: SwiftSnowplowPlugin.tracker!, andSchema: customSchema, andData: eventMap as NSObject)
+        SnowplowUtils.trackCustomEventWithTracker(with: SwiftSnowplowPlugin.tracker!, andUserId: self.userId, andSchema: customSchema, andData: eventMap as NSObject)
         result(true)
     }
     
     public func trackEvent(result: @escaping FlutterResult, _ category: String, _ action: String, _ label: String , _ property: String, _ value: Int, _ pagename: String) {
-        SnowplowUtils.trackStructuredEventWithTracker(with: SwiftSnowplowPlugin.tracker!, andCategory: category, andAction: action, andLabel: label, andProperty: property, andValue: value, andPagename: pagename)
+        SnowplowUtils.trackStructuredEventWithTracker(with: SwiftSnowplowPlugin.tracker!, andUserId: self.userId, andCategory: category, andAction: action, andLabel: label, andProperty: property, andValue: value, andPagename: pagename)
         result(true)
     }
 }

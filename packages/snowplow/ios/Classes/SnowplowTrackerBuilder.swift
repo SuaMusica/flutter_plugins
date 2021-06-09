@@ -39,7 +39,6 @@ class SnowplowTrackerBuilder: NSObject, RequestCallback {
         }
         
         let subjectConfiguration = SubjectConfiguration()
-        subjectConfiguration.userId = "0"
         
         configurations.append(subjectConfiguration)
         
