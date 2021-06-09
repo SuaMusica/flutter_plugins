@@ -22,6 +22,8 @@ class SnowplowUtils {
     static func trackCustomEventWithTracker(with tracker: TrackerController, andUserId userId: String, andSchema customSchema: String, andData data: NSObject) {
         let eventData = SelfDescribingJson(schema: customSchema, andData: data);
         let event = SelfDescribing(eventData: eventData!)
+        let contexts = NSMutableArray(array: [eventData!])
+        event.setContexts(contexts)
         tracker.subject!.userId = userId
         tracker.track(event)
     }
