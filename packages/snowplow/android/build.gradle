@@ -22,10 +22,11 @@ rootProject.allprojects {
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 30
 
     defaultConfig {
-        minSdkVersion 16
+        minSdkVersion 21
+        targetSdkVersion 29
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     lintOptions {
@@ -33,6 +34,7 @@ android {
     }
 }
 dependencies {
-    implementation 'com.squareup.okhttp3:okhttp:4.9.1'
-    implementation 'com.snowplowanalytics:snowplow-android-tracker:1.7.+@aar'
+    // Snowplow Android Tracker
+    implementation 'com.snowplowanalytics:snowplow-android-tracker:2.0.1@aar'
+    implementation "androidx.annotation:annotation:1.2.0"
 }

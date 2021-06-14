@@ -1,31 +1,47 @@
 
 package com.suamusica.snowplow;
 
-import com.snowplowanalytics.snowplow.tracker.*;
-import com.snowplowanalytics.snowplow.tracker.emitter.RequestSecurity;
-import com.snowplowanalytics.snowplow.tracker.emitter.TLSVersion;
-import com.snowplowanalytics.snowplow.tracker.utils.LogLevel;
+import com.snowplowanalytics.snowplow.configuration.*;
+import com.snowplowanalytics.snowplow.controller.*;
+import com.snowplowanalytics.snowplow.*;
+import com.snowplowanalytics.snowplow.network.HttpMethod;
+import com.snowplowanalytics.snowplow.tracker.LogLevel;
+import com.snowplowanalytics.snowplow.util.TimeMeasure;
 
 import android.content.Context;
 
+import java.util.concurrent.TimeUnit;
+
 public class SnowplowTrackerBuilder {
-    public static Tracker getTracker(Context context) {
-        Emitter emitter = getEmitter(context);
-        Subject subject = getSubject(context); // Optional
-        subject.setUserId("0");
-        return Tracker.init(new Tracker.TrackerBuilder(emitter, "sm", "1", context).subject(subject)
-                .sessionContext(true).mobileContext(true).applicationContext(true)
+    public static final String HTTPS_SNOWPLOW_COLLECTOR_URL_COM = "https://snowplow.suamusica.com.br";
+
+    public static TrackerController getTracker(Context context) {
+        NetworkConfiguration networkConfig = new NetworkConfiguration(HTTPS_SNOWPLOW_COLLECTOR_URL_COM, HttpMethod.POST);
+        TrackerConfiguration trackerConfig = new TrackerConfiguration("1")
+                .base64encoding(true)
+                .sessionContext(true)
+                .platformContext(true)
+                .lifecycleAutotracking(true)
+                .screenViewAutotracking(true)
                 .screenContext(true)
+                .applicationContext(true)
+                .exceptionAutotracking(true)
+                .installAutotracking(true);
 
-                .installTracking(true).applicationCrash(true).lifecycleEvents(true).build());
-    }
+        SessionConfiguration sessionConfig = new SessionConfiguration(
+                new TimeMeasure(30, TimeUnit.SECONDS),
+                new TimeMeasure(30, TimeUnit.SECONDS)
+        );
 
-    private static Emitter getEmitter(Context context) {
-        return new Emitter.EmitterBuilder("snowplow.suamusica.com.br", context)
-                .security(RequestSecurity.HTTPS).build();
-    }
+        SubjectConfiguration subjectConfiguration = new SubjectConfiguration().userId("0");
 
-    private static Subject getSubject(Context context) {
-        return new Subject.SubjectBuilder().context(context).build();
+        return Snowplow.createTracker(context,
+                "sm",
+                networkConfig,
+                trackerConfig,
+                sessionConfig,
+                subjectConfiguration
+        );
+
     }
 }
