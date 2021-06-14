@@ -2,38 +2,29 @@ import Foundation
 import SnowplowTracker
 
 class SnowplowUtils {
-    static func trackScreenViewWithTracker(with tracker: SPTracker, andScreenName screenName: String) {
-        let event = SPScreenView.build({ (builder : SPScreenViewBuilder?) -> Void in
-            builder!.setName(screenName)
-        })
+    static func trackScreenViewWithTracker(with tracker: TrackerController, andUserId userId: String, andScreenName screenName: String) {
+        tracker.subject!.userId = userId
+        let event = ScreenView(name: screenName, screenId: UUID.init())
         tracker.track(event)
     }
 
-    static func trackStructuredEventWithTracker(with tracker: SPTracker, andCategory category: String, andAction action: String, andLabel label: String,  andProperty property: String,andValue value: Int, andPagename pagename: String) {
-        let event = SPStructured.build({ (builder : SPStructuredBuilder?) -> Void in
-            builder!.setCategory(category)
-            builder!.setAction(action)
-            builder!.setLabel(label)
-            if(value>0){
-                builder!.setValue(Double(value))
-            }
-            // if(pagename != ""){
-            //     //We have no way of updating pageName without a pageview on iOS.
-            //     trackScreenViewWithTracker(with: tracker, andScreenName: pagename)
-            // }
-            builder!.setProperty(property)
-        })
+    static func trackStructuredEventWithTracker(with tracker: TrackerController, andUserId userId: String, andCategory category: String, andAction action: String, andLabel label: String,  andProperty property: String, andValue value: Int, andPagename pagename: String) {
+        let event = Structured(category: category, action: action)
+        event.label = label
+        if value > 0 {
+            event.value = NSNumber(value: value)
+        }
+        event.property = property
+        tracker.subject!.userId = userId
         tracker.track(event)
     }
 
-    static func trackCustomEventWithTracker(with tracker: SPTracker, andSchema customSchema: String, andData data: NSObject) {
-        let eventData = SPSelfDescribingJson(schema: customSchema, andData: data);
-        var contexts: [SPSelfDescribingJson] = []
-        contexts.append(eventData!)
-        let event = SPUnstructured.build({ (builder : SPUnstructuredBuilder?) -> Void in
-            builder!.setEventData(eventData ?? SPSelfDescribingJson(schema: customSchema, andData: data))
-            builder!.setContexts(NSMutableArray(array: contexts))
-        })
+    static func trackCustomEventWithTracker(with tracker: TrackerController, andUserId userId: String, andSchema customSchema: String, andData data: NSObject) {
+        let eventData = SelfDescribingJson(schema: customSchema, andData: data);
+        let event = SelfDescribing(eventData: eventData!)
+        let contexts = NSMutableArray(array: [eventData!])
+        event.setContexts(contexts)
+        tracker.subject!.userId = userId
         tracker.track(event)
     }
 }

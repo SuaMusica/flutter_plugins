@@ -18,7 +18,7 @@ A new flutter plugin project.
   s.public_header_files = 'Classes/**/*.h'
   s.dependency 'Flutter'
   s.dependency 'FMDB', '~> 2.7.2'
-  s.dependency 'SnowplowTracker', '~> 1.6'
+  s.dependency 'SnowplowTracker', '~> 2.0'
   # s.dependency 'UUIDNamespaces'
   s.platform = :ios, '9.0'
 
