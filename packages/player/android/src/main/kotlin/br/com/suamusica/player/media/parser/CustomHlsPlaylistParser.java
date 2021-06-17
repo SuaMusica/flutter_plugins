@@ -765,6 +765,7 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
                 baseUri,
                 tags,
                 startOffsetUs,
+                false,
                 playlistStartTimeUs,
                 hasDiscontinuitySequence,
                 playlistDiscontinuitySequence,
