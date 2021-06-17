@@ -2,12 +2,8 @@ package br.com.suamusica.player
 
 import android.content.ComponentName
 import android.content.Context
-import android.os.Handler
-import android.os.Message
 import android.util.Log
 import androidx.annotation.NonNull
-import br.com.suamusica.player.MediaService.MessageType.NEXT
-import br.com.suamusica.player.MediaService.MessageType.PREVIOUS
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
