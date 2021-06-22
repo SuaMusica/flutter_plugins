@@ -29,16 +29,8 @@ class AdPlayerManager(
         context: Context,
         input: LoadMethodInput
 ) {
-    private val adsLoader: ImaAdsLoader =
-            ImaAdsLoader.Builder(context).apply {
-                setAdEventListener {
-                    setContentType(it)
-                    adEventDispatcher.onNext(it)
-                }
-                setAdErrorListener {
-                    errorEventDispatcher.onNext(it)
-                }
-            }.build()
+    private var adsLoader: ImaAdsLoader? = null
+    private var context: Context = context
     private val adTagUrl = Uri.parse(input.adTagUrl)
     private val dataSourceFactory: DataSource.Factory
     private var player: SimpleExoPlayer? = null
@@ -85,8 +77,8 @@ class AdPlayerManager(
 
     private fun setupAdsLoader(playerView: PlayerView) {
         Timber.d("setupAdsLoader")
-        adsLoader.setPlayer(player)
-        adsLoader.adsLoader?.addAdsLoadedListener {
+        adsLoader?.setPlayer(player)
+        adsLoader?.adsLoader?.addAdsLoadedListener {
             Timber.d("onAdsManagerLoaded($it)")
             adsManager = it.adsManager
             Timber.d("adsManager: $adsManager")
@@ -96,18 +88,28 @@ class AdPlayerManager(
 
     fun load(playerView: PlayerView, companionAdSlotView: ViewGroup) {
         Timber.d("load")
-        val dataSpec = DataSpec(adTagUrl)
-        adsLoader.requestAds(dataSpec, ++_adsID, playerView)
-        playerView.player = player
-        playerView.useController = false
-        playerView.hideController()
-
         val companionAdSlot = ImaSdkFactory.getInstance().createCompanionAdSlot()
         companionAdSlot.container = companionAdSlotView
         companionAdSlot.setSize(300, 250)
         val companionAdSlots = ArrayList<CompanionAdSlot>()
         companionAdSlots.add(companionAdSlot)
-        adsLoader.adDisplayContainer?.companionSlots = companionAdSlots
+        adsLoader = ImaAdsLoader.Builder(context).apply {
+            setAdEventListener {
+                setContentType(it)
+                adEventDispatcher.onNext(it)
+            }
+            setAdErrorListener {
+                errorEventDispatcher.onNext(it)
+            }
+            setCompanionAdSlots(companionAdSlots)
+        }.build()
+        val dataSpec = DataSpec(adTagUrl)
+        adsLoader?.requestAds(dataSpec, ++_adsID, playerView)
+        playerView.player = player
+        playerView.useController = false
+        playerView.hideController()
+
+
 
         setupAdsLoader(playerView)
 
@@ -118,7 +120,7 @@ class AdPlayerManager(
                         dataSpec,
                         _adsID,
                         ProgressiveMediaSource.Factory(dataSourceFactory),
-                        adsLoader,
+                        adsLoader!!,
                         playerView
                 ))
         player?.prepare()
@@ -126,7 +128,7 @@ class AdPlayerManager(
 
     fun skipAd() {
         Timber.d("Skip")
-        adsLoader.skipAd()
+        adsLoader?.skipAd()
     }
 
     fun play() {
@@ -152,8 +154,8 @@ class AdPlayerManager(
             player = null
         }
         adsManager?.destroy()
-        adsLoader.release()
-        adsLoader.setPlayer(null)
+        adsLoader?.release()
+        adsLoader?.setPlayer(null)
     }
 
     private fun setContentType(adEvent: AdEvent) {
