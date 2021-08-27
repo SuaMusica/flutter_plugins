@@ -392,8 +392,11 @@ class Player {
     return stop();
   }
 
-  Future<int> previous() async {
+  Future<int?> previous() async {
     Media? media = _queue.possiblePrevious();
+    if (media == null) {
+      return null;
+    }
     final mediaUrl = (await localMediaValidator?.call(media)) ?? media.url;
     final current = _queue.current;
     var previous = _queue.previous();

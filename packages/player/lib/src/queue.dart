@@ -135,23 +135,25 @@ class Queue {
     }
   }
 
-  Media possiblePrevious() {
-    assert(index >= 0);
-    final now = DateTime.now();
-    if (_lastPrevious == null) {
-      return storage.elementAt(index).item;
-    } else {
-      final diff = now.difference(_lastPrevious!).inMilliseconds;
-      if (diff < 3000) {
-        var workIndex = index;
-        if (index > 0) {
-          --workIndex;
-        }
-        return storage.elementAt(workIndex).item;
-      } else {
+  Media? possiblePrevious() {
+    if (index >= 0) {
+      final now = DateTime.now();
+      if (_lastPrevious == null) {
         return storage.elementAt(index).item;
+      } else {
+        final diff = now.difference(_lastPrevious!).inMilliseconds;
+        if (diff < 3000) {
+          var workIndex = index;
+          if (index > 0) {
+            --workIndex;
+          }
+          return storage.elementAt(workIndex).item;
+        } else {
+          return storage.elementAt(index).item;
+        }
       }
     }
+    return storage.isNotEmpty ? storage.elementAt(index).item : null;
   }
 
   Media? next() {
