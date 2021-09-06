@@ -153,7 +153,9 @@ class Queue {
         }
       }
     }
-    return storage.isNotEmpty ? storage.elementAt(index).item : null;
+    return storage.isNotEmpty && index >= 0
+        ? storage.elementAt(index).item
+        : null;
   }
 
   Media? next() {
