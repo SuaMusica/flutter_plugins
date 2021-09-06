@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:equalizer/equalizer_controller.dart';
 import 'package:flutter/services.dart';
+
+import 'equalizer_controller.dart';
 
 enum CONTENT_TYPE { MUSIC, MOVIE, GAME, VOICE }
 
@@ -47,7 +50,11 @@ class Equalizer {
   ///
   /// [audioSessionId] enable audio effects for the current session.
   static Future<void> initWithPresets(EQInit initialization) async {
-    _methodChannelPrefix = _METHOD_CHANNEL_EXTERNAL_PRESETS_PREFIX;
+    if (Platform.isAndroid) {
+      _methodChannelPrefix = _METHOD_CHANNEL_EXTERNAL_PRESETS_PREFIX;
+    } else {
+      _methodChannelPrefix = _METHOD_CHANNEL_DEFAULT_PREFIX;
+    }
     await _channel.invokeMethod(
         appendMethodPrefix('init'), initialization.toPlatformInput());
   }
