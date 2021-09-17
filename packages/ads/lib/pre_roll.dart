@@ -8,12 +8,12 @@ import 'package:smads/pre_roll_controller.dart';
 class PreRoll extends StatelessWidget {
   final double? maxHeight;
   final PreRollController? controller;
-  final bool usePlatformLink;
+  final bool useHybridComposition;
   PreRoll({
     Key? key,
     this.maxHeight,
     this.controller,
-    this.usePlatformLink = false,
+    this.useHybridComposition = false,
   }) : super(key: key);
 
   @override
@@ -35,7 +35,7 @@ class PreRoll extends StatelessWidget {
         maxHeight: maxHeight ?? MediaQuery.of(context).size.height,
       ),
       child: defaultTargetPlatform == TargetPlatform.android
-          ? (usePlatformLink
+          ? (useHybridComposition
               ? PlatformViewLink(
                   key: _key,
                   viewType: viewType,
