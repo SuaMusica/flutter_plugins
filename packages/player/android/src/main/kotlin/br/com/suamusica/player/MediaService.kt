@@ -435,8 +435,8 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
     private fun playerEventListener(): Player.EventListener {
         return object : Player.EventListener {
-            override fun onTimelineChanged(timeline: Timeline, manifest: Any?, reason: Int) {
-                Log.i(TAG, "onTimelineChanged: timeline: $timeline manifest: $manifest reason: $reason")
+            override fun onTimelineChanged(timeline: Timeline, reason: Int) {
+                Log.i(TAG, "onTimelineChanged: timeline: $timeline reason: $reason")
             }
 
             override fun onTracksChanged(trackGroups: TrackGroupArray, trackSelections: TrackSelectionArray) {
@@ -506,7 +506,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                 Log.i(TAG, "onShuffleModeEnabledChanged: $shuffleModeEnabled")
             }
 
-            override fun onPlayerError(error: ExoPlaybackException) {
+            override fun onPlayerError(error: PlaybackException) {
                 Log.e(TAG, "onPLayerError: ${error.message}", error)
                 val bundle = Bundle()
                 bundle.putString("type", "error")

@@ -92,16 +92,18 @@ public final class CustomHlsMasterPlaylist extends HlsPlaylist {
          */
         public static CustomHlsMasterPlaylist.Variant createMediaPlaylistVariantUrl(Uri url) {
             Format format =
-                    Format.createContainerFormat(
-                            "0",
-                            /* label= */ null,
-                            MimeTypes.APPLICATION_M3U8,
-                            /* sampleMimeType= */ null,
-                            /* codecs= */ null,
-                            /* bitrate= */ Format.NO_VALUE,
-                            /* selectionFlags= */ 0,
-                            /* roleFlags= */ 0,
-                            /* language= */ null);
+                    new Format.Builder()
+                            .setId("0")
+                            .setLabel(null)
+                            .setLanguage(null)
+                            .setSelectionFlags(0)
+                            .setRoleFlags(0)
+                            .setAverageBitrate(Format.NO_VALUE)
+                            .setPeakBitrate(Format.NO_VALUE)
+                            .setCodecs(null)
+                            .setContainerMimeType(MimeTypes.APPLICATION_M3U8)
+                            .setSampleMimeType(null)
+                            .build();
             return new CustomHlsMasterPlaylist.Variant(
                     url,
                     format,

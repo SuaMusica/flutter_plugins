@@ -208,7 +208,7 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
         } finally {
             Util.closeQuietly(reader);
         }
-        throw new ParserException("Failed to parse the playlist, could not identify any tags.");
+        throw ParserException.createForUnsupportedContainerFeature("Failed to parse the playlist, could not identify any tags.");
     }
 
     private static boolean checkPlaylistHeader(BufferedReader reader) throws IOException {
@@ -331,20 +331,22 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
                                 iterator.next(), variableDefinitions); // #EXT-X-STREAM-INF's URI.
                 Uri uri = UriUtil.resolveToUri(baseUri, line);
                 Format format =
-                        Format.createVideoContainerFormat(
-                                /* id= */ Integer.toString(variants.size()),
-                                /* label= */ null,
-                                /* containerMimeType= */ MimeTypes.APPLICATION_M3U8,
-                                /* sampleMimeType= */ null,
-                                codecs,
-                                null,
-                                bitrate,
-                                width,
-                                height,
-                                frameRate,
-                                /* initializationData= */ null,
-                                /* selectionFlags= */ 0,
-                                /* roleFlags= */ 0);
+                        new Format.Builder()
+                                .setId(Integer.toString(variants.size()))
+                                .setLabel(null)
+                                .setSelectionFlags(0)
+                                .setRoleFlags(0)
+                                .setAverageBitrate(bitrate)
+                                .setPeakBitrate(bitrate)
+                                .setCodecs(codecs)
+                                .setMetadata(null)
+                                .setContainerMimeType(MimeTypes.APPLICATION_M3U8)
+                                .setSampleMimeType(null)
+                                .setInitializationData(null)
+                                .setWidth(width)
+                                .setHeight(height)
+                                .setFrameRate(frameRate)
+                                .build();
                 CustomHlsMasterPlaylist.Variant variant =
                         new CustomHlsMasterPlaylist.Variant(
                                 uri, format, videoGroupId, audioGroupId, subtitlesGroupId, closedCaptionsGroupId);
@@ -403,21 +405,23 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
                     }
                     String sampleMimeType = codecs != null ? MimeTypes.getMediaMimeType(codecs) : null;
                     format =
-                            Format.createVideoContainerFormat(
-                                    /* id= */ formatId,
-                                    /* label= */ name,
-                                    /* containerMimeType= */ MimeTypes.APPLICATION_M3U8,
-                                    sampleMimeType,
-                                    codecs,
-                                    null,
-                                    /* bitrate= */ Format.NO_VALUE,
-                                    width,
-                                    height,
-                                    frameRate,
-                                    /* initializationData= */ null,
-                                    selectionFlags,
-                                    roleFlags)
-                                    .copyWithMetadata(metadata);
+                            new Format.Builder()
+                                    .setId(formatId)
+                                    .setLabel(name)
+                                    .setSelectionFlags(selectionFlags)
+                                    .setRoleFlags(roleFlags)
+                                    .setAverageBitrate(Format.NO_VALUE)
+                                    .setPeakBitrate(Format.NO_VALUE)
+                                    .setCodecs(codecs)
+                                    .setMetadata(metadata)
+                                    .setContainerMimeType(MimeTypes.APPLICATION_M3U8)
+                                    .setSampleMimeType(sampleMimeType)
+                                    .setInitializationData(null)
+                                    .setWidth(width)
+                                    .setHeight(height)
+                                    .setFrameRate(frameRate)
+                                    .build();
+                                    //.copyWithMetadata(metadata);
                     if (uri == null) {
                         // TODO: Remove this case and add a Rendition with a null uri to videos.
                     } else {
@@ -432,21 +436,22 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
                                     : null;
                     sampleMimeType = codecs != null ? MimeTypes.getMediaMimeType(codecs) : null;
                     int channelCount = parseChannelsAttribute(line, variableDefinitions);
-                    format =
-                            Format.createAudioContainerFormat(
-                                    /* id= */ formatId,
-                                    /* label= */ name,
-                                    /* containerMimeType= */ MimeTypes.APPLICATION_M3U8,
-                                    sampleMimeType,
-                                    codecs,
-                                    null,
-                                    /* bitrate= */ Format.NO_VALUE,
-                                    channelCount,
-                                    /* sampleRate= */ Format.NO_VALUE,
-                                    /* initializationData= */ null,
-                                    selectionFlags,
-                                    roleFlags,
-                                    language);
+                    format = new Format.Builder()
+                            .setId(formatId)
+                            .setLabel(name)
+                            .setLanguage(language)
+                            .setSelectionFlags(selectionFlags)
+                            .setRoleFlags(roleFlags)
+                            .setAverageBitrate(Format.NO_VALUE)
+                            .setPeakBitrate(Format.NO_VALUE)
+                            .setCodecs(codecs)
+                            .setMetadata(metadata)
+                            .setContainerMimeType(MimeTypes.APPLICATION_M3U8)
+                            .setSampleMimeType(sampleMimeType)
+                            .setInitializationData(null)
+                            .setChannelCount(channelCount)
+                            .setSampleRate(Format.NO_VALUE)
+                            .build();
                     if (uri == null) {
                         // TODO: Remove muxedAudioFormat and add a Rendition with a null uri to audios.
                         muxedAudioFormat = format;
@@ -456,17 +461,19 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
                     break;
                 case TYPE_SUBTITLES:
                     format =
-                            Format.createTextContainerFormat(
-                                    /* id= */ formatId,
-                                    /* label= */ name,
-                                    /* containerMimeType= */ MimeTypes.APPLICATION_M3U8,
-                                    /* sampleMimeType= */ MimeTypes.TEXT_VTT,
-                                    /* codecs= */ null,
-                                    /* bitrate= */ Format.NO_VALUE,
-                                    selectionFlags,
-                                    roleFlags,
-                                    language)
-                                    .copyWithMetadata(metadata);
+                            new Format.Builder()
+                                    .setId(formatId)
+                                    .setLabel(name)
+                                    .setLanguage(language)
+                                    .setSelectionFlags(selectionFlags)
+                                    .setRoleFlags(roleFlags)
+                                    .setAverageBitrate(Format.NO_VALUE)
+                                    .setPeakBitrate(Format.NO_VALUE)
+                                    .setCodecs(null)
+                                    .setContainerMimeType(MimeTypes.APPLICATION_M3U8)
+                                    .setSampleMimeType(MimeTypes.TEXT_VTT)
+                                    .setMetadata(metadata)
+                                    .build();
                     subtitles.add(new CustomHlsMasterPlaylist.Rendition(uri, format, groupId, name));
                     break;
                 case TYPE_CLOSED_CAPTIONS:
@@ -484,17 +491,20 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
                         muxedCaptionFormats = new ArrayList<>();
                     }
                     muxedCaptionFormats.add(
-                            Format.createTextContainerFormat(
-                                    /* id= */ formatId,
-                                    /* label= */ name,
-                                    /* containerMimeType= */ null,
-                                    /* sampleMimeType= */ mimeType,
-                                    /* codecs= */ null,
-                                    /* bitrate= */ Format.NO_VALUE,
-                                    selectionFlags,
-                                    roleFlags,
-                                    language,
-                                    accessibilityChannel));
+                            new Format.Builder()
+                                    .setId(formatId)
+                                    .setLabel(name)
+                                    .setLanguage(language)
+                                    .setSelectionFlags(selectionFlags)
+                                    .setRoleFlags(roleFlags)
+                                    .setAverageBitrate(Format.NO_VALUE)
+                                    .setPeakBitrate(Format.NO_VALUE)
+                                    .setCodecs(null)
+                                    .setContainerMimeType(null)
+                                    .setSampleMimeType(mimeType)
+                                    .setAccessibilityChannel(accessibilityChannel)
+                                    .build());
+
                     // TODO: Remove muxedCaptionFormats and add a Rendition with a null uri to closedCaptions.
                     break;
                 default:
@@ -611,7 +621,7 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
                 }
                 if (fullSegmentEncryptionKeyUri != null && fullSegmentEncryptionIV == null) {
                     // See RFC 8216, Section 4.3.2.5.
-                    throw new ParserException(
+                    throw ParserException.createForUnsupportedContainerFeature(
                             "The encryption IV attribute must be present when an initialization segment is "
                                     + "encrypted with METHOD=AES-128.");
                 }
@@ -874,7 +884,7 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
         if (value != null) {
             return value;
         } else {
-            throw new ParserException("Couldn't match " + pattern.pattern() + " in " + line);
+            throw ParserException.createForUnsupportedContainerFeature("Couldn't match " + pattern.pattern() + " in " + line);
         }
     }
 

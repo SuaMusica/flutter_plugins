@@ -1,7 +1,6 @@
 name: smaws
 description: AWS SDK related functionality.
 version: 1.0.0
-author:  Sua Música
 homepage: https://github.com/suamusica
 
 environment:
