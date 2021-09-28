@@ -9,13 +9,11 @@ class PreRoll extends StatelessWidget {
   final double? maxHeight;
   final PreRollController? controller;
   final bool useHybridComposition;
-  final Color backgroundColor;
   PreRoll({
     Key? key,
     this.maxHeight,
     this.controller,
     this.useHybridComposition = false,
-    required this.backgroundColor,
   }) : super(key: key);
 
   @override
@@ -36,7 +34,6 @@ class PreRoll extends StatelessWidget {
       constraints: BoxConstraints(
         maxHeight: maxHeight ?? MediaQuery.of(context).size.height,
       ),
-      color: backgroundColor,
       child: defaultTargetPlatform == TargetPlatform.android
           ? (useHybridComposition
               ? PlatformViewLink(
