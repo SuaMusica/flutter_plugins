@@ -31,8 +31,16 @@ class CookieSigner {
             ? DefaultPrivateKeyLoader(privateKeyPathOrLoader, isDirect)
             : privateKeyPathOrLoader;
 
-  factory CookieSigner.from(String privateKeyPath) => CookieSigner(
-      privateKeyPath, CustomPolicyBuilder(), DefaultContentCleaner());
+  factory CookieSigner.from(
+    String privateKeyPath, {
+    bool isDirect = false,
+  }) =>
+      CookieSigner(
+        privateKeyPath,
+        CustomPolicyBuilder(),
+        DefaultContentCleaner(),
+        isDirect: isDirect,
+      );
 
   Future<CookiesForCustomPolicy> getCookiesForCustomPolicy({
     required String resourceUrlOrPath,
