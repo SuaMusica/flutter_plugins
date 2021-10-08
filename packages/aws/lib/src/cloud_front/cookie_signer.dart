@@ -22,9 +22,13 @@ class CookieSigner {
   static const String PolicyKey = 'CloudFront-Policy';
   static const String KeyPairIdKey = 'CloudFront-Key-Pair-Id';
 
-  CookieSigner(privateKeyPathOrLoader, this.policyBuilder, this.contentCleaner)
-      : privateKeyLoader = privateKeyPathOrLoader is String
-            ? DefaultPrivateKeyLoader(privateKeyPathOrLoader)
+  CookieSigner(
+    privateKeyPathOrLoader,
+    this.policyBuilder,
+    this.contentCleaner, {
+    bool isDirect = false,
+  }) : privateKeyLoader = privateKeyPathOrLoader is String
+            ? DefaultPrivateKeyLoader(privateKeyPathOrLoader, isDirect)
             : privateKeyPathOrLoader;
 
   factory CookieSigner.from(String privateKeyPath) => CookieSigner(
