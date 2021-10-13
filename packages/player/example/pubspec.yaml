@@ -16,13 +16,13 @@ dependencies:
 
   flutter_svg: ^0.21.0-nullsafety.0
   cupertino_icons: ^1.0.2
+  smplayer:
+    path: ../
+
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
-  smplayer:
-    path: ../
 
 flutter:
   uses-material-design: true

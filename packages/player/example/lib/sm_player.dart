@@ -166,7 +166,7 @@ class _SMPlayerState extends State<SMPlayer> {
   }
 
   void playOrPause() async {
-    print("Player State: ${_player.state}");
+    // print("Player State: ${_player.state}");
 
     if (_player.state == PlayerState.IDLE && _player.current != null) {
       int result = await _player.play(_player.current!);

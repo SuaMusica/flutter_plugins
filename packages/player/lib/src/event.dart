@@ -1,5 +1,5 @@
-import 'package:smplayer/src/event_type.dart';
-import 'package:smplayer/src/media.dart';
+import 'event_type.dart';
+import 'media.dart';
 
 class Event {
   Event({

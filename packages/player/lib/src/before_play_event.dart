@@ -1,6 +1,4 @@
-import 'package:smplayer/src/event.dart';
-import 'package:smplayer/src/event_type.dart';
-import 'package:smplayer/src/media.dart';
+import '../player.dart';
 
 class BeforePlayEvent extends Event {
   Function(bool) operation;

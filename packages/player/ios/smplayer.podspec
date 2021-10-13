@@ -19,7 +19,7 @@ A new flutter plugin project.
   s.dependency 'AFNetworking'
   s.dependency 'SDWebImage'
   s.dependency 'SDWebImageWebPCoder'
-  s.platform = :ios, '9.0'
-  s.ios.deployment_target = '9.0'
+  s.platform = :ios, '11.0'
+  s.ios.deployment_target = '11.0'
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'VALID_ARCHS[sdk=iphonesimulator*]' => 'x86_64' }
 end

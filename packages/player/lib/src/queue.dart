@@ -1,8 +1,8 @@
-import 'package:smplayer/src/media.dart';
-import 'package:smplayer/src/queue_item.dart';
-import 'package:smplayer/src/shuffler.dart';
-import 'package:smplayer/src/simple_shuffle.dart';
-import 'package:smplayer/src/repeat_mode.dart';
+import 'media.dart';
+import 'queue_item.dart';
+import 'shuffler.dart';
+import 'simple_shuffle.dart';
+import 'repeat_mode.dart';
 
 class Queue {
   var index = -1;

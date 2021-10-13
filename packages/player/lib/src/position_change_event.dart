@@ -1,6 +1,6 @@
-import 'package:smplayer/src/event.dart';
-import 'package:smplayer/src/event_type.dart';
-import 'package:smplayer/src/media.dart';
+import 'event.dart';
+import 'media.dart';
+import 'event_type.dart';
 
 class PositionChangeEvent extends Event {
   final Duration position;

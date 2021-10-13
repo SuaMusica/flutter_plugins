@@ -34,6 +34,11 @@ extension String {
     
     
     @objc public func get(item: PlaylistItem?) -> MPMediaItemArtwork? {
+        var url = item?.coverUrl ?? defaultCover
+        url = url.trimmingCharacters(in: .whitespacesAndNewlines)
+        if (url.count == 0) {
+            url = defaultCover
+        }
         return getCover(item: item, url: item?.coverUrl ?? defaultCover)
     }
     
@@ -78,7 +83,9 @@ extension String {
     
     private func toUIImage(data: Data, url: String) -> UIImage? {
         let fileExt = self.fileExt(url: url)
-        if (fileExt.hasPrefix(".webp") || url.contains("filters:format(webp)")) {
+        if (fileExt == nil) {
+            return nil
+        } else if (fileExt!.hasPrefix(".webp") || url.contains("filters:format(webp)")) {
             return SDImageWebPCoder.shared.decodedImage(with: data, options: nil)
         } else {
             return UIImage.init(data: data)
@@ -142,15 +149,21 @@ extension String {
             }
         }
         var fileExt = self.fileExt(url: url)
-        if (fileExt.hasPrefix(".webp") || url.contains("filters:format(webp)")) {
+        if (fileExt == nil) {
+            return defaultCover
+        } else if (fileExt!.hasPrefix(".webp") || url.contains("filters:format(webp)")) {
             fileExt = ".webp"
         }
-        let coverPath = "\(documentDirectory)/\(albumId)\(fileExt)"
+        let coverPath = "\(documentDirectory)/\(albumId)\(fileExt!)"
         return coverPath
     }
     
-    private func fileExt(url: String) -> String {
+    private func fileExt(url: String) -> String? {
+        print("Player: Cover: fileExt: url: [\(url)] index: [\(String(describing: url.lastIndex(of: ".")))]")
         let index = url.lastIndex(of: ".")
+        if (index == nil) {
+            return nil
+        }
         let fileExt = url.suffix(from: index!)
         return "\(fileExt)"
     }

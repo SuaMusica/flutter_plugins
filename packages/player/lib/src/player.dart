@@ -3,15 +3,16 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:smaws/aws.dart';
 import 'package:flutter/services.dart';
-import 'package:smplayer/src/before_play_event.dart';
-import 'package:smplayer/src/event.dart';
-import 'package:smplayer/src/event_type.dart';
-import 'package:smplayer/src/media.dart';
-import 'package:smplayer/src/duration_change_event.dart';
-import 'package:smplayer/src/position_change_event.dart';
-import 'package:smplayer/src/queue.dart';
-import 'package:smplayer/src/repeat_mode.dart';
 import 'package:mutex/mutex.dart';
+
+import 'before_play_event.dart';
+import 'event.dart';
+import 'event_type.dart';
+import 'media.dart';
+import 'duration_change_event.dart';
+import 'position_change_event.dart';
+import 'queue.dart';
+import 'repeat_mode.dart';
 
 import 'player_state.dart';
 
@@ -576,7 +577,7 @@ class Player {
 
   static Future<void> _doHandlePlatformCall(MethodCall call) async {
     final Map<dynamic, dynamic> callArgs = call.arguments as Map;
-    _log('_platformCallHandler call ${call.method} $callArgs');
+    // _log('_platformCallHandler call ${call.method} $callArgs');
     switch (call.method) {
       case 'audio.onDuration':
         final duration = callArgs['duration'];
@@ -878,9 +879,9 @@ class Player {
   }
 
   static void _addUsingPlayer(Player player, Event event) {
-    if (event.type != EventType.POSITION_CHANGE) {
-      debugPrint("_platformCallHandler _addUsingPlayer $event");
-    }
+    // if (event.type != EventType.POSITION_CHANGE) {
+    //  debugPrint("_platformCallHandler _addUsingPlayer $event");
+    // }
     if (!player._eventStreamController.isClosed &&
         (player._shallSendEvents ||
             player.chromeCastEnabledEvents.contains(event.type))) {

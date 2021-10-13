@@ -1,6 +1,6 @@
-import 'package:smplayer/src/queue_item.dart';
-import 'package:smplayer/src/shuffler.dart';
-import 'package:smplayer/src/media.dart';
+import 'queue_item.dart';
+import 'shuffler.dart';
+import 'media.dart';
 
 class SimpleShuffler extends Shuffler {
   List<QueueItem<Media>> shuffle(List<QueueItem<Media>> list) {
