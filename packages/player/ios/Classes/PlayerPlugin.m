@@ -65,7 +65,7 @@ BOOL notifiedBufferEmptyWithNoConnection = false;
 -(int) resume;
 -(void) stop;
 -(float)rate;
--(void) notifyStateChangeWithState:(int)state overrideBlock:(bool)overrideBlock;
+-(void) notifyStateChange:(int)state overrideBlock:(bool)overrideBlock;
 -(int) seek: (CMTime) time;
 -(void) onSoundComplete;
 -(void) updateDuration;
@@ -76,11 +76,14 @@ BOOL notifiedBufferEmptyWithNoConnection = false;
 -(BOOL) stopTryingToReconnect;
 -(BOOL) shallSendEvents;
 -(void) playLast;
+-(AVPlayer *) getPlayer;
+-(void) onTimeInterval: (CMTime) time;
 @end
 
 @implementation PlayerPlugin {
     FlutterResult _result;
     NSMutableDictionary *playerInfo;
+    id<ObserverCenter> observerCenter;
 }
 
 typedef void (^VoidCallback)(void);
@@ -152,9 +155,15 @@ id<RemoteControlCenter> remoteCommandCenter = nil;
         playerQueue = dispatch_queue_create("com.suamusica.player.playerQueue", DISPATCH_QUEUE_SERIAL);
         [self configureRemoteCommandCenter];
         [self configureReachabilityCheck];
+        [self configureObserserCenter];
         [ScreenCenter addNotificationObservers];
     }
     return self;
+}
+
+-(void)configureObserserCenter {
+    id<Player> player = (id<Player>) self;
+    self->observerCenter = [[ObserverCenterFactory shared] createWithPlayer:player];
 }
 
 -(void)configureReachabilityCheck {
@@ -568,12 +577,8 @@ id<RemoteControlCenter> remoteCommandCenter = nil;
         [ self->playerInfo setObject:url forKey:@"url" ];
         [ self->playerInfo setObject:observers forKey:@"observers"];
         
-        CMTime interval = CMTimeMakeWithSeconds(0.9, NSEC_PER_SEC);
-        id timeObserver = [player addPeriodicTimeObserverForInterval: interval queue: nil usingBlock:^(CMTime time){
-            [self onTimeInterval:time];
-        }];
-        [timeobservers addObject:@{@"player":player, @"observer":timeObserver}];
-        
+        [self->observerCenter start];
+                
         id avrouteobserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVAudioSessionRouteChangeNotification
                                                                                  object: nil
                                                                                   queue: NSOperationQueue.mainQueue
@@ -1255,6 +1260,11 @@ id<RemoteControlCenter> remoteCommandCenter = nil;
     return [AudioSessionManager activeSession] ? Ok : NotOk;
 }
 
+-(AVPlayer *) getPlayer {
+    AVPlayer *player = self->playerInfo[@"player"];
+    return player;
+}
+
 -(int) load: (NSString*) name
      author: (NSString*) author
         url: (NSString*) url
@@ -1668,6 +1678,8 @@ isNotification: (bool) respectSilence
 }
 
 - (void) disposePlayer {
+    [self->observerCenter stop];
+    
     for (id value in timeobservers)
         [value[@"player"] removeTimeObserver:value[@"observer"]];
     timeobservers = nil;

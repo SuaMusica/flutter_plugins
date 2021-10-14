@@ -1,4 +1,5 @@
 import Foundation
+import AVFoundation
 
 @objc public protocol Player {
     var STATE_IDLE: Int { get }
@@ -21,6 +22,9 @@ import Foundation
     func stopTryingToReconnect() -> Bool
     func shallSendEvents() -> Bool
     func playLast()
+    
+    func getPlayer() -> AVPlayer
+    func onTimeInterval(_: CMTime)
 }
 
 extension Player {
