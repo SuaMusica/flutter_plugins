@@ -35,6 +35,7 @@ android {
 }
 dependencies {
     // Snowplow Android Tracker
-    implementation 'com.snowplowanalytics:snowplow-android-tracker:2.0.1@aar'
+    implementation 'com.snowplowanalytics:snowplow-android-tracker:2.2.1@aar'
+    implementation 'androidx.lifecycle-extensions:2.2.+'
     implementation "androidx.annotation:annotation:1.2.0"
 }
