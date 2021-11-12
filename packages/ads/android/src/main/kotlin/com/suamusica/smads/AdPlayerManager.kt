@@ -43,7 +43,7 @@ class AdPlayerManager(
 
     val errorEventDispatcher = PublishSubject.create<AdErrorEvent>()
     val adEventDispatcher = PublishSubject.create<AdEvent>()
-    private var _adsID = 0;
+    private var _adsID = 0
     var isAudioAd = false
         private set
 

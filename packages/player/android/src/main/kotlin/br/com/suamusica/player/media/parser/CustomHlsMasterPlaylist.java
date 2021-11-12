@@ -310,7 +310,7 @@ public final class CustomHlsMasterPlaylist extends HlsPlaylist {
             T stream = streams.get(i);
             for (int j = 0; j < streamKeys.size(); j++) {
                 StreamKey streamKey = streamKeys.get(j);
-                if (streamKey.groupIndex == groupIndex && streamKey.trackIndex == i) {
+                if (streamKey.groupIndex == groupIndex && streamKey.streamIndex == i) {
                     copiedStreams.add(stream);
                     break;
                 }
