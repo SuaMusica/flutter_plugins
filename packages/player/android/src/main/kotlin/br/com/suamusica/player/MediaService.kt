@@ -30,9 +30,9 @@ import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.source.hls.HlsMediaSource
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray
 import com.google.android.exoplayer2.upstream.DataSource
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
 import com.google.android.exoplayer2.upstream.FileDataSource
+import com.google.android.exoplayer2.upstream.HttpDataSource.RequestProperties
 import com.google.android.exoplayer2.util.Util
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -221,12 +221,13 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
     fun prepare(cookie: String, media: Media) {
         this.media = media
-        val defaultHttpDataSourceFactory = DefaultHttpDataSourceFactory(userAgent,
-                10 * 1000,
-                15 * 1000,
-                true)
-        defaultHttpDataSourceFactory.defaultRequestProperties.set("Cookie", cookie)
-        val dataSourceFactory = DefaultDataSourceFactory(this, null, defaultHttpDataSourceFactory)
+
+        val dataSourceFactory = DefaultHttpDataSource.Factory()
+        dataSourceFactory.setReadTimeoutMs(15 * 1000)
+        dataSourceFactory.setConnectTimeoutMs(10 * 1000)
+        dataSourceFactory.setUserAgent(userAgent)
+        dataSourceFactory.setAllowCrossProtocolRedirects(true)
+        dataSourceFactory.setDefaultRequestProperties(mapOf("Cookie" to cookie))
 
         // Metadata Build
         val metadataBuilder = MediaMetadataCompat.Builder()
@@ -265,15 +266,6 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                     }.build()
                 }
             }
-
-            override fun onSkipToNext(player: com.google.android.exoplayer2.Player, controlDispatcher: ControlDispatcher) {
-                sendCommand("next")
-            }
-
-            override fun onSkipToPrevious(player: com.google.android.exoplayer2.Player, controlDispatcher: ControlDispatcher) {
-                sendCommand("previous")
-            }
-
         }
         mediaSessionConnector?.setQueueNavigator(timelineQueueNavigator)
         val url = media.url

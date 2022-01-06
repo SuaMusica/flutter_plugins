@@ -16,13 +16,12 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
-import io.flutter.plugin.common.PluginRegistry.Registrar
 import timber.log.Timber
 
 /** SmadsPlugin */
 class SmadsPlugin : FlutterPlugin, MethodCallHandler {
 
-    private val tag = "SmadsPlugin"
+    private val TAG = "SmadsPlugin"
     private var channel: MethodChannel? = null
     private lateinit var context: Context
     private lateinit var callback: SmadsCallback
@@ -86,12 +85,6 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     companion object {
-        @JvmStatic
-        fun registerWith(registrar: Registrar) {
-            val channel = MethodChannel(registrar.messenger(), CHANNEL_NAME)
-            channel.setMethodCallHandler(SmadsPlugin())
-        }
-
         const val CHANNEL_NAME = "suamusica/pre_roll"
         private const val LOAD_METHOD = "load"
         private const val PLAY_METHOD = "play"

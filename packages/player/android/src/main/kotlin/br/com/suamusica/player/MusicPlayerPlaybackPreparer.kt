@@ -6,7 +6,6 @@ import android.os.ResultReceiver
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.util.Log
-import com.google.android.exoplayer2.ControlDispatcher
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 
@@ -35,7 +34,6 @@ class MusicPlayerPlaybackPreparer(val mediaService: MediaService,
     }
 
     override fun onCommand(player: Player,
-                           controlDispatcher: ControlDispatcher,
                            command: String, extras: Bundle?, cb: ResultReceiver?): Boolean {
         try {
             Log.i(TAG, "MusicPlayerPlaybackPreparer.onCommand : START")

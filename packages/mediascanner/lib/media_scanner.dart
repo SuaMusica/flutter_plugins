@@ -25,26 +25,21 @@ class MediaScanner {
   static final MethodChannel _channel = const MethodChannel('MediaScanner')
     ..setMethodCallHandler(_callbackHandler);
 
-  static Future<String> get platformVersion async {
-    final String version = await _channel.invokeMethod('getPlatformVersion') ?? '';
-    return version;
-  }
-
   final StreamController<ScannedMedia> _onScannedMediaStreamController =
-  StreamController<ScannedMedia>.broadcast();
+      StreamController<ScannedMedia>.broadcast();
 
   Stream<ScannedMedia> get onScannedMediaStream =>
       _onScannedMediaStreamController.stream;
 
   final StreamController<List<ScannedMedia>>
-  _onListScannedMediaStreamController =
-  StreamController<List<ScannedMedia>>.broadcast();
+      _onListScannedMediaStreamController =
+      StreamController<List<ScannedMedia>>.broadcast();
 
   Stream<List<ScannedMedia>> get onListScannedMediaStream =>
       _onListScannedMediaStreamController.stream;
 
   final StreamController<ReadResult> _onReadStreamController =
-  StreamController<ReadResult>.broadcast();
+      StreamController<ReadResult>.broadcast();
 
   Stream<ReadResult> get onReadStream => _onReadStreamController.stream;
 
@@ -55,7 +50,9 @@ class MediaScanner {
   }
 
   Future<bool> scan(MediaScanParams params) async {
-    final result = await _channel.invokeMethod<int?>("scan_media", params.toChannelParams()) ?? 0;
+    final result = await _channel.invokeMethod<int?>(
+            "scan_media", params.toChannelParams()) ??
+        0;
     return result > 0;
   }
 
@@ -68,8 +65,26 @@ class MediaScanner {
   }
 
   Future<bool> delete(DeleteMediaParams params) async {
-    final result = await _channel.invokeMethod<int?>("delete_media", params.toChannelParams()) ?? 0;
+    final result = await _channel.invokeMethod<int?>(
+            "delete_media", params.toChannelParams()) ??
+        0;
     return result > 0;
+  }
+
+  Future<bool> deleteFiles({
+    required List<String> paths,
+  }) async {
+    try {
+      return await _channel.invokeMethod(
+        'delete_medias',
+        {
+          'paths': paths,
+        },
+      );
+    } on PlatformException catch (e) {
+      print(e.message);
+      return false;
+    }
   }
 
   static Future<void> _callbackHandler(MethodCall call) async {
@@ -92,7 +107,7 @@ class MediaScanner {
   static void _onMediaScanned(arguments) {
     print("_onMediaScanned($arguments)");
     final scannedMedia =
-    ScannedMedia.fromMap(arguments as Map<dynamic, dynamic>);
+        ScannedMedia.fromMap(arguments as Map<dynamic, dynamic>);
     instance._onScannedMediaStreamController.add(scannedMedia);
   }
 

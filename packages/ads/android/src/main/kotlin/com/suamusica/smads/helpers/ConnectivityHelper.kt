@@ -15,7 +15,7 @@ object ConnectivityHelper {
     private const val PORT = 80
     private const val PING_TIMEOUT_IN_MILLIS = 1000
 
-    fun isConnected(context: Context): Boolean {
+    private fun isConnected(context: Context): Boolean {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val activeNetworkInfo = connectivityManager.activeNetworkInfo ?: return false
         return activeNetworkInfo.isConnected
