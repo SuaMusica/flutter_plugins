@@ -139,6 +139,13 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                 mediaSessionConnector = MediaSessionConnector(mediaSession).also { connector ->
                     connector.setPlayer(player)
                     connector.setPlaybackPreparer(playbackPreparer)
+                    connector.setMediaButtonEventHandler(MediaButtonEventHandler())
+                    connector.setEnabledPlaybackActions(
+                                    PlaybackStateCompat.ACTION_PLAY
+                                    or PlaybackStateCompat.ACTION_PAUSE
+                                    or PlaybackStateCompat.ACTION_REWIND
+                                    or PlaybackStateCompat.ACTION_FAST_FORWARD
+                    )
                 }
             }
         }
