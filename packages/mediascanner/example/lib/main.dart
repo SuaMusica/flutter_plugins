@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
-import 'package:flutter/services.dart';
 import 'package:mediascanner/media_scanner.dart';
 import 'package:mediascanner/model/media_scan_params.dart';
 import 'package:mediascanner/model/media_type.dart';
@@ -25,7 +24,6 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    initPlatformState();
     scanMedias();
   }
 
@@ -33,26 +31,6 @@ class _MyAppState extends State<MyApp> {
     await Permission.storage.request();
     MediaScanner.instance
         .scan(MediaScanParams(MediaType.audio, [".mp3", ".wav"], "", 0));
-  }
-
-  // Platform messages are asynchronous, so we initialize in an async method.
-  Future<void> initPlatformState() async {
-    String platformVersion;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    try {
-      platformVersion = await MediaScanner.platformVersion;
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
-    }
-
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) return;
-
-    setState(() {
-      _platformVersion = platformVersion;
-    });
   }
 
   int totalMediaScanned = 0;
