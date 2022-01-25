@@ -18,7 +18,8 @@ import 'player_state.dart';
 class Player {
   static const Ok = 1;
   static const NotOk = -1;
-  static final MethodChannel _channel = const MethodChannel('smplayer')
+  static const CHANNEL = 'suamusica.com.br/player';
+  static final MethodChannel _channel = const MethodChannel(CHANNEL)
     ..setMethodCallHandler(platformCallHandler);
 
   static late Player player;

@@ -19,7 +19,7 @@
 
 @import AFNetworking;
 
-static NSString *const CHANNEL_NAME = @"smplayer";
+static NSString *const CHANNEL_NAME = @"suamusica.com.br/player";
 static NSString *redirectScheme = @"rdtp";
 static NSString *customPlaylistScheme = @"cplp";
 static NSString *customKeyScheme = @"ckey";

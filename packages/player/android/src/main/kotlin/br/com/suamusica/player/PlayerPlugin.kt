@@ -24,6 +24,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
         const val POSITION_ARGUMENT = "position"
         const val LOAD_ONLY = "loadOnly"
         const val RELEASE_MODE_ARGUMENT = "releaseMode"
+        private const val CHANNEL = "suamusica.com.br/player"
 
         // Method names
         const val LOAD_METHOD = "load"
@@ -49,17 +50,6 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
 
         var mediaSessionConnection: MediaSessionConnection? = null
 
-        private fun createAll(messenger: BinaryMessenger, context: Context) {
-            if(channel == null){
-                channel = MethodChannel(messenger, "smplayer")
-                channel?.let {
-                    it.setMethodCallHandler(PlayerPlugin())
-                    mediaSessionConnection = MediaSessionConnection(context,
-                            ComponentName(context, MediaService::class.java),
-                            PlayerChangeNotifier(MethodChannelManager(it)))
-                }
-            }
-        }
 
         @JvmStatic
         var externalPlayback: Boolean? = false
@@ -110,7 +100,15 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         Log.d(TAG, "onAttachedToEngine")
-        createAll(flutterPluginBinding.binaryMessenger, flutterPluginBinding.applicationContext)
+        if(channel == null){
+            channel = MethodChannel(flutterPluginBinding.binaryMessenger, CHANNEL)
+            channel?.let {
+                it.setMethodCallHandler(this)
+                mediaSessionConnection = MediaSessionConnection(flutterPluginBinding.applicationContext,
+                    ComponentName(flutterPluginBinding.applicationContext, MediaService::class.java),
+                    PlayerChangeNotifier(MethodChannelManager(it)))
+            }
+        }
     }
 
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
