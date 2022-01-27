@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:smaws/aws.dart';
 import 'package:smplayer/player.dart';
 import 'dart:async';

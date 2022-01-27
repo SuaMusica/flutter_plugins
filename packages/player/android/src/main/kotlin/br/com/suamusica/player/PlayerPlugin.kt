@@ -1,11 +1,9 @@
 package br.com.suamusica.player
 
 import android.content.ComponentName
-import android.content.Context
 import android.util.Log
 import androidx.annotation.NonNull
 import io.flutter.embedding.engine.plugins.FlutterPlugin
-import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
@@ -24,6 +22,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
         const val POSITION_ARGUMENT = "position"
         const val LOAD_ONLY = "loadOnly"
         const val RELEASE_MODE_ARGUMENT = "releaseMode"
+        private const val CHANNEL = "suamusica.com.br/player"
 
         // Method names
         const val LOAD_METHOD = "load"
@@ -49,17 +48,6 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
 
         var mediaSessionConnection: MediaSessionConnection? = null
 
-        private fun createAll(messenger: BinaryMessenger, context: Context) {
-            if(channel == null){
-                channel = MethodChannel(messenger, "smplayer")
-                channel?.let {
-                    it.setMethodCallHandler(PlayerPlugin())
-                    mediaSessionConnection = MediaSessionConnection(context,
-                            ComponentName(context, MediaService::class.java),
-                            PlayerChangeNotifier(MethodChannelManager(it)))
-                }
-            }
-        }
 
         @JvmStatic
         var externalPlayback: Boolean? = false
@@ -110,7 +98,15 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         Log.d(TAG, "onAttachedToEngine")
-        createAll(flutterPluginBinding.binaryMessenger, flutterPluginBinding.applicationContext)
+        channel = MethodChannel(flutterPluginBinding.binaryMessenger, CHANNEL)
+        channel?.let {
+            it.setMethodCallHandler(this)
+            mediaSessionConnection = MediaSessionConnection(
+                flutterPluginBinding.applicationContext,
+                ComponentName(flutterPluginBinding.applicationContext, MediaService::class.java),
+                PlayerChangeNotifier(MethodChannelManager(it))
+            )
+        }
     }
 
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
