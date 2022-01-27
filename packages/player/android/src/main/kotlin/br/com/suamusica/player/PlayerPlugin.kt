@@ -1,11 +1,9 @@
 package br.com.suamusica.player
 
 import android.content.ComponentName
-import android.content.Context
 import android.util.Log
 import androidx.annotation.NonNull
 import io.flutter.embedding.engine.plugins.FlutterPlugin
-import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
@@ -100,14 +98,14 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         Log.d(TAG, "onAttachedToEngine")
-        if(channel == null){
-            channel = MethodChannel(flutterPluginBinding.binaryMessenger, CHANNEL)
-            channel?.let {
-                it.setMethodCallHandler(this)
-                mediaSessionConnection = MediaSessionConnection(flutterPluginBinding.applicationContext,
-                    ComponentName(flutterPluginBinding.applicationContext, MediaService::class.java),
-                    PlayerChangeNotifier(MethodChannelManager(it)))
-            }
+        channel = MethodChannel(flutterPluginBinding.binaryMessenger, CHANNEL)
+        channel?.let {
+            it.setMethodCallHandler(this)
+            mediaSessionConnection = MediaSessionConnection(
+                flutterPluginBinding.applicationContext,
+                ComponentName(flutterPluginBinding.applicationContext, MediaService::class.java),
+                PlayerChangeNotifier(MethodChannelManager(it))
+            )
         }
     }
 
