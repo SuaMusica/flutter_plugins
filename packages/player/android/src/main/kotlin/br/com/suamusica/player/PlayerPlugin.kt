@@ -1,15 +1,16 @@
 package br.com.suamusica.player
 
-import android.content.ComponentName
 import android.util.Log
 import androidx.annotation.NonNull
 import io.flutter.embedding.engine.plugins.FlutterPlugin
+import io.flutter.embedding.engine.plugins.activity.ActivityAware
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 
 
-class PlayerPlugin : MethodCallHandler, FlutterPlugin {
+class PlayerPlugin : MethodCallHandler, FlutterPlugin,ActivityAware {
 
     companion object {
         // Argument names
@@ -39,82 +40,43 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
         const val SET_RELEASE_MODE_METHOD = "setReleaseMode"
         const val CAN_PLAY = "can_play"
         const val SEND_NOTIFICATION = "send_notification"
-        const val REMOVE_NOTIFICATION = "remove_notification"
         const val DISABLE_NOTIFICATION_COMMANDS = "disable_notification_commands"
         const val ENABLE_NOTIFICATION_COMMANDS = "enable_notification_commands"
         const val TAG = "Player"
         const val Ok = 1
-        private var channel: MethodChannel? = null
-
-        var mediaSessionConnection: MediaSessionConnection? = null
-
-
-        @JvmStatic
-        var externalPlayback: Boolean? = false
-
-        @JvmStatic
-        fun play() {
-            if (externalPlayback!!) {
-                channel?.invokeMethod("externalPlayback.play", emptyMap<String, String>())
-            } else {
-                mediaSessionConnection?.play()
-                channel?.invokeMethod("commandCenter.onPlay", emptyMap<String, String>())
-            }
-        }
-
-        @JvmStatic
-        fun pause() {
-            if (externalPlayback!!) {
-                channel?.invokeMethod("externalPlayback.pause", emptyMap<String, String>())
-            } else {
-                mediaSessionConnection?.pause()
-                channel?.invokeMethod("commandCenter.onPause", emptyMap<String, String>())
-            }
-        }
-
-        @JvmStatic
-        fun previous() {
-            channel?.invokeMethod("commandCenter.onPrevious", emptyMap<String, String>())
-        }
-
-        @JvmStatic
-        fun next() {
-            channel?.invokeMethod("commandCenter.onNext", emptyMap<String, String>())
-        }
-
-        @JvmStatic
-        fun stop() {
-            mediaSessionConnection?.stop()
-        }
-        @JvmStatic
-        fun favorite(shouldFavorite:Boolean) {
-            Log.d(TAG, "Should Favorite: $shouldFavorite")
-            mediaSessionConnection?.favorite(shouldFavorite)
-            val args = mutableMapOf<String, Any>()
-            args[FAVORITE] = shouldFavorite
-            channel?.invokeMethod("commandCenter.onFavorite", args)
-        }
+        private var alreadyAttachedToActivity: Boolean = false
     }
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-        Log.d(TAG, "onAttachedToEngine")
-        channel = MethodChannel(flutterPluginBinding.binaryMessenger, CHANNEL)
-        channel?.let {
-            it.setMethodCallHandler(this)
-            mediaSessionConnection = MediaSessionConnection(
-                flutterPluginBinding.applicationContext,
-                ComponentName(flutterPluginBinding.applicationContext, MediaService::class.java),
-                PlayerChangeNotifier(MethodChannelManager(it))
-            )
-        }
+        Log.d(TAG, "onAttachedToEngine $alreadyAttachedToActivity")
+        if (alreadyAttachedToActivity)
+            return
+        val channel = MethodChannel(flutterPluginBinding.binaryMessenger, CHANNEL)
+        val context = flutterPluginBinding.applicationContext
+        channel.setMethodCallHandler(this)
+        PlayerSingleton.setChannel(channel, context)
     }
 
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
         Log.d(TAG, "onDetachedFromEngine")
-        channel?.setMethodCallHandler(null)
-        channel = null
+        PlayerSingleton.channel?.setMethodCallHandler(null)
+        PlayerSingleton.channel = null
     }
 
+    override fun onAttachedToActivity(binding: ActivityPluginBinding) {
+        Log.d(TAG, "onAttachedToActivity")
+        alreadyAttachedToActivity = true
+    }
+
+    override fun onDetachedFromActivityForConfigChanges() {
+        Log.d(TAG, "onDetachedFromActivityForConfigChanges")
+    }
+    override fun onReattachedToActivityForConfigChanges(p0: ActivityPluginBinding) {
+        Log.d(TAG, "onReattachedToActivityForConfigChanges")
+    }
+    override fun onDetachedFromActivity() {
+        Log.d(TAG, "onDetachedFromActivity")
+    }
     override fun onMethodCall(call: MethodCall, response: MethodChannel.Result) {
         try {
             handleMethodCall(call, response)
@@ -126,8 +88,8 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
 
     private fun handleMethodCall(call: MethodCall, response: MethodChannel.Result) {
         val cookie = call.argument<String>("cookie")
-        externalPlayback = call.argument<Boolean>("externalplayback")
-        Log.d(TAG, "method: ${call.method} cookie: $cookie externalPlayback: $externalPlayback")
+        PlayerSingleton.externalPlayback = call.argument<Boolean>("externalplayback")
+        Log.d(TAG, "method: ${call.method} cookie: $cookie externalPlayback: ${PlayerSingleton.externalPlayback}")
         when (call.method) {
             LOAD_METHOD -> {
                 val name = call.argument<String>(NAME_ARGUMENT)!!
@@ -135,14 +97,13 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
                 val url = call.argument<String>(URL_ARGUMENT)!!
                 val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
                 val position = call.argument<Int>(POSITION_ARGUMENT)
-                val loadOnly = call.argument<Boolean>(LOAD_ONLY)!!
-                var isFavorite: Boolean? = call.argument<Boolean>(IS_FAVORITE_ARGUMENT) ?: null
+                val isFavorite: Boolean? = call.argument<Boolean>(IS_FAVORITE_ARGUMENT)
 
-                mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl, isFavorite))
+                PlayerSingleton.mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl, isFavorite))
                 position?.let {
-                    mediaSessionConnection?.seek(it.toLong(), false)
+                    PlayerSingleton.mediaSessionConnection?.seek(it.toLong(), false)
                 }
-                mediaSessionConnection?.sendNotification(name, author, url, coverUrl, null, isFavorite)
+                PlayerSingleton.mediaSessionConnection?.sendNotification(name, author, url, coverUrl, null, isFavorite)
                 Log.d(TAG, "method: ${call.method} name: $name author: $author")
             }
             SEND_NOTIFICATION -> {
@@ -150,9 +111,9 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
                 val author = call.argument<String>(AUTHOR_ARGUMENT)!!
                 val url = call.argument<String>(URL_ARGUMENT)!!
                 val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
-                val isPlaying: Boolean? = call.argument<Boolean>(IS_PLAYING_ARGUMENT) ?: null
-                val isFavorite: Boolean? = call.argument<Boolean>(IS_FAVORITE_ARGUMENT) ?: null
-                mediaSessionConnection?.sendNotification(name, author, url, coverUrl, isPlaying, isFavorite)
+                val isPlaying: Boolean? = call.argument<Boolean>(IS_PLAYING_ARGUMENT)
+                val isFavorite: Boolean? = call.argument<Boolean>(IS_FAVORITE_ARGUMENT)
+                PlayerSingleton.mediaSessionConnection?.sendNotification(name, author, url, coverUrl, isPlaying, isFavorite)
             }
             PLAY_METHOD -> {
                 val name = call.argument<String>(NAME_ARGUMENT)!!
@@ -161,55 +122,52 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin {
                 val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
                 val position = call.argument<Int>(POSITION_ARGUMENT)
                 val loadOnly = call.argument<Boolean>(LOAD_ONLY)!!
-                val isFavorite: Boolean? = call.argument<Boolean>(IS_FAVORITE_ARGUMENT) ?: null
+                val isFavorite: Boolean? = call.argument<Boolean>(IS_FAVORITE_ARGUMENT)
 
-                mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl, isFavorite))
+                PlayerSingleton.mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl, isFavorite))
                 Log.d(TAG, "before prepare: cookie: $cookie")
                 position?.let {
-                    mediaSessionConnection?.seek(it.toLong(), true)
+                    PlayerSingleton.mediaSessionConnection?.seek(it.toLong(), true)
                 }
 
                 if (!loadOnly) {
-                    mediaSessionConnection?.play()
+                    PlayerSingleton.mediaSessionConnection?.play()
                 }
             }
             RESUME_METHOD -> {
-                mediaSessionConnection?.play()
+                PlayerSingleton.mediaSessionConnection?.play()
             }
             PAUSE_METHOD -> {
-                mediaSessionConnection?.pause()
+                PlayerSingleton.mediaSessionConnection?.pause()
             }
             STOP_METHOD -> {
-                mediaSessionConnection?.stop()
+                PlayerSingleton.mediaSessionConnection?.stop()
             }
             RELEASE_METHOD -> {
-                mediaSessionConnection?.release()
+                PlayerSingleton.mediaSessionConnection?.release()
             }
             SEEK_METHOD -> {
                 val position = call.argument<Long>(POSITION_ARGUMENT)!!
-                mediaSessionConnection?.seek(position, true)
+                PlayerSingleton.mediaSessionConnection?.seek(position, true)
             }
             REMOVE_NOTIFICATION_METHOD -> {
-                mediaSessionConnection?.removeNotification();
+                PlayerSingleton.mediaSessionConnection?.removeNotification()
             }
             SET_VOLUME_METHOD -> {
 
             }
             GET_DURATION_METHOD -> {
-                response.success(mediaSessionConnection?.duration)
+                response.success(PlayerSingleton.mediaSessionConnection?.duration)
                 return
             }
             GET_CURRENT_POSITION_METHOD -> {
-                response.success(mediaSessionConnection?.currentPosition)
+                response.success(PlayerSingleton.mediaSessionConnection?.currentPosition)
                 return
             }
             SET_RELEASE_MODE_METHOD -> {
                 val releaseModeName = call.argument<String>(RELEASE_MODE_ARGUMENT)
                 val releaseMode = ReleaseMode.valueOf(releaseModeName!!.substring("ReleaseMode.".length))
-                mediaSessionConnection?.releaseMode = releaseMode.ordinal
-            }
-            REMOVE_NOTIFICATION -> {
-                // no operation required on Android
+                PlayerSingleton.mediaSessionConnection?.releaseMode = releaseMode.ordinal
             }
             DISABLE_NOTIFICATION_COMMANDS -> {
 

@@ -22,7 +22,7 @@ class MediaButtonEventHandler : MediaSessionConnector.MediaButtonEventHandler {
         if (Intent.ACTION_MEDIA_BUTTON == intent.action) {
             mediaButtonHandler(intent)
         } else if (intent.hasExtra(FAVORITE)) {
-            PlayerPlugin.favorite(intent.getBooleanExtra(FAVORITE, false))
+            PlayerSingleton.favorite(intent.getBooleanExtra(FAVORITE, false))
         }
 
     }
@@ -37,22 +37,21 @@ class MediaButtonEventHandler : MediaSessionConnector.MediaButtonEventHandler {
 
         when (ke.keyCode) {
             KeyEvent.KEYCODE_MEDIA_PLAY -> {
-                PlayerPlugin.play()
+                PlayerSingleton.play()
             }
             KeyEvent.KEYCODE_MEDIA_PAUSE -> {
-                PlayerPlugin.pause()
+                PlayerSingleton.pause()
             }
             KeyEvent.KEYCODE_MEDIA_NEXT -> {
                 Log.d("Player", "Player: Key Code : Next")
-                PlayerPlugin.next()
-
+                PlayerSingleton.next()
             }
             KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
                 Log.d("Player", "Player: Key Code : Previous")
-                PlayerPlugin.previous()
+                PlayerSingleton.previous()
             }
             KeyEvent.KEYCODE_MEDIA_STOP -> {
-                PlayerPlugin.stop()
+                PlayerSingleton.stop()
             }
         }
     }
