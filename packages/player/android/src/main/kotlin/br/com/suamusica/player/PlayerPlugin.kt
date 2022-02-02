@@ -76,6 +76,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin,ActivityAware {
     }
     override fun onDetachedFromActivity() {
         Log.d(TAG, "onDetachedFromActivity")
+        alreadyAttachedToActivity = false
     }
     override fun onMethodCall(call: MethodCall, response: MethodChannel.Result) {
         try {
