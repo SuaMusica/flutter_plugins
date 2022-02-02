@@ -59,6 +59,10 @@ class MediaSessionConnection(
         sendCommand("play", null)
     }
 
+    fun togglePlayPause() {
+        sendCommand("togglePlayPause", null)
+    }
+
     fun pause() {
         sendCommand("pause", null)
     }

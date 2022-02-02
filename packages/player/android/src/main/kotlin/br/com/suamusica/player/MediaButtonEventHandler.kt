@@ -42,6 +42,10 @@ class MediaButtonEventHandler : MediaSessionConnector.MediaButtonEventHandler {
             KeyEvent.KEYCODE_MEDIA_PAUSE -> {
                 PlayerSingleton.pause()
             }
+            KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
+                Log.d("Player", "Player: Key Code : PlayPause")
+                PlayerSingleton.togglePlayPause()
+            }
             KeyEvent.KEYCODE_MEDIA_NEXT -> {
                 Log.d("Player", "Player: Key Code : Next")
                 PlayerSingleton.next()
