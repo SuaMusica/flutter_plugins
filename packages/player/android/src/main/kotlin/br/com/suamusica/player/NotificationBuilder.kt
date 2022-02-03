@@ -21,10 +21,7 @@ import androidx.media.session.MediaButtonReceiver
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.*
 import java.util.*
 
 const val NOW_PLAYING_CHANNEL: String = "br.com.suamusica.media.NOW_PLAYING"
@@ -57,7 +54,7 @@ class NotificationBuilder(private val context: Context) {
             PendingIntent.getBroadcast(context, UUID.randomUUID().hashCode()
                     , Intent(context, MediaControlBroadcastReceiver::class.java).apply {
                 putExtra(FAVORITE, true)
-            }, 0)
+            }, if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
     )
 
     private val unFavoriteAction = NotificationCompat.Action(
@@ -65,7 +62,7 @@ class NotificationBuilder(private val context: Context) {
             context.getString(R.string.notification_unfavorite),
             PendingIntent.getBroadcast(context, UUID.randomUUID().hashCode(), Intent(context, MediaControlBroadcastReceiver::class.java).apply {
                 putExtra(FAVORITE, false)
-            }, 0)
+            },  if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
     )
 
     private val skipToNextAction = NotificationCompat.Action(
@@ -90,31 +87,30 @@ class NotificationBuilder(private val context: Context) {
                     .asBitmap()
                     .load(artUri)
             var bitmap: Bitmap? = null
-            val result = GlobalScope.async {
-                try {
-                    bitmap = when {
-                        artUri != null && artUri.isNotBlank() ->
-                            when (size) {
-                                null -> glider.submit().get()
-                                else -> glider.submit(size, size).get()
-                            }
-                        else -> null
-                    }
-                } catch (e: Exception) {
-                    null
-                }
-            }
 
             return runBlocking {
                 withTimeoutOrNull(150L) {
-                    result.await()
+                    withContext(Dispatchers.IO) {
+                        try {
+                            bitmap = when {
+                                artUri != null && artUri.isNotBlank() ->
+                                    when (size) {
+                                        null -> glider.submit().get()
+                                        else -> glider.submit(size, size).get()
+                                    }
+                                else -> null
+                            }
+                        } catch (e: Exception) {
+                            null
+                        }
+                    }
                 }
                 return@runBlocking bitmap
             }
         }
     }
 
-    fun buildNotification(mediaSession: MediaSessionCompat, media: Media, onGoing: Boolean, isPlayingExternal: Boolean?, isFavorite: Boolean?, mediaDuration: Long?): Notification? {
+    fun buildNotification(mediaSession: MediaSessionCompat, media: Media, onGoing: Boolean, isPlayingExternal: Boolean?, isFavorite: Boolean?, mediaDuration: Long?): Notification {
         if (shouldCreateNowPlayingChannel()) {
             createNowPlayingChannel()
         }
@@ -125,14 +121,13 @@ class NotificationBuilder(private val context: Context) {
         val actions = if (isFavorite == null) mutableListOf(0, 1, 2) else mutableListOf(0, 2, 3) // favorite,play/pause,next
         val duration = mediaDuration ?: 0L
         val currentDuration = mediaSession.controller.metadata.getLong(MediaMetadata.METADATA_KEY_DURATION)
-        val shouldUseMetadata = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R;
+        val shouldUseMetadata = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
 
         isFavorite?.let {
             builder.addAction(if (it) unFavoriteAction else favoriteAction)
         }
 
         builder.addAction(skipToPreviousAction)
-
         when {
             isPlayingExternal != null -> {
                 if (isPlayingExternal) {
@@ -164,7 +159,7 @@ class NotificationBuilder(private val context: Context) {
                 .setMediaSession(mediaSession.sessionToken)
 
         val artUri = media.coverUrl
-        var art: Bitmap? = null
+        val art: Bitmap?
         if (artUri == oldArtUri && this.oldArtBitmap != null) {
             art = oldArtBitmap
         } else {
@@ -190,7 +185,7 @@ class NotificationBuilder(private val context: Context) {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
         val notifyPendingIntent = PendingIntent.getActivity(
-                context, 0, notifyIntent, PendingIntent.FLAG_UPDATE_CURRENT
+                context, 0, notifyIntent, if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT else PendingIntent.FLAG_UPDATE_CURRENT
         )
         val notification = builder.apply {
             setContentIntent(notifyPendingIntent)

@@ -364,6 +364,16 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         }
     }
 
+    fun togglePlayPause() {
+        performAndDisableTracking {
+            if(player?.isPlaying == true){
+                player?.pause()
+            } else {
+                player?.play()
+            }
+        }
+    }
+
     fun release() {
         performAndDisableTracking {
             player?.stop()

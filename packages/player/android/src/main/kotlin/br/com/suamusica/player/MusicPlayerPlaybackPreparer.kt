@@ -66,6 +66,10 @@ class MusicPlayerPlaybackPreparer(val mediaService: MediaService,
                     mediaService.stop()
                     true
                 }
+                "togglePlayPause" -> {
+                    mediaService.togglePlayPause()
+                    true
+                }
                 "release" -> {
                     mediaService.release()
                     true

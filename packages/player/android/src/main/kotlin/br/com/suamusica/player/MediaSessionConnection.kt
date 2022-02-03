@@ -2,7 +2,6 @@ package br.com.suamusica.player
 
 import android.content.ComponentName
 import android.content.Context
-import android.os.Build
 import android.os.Bundle
 import android.os.ResultReceiver
 import android.support.v4.media.MediaBrowserCompat
@@ -14,7 +13,6 @@ import java.lang.ref.WeakReference
 
 class MediaSessionConnection(
         context: Context,
-        serviceComponent: ComponentName,
         val playerChangeNotifier: PlayerChangeNotifier
 ) {
     val TAG = "Player"
@@ -33,7 +31,7 @@ class MediaSessionConnection(
     var duration = 0L
 
     private val weakContext = WeakReference(context)
-    private val weakServiceComponent = WeakReference(serviceComponent)
+    private val weakServiceComponent = WeakReference(ComponentName(context, MediaService::class.java))
 
     private val mediaBrowserConnectionCallback = MediaBrowserConnectionCallback(context)
     private var mediaBrowser: MediaBrowserCompat? = null
@@ -59,6 +57,10 @@ class MediaSessionConnection(
 
     fun play() {
         sendCommand("play", null)
+    }
+
+    fun togglePlayPause() {
+        sendCommand("togglePlayPause", null)
     }
 
     fun pause() {
@@ -106,14 +108,9 @@ class MediaSessionConnection(
     }
 
     private fun sendCommand(command: String, bundle: Bundle? = null, callbackHandler: ResultReceiver? = null) {
-        val receiver = callbackHandler
-                ?: if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
-                    ResultReceiver(null)
-                else null
-
         ensureMediaBrowser {
             ensureMediaController {
-                it.sendCommand(command, bundle, receiver)
+                it.sendCommand(command, bundle, callbackHandler)
             }
         }
     }
@@ -161,7 +158,7 @@ class MediaSessionConnection(
                     override fun onPlaybackStateChanged(state: PlaybackStateCompat) {
                         if (lastState != state.state) {
                             Log.i(TAG, "onPlaybackStateChanged: $state")
-                            lastState = state.state;
+                            lastState = state.state
                             playerChangeNotifier.notifyStateChange(state.state)
                         }
                     }

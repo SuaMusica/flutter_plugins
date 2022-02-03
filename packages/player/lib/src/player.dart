@@ -724,6 +724,18 @@ class Player {
           );
         }
         break;
+      case 'commandCenter.onTogglePlayPause':
+        if (player.current != null) {
+          _addUsingPlayer(
+            player,
+            Event(
+              type: EventType.TOGGLE_PLAY_PAUSE,
+              media: player.current!,
+              queuePosition: player._queue.index,
+            ),
+          );
+        }
+        break;
       case 'externalPlayback.play':
         print("Player: externalPlayback : Play");
         _notifyPlayerStateChangeEvent(
