@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import androidx.annotation.RequiresApi
 import com.google.ads.interactivemedia.v3.api.*
 import com.google.android.exoplayer2.C
+import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.ext.ima.ImaAdsLoader
@@ -33,7 +34,7 @@ class AdPlayerManager(
     private var context: Context = context
     private val adTagUrl = Uri.parse(input.adTagUrl)
     private val dataSourceFactory: DataSource.Factory
-    private var player: SimpleExoPlayer? = null
+    private var player: ExoPlayer? = null
     private var adsManager: AdsManager? = null
     private var supportedMimeTypes: List<String>? = null
     private val uAmpAudioAttributes = AudioAttributes.Builder()

@@ -19,7 +19,7 @@ data class AdPlayerParams(val adSize: AdSize) {
     private constructor(args: Map<String, Any>) : this(AdSize(args.getRequired(AD_SIZE_KEY)))
 
     @Suppress("UNCHECKED_CAST")
-    constructor(args: Any) : this(args = args as Map<String, Any>)
+    constructor(args: Any?) : this(args = args as Map<String, Any>)
 
     companion object {
         private const val AD_SIZE_KEY = "adSize"

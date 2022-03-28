@@ -60,7 +60,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             .setUsage(C.USAGE_MEDIA)
             .build()
 
-    private var player: SimpleExoPlayer? = null
+    private var player: ExoPlayer? = null
 
     private var progressTracker: ProgressTracker? = null
 
@@ -117,7 +117,6 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             // setWakeMode(C.WAKE_MODE_NETWORK)
             setHandleAudioBecomingNoisy(true)
         }
-        player?.setThrowsWhenUsingWrongThread(false);
         mediaSession?.let { mediaSession ->
             val sessionToken = mediaSession.sessionToken
 
@@ -286,7 +285,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             C.TYPE_HLS -> HlsMediaSource.Factory(dataSourceFactory)
                     .setPlaylistParserFactory(SMHlsPlaylistParserFactory())
                     .setAllowChunklessPreparation(true)
-                    .createMediaSource(uri)
+                    .createMediaSource( MediaItem.fromUri(uri))
             C.TYPE_OTHER -> {
                 Log.i(TAG, "Player: URI: $uri")
                 val factory: DataSource.Factory =
@@ -442,8 +441,8 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         }
     }
 
-    private fun playerEventListener(): Player.EventListener {
-        return object : Player.EventListener {
+    private fun playerEventListener(): Player.Listener {
+        return object : Player.Listener {
             override fun onTimelineChanged(timeline: Timeline, reason: Int) {
                 Log.i(TAG, "onTimelineChanged: timeline: $timeline reason: $reason")
             }
