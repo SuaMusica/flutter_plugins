@@ -92,7 +92,7 @@ class Player {
 
     return _channel
         .invokeMethod(method, args)
-        .then((result) => (result as int));
+        .then((result) => result ?? Future.value(Ok));
   }
 
   Future<int> enqueue(
