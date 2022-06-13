@@ -47,10 +47,10 @@ class PreRoll extends StatelessWidget {
                         Factory<OneSequenceGestureRecognizer>>{},
                     hitTestBehavior: PlatformViewHitTestBehavior.opaque,
                   ),
-                //Check for Patch for initSurfaceAndroidView change for better perf.
-                //https://github.com/flutter/flutter/issues/103630
+                  //Check for Patch for initSurfaceAndroidView change for better perf.
+                  //https://github.com/flutter/flutter/issues/103630
                   onCreatePlatformView: (PlatformViewCreationParams params) =>
-                      PlatformViewsService.initExpensiveAndroidView(
+                      PlatformViewsService.initSurfaceAndroidView(
                     id: params.id,
                     viewType: viewType,
                     layoutDirection: TextDirection.ltr,
