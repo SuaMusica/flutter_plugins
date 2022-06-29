@@ -35,7 +35,7 @@ class PreRoll extends StatelessWidget {
         maxHeight: maxHeight ?? MediaQuery.of(context).size.height,
       ),
       child: defaultTargetPlatform == TargetPlatform.android
-          ? (useHybridComposition
+          ? (true
               ? PlatformViewLink(
                   key: _key,
                   viewType: viewType,
@@ -48,7 +48,7 @@ class PreRoll extends StatelessWidget {
                     hitTestBehavior: PlatformViewHitTestBehavior.opaque,
                   ),
                   onCreatePlatformView: (PlatformViewCreationParams params) =>
-                      PlatformViewsService.initSurfaceAndroidView(
+                      PlatformViewsService.initExpensiveAndroidView(
                     id: params.id,
                     viewType: viewType,
                     layoutDirection: TextDirection.ltr,

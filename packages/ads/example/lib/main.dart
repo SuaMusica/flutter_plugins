@@ -17,14 +17,13 @@ class _MyAppState extends State<MyApp> {
   final ads = SMAds(
     adUrl:
         "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=",
-    contentUrl: "https://assets.suamusica.com.br/video/virgula.mp3",
   );
 
   PreRoll? _preRoll;
   PreRollController? _preRollController;
   PreRollController get preRollController =>
       _preRollController ??= PreRollController(preRollListener);
-  bool _isPreRollReady = false;
+  bool _isPreRollReady = false, _isIosReady = false;
   final Map<String, String> keyValues = {};
   String _duration = '00:00', _position = '00:00';
   @override
@@ -40,9 +39,15 @@ class _MyAppState extends State<MyApp> {
     debugPrint(event.toShortString());
 
     switch (event) {
+      case PreRollEvent.IOS_READY:
+        setState(() {
+          _isIosReady = true;
+        });
+        break;
       case PreRollEvent.LOADED:
         setState(() {
           _isPreRollReady = true;
+          _preRollController?.play();
         });
         break;
       case PreRollEvent.PAUSED:
@@ -68,6 +73,7 @@ class _MyAppState extends State<MyApp> {
 
   void preRollEnd() {
     setState(() {
+      _isIosReady = false;
       _isPreRollReady = false;
       _duration = '00:00';
       _position = '00:00';
@@ -107,6 +113,7 @@ class _MyAppState extends State<MyApp> {
 
   void preRollLoad() {
     _isPreRollReady = false;
+    _isIosReady = false;
     preRollController.dispose();
 
     getKeyValues().then((targetMap) {
@@ -131,7 +138,7 @@ class _MyAppState extends State<MyApp> {
               Text('Preroll is Ready? $_isPreRollReady'),
               AspectRatio(
                 aspectRatio: 640 / 480,
-                child: _isPreRollReady && _preRoll != null
+                child: (_isPreRollReady || _isIosReady) && _preRoll != null
                     ? _preRoll!
                     : Container(
                         color: Colors.pink,

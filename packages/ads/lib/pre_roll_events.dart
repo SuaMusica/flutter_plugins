@@ -26,6 +26,7 @@ enum PreRollEvent {
   AD_PERIOD_ENDED,
   ERROR,
   UNKNOWN,
+  IOS_READY,
 }
 
 extension ParseToPreRollEvent on String {
@@ -52,7 +53,9 @@ extension ParseToPreRollEvent on String {
       case "MIDPOINT":
         return PreRollEvent.MIDPOINT;
       case "PAUSED":
+      case "PAUSE":
         return PreRollEvent.PAUSED;
+      case "RESUME":
       case "RESUMED":
         return PreRollEvent.RESUMED;
       case "SKIPPABLE_STATE_CHANGED":
@@ -83,6 +86,8 @@ extension ParseToPreRollEvent on String {
         return PreRollEvent.AD_PERIOD_ENDED;
       case "ERROR":
         return PreRollEvent.ERROR;
+      case "IOS_READY":
+        return PreRollEvent.IOS_READY;
       default:
         return PreRollEvent.UNKNOWN;
     }
@@ -144,6 +149,8 @@ extension ParseToString on PreRollEvent {
         return "AD_PERIOD_ENDED";
       case PreRollEvent.ERROR:
         return "ERROR";
+      case PreRollEvent.IOS_READY:
+        return "IOS_READY";
       default:
         return "Unknown";
     }

@@ -1,114 +1,81 @@
 import Flutter
 import UIKit
 
+struct GlobalConstants {
+    static let CHANNEL_NAME = "suamusica/pre_roll"
+    static let VIEW_TYPE_ID = "suamusica/pre_roll_view"
+
+    static let LOAD_METHOD = "load"
+    static let PLAY_METHOD = "play"
+    static let PAUSE_METHOD = "pause"
+    static let DISPOSE_METHOD = "dispose"
+    static let SKIP_METHOD = "skip"
+    static let SCREEN_STATUS_METHOD = "screen_status"
+    static let UnlockedScreen = 1
+    static let LockedScreen = 0
+}
+
 public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
     static var channel: FlutterMethodChannel?
     private var screen: Screen
-    static let NoConnectivity = -1;
-    static let ScreenIsLocked = -2;
-    static let UnlockedScreen = 1;
-    static let LockedScreen = 0;
-
-    fileprivate static func verifyNetworkAccess() {
-        do {
-            try Network.reachability = Reachability(hostname: "www.google.com")
-        } catch {
-            switch error as? Network.Error {
-            case let .failedToCreateWith(hostname)?:
-                print("Network error:\nFailed to create reachability object With host named:", hostname)
-            case let .failedToInitializeWith(address)?:
-                print("Network error:\nFailed to initialize reachability object With address:", address)
-            case .failedToSetCallout?:
-                print("Network error:\nFailed to set callout")
-            case .failedToSetDispatchQueue?:
-                print("Network error:\nFailed to set DispatchQueue")
-            case .none:
-                print(error)
-            }
-        }
-    }
-
+    private var controller: AdsViewController
     public static func register(with registrar: FlutterPluginRegistrar) {
-        SwiftSmadsPlugin.synced(self) {
-            if SwiftSmadsPlugin.channel == nil {
-                SwiftSmadsPlugin.channel = FlutterMethodChannel(name: "smads", binaryMessenger: registrar.messenger())
-                let instance = SwiftSmadsPlugin(channel: SwiftSmadsPlugin.channel!)
-                registrar.addMethodCallDelegate(instance, channel: SwiftSmadsPlugin.channel!)
-            }
+        let channel = FlutterMethodChannel(name: GlobalConstants.CHANNEL_NAME, binaryMessenger: registrar.messenger())
+        let controller = AdsViewController(callback: SmadsCallback(channel: channel))
+        let instance = SwiftSmadsPlugin(channel: channel,controller: controller)
 
-            verifyNetworkAccess()
-        }
+        registrar.addMethodCallDelegate(instance, channel:channel)
+        let viewFactory = FLNativeViewFactory(messenger: registrar.messenger(),controller:controller)
+        registrar.register(viewFactory, withId: GlobalConstants.VIEW_TYPE_ID)
+        
     }
 
-    init(channel: FlutterMethodChannel) {
+    init(channel: FlutterMethodChannel, controller: AdsViewController) {
         SwiftSmadsPlugin.channel = channel
         self.screen = Screen()
         self.screen.addNotificationObservers()
-    }
-
-    fileprivate func onComplete() {
-        SwiftSmadsPlugin.channel?.invokeMethod("onComplete", arguments: [String: String]())
-    }
-    
-    fileprivate func onError(code: Int) {
-        let arguments = ["error": code]
-        SwiftSmadsPlugin.channel?.invokeMethod("onError", arguments: arguments)
+        self.controller = controller
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        print("AD: Called method:: \(call.method)")
+
         switch call.method {
-        case "load":
+        case GlobalConstants.LOAD_METHOD:
             DispatchQueue.main.async {
                 do {
                     try ObjC.catchException {
                         let args = call.arguments as! [String: Any]
+                        print(args)
                         let adUrl = args["__URL__"] as! String
-                        let contentUrl = args["__CONTENT__"] as! String
-
-                        if !Network.reachability.isReachable {
-                            // if for any reason we are not reachable
-                            // we shall try to update the network manager
-                            SwiftSmadsPlugin.verifyNetworkAccess()
-                        }
-                        
-                        if (self.screen.status == .unlocked) {
-                            if (Network.reachability.isReachable) {                                
-                                let adsViewController:AdsViewController = AdsViewController.instantiateFromNib()
-                                adsViewController.setup(
-                                    channel: SwiftSmadsPlugin.channel,
-                                    adUrl: adUrl,
-                                    contentUrl: contentUrl,
-                                    screen: self.screen,
-                                    args: args)
-                                adsViewController.modalPresentationStyle = .fullScreen
-                                let rootViewController = UIApplication.shared.keyWindow?.rootViewController
-                                rootViewController?.present(adsViewController, animated: false, completion: nil)
-                                result(1)
-                            } else {
-                                self.onError(code: SwiftSmadsPlugin.NoConnectivity)
-                                result(SwiftSmadsPlugin.NoConnectivity)
-                            }
-                        } else {
-                            self.onError(code: SwiftSmadsPlugin.ScreenIsLocked)
-                            result(SwiftSmadsPlugin.ScreenIsLocked)
-                        }
-                        
+                        self.controller.load(adUrl: adUrl,
+                                        screen: self.screen,
+                                        args: args
+                        )
+                        result(1)
                     }
                 } catch {
                     result(0)
                     print("An error ocurred: \(error)")
                 }
             }
-        case "screen_status":
-            result(self.screen.status == .unlocked ? SwiftSmadsPlugin.UnlockedScreen : SwiftSmadsPlugin.LockedScreen)
+        case GlobalConstants.SCREEN_STATUS_METHOD:
+            result(self.screen.status == .unlocked ? GlobalConstants.UnlockedScreen : GlobalConstants.LockedScreen)
+        case GlobalConstants.DISPOSE_METHOD:
+            self.controller.dispose()
+            break
+        case GlobalConstants.PAUSE_METHOD:
+            self.controller.pause()
+            break
+        case GlobalConstants.PLAY_METHOD:
+            self.controller.play()
+            break
+
+        case GlobalConstants.SKIP_METHOD:
+            self.controller.skipAd()
+            break
         default:
             result(FlutterError(code: "-1", message: "Operation not supported", details: nil))
         }
-    }
-
-    static func synced(_ lock: Any, closure: () -> Void) {
-        objc_sync_enter(lock)
-        closure()
-        objc_sync_exit(lock)
     }
 }
