@@ -18,10 +18,10 @@ A new flutter plugin project.
   s.public_header_files = 'Classes/**/*.h'
   s.resources  = ['Classes/**/*.{storyboard,xib,png}']
   s.dependency 'Flutter'
-  s.dependency 'GoogleAds-IMA-iOS-SDK', '~> 3.14.5'
+  s.dependency 'GoogleAds-IMA-iOS-SDK', '~> 3.15.1'
   # s.dependency 'Reachability'
   s.dependency 'PureLayout'
-  s.platform = :ios, '11.0'
+  s.platform = :ios, '12.0'
 
   # Flutter.framework does not contain a i386 slice. Only x86_64 simulators are supported.
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'VALID_ARCHS[sdk=iphonesimulator*]' => 'x86_64' }

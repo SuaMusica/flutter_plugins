@@ -4,7 +4,7 @@ import UIKit
 struct GlobalConstants {
     static let CHANNEL_NAME = "suamusica/pre_roll"
     static let VIEW_TYPE_ID = "suamusica/pre_roll_view"
-
+    
     static let LOAD_METHOD = "load"
     static let PLAY_METHOD = "play"
     static let PAUSE_METHOD = "pause"
@@ -21,15 +21,16 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
     private var controller: AdsViewController
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: GlobalConstants.CHANNEL_NAME, binaryMessenger: registrar.messenger())
-        let controller = AdsViewController(callback: SmadsCallback(channel: channel))
+        let callback = SmadsCallback(channel: channel)
+        let controller = AdsViewController(callback: callback)
         let instance = SwiftSmadsPlugin(channel: channel,controller: controller)
-
+        
         registrar.addMethodCallDelegate(instance, channel:channel)
         let viewFactory = FLNativeViewFactory(messenger: registrar.messenger(),controller:controller)
         registrar.register(viewFactory, withId: GlobalConstants.VIEW_TYPE_ID)
         
     }
-
+    
     init(channel: FlutterMethodChannel, controller: AdsViewController) {
         SwiftSmadsPlugin.channel = channel
         self.screen = Screen()
@@ -39,7 +40,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         print("AD: Called method:: \(call.method)")
-
+        
         switch call.method {
         case GlobalConstants.LOAD_METHOD:
             DispatchQueue.main.async {
@@ -49,9 +50,9 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                         print(args)
                         let adUrl = args["__URL__"] as! String
                         self.controller.load(adUrl: adUrl,
-                                        screen: self.screen,
-                                        args: args
+                                             args: args
                         )
+                        
                         result(1)
                     }
                 } catch {
@@ -70,7 +71,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
         case GlobalConstants.PLAY_METHOD:
             self.controller.play()
             break
-
+            
         case GlobalConstants.SKIP_METHOD:
             self.controller.skipAd()
             break

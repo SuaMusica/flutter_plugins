@@ -17,7 +17,9 @@ public class SmadsCallback: NSObject {
     }
     
     public func onAddEvent(args:[String : String]) {
-        print("AD: onAddEvent:: \(args)")
+        if (args["type"] != "AD_PROGRESS") {
+            print("AD: onAddEvent:: \(args)")
+        }
 
         channel.invokeMethod(ON_AD_EVENT_METHOD, arguments: args)
     }
