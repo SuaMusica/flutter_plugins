@@ -93,7 +93,8 @@ class _MyAppState extends State<MyApp> {
 
     final screenStatus = await preRollController.screenStatus;
     final url =
-        "https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/single_preroll_skippable&sz=640x480&ciu_szs=300x250%2C728x90&gdfp_req=1&output=vast&unviewed_position_start=1&env=vp&impl=s&correlator=";
+        "https://cmod424.live.streamtheworld.com/ondemand/ars?type=preroll&version=1.5.1&fmt=vast&stid=103013&banners=300x250&dist=testeapp";
+    // "https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/single_preroll_skippable&sz=640x480&ciu_szs=300x250%2C728x90&gdfp_req=1&output=vast&unviewed_position_start=1&env=vp&impl=s&correlator=";
 
     keyValues['__URL__'] = screenStatus != 1
         ? url.replaceAll('ad_type=audio_video', 'ad_type=audio')

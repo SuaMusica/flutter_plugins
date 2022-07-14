@@ -24,6 +24,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     var playing: Bool = false
     var isRemoteControlOn = false
     var sentOnComplete = false
+    var hasStarted: Bool = false
     @IBOutlet weak var videoView: UIView!
     @IBOutlet weak var companionView: UIView!
     
@@ -83,7 +84,12 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     
     func play(){
         print("AD: play")
-        adsManager?.resume()
+        if (hasStarted) {
+            adsManager?.resume()
+        } else {
+            hasStarted = true
+            adsManager?.start()
+        }
     }
     
     func skipAd(){
@@ -262,7 +268,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         
         // Create ads rendering settings and tell the SDK to use the in-app browser.
         let adsRenderingSettings = IMAAdsRenderingSettings()
-        adsRenderingSettings.loadVideoTimeout = 300
+//        adsRenderingSettings.loadVideoTimeout = 300
         adsRenderingSettings.linkOpenerPresentingController = self
         print("AD: adsLoader loadedData 2")
 
@@ -343,6 +349,8 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
                 videoView.isHidden = false
                 companionView.isHidden = true
             }
+            
+            hasStarted = false;
         case IMAAdEventType.AD_BREAK_STARTED:
             print("AD: Got a AD_BREAK_STARTED event")
         case IMAAdEventType.AD_BREAK_ENDED:
