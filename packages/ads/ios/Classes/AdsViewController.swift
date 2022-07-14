@@ -268,9 +268,9 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         
         // Create ads rendering settings and tell the SDK to use the in-app browser.
         let adsRenderingSettings = IMAAdsRenderingSettings()
-//        adsRenderingSettings.loadVideoTimeout = 300
-        adsRenderingSettings.linkOpenerPresentingController = self
-        print("AD: adsLoader loadedData 2")
+        adsRenderingSettings.loadVideoTimeout = 300
+//        adsRenderingSettings.linkOpenerPresentingController = self
+//        print("AD: adsLoader loadedData 2")
 
         // Initialize the ads manager.
         adsManager.initialize(with: adsRenderingSettings)

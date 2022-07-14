@@ -26,7 +26,7 @@ public class SmadsCallback: NSObject {
     
     public func onComplete() {
         print("AD: onComplete()")
-        channel.invokeMethod(ON_COMPLETE_METHOD,arguments: {})
+        channel.invokeMethod(ON_COMPLETE_METHOD,arguments: [])
     }
     
     public func onError(args:[String : String?]) {

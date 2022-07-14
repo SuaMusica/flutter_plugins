@@ -36,6 +36,7 @@ extension ParseToPreRollEvent on String {
         return PreRollEvent.ALL_ADS_COMPLETED;
       case "CLICKED":
         return PreRollEvent.CLICKED;
+      case "COMPLETE":
       case "COMPLETED":
         return PreRollEvent.COMPLETED;
       case "CUEPOINTS_CHANGED":

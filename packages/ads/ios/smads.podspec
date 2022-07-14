@@ -20,7 +20,7 @@ A new flutter plugin project.
   s.dependency 'Flutter'
   s.dependency 'GoogleAds-IMA-iOS-SDK', '~> 3.15.1'
   # s.dependency 'Reachability'
-  s.dependency 'PureLayout'
+#  s.dependency 'PureLayout'
   s.platform = :ios, '12.0'
 
   # Flutter.framework does not contain a i386 slice. Only x86_64 simulators are supported.
