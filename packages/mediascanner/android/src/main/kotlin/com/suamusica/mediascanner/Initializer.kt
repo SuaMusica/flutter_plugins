@@ -9,7 +9,7 @@ object Initializer {
 
     fun run() {
         if (alreadyStarted.getAndSet(true)) return
-        if(Timber.treeCount() != 0) return
+        if(Timber.treeCount != 0) return
         Timber.plant(Timber.DebugTree())
     }
 }

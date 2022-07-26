@@ -6,13 +6,13 @@ description: Demonstrates how to use the mediascanner plugin.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 environment:
-  sdk: ">=2.7.0 <3.0.0"
+  sdk: ">=2.17.0 <3.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
 
-  permission_handler: ^5.0.1
+  permission_handler: ^9.0.1
   mediascanner:
     # When depending on this package from a real application you should use:
     #   mediascanner: ^x.y.z
