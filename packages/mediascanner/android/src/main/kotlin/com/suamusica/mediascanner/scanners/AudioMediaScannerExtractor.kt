@@ -53,13 +53,13 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
 
     private val albumCache = mutableMapOf<Long, Album?>()
 
-    private fun getSuaMusicaId(path: String, musicId: Long): Long {
+    private fun getSuaMusicaId(path: String): Long? {
         val oneBillion = 1000000000
         val id = path.substringBeforeLast(".").split("_").last().toLongOrNull()
         if (id != null && id > 1000 && id < oneBillion ) {
             return id
         }
-        return musicId
+        return null
     }
 
     @TargetApi(Build.VERSION_CODES.KITKAT)
@@ -79,7 +79,7 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
             return null
         }
 
-        getSuaMusicaId(path, musicId)?.let {
+        getSuaMusicaId(path)?.let {
             musicId = it
         }
 
@@ -122,7 +122,7 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
         artist = if (artist.trim().isBlank() || artist.contains("unknown", ignoreCase = true)) UNKNOWN_ARTIST else artist
 
         try {
-            //  Timber.d("Opening MP3 file...")
+              Timber.d("Opening MP3 file... $path")
             val mp3file = Mp3File(path)
             if (mp3file.hasId3v2Tag()) {
                 // Timber.d("Trying to read Id3 tags...")
