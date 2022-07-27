@@ -31,14 +31,14 @@ import java.util.concurrent.Executors
 import kotlin.random.Random
 
 class MediaScanner(
-        private val callback: ChannelCallback,
-        private val context: Context,
-        private val scanExecutor: Executor = Executors.newSingleThreadExecutor(),
-        private val readExecutor: Executor = Executors.newSingleThreadExecutor(),
-        private val contentResolver: ContentResolver = context.contentResolver,
-        private val mediaScannerExtractors: List<MediaScannerExtractor> = listOf(
-                AudioMediaScannerExtractor(context)
-        )
+    private val callback: ChannelCallback,
+    private val context: Context,
+    private val scanExecutor: Executor = Executors.newSingleThreadExecutor(),
+    private val readExecutor: Executor = Executors.newSingleThreadExecutor(),
+    private val contentResolver: ContentResolver = context.contentResolver,
+    private val mediaScannerExtractors: List<MediaScannerExtractor> = listOf(
+        AudioMediaScannerExtractor(context)
+    )
 ) {
 
     fun deleteFromMediaId(input: DeleteMediaMethodInput) {
@@ -107,22 +107,25 @@ class MediaScanner(
         }
 
         val scannedMediaRepository = ScannedMediaRepository(
-                ScannedMediaDbHelper(context,
-                        input.databaseName,
-                        input.databaseVersion)
+            ScannedMediaDbHelper(
+                context,
+                input.databaseName,
+                input.databaseVersion,
+            )
         )
 
         extractors.forEach { extractor ->
             val cursor = contentResolver.query(
-                    extractor.uri,
-                    extractor.columns,
-                    extractor.selection,
-                    extractor.selectionArgs,
-                    null
+                extractor.uri,
+                extractor.columns,
+                extractor.selection,
+                extractor.selectionArgs,
+                null
             )
             cursor?.use { c ->
                 while (c.moveToNext()) {
-                    val scannedMedia = extractor.getScannedMediaFromCursor(c, scannedMediaRepository)
+                    val scannedMedia =
+                        extractor.getScannedMediaFromCursor(c, scannedMediaRepository)
                     scannedMedia?.let {
                         val extension = ".".plus(scannedMedia.path.substringAfterLast("."))
                         input.extensions.find { extension.contains(it) }?.let {
@@ -171,7 +174,8 @@ class MediaScanner(
                 when {
                     isExternalStorageDocument(authority) -> {
                         val docId = DocumentsContract.getDocumentId(uri)
-                        val split = docId.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                        val split =
+                            docId.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
                         val type = split[0]
 
                         var path = ""
@@ -185,13 +189,18 @@ class MediaScanner(
 
                                 storages?.forEach {
                                     if ((it["rootPath"] as String).contains(type)) {
-                                        sdPath = it["rootPath"] as String + "/${docId.toString().substringAfterLast(type).substringAfterLast(":")}"
+                                        sdPath = it["rootPath"] as String + "/${
+                                            docId.toString().substringAfterLast(type)
+                                                .substringAfterLast(":")
+                                        }"
                                     }
                                 }
                                 if (sdPath != null) {
                                     path = sdPath as String
                                 } else {
-                                    val splitDirectory = Environment.getExternalStorageDirectory().toString().split("/".toRegex())
+                                    val splitDirectory =
+                                        Environment.getExternalStorageDirectory().toString()
+                                            .split("/".toRegex())
                                     if (splitDirectory.size > 1) {
                                         path = "${splitDirectory[0]}/$type/${split[1]}"
                                     }
@@ -209,7 +218,7 @@ class MediaScanner(
                         }
 
                         val contentUri = ContentUris.withAppendedId(
-                                Uri.parse("content://downloads/public_downloads"), java.lang.Long.valueOf(id))
+                            Uri.parse("content://downloads/public_downloads"), java.lang.Long.valueOf(id))
                         try {
                             return readMediaFromContentProvider(context, contentUri, null, null)
                         } catch (t: Throwable) {
@@ -220,8 +229,11 @@ class MediaScanner(
                                 cursor?.use { c ->
                                     if (c.moveToNext()) {
                                         val scannedMedia = extractMedia(c, null, null)
-                                        if (scannedMedia != null && scannedMedia?.path?.trim()?.isBlank() && scannedMedia?.title?.contains(".")) {
-                                            val newPath = "${Environment.getExternalStorageDirectory()}/Download/${scannedMedia!!.title}"
+                                        if (scannedMedia != null && scannedMedia?.path?.trim()
+                                                ?.isBlank() && scannedMedia?.title?.contains(".")
+                                        ) {
+                                            val newPath =
+                                                "${Environment.getExternalStorageDirectory()}/Download/${scannedMedia!!.title}"
                                             return readMediaFromMediaMetadataRetriever(newPath)
                                         }
 
@@ -235,7 +247,8 @@ class MediaScanner(
                     }
                     isMediaDocument(authority) -> {
                         val docId = DocumentsContract.getDocumentId(uri)
-                        val split = docId.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                        val split =
+                            docId.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
                         val type = split[0]
 
                         var contentUri: Uri? = null
@@ -248,19 +261,25 @@ class MediaScanner(
                         val selection = "_id=?"
                         val selectionArgs = arrayOf(split[1])
 
-                        return readMediaFromContentProvider(context, contentUri, selection, selectionArgs)
+                        return readMediaFromContentProvider(
+                            context,
+                            contentUri,
+                            selection,
+                            selectionArgs
+                        )
                     }
                 }// MediaProvider
                 // DownloadsProvider
             }
             "content".equals(uri.scheme, ignoreCase = true) -> {
-                if(isXiaomi(authority)) {
+                if (isXiaomi(authority)) {
                     var path = ""
                     var uripath = uri.path!!
-                    if (uripath.startsWith("/external_files")){
-                        path = "${Environment.getExternalStorageDirectory()}/${uripath.substringAfter("/external_files")}"
+                    if (uripath.startsWith("/external_files")) {
+                        path =
+                            "${Environment.getExternalStorageDirectory()}/${uripath.substringAfter("/external_files")}"
                     }
-                    if(path.isNotEmpty()) {
+                    if (path.isNotEmpty()) {
                         return readMediaFromMediaMetadataRetriever(path)
                     }
                 }
@@ -280,31 +299,31 @@ class MediaScanner(
         mmr.setDataSource(path)
 
         var artist = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
-                ?: mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)
-                ?: "Artista Desconhecido"
+            ?: mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)
+            ?: "Artista Desconhecido"
         if (artist.isBlank() || artist.toLowerCase().contains("unknown")) {
             artist = "Artista Desconhecido"
         }
         val album = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)
-                ?: "Album Desconhecido"
+            ?: "Album Desconhecido"
         val name =
-                mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
-                        ?: path.split("/").last().substringBeforeLast(".")
+            mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
+                ?: path.split("/").last().substringBeforeLast(".")
 
         val outputFile = mmr.embeddedPicture?.let { pic -> createCoverImage("$artist-$name", pic) }
 
         return ScannedMediaOutput(
-                mediaId = System.currentTimeMillis() * Random.nextLong(),
-                title = name,
-                artist = artist,
-                albumId = 0,
-                playlistId = 0,
-                album = album,
-                track = "0",
-                path = path,
-                albumCoverPath = outputFile?.path ?: "",
-                createdAt = 0,
-                updatedAt = 0
+            mediaId = System.currentTimeMillis() * Random.nextLong(),
+            title = name,
+            artist = artist,
+            albumId = 0,
+            playlistId = 0,
+            album = album,
+            track = "0",
+            path = path,
+            albumCoverPath = outputFile?.path ?: "",
+            createdAt = 0,
+            updatedAt = 0
         )
 
     }
@@ -325,8 +344,10 @@ class MediaScanner(
         return outputFile
     }
 
-    private fun readMediaFromContentProvider(context: Context, uri: Uri?, selection: String?,
-                                             selectionArgs: Array<String>?): ScannedMediaOutput? {
+    private fun readMediaFromContentProvider(
+        context: Context, uri: Uri?, selection: String?,
+        selectionArgs: Array<String>?
+    ): ScannedMediaOutput? {
 
         var cursor: Cursor? = null
 
@@ -343,28 +364,34 @@ class MediaScanner(
         return null
     }
 
-    private fun extractMedia(c: Cursor, selection: String?,
-                             selectionArgs: Array<String>?): ScannedMediaOutput? {
+    private fun extractMedia(
+        c: Cursor, selection: String?,
+        selectionArgs: Array<String>?
+    ): ScannedMediaOutput? {
         return if (c.columnNames.contains(MEDIA_PROVIDER_URI)) {
             val providerUri = c.getStringByColumnName(MEDIA_PROVIDER_URI)
             readMediaFromContentProvider(context, Uri.parse(providerUri), selection, selectionArgs)
-                    ?: mediaScannerExtractors[0].getScannedMediaFromCursor(c)
+                ?: mediaScannerExtractors[0].getScannedMediaFromCursor(c)
         } else {
             mediaScannerExtractors[0].getScannedMediaFromCursor(c)
         }
 
     }
 
-    private fun isExternalStorageDocument(authority: String): Boolean = "com.android.externalstorage.documents" == authority
+    private fun isExternalStorageDocument(authority: String): Boolean =
+        "com.android.externalstorage.documents" == authority
 
-    private fun isXiaomi(authority: String): Boolean = authority.startsWith("com.mi.android.globalFileexplorer.myprovider",ignoreCase = true)
+    private fun isXiaomi(authority: String): Boolean =
+        authority.startsWith("com.mi.android.globalFileexplorer.myprovider", ignoreCase = true)
 
-    private fun isDownloadsDocument(authority: String): Boolean = "com.android.providers.downloads.documents" == authority
+    private fun isDownloadsDocument(authority: String): Boolean =
+        "com.android.providers.downloads.documents" == authority
 
-    private fun isMediaDocument(authority: String): Boolean = "com.android.providers.media.documents" == authority
+    private fun isMediaDocument(authority: String): Boolean =
+        "com.android.providers.media.documents" == authority
 
     fun Cursor.getStringByColumnName(columnName: String): String =
-            this.getString(this.getColumnIndex(columnName)) ?: ""
+        this.getString(this.getColumnIndex(columnName)) ?: ""
 
     companion object {
         const val MEDIA_PROVIDER_URI = "mediaprovider_uri"

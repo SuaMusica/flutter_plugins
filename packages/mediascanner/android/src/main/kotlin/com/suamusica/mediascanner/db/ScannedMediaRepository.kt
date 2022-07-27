@@ -6,7 +6,6 @@ import timber.log.Timber
 
 class ScannedMediaRepository(dbHelper: ScannedMediaDbHelper) {
     private val dbHelper: ScannedMediaDbHelper = dbHelper
-
     fun mediaExists(mediaId: Long, mediaPath: String): Boolean {
         return if (mediaId < 0) {
             externalMediaExists(mediaId, mediaPath)
