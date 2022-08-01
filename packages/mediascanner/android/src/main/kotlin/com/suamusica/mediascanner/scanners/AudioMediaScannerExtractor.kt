@@ -6,7 +6,10 @@ import android.database.Cursor
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
+import android.os.FileUtils
 import android.provider.MediaStore.Audio
+import android.util.Log
+import com.mpatric.mp3agic.*
 import com.suamusica.mediascanner.input.MediaType
 import com.suamusica.mediascanner.model.Album
 import com.suamusica.mediascanner.output.ScannedMediaOutput
@@ -14,13 +17,8 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import timber.log.Timber
-import com.mpatric.mp3agic.ID3v1Tag;
-import com.mpatric.mp3agic.ID3v24Tag;
-import com.mpatric.mp3agic.InvalidDataException;
-import com.mpatric.mp3agic.Mp3File;
-import com.mpatric.mp3agic.NotSupportedException;
-import com.mpatric.mp3agic.UnsupportedTagException;
 import com.suamusica.mediascanner.db.ScannedMediaRepository
+import java.util.*
 
 class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExtractor {
     private val rootPaths = mutableListOf<String>()
@@ -29,15 +27,15 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
     override val uri = Audio.Media.EXTERNAL_CONTENT_URI!!
 
     override val columns = arrayOf(
-            Audio.Media.TITLE,
-            Audio.Media.TRACK,
-            Audio.Media.ARTIST,
-            Audio.Media.ALBUM_ID,
-            Audio.Media.ALBUM,
-            Audio.Media.DATA,
-            Audio.Media.DATE_ADDED,
-            Audio.Media.DATE_MODIFIED,
-            Audio.Media._ID
+        Audio.Media.TITLE,
+        Audio.Media.TRACK,
+        Audio.Media.ARTIST,
+        Audio.Media.ALBUM_ID,
+        Audio.Media.ALBUM,
+        Audio.Media.DATA,
+        Audio.Media.DATE_ADDED,
+        Audio.Media.DATE_MODIFIED,
+        Audio.Media._ID
     )
 
     override val selection: String = Audio.Media.IS_MUSIC + " != 0"
@@ -47,8 +45,8 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
     override val sortOrder: String? = null
 
     private val albumColumns = arrayOf(
-            Audio.Albums._ID,
-            Audio.Albums.ALBUM_ART
+        Audio.Albums._ID,
+        Audio.Albums.ALBUM_ART
     )
 
     private val albumCache = mutableMapOf<Long, Album?>()
@@ -56,26 +54,28 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
     private fun getSuaMusicaId(path: String): Long? {
         val oneBillion = 1000000000
         val id = path.substringBeforeLast(".").split("_").last().toLongOrNull()
-        if (id != null && id > 1000 && id < oneBillion ) {
+        if (id != null && id > 1000 && id < oneBillion) {
             return id
         }
         return null
     }
 
     @TargetApi(Build.VERSION_CODES.KITKAT)
-    override fun getScannedMediaFromCursor(cursor: Cursor,
-                                           scannedMediaRepository: ScannedMediaRepository?): ScannedMediaOutput? {
-        // cursor.columnNames.forEach {
-        //     Timber.d("Field $it: [${getString(cursor, it)}]")
-        // }
+    override fun getScannedMediaFromCursor(
+        cursor: Cursor,
+        scannedMediaRepository: ScannedMediaRepository?
+    ): ScannedMediaOutput? {
+//         cursor.columnNames.forEach {
+//             Timber.d("Field $it: [${getString(cursor, it)}]")
+//         }
 
         var albumId = getLong(cursor, Audio.Media.ALBUM_ID)
-        var playlistId = -1L;
+        var playlistId = -1L
 
-        var musicId = getLong(cursor, Audio.Media._ID) * -1;
+        var musicId = getLong(cursor, Audio.Media._ID) * -1
         val path = getString(cursor, Audio.Media.DATA)
 
-        if(!path.toLowerCase().endsWith(".mp3")){
+        if (!path.lowercase().endsWith(".mp3")) {
             return null
         }
 
@@ -98,14 +98,14 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
             }
             var workPath = path
             if (musicId > 0) {
-                for (rootPath in rootPaths ) {
+                for (rootPath in rootPaths) {
                     if (workPath.startsWith(rootPath)) {
                         workPath = workPath.replace(rootPath, "")
                         break
                     }
                 }
             }
-            if ( it.mediaExists(mediaId = musicId, mediaPath = workPath)) {
+            if (it.mediaExists(mediaId = musicId, mediaPath = workPath)) {
                 it.markMediaAsPresent(mediaId = musicId)
                 Timber.d("MediaScanner: Found that mediaId: $musicId with path $path was already processed")
                 return null
@@ -119,62 +119,81 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
                 UNKNOWN_ARTIST
             }
         }
-        artist = if (artist.trim().isBlank() || artist.contains("unknown", ignoreCase = true)) UNKNOWN_ARTIST else artist
+        artist = if (artist.trim().isBlank() || artist.contains(
+                "unknown",
+                ignoreCase = true
+            )
+        ) UNKNOWN_ARTIST else artist
 
         try {
-              Timber.d("Opening MP3 file... $path")
+            Timber.d("Opening MP3 file... $path")
             val mp3file = Mp3File(path)
             if (mp3file.hasId3v2Tag()) {
                 // Timber.d("Trying to read Id3 tags...")
-                val id3v2Tag = mp3file.id3v2Tag;
+                val id3v2Tag = mp3file.id3v2Tag
+                if (id3v2Tag != null) {
+                    var url = id3v2Tag.url
+                    // Timber.d("SM_URL: [$url]")
+                    if (url != null && url.isNotEmpty()) {
+                        val uri = Uri.parse(url)
+                        uri.getQueryParameter("playlistId")?.let { value ->
+                            playlistId = value.toLong()
+                        }
+                        uri.getQueryParameter("albumId")?.let { value ->
+                            albumId = value.toLong()
+                        }
+                        uri.getQueryParameter("musicId")?.let { value ->
+                            musicId = value.toLong()
+                        }
+                    }
 
-                var url = id3v2Tag.url
-                // Timber.d("SM_URL: [$url]")
-                if (url != null && url.isNotEmpty()) {
-                    val uri = Uri.parse(url)
-                    uri.getQueryParameter("playlistId")?.let { value ->
-                        playlistId = value.toLong()
-                    }
-                    uri.getQueryParameter("albumId")?.let { value ->
-                        albumId = value.toLong()
-                    }
-                    uri.getQueryParameter("musicId")?.let { value ->
-                        musicId = value.toLong()
+                    if (artist == UNKNOWN_ARTIST && id3v2Tag.albumArtist != null) {
+                        if (id3v2Tag.albumArtist.isNotEmpty()) {
+                            artist = id3v2Tag.albumArtist
+                        }
                     }
                 }
-
-                if (artist == UNKNOWN_ARTIST && id3v2Tag.albumArtist != null) {
-                    if (id3v2Tag.albumArtist.isNotEmpty()) {
-                        artist = id3v2Tag.albumArtist
-                    }
-                }
-            } 
-            
-        } catch (e: Throwable) {
-            if (e is java.io.FileNotFoundException){
-                Timber.e(e, "File does not exist.. $path");
-                return null
             }
 
-            Timber.e(e, "Failed to get ID3 tags. Ignoring...");
+        } catch (e: Throwable) {
+            if (e is java.io.FileNotFoundException) {
+                Timber.e(e, "File does not exist.. $path")
+                return null
+            }
+            if (e is InvalidDataException) {
+                Timber.e(e, "File is not mp3.. $path")
+            }
+            if (e is IOException) {
+                Timber.e(e, "File is not readble.. $path")
+            }
+            Timber.e(e.printStackTrace().toString(), "Failed to get ID3 tags. Ignoring...")
         }
 
         return ScannedMediaOutput(
-                mediaId = musicId,
-                title = getString(cursor, Audio.Media.TITLE) { getString(cursor, Audio.Media.DISPLAY_NAME) },
-                artist = artist,
-                albumId = albumId,
-                playlistId = playlistId,
-                album = getString(cursor, Audio.Media.ALBUM) { getString(cursor, "_description") },
-                track = getString(cursor, Audio.Media.TRACK),
-                path = path,
-                albumCoverPath = getAlbumById(albumId, path)?.coverPath ?: "",
-                createdAt = getLong(cursor, Audio.Media.DATE_ADDED),
-                updatedAt = getLong(cursor, Audio.Media.DATE_MODIFIED)
+            mediaId = musicId,
+            title = getString(cursor, Audio.Media.TITLE) {
+                getString(
+                    cursor,
+                    Audio.Media.DISPLAY_NAME
+                )
+            },
+            artist = artist,
+            albumId = albumId,
+            playlistId = playlistId,
+            album = getString(cursor, Audio.Media.ALBUM) { getString(cursor, "_description") },
+            track = getString(cursor, Audio.Media.TRACK),
+            path = path,
+            albumCoverPath = getAlbumById(albumId, path)?.coverPath ?: "",
+            createdAt = getLong(cursor, Audio.Media.DATE_ADDED),
+            updatedAt = getLong(cursor, Audio.Media.DATE_MODIFIED)
         )
     }
 
-    private fun getLong(cursor: Cursor, columnName: String, defaultValue: () -> Long = { 0 }): Long {
+    private fun getLong(
+        cursor: Cursor,
+        columnName: String,
+        defaultValue: () -> Long = { 0 }
+    ): Long {
         return try {
             // Timber.d("Getting the Column $columnName...")
             val value = cursor.getLongByColumnName(columnName)
@@ -186,7 +205,11 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
         }
     }
 
-    private fun getString(cursor: Cursor, columnName: String, defaultValue: () -> String = { "" }): String {
+    private fun getString(
+        cursor: Cursor,
+        columnName: String,
+        defaultValue: () -> String = { "" }
+    ): String {
         return try {
             // Timber.d("Getting the Column $columnName...")
             val value = cursor.getStringByColumnName(columnName)
@@ -212,11 +235,11 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
         // Timber.d("Find album on android Media Store (albumId=$albumId)")
 
         val cursor = context.contentResolver.query(
-                Audio.Albums.EXTERNAL_CONTENT_URI,
-                albumColumns,
-                Audio.Albums._ID + "=?",
-                arrayOf(albumId.toString()),
-                null
+            Audio.Albums.EXTERNAL_CONTENT_URI,
+            albumColumns,
+            Audio.Albums._ID + "=?",
+            arrayOf(albumId.toString()),
+            null
         )
 
         cursor?.use {
@@ -274,9 +297,9 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
 
     override fun delete(id: Long) {
         context.contentResolver.delete(
-                Audio.Media.EXTERNAL_CONTENT_URI,
-                Audio.Albums._ID + "=?",
-                arrayOf(id.toString())
+            Audio.Media.EXTERNAL_CONTENT_URI,
+            Audio.Albums._ID + "=?",
+            arrayOf(id.toString())
         )
     }
 

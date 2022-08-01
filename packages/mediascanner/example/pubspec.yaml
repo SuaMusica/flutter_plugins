@@ -11,8 +11,16 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
+  provider: ^6.0.2
+  flutter_bloc: ^8.0.1
   permission_handler: ^9.0.1
+  sqflite: ^2.0.2+1
+  sqlite3_flutter_libs: ^0.5.7
+  path_provider: ^2.0.10
+  drift: ^1.6.0
+  drift_dev: ^1.6.0
+  build_runner: ^2.1.11
+
   mediascanner:
     # When depending on this package from a real application you should use:
     #   mediascanner: ^x.y.z

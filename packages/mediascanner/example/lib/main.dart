@@ -2,13 +2,14 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mediascanner/media_scanner.dart';
-import 'package:mediascanner/model/media_scan_params.dart';
-import 'package:mediascanner/model/media_type.dart';
 import 'package:mediascanner/model/scanned_media.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:mediascanner_example/bloc/scan_bloc.dart';
+import 'package:mediascanner_example/db/drift/drift_database.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(MyApp());
 }
 
@@ -19,20 +20,33 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
+  late final ScanBloc scanBloc;
 
   @override
   void initState() {
     super.initState();
-    scanMedias();
-  }
-
-  Future<void> scanMedias() async {
-    await Permission.storage.request();
-    MediaScanner.instance
-        .scan(MediaScanParams(MediaType.audio, [".mp3", ".wav"], "", 0));
+    initPlatformState();
+    scanBloc = ScanBloc()
+      ..add(
+        CreateDB(
+          exampleDatabase: ExampleDatabase.instance,
+        ),
+      );
   }
 
   int totalMediaScanned = 0;
+
+  Future<void> initPlatformState() async {
+    MediaScanner.instance.onListScannedMediaStream.listen(
+      (List<ScannedMedia> event) {
+        scanBloc.add(
+          AllMediaScanned(
+            listMedias: event,
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,43 +56,36 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Plugin example app'),
         ),
         body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Running on: $_platformVersion\n'),
-              StreamBuilder<ScannedMedia>(
-                  stream: MediaScanner.instance.onScannedMediaStream,
-                  builder: (context, snapshot) {
-                    if (snapshot.hasError || !snapshot.hasData)
-                      return Container();
-                    totalMediaScanned++;
-                    return Text('Total Media Scanned: $totalMediaScanned\n');
-                  }),
-              StreamBuilder<List<ScannedMedia>>(
-                stream: MediaScanner.instance.onListScannedMediaStream,
-                builder: (context, snapshot) {
-                  if (snapshot.hasError || !snapshot.hasData)
-                    return Container();
-
-                  return Expanded(
-                    child: GridView.count(
-                      physics: BouncingScrollPhysics(),
-                      scrollDirection: Axis.vertical,
-                      shrinkWrap: true,
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                      primary: false,
-                      padding: const EdgeInsets.all(2),
-                      children: List.generate(
-                          snapshot.data!.length,
-                          (index) =>
-                              _getScannedMediaWidget(snapshot.data![index])),
+          child: BlocBuilder<ScanBloc, ScanState>(
+            bloc: scanBloc,
+            builder: (context, state) {
+              if (state is Scanned) {
+                return Column(
+                  children: [
+                    Text('Medias: ${state.medias.length}\n'),
+                    Expanded(
+                      child: GridView.count(
+                        physics: BouncingScrollPhysics(),
+                        scrollDirection: Axis.vertical,
+                        shrinkWrap: true,
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                        primary: false,
+                        padding: const EdgeInsets.all(2),
+                        children: List.generate(
+                          state.medias.length,
+                          (index) => _getScannedMediaWidget(
+                            state.medias[index],
+                          ),
+                        ),
+                      ),
                     ),
-                  );
-                },
-              ),
-            ],
+                  ],
+                );
+              } else
+                return CircularProgressIndicator();
+            },
           ),
         ),
       ),
@@ -89,7 +96,7 @@ class _MyAppState extends State<MyApp> {
     return GridTile(
       header: Padding(
         padding: const EdgeInsets.all(8.0),
-        child: _getTile("Music Path", data.path),
+        child: _getTile(value: data.title, fontSize: 15),
       ),
       footer: Padding(
         padding: const EdgeInsets.all(8.0),
@@ -97,11 +104,12 @@ class _MyAppState extends State<MyApp> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            _getTile("Track", data.track!),
-            _getTile("AlbumId", data.albumId.toString()),
-            _getTile("Album", data.album),
-            _getTile("Title", data.title),
-            _getTile("Artist", data.artist),
+            _getTile(label: "ID", value: data.mediaId.toString()),
+            _getTile(label: "Track", value: data.track!),
+            _getTile(label: "AlbumId", value: data.albumId.toString()),
+            _getTile(label: "Album", value: data.album),
+            _getTile(label: "Artist", value: data.artist),
+            _getTile(label: "Music Path", value: data.path)
           ],
         ),
       ),
@@ -119,11 +127,16 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  Widget _getTile(String label, String value) {
+  Widget _getTile({
+    String? label,
+    required String value,
+    double fontSize = 9.0,
+  }) {
+    final text = label == null ? '' : label;
     return Text(
-      "($label) $value",
+      '$text $value',
       style: TextStyle(
-        fontSize: 10,
+        fontSize: fontSize,
         fontWeight: FontWeight.bold,
       ),
     );
