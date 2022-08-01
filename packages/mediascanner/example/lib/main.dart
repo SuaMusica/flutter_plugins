@@ -19,9 +19,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
   late final ScanBloc scanBloc;
-
   @override
   void initState() {
     super.initState();

@@ -82,83 +82,9 @@ class MediaScanner(
 
     fun scan(input: ScanMediaMethodInput) {
         Timber.d("scan(%s)", input)
-        lateinit var scanFile: ScanFileUtil
-        val listFile = mutableListOf<File>()
-
         scanExecutor.execute {
             try {
-                if (input.useUtil) {
-                    scanFile = ScanFileUtil(ScanFileUtil.externalStorageDirectory)
-                    scanFile.setCallBackFilter(
-                        ScanFileUtil.FileFilterBuilder().apply {
-                            onlyScanFile()
-                            scanMusicFiles()
-                            notScanHiddenFiles()
-                        }.build()
-                    )
-                    scanFile.setScanFileListener(
-                        object : ScanFileUtil.ScanFileListener {
-                            override fun scanBegin() {
-                                Log.d("TESTE=>", "scanBegin")
-                            }
-
-                            override fun scanComplete(timeConsuming: Long) {
-                                Log.d("TESTE=>", "timeConsuming: $timeConsuming")
-                                listFile.forEach {
-                                    try {
-                                        val mp3file = Mp3File(it)
-                                        var playlistId = 0L
-                                        var albumId = 0L
-                                        var musicId = 0L
-                                        var artist = AudioMediaScannerExtractor.UNKNOWN_ARTIST
-                                        if (mp3file.hasId3v2Tag()) {
-                                            // Timber.d("Trying to read Id3 tags...")
-                                            val id3v2Tag = mp3file.id3v2Tag
-                                            if (id3v2Tag != null) {
-                                                var url = id3v2Tag.url
-                                                // Timber.d("SM_URL: [$url]")
-                                                if (url != null && url.isNotEmpty()) {
-                                                    val uri = Uri.parse(url)
-                                                    uri.getQueryParameter("playlistId")?.let { value ->
-                                                        playlistId = value.toLong()
-                                                    }
-                                                    uri.getQueryParameter("albumId")?.let { value ->
-                                                        albumId = value.toLong()
-                                                    }
-                                                    uri.getQueryParameter("musicId")?.let { value ->
-                                                        musicId = value.toLong()
-                                                    }
-                                                }
-
-                                                if (artist == AudioMediaScannerExtractor.UNKNOWN_ARTIST && id3v2Tag.albumArtist != null) {
-                                                    if (id3v2Tag.albumArtist.isNotEmpty()) {
-                                                        artist = id3v2Tag.albumArtist
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        Log.d("TESTE=>", "-----------------")
-                                        Log.d("TESTE=>", "playlistId: $playlistId")
-                                        Log.d("TESTE=>", "albumId: $albumId")
-                                        Log.d("TESTE=>", "musicId: $musicId")
-                                        Log.d("TESTE=>", "artist: $artist")
-                                        Log.d("TESTE=>", "name: ${it.name}")
-                                    } catch (e: Exception) {
-                                        Log.d("TESTE=>", "error: $e")
-
-                                    }
-                                }
-                            }
-
-                            override fun scanningCallBack(file: File) {
-                                listFile.add(file)
-                            }
-                        },
-                    )
-                    scanFile.startAsyncScan()
-                } else {
-                    scanMediasFromAndroidApi(input)
-                }
+                scanMediasFromAndroidApi(input)
             } catch (e: Throwable) {
                 Timber.e(e)
                 callback.onAllMediaScanned(emptyList())
@@ -176,9 +102,6 @@ class MediaScanner(
 
     @SuppressLint("Recycle")
     private fun scanMediasFromAndroidApi(input: ScanMediaMethodInput) {
-        val sdf = SimpleDateFormat("dd/M/yyyy hh:mm:ss")
-        val inicio = sdf.format(Date())
-        Log.d("TESTE=>","Inicio:$inicio")
         val allMediaScanned = mutableListOf<ScannedMediaOutput>()
 
         val extractors = mediaScannerExtractors.filter {
@@ -196,7 +119,8 @@ class MediaScanner(
 
         extractors.forEach { extractor ->
             val cursor = contentResolver.query(
-extractor.uri,                extractor.columns,
+                extractor.uri, 
+                extractor.columns,
                 extractor.selection,
                 extractor.selectionArgs,
                 null
@@ -214,8 +138,6 @@ extractor.uri,                extractor.columns,
                 }
             }
         }
-        val fim = sdf.format(Date())
-        Log.d("TESTE=>","Fim:$fim")
         callback.onAllMediaScanned(allMediaScanned)
     }
 

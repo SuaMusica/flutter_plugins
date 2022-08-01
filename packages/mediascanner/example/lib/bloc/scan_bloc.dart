@@ -26,7 +26,6 @@ class ScanBloc extends Bloc<ScanEvent, ScanState> {
         [".mp3", ".wav"],
         "scanned_media.db",
         ExampleDatabase.instance.schemaVersion,
-        true,
       ),
     );
   }

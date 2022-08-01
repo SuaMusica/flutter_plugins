@@ -8,14 +8,12 @@ class MediaScanParams {
     this.supportedExtensions,
     this.databaseName,
     this.databaseVersion,
-    this.useUtil,
   );
 
   MediaType mediaType;
   List<String> supportedExtensions;
   String databaseName;
   int databaseVersion;
-  bool useUtil;
 
   Map<String, dynamic> toChannelParams() {
     return {
@@ -23,7 +21,6 @@ class MediaScanParams {
       SUPPORTED_EXTENSIONS: supportedExtensions,
       DATABASE_NAME: databaseName,
       DATABASE_VERSION: databaseVersion,
-      USE_UTIL: useUtil,
     };
   }
 }
