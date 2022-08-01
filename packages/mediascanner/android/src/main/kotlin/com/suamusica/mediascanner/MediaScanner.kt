@@ -12,8 +12,6 @@ import android.os.Environment
 import android.os.StatFs
 import android.provider.DocumentsContract
 import android.provider.MediaStore
-import android.util.Log
-import com.mpatric.mp3agic.Mp3File
 import com.suamusica.mediascanner.db.ScannedMediaDbHelper
 import com.suamusica.mediascanner.db.ScannedMediaRepository
 import com.suamusica.mediascanner.input.DeleteMediaMethodInput
@@ -26,8 +24,6 @@ import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.text.SimpleDateFormat
-import java.util.*
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 import kotlin.collections.ArrayList

@@ -6,9 +6,7 @@ import android.database.Cursor
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
-import android.os.FileUtils
 import android.provider.MediaStore.Audio
-import android.util.Log
 import com.mpatric.mp3agic.*
 import com.suamusica.mediascanner.input.MediaType
 import com.suamusica.mediascanner.model.Album
@@ -18,7 +16,6 @@ import java.io.FileOutputStream
 import java.io.IOException
 import timber.log.Timber
 import com.suamusica.mediascanner.db.ScannedMediaRepository
-import java.util.*
 
 class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExtractor {
     private val rootPaths = mutableListOf<String>()
@@ -161,10 +158,10 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
                 return null
             }
             if (e is InvalidDataException) {
-                Timber.e(e, "File is not mp3.. $path")
+                Timber.e(e, "InvalidDataException: $path")
             }
             if (e is IOException) {
-                Timber.e(e, "File is not readble.. $path")
+                Timber.e(e, "IOException: $path")
             }
             Timber.e(e.printStackTrace().toString(), "Failed to get ID3 tags. Ignoring...")
         }
