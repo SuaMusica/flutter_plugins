@@ -1,4 +1,5 @@
 import AVFoundation
+import Foundation
 import GoogleInteractiveMediaAds
 
 class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDelegate, AVPictureInPictureControllerDelegate {
@@ -405,10 +406,11 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     }
     
     func adsManager(_ adsManager: IMAAdsManager, adDidProgressToTime mediaTime: TimeInterval, totalTime: TimeInterval) {
+        //TODO: send as miliseconds
         self.callback?.onAddEvent(args: [
             "type" : "AD_PROGRESS",
-            "duration": String(describing: totalTime),
-            "position": String(describing: mediaTime),
+            "duration": String(describing: totalTime.milliseconds),
+            "position": String(describing: mediaTime.milliseconds),
         ])
     }
     
@@ -543,4 +545,14 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         return type
     }
     
+}
+extension TimeInterval {
+
+    var seconds: Int {
+        return Int(self.rounded())
+    }
+
+    var milliseconds: Int {
+        return Int(self * 1_000)
+    }
 }
