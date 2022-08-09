@@ -130,14 +130,9 @@ class _MyAppState extends State<MyApp> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: <Widget>[
                 Text('Preroll is Ready? $_isPreRollReady'),
-                AspectRatio(
-                  aspectRatio: 640 / 480,
-                  child: (_isPreRollReady || _isIosReady) && _preRoll != null
-                      ? _preRoll!
-                      : Container(
-                          color: Colors.pink,
-                        ),
-                ),
+                (_isPreRollReady || _isIosReady) && _preRoll != null
+                    ? _preRoll!
+                    : Container(),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [

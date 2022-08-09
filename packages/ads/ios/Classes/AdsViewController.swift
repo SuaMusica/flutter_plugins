@@ -345,12 +345,14 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
                 companionView.isHidden = false
             } else {
                 print("AD: isVideo")
+                videoView.frame.size.width = UIScreen.main.bounds.size.width
                 isVideo = true
                 videoView.isHidden = false
                 companionView.isHidden = true
             }
-            
             hasStarted = false;
+            //For iOS we should start as soon as it is loaded as we do not preload it.
+            play()
         case IMAAdEventType.AD_BREAK_STARTED:
             print("AD: Got a AD_BREAK_STARTED event")
         case IMAAdEventType.AD_BREAK_ENDED:

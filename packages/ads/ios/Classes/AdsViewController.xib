@@ -20,12 +20,12 @@
             <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
             <subviews>
-                <view contentMode="scaleToFill" id="uRe-qC-Aqh" userLabel="videoView">
+                <view contentMode="center" translatesAutoresizingMaskIntoConstraints="NO" id="uRe-qC-Aqh" userLabel="videoView">
                     <rect key="frame" x="0.0" y="0.0" width="414" height="310"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     <viewLayoutGuide key="safeArea" id="a7N-gz-Yxu"/>
                 </view>
-                <view hidden="YES" contentMode="scaleToFill" id="Vu2-lZ-IYH" userLabel="companionView">
+                <view hidden="YES" contentMode="center" id="Vu2-lZ-IYH" userLabel="companionView">
                     <rect key="frame" x="55.648854961810002" y="-2.2737367544323206e-13" width="300" height="250.00000000000006"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     <viewLayoutGuide key="safeArea" id="HaP-x5-773"/>

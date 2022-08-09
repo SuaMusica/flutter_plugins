@@ -35,7 +35,7 @@ class PreRoll extends StatelessWidget {
         maxHeight: maxHeight ?? MediaQuery.of(context).size.height,
       ),
       child: defaultTargetPlatform == TargetPlatform.android
-          ? (true
+          ? (useHybridComposition
               ? PlatformViewLink(
                   key: _key,
                   viewType: viewType,
@@ -79,7 +79,5 @@ class PreRoll extends StatelessWidget {
     );
   }
 
-  void _onPlatformViewCreated(int id) {
-    controller?.play();
-  }
+  void _onPlatformViewCreated(int id) => controller?.play();
 }
