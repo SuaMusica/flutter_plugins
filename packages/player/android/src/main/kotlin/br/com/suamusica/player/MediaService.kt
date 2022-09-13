@@ -96,7 +96,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
         val sessionActivityPendingIntent =
                 this.packageManager?.getLaunchIntentForPackage(this.packageName)?.let { sessionIntent ->
-                    PendingIntent.getActivity(this, 0, sessionIntent, 0)
+                    PendingIntent.getActivity(this, 0, sessionIntent, PendingIntent.FLAG_IMMUTABLE)
                 }
 
         val mediaButtonReceiver = ComponentName(this, MediaButtonReceiver::class.java)
