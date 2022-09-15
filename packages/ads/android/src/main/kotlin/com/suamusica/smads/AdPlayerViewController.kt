@@ -1,14 +1,13 @@
 package com.suamusica.smads
 
 import android.content.Context
-import android.os.Build
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.ProgressBar
-import androidx.annotation.RequiresApi
 import com.google.ads.interactivemedia.v3.api.AdErrorEvent
 import com.google.ads.interactivemedia.v3.api.AdEvent
 import com.google.android.exoplayer2.ui.PlayerView
+import com.google.android.exoplayer2.ui.StyledPlayerView
 import com.suamusica.smads.extensions.gone
 import com.suamusica.smads.extensions.hide
 import com.suamusica.smads.extensions.show
@@ -36,12 +35,11 @@ class AdPlayerViewController(
     private fun Disposable.compose() = compositeDisposable.add(this)
     var adPlayerView: AdPlayerView? = null
     private var view: View? = null
-    private var videoAdContainer: PlayerView? = null
+    private var videoAdContainer: StyledPlayerView? = null
     private var companionAdSlot: LinearLayout? = null
     private var progressBar: ProgressBar? = null
     private val ignorePausedEvent = AtomicBoolean(true)
 
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun load(input: LoadMethodInput, adPlayerView: AdPlayerView) {
         Timber.d("load(input=%s)", input)
         dispose()
@@ -56,27 +54,23 @@ class AdPlayerViewController(
         adPlayerManager?.load(adPlayerView.videoAdContainer, adPlayerView.companionAdSlot)
     }
 
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun play() {
         Timber.d("play()")
         ignorePausedEvent.set(false)
         adPlayerManager?.play()
     }
 
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun skipAd(){
         Timber.d("skipAd()")
         adPlayerManager?.skipAd()
 
     }
 
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun pause() {
         Timber.d("pause()")
         adPlayerManager?.pause()
     }
 
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun dispose() {
         Timber.d("dispose()")
         compositeDisposable.clear()
@@ -84,7 +78,6 @@ class AdPlayerViewController(
         isCompleted.set(false)
     }
 
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun configureAdPlayerEventObservers() {
         Timber.d("configureAdPlayerEventObservers")
         adPlayerManager?.let { adPlayerManager ->
@@ -104,7 +97,6 @@ class AdPlayerViewController(
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun onAdEvent(adEvent: AdEvent) {
         when (adEvent.type) {
             AdEvent.AdEventType.COMPLETED,

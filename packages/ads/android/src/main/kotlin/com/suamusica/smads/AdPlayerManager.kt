@@ -4,41 +4,36 @@ import android.content.Context
 import android.media.MediaCodecList
 import android.net.Uri
 import android.os.Build
+import android.os.Build.VERSION
+
 import android.view.ViewGroup
-import androidx.annotation.RequiresApi
 import com.google.ads.interactivemedia.v3.api.*
 import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.ext.ima.ImaAdsLoader
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.source.SilenceMediaSource
 import com.google.android.exoplayer2.source.ads.AdsMediaSource
-import com.google.android.exoplayer2.ui.PlayerView
-import com.google.android.exoplayer2.upstream.DataSource
-import com.google.android.exoplayer2.upstream.DataSpec
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
-import com.google.android.exoplayer2.util.Util
+import com.google.android.exoplayer2.ui.StyledPlayerView
+import com.google.android.exoplayer2.upstream.*
 import com.suamusica.smads.input.LoadMethodInput
 import io.reactivex.subjects.PublishSubject
 import timber.log.Timber
 
 
-@RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 class AdPlayerManager(
-        context: Context,
-        input: LoadMethodInput
+    private var context: Context,
+    input: LoadMethodInput
 ) {
     private var adsLoader: ImaAdsLoader? = null
-    private var context: Context = context
     private val adTagUrl = Uri.parse(input.adTagUrl)
     private val dataSourceFactory: DataSource.Factory
     private var player: ExoPlayer? = null
     private var adsManager: AdsManager? = null
     private var supportedMimeTypes: List<String>? = null
     private val uAmpAudioAttributes = AudioAttributes.Builder()
-            .setContentType(C.CONTENT_TYPE_MOVIE)
+            .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
             .setUsage(C.USAGE_MEDIA)
             .build()
 
@@ -49,13 +44,26 @@ class AdPlayerManager(
         private set
 
     init {
-        dataSourceFactory = DefaultDataSourceFactory(context, Util.getUserAgent(context, "AdPlayer"))
-        player = SimpleExoPlayer.Builder(context).setAudioAttributes(uAmpAudioAttributes, true).build()
+        val userAgent =
+            "OnePlayer (Linux; Android ${VERSION.SDK_INT}; ${Build.BRAND}/${Build.MODEL})"
+        dataSourceFactory = DefaultDataSource.Factory(
+            context, DefaultHttpDataSource.Factory().apply {
+                setReadTimeoutMs(15 * 1000)
+                setConnectTimeoutMs(10 * 1000)
+                setUserAgent(userAgent)
+                setAllowCrossProtocolRedirects(true)
+            }
+        )
+
+        player = ExoPlayer.Builder(context)
+            .setAudioAttributes(uAmpAudioAttributes, true)
+            .setHandleAudioBecomingNoisy(true)
+            .build()
+
         supportedMimeTypes = this.getCodecsType()
     }
 
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    fun getCodecsType(): List<String> {
+    private fun getCodecsType(): List<String> {
         val result: ArrayList<String> = ArrayList()
         for (codec in MediaCodecList(MediaCodecList.REGULAR_CODECS).codecInfos) {
             if (!codec.isEncoder) {
@@ -76,7 +84,7 @@ class AdPlayerManager(
         return adsRenderingSettings
     }
 
-    private fun setupAdsLoader(playerView: PlayerView) {
+    private fun setupAdsLoader() {
         Timber.d("setupAdsLoader")
         adsLoader?.setPlayer(player)
         adsLoader?.adsLoader?.addAdsLoadedListener {
@@ -87,7 +95,7 @@ class AdPlayerManager(
         }
     }
 
-    fun load(playerView: PlayerView, companionAdSlotView: ViewGroup) {
+    fun load(playerView: StyledPlayerView, companionAdSlotView: ViewGroup) {
         Timber.d("load")
         val companionAdSlot = ImaSdkFactory.getInstance().createCompanionAdSlot()
         companionAdSlot.container = companionAdSlotView
@@ -112,7 +120,7 @@ class AdPlayerManager(
 
 
 
-        setupAdsLoader(playerView)
+        setupAdsLoader()
 
         player?.setMediaSource(
 

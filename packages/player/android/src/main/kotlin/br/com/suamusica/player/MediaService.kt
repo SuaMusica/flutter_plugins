@@ -26,13 +26,10 @@ import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.ext.mediasession.TimelineQueueNavigator
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
-import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.source.hls.HlsMediaSource
-import com.google.android.exoplayer2.trackselection.TrackSelectionArray
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
 import com.google.android.exoplayer2.upstream.FileDataSource
-import com.google.android.exoplayer2.upstream.HttpDataSource.RequestProperties
 import com.google.android.exoplayer2.util.Util
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -56,7 +53,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
     private var wakeLock: PowerManager.WakeLock? = null
 
     private val uAmpAudioAttributes = AudioAttributes.Builder()
-            .setContentType(C.CONTENT_TYPE_MUSIC)
+            .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
             .setUsage(C.USAGE_MEDIA)
             .build()
 
@@ -447,8 +444,8 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                 Log.i(TAG, "onTimelineChanged: timeline: $timeline reason: $reason")
             }
 
-            override fun onTracksChanged(trackGroups: TrackGroupArray, trackSelections: TrackSelectionArray) {
-                Log.i(TAG, "onTimelineChanged: trackGroups: $trackGroups trackSelections: $trackSelections")
+            override fun onTracksChanged(tracks: Tracks) {
+                Log.i(TAG, "onTracksChanged: ")
             }
 
             override fun onLoadingChanged(isLoading: Boolean) {
