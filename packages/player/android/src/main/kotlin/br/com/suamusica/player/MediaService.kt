@@ -104,11 +104,9 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                             isActive = true
                         }
 
-        mediaSession?.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS
-                or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS
-                or MediaSessionCompat.FLAG_HANDLES_QUEUE_COMMANDS)
+        mediaSession?.setFlags(MediaSessionCompat.FLAG_HANDLES_QUEUE_COMMANDS)
 
-        player = SimpleExoPlayer.Builder(this).build().apply {
+        player = ExoPlayer.Builder(this).build().apply {
             setAudioAttributes(uAmpAudioAttributes, true)
             addListener(playerEventListener())
             // setWakeMode(C.WAKE_MODE_NETWORK)
@@ -116,7 +114,6 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         }
         mediaSession?.let { mediaSession ->
             val sessionToken = mediaSession.sessionToken
-
             // we must connect the service to the media session
             this.sessionToken = sessionToken
 
@@ -125,23 +122,12 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             mediaController = MediaControllerCompat(this, sessionToken).also { mediaController ->
                 mediaController.registerCallback(mediaControllerCallback)
 
-                val playbackPreparer = MusicPlayerPlaybackPreparer(
-                        this,
-                        player!!,
-                        mediaController,
-                        mediaSession
-                )
 
                 mediaSessionConnector = MediaSessionConnector(mediaSession).also { connector ->
                     connector.setPlayer(player)
-                    connector.setPlaybackPreparer(playbackPreparer)
+                    connector.setPlaybackPreparer(MusicPlayerPlaybackPreparer(this))
                     connector.setMediaButtonEventHandler(MediaButtonEventHandler())
-                    connector.setEnabledPlaybackActions(
-                                    PlaybackStateCompat.ACTION_PLAY
-                                    or PlaybackStateCompat.ACTION_PAUSE
-                                    or PlaybackStateCompat.ACTION_REWIND
-                                    or PlaybackStateCompat.ACTION_FAST_FORWARD
-                    )
+                    connector.setCustomActionProviders(FavoriteModeActionProvider(applicationContext))
                 }
             }
         }
@@ -251,26 +237,22 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             return@setMediaMetadataProvider metadata
         }
 
-        val timelineQueueNavigator = object : TimelineQueueNavigator(mediaSession!!) {
-            override fun getSupportedQueueNavigatorActions(player: Player): Long {
-                var actions: Long = 0
-                actions = actions or PlaybackStateCompat.ACTION_SKIP_TO_QUEUE_ITEM
-                actions = actions or PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
-                actions = actions or PlaybackStateCompat.ACTION_SKIP_TO_NEXT
-                return actions
-            }
+       val timelineQueueNavigator = object : TimelineQueueNavigator(mediaSession!!) {
+           override fun getSupportedQueueNavigatorActions(player: Player): Long {
+               return  PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or PlaybackStateCompat.ACTION_SKIP_TO_NEXT or PlaybackStateCompat.ACTION_SEEK_TO
+           }
 
-            override fun getMediaDescription(player: Player, windowIndex: Int): MediaDescriptionCompat {
-                player.let {
-                    return MediaDescriptionCompat.Builder().apply {
-                        setTitle(media.author)
-                        setSubtitle(media.name)
-                        setIconUri(Uri.parse(media.coverUrl))
-                    }.build()
-                }
-            }
-        }
-        mediaSessionConnector?.setQueueNavigator(timelineQueueNavigator)
+           override fun getMediaDescription(player: Player, windowIndex: Int): MediaDescriptionCompat {
+               player.let {
+                   return MediaDescriptionCompat.Builder().apply {
+                       setTitle(media.author)
+                       setSubtitle(media.name)
+                       setIconUri(Uri.parse(media.coverUrl))
+                   }.build()
+               }
+           }
+       }
+       mediaSessionConnector?.setQueueNavigator(timelineQueueNavigator)
         val url = media.url
         Log.i(TAG, "Player: URL: $url")
 
@@ -576,7 +558,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
         override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
             Log.d(TAG, "onPlaybackStateChanged state: $state")
-            updateNotification(state!!)
+                updateNotification(state!!)
         }
 
         override fun onQueueChanged(queue: MutableList<MediaSessionCompat.QueueItem>?) {

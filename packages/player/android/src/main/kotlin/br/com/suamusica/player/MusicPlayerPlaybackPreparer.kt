@@ -9,10 +9,9 @@ import android.util.Log
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 
-class MusicPlayerPlaybackPreparer(val mediaService: MediaService,
-                                  val exoPlayer: Player,
-                                  val mediaController: MediaControllerCompat,
-                                  val mediaSession: MediaSessionCompat) : MediaSessionConnector.PlaybackPreparer {
+class MusicPlayerPlaybackPreparer(
+    private val mediaService: MediaService,
+                                  ) : MediaSessionConnector.PlaybackPreparer {
     val TAG = "Player"
 
     override fun onPrepareFromMediaId(mediaId: String, playWhenReady: Boolean, extras: Bundle?) {

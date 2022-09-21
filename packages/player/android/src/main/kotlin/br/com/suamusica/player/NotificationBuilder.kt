@@ -117,8 +117,7 @@ class NotificationBuilder(private val context: Context) {
             createNowPlayingChannel()
         }
 
-        val controller = MediaControllerCompat(context, mediaSession.sessionToken)
-        val playbackState = controller.playbackState
+        val playbackState = mediaSession.controller.playbackState
         val builder = NotificationCompat.Builder(context, NOW_PLAYING_CHANNEL)
         val actions = if (isFavorite == null) mutableListOf(0, 1, 2) else mutableListOf(0, 2, 3) // favorite,play/pause,next
         val duration = mediaDuration ?: 0L
