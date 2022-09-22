@@ -49,6 +49,7 @@ class MediaSessionConnection(
         bundle.putString("author", media.author)
         bundle.putString("url", media.url)
         bundle.putString("coverUrl", media.coverUrl)
+        PlayerSingleton.lastFavorite = media.isFavorite ?: false
         if (media.isFavorite != null) {
             bundle.putBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT, media.isFavorite)
         }
@@ -97,6 +98,7 @@ class MediaSessionConnection(
         if (isPlaying != null) {
             bundle.putBoolean(PlayerPlugin.IS_PLAYING_ARGUMENT, isPlaying)
         }
+        PlayerSingleton.lastFavorite = isFavorite ?: false
         if (isFavorite != null) {
             bundle.putBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT, isFavorite)
         }

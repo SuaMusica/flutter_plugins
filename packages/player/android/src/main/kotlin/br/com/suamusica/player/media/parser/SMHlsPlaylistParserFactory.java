@@ -7,7 +7,6 @@ import java.util.List;
 
 import com.google.android.exoplayer2.offline.FilteringManifestParser;
 import com.google.android.exoplayer2.offline.StreamKey;
-import com.google.android.exoplayer2.source.hls.playlist.HlsMasterPlaylist;
 import com.google.android.exoplayer2.source.hls.playlist.HlsMediaPlaylist;
 import com.google.android.exoplayer2.source.hls.playlist.HlsMultivariantPlaylist;
 import com.google.android.exoplayer2.source.hls.playlist.HlsPlaylist;
