@@ -130,7 +130,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                     connector.setPlayer(player)
                     connector.setPlaybackPreparer(MusicPlayerPlaybackPreparer(this))
                     Log.d("TESTE", "SDK: ${Build.VERSION.SDK_INT}")
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         connector.setCustomActionProviders(
                             FavoriteModeActionProvider(applicationContext),
                             PreviousActionProvider(),
@@ -260,7 +260,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         mediaSessionConnector?.setMediaMetadataProvider {
             return@setMediaMetadataProvider metadata
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             val timelineQueueNavigator = object : TimelineQueueNavigator(mediaSession!!) {
                 override fun getSupportedQueueNavigatorActions(player: Player): Long {
                     return PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
