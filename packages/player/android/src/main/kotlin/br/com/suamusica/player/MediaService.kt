@@ -127,16 +127,17 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                 mediaController.registerCallback(mediaControllerCallback)
 
                 mediaSessionConnector = MediaSessionConnector(mediaSession).also { connector ->
+                    connector.setPlayer(player)
+                    connector.setPlaybackPreparer(MusicPlayerPlaybackPreparer(this))
+                    Log.d("TESTE", "SDK: ${Build.VERSION.SDK_INT}")
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                        connector.setPlayer(player)
-                        connector.setPlaybackPreparer(MusicPlayerPlaybackPreparer(this))
-                        connector.setMediaButtonEventHandler(MediaButtonEventHandler())
                         connector.setCustomActionProviders(
                             FavoriteModeActionProvider(applicationContext),
                             PreviousActionProvider(),
                             NextActionProvider(),
                         )
                     } else {
+                        connector.setMediaButtonEventHandler(MediaButtonEventHandler())
                         connector.setEnabledPlaybackActions(
                             PlaybackStateCompat.ACTION_PLAY
                                     or PlaybackStateCompat.ACTION_PAUSE
@@ -259,28 +260,29 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         mediaSessionConnector?.setMediaMetadataProvider {
             return@setMediaMetadataProvider metadata
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val timelineQueueNavigator = object : TimelineQueueNavigator(mediaSession!!) {
+                override fun getSupportedQueueNavigatorActions(player: Player): Long {
+                    return PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
+                            PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+                            PlaybackStateCompat.ACTION_SEEK_TO
+                }
 
-//        val timelineQueueNavigator = object : TimelineQueueNavigator(mediaSession!!) {
-//            override fun getSupportedQueueNavigatorActions(player: Player): Long {
-//                return PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
-////                        PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
-//                        PlaybackStateCompat.ACTION_SEEK_TO
-//            }
-//
-//            override fun getMediaDescription(
-//                player: Player,
-//                windowIndex: Int
-//            ): MediaDescriptionCompat {
-//                player.let {
-//                    return MediaDescriptionCompat.Builder().apply {
-//                        setTitle(media.author)
-//                        setSubtitle(media.name)
-//                        setIconUri(Uri.parse(media.coverUrl))
-//                    }.build()
-//                }
-//            }
-//        }
-//        mediaSessionConnector?.setQueueNavigator(timelineQueueNavigator)
+                override fun getMediaDescription(
+                    player: Player,
+                    windowIndex: Int
+                ): MediaDescriptionCompat {
+                    player.let {
+                        return MediaDescriptionCompat.Builder().apply {
+                            setTitle(media.author)
+                            setSubtitle(media.name)
+                            setIconUri(Uri.parse(media.coverUrl))
+                        }.build()
+                    }
+                }
+            }
+            mediaSessionConnector?.setQueueNavigator(timelineQueueNavigator)
+        }
         val url = media.url
         Log.i(TAG, "Player: URL: $url")
 
