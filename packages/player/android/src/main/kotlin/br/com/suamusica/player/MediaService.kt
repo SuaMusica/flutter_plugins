@@ -26,13 +26,10 @@ import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.ext.mediasession.TimelineQueueNavigator
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
-import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.source.hls.HlsMediaSource
-import com.google.android.exoplayer2.trackselection.TrackSelectionArray
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
 import com.google.android.exoplayer2.upstream.FileDataSource
-import com.google.android.exoplayer2.upstream.HttpDataSource.RequestProperties
 import com.google.android.exoplayer2.util.Util
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -40,7 +37,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class MediaService : androidx.media.MediaBrowserServiceCompat() {
     private val TAG = "Player"
-    private val userAgent = "SuaMusica/player (Linux; Android ${Build.VERSION.SDK_INT}; ${Build.BRAND}/${Build.MODEL})"
+    private val userAgent =
+        "SuaMusica/player (Linux; Android ${Build.VERSION.SDK_INT}; ${Build.BRAND}/${Build.MODEL})"
     private var packageValidator: PackageValidator? = null
 
     private var mediaSession: MediaSessionCompat? = null
@@ -56,9 +54,9 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
     private var wakeLock: PowerManager.WakeLock? = null
 
     private val uAmpAudioAttributes = AudioAttributes.Builder()
-            .setContentType(C.CONTENT_TYPE_MUSIC)
-            .setUsage(C.USAGE_MEDIA)
-            .build()
+        .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+        .setUsage(C.USAGE_MEDIA)
+        .build()
 
     private var player: ExoPlayer? = null
 
@@ -88,30 +86,31 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         notificationBuilder = NotificationBuilder(this)
         notificationManager = NotificationManagerCompat.from(this)
         wifiLock = (applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager)
-                .createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "suamusica:wifiLock")
+            .createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "suamusica:wifiLock")
         wakeLock = (applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager)
-                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ON_AFTER_RELEASE, "suamusica:wakeLock")
+            .newWakeLock(
+                PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ON_AFTER_RELEASE,
+                "suamusica:wakeLock"
+            )
         wifiLock?.setReferenceCounted(false)
         wakeLock?.setReferenceCounted(false)
 
         val sessionActivityPendingIntent =
-                this.packageManager?.getLaunchIntentForPackage(this.packageName)?.let { sessionIntent ->
-                    PendingIntent.getActivity(this, 0, sessionIntent, 0)
-                }
+            this.packageManager?.getLaunchIntentForPackage(this.packageName)?.let { sessionIntent ->
+                PendingIntent.getActivity(this, 0, sessionIntent, PendingIntent.FLAG_IMMUTABLE)
+            }
 
         val mediaButtonReceiver = ComponentName(this, MediaButtonReceiver::class.java)
         mediaSession = mediaSession?.let { it }
-                ?: MediaSessionCompat(this, TAG, mediaButtonReceiver, null)
-                        .apply {
-                            setSessionActivity(sessionActivityPendingIntent)
-                            isActive = true
-                        }
+            ?: MediaSessionCompat(this, TAG, mediaButtonReceiver, null)
+                .apply {
+                    setSessionActivity(sessionActivityPendingIntent)
+                    isActive = true
+                }
 
-        mediaSession?.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS
-                or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS
-                or MediaSessionCompat.FLAG_HANDLES_QUEUE_COMMANDS)
+        mediaSession?.setFlags(MediaSessionCompat.FLAG_HANDLES_QUEUE_COMMANDS)
 
-        player = SimpleExoPlayer.Builder(this).build().apply {
+        player = ExoPlayer.Builder(this).build().apply {
             setAudioAttributes(uAmpAudioAttributes, true)
             addListener(playerEventListener())
             // setWakeMode(C.WAKE_MODE_NETWORK)
@@ -119,7 +118,6 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         }
         mediaSession?.let { mediaSession ->
             val sessionToken = mediaSession.sessionToken
-
             // we must connect the service to the media session
             this.sessionToken = sessionToken
 
@@ -128,23 +126,24 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             mediaController = MediaControllerCompat(this, sessionToken).also { mediaController ->
                 mediaController.registerCallback(mediaControllerCallback)
 
-                val playbackPreparer = MusicPlayerPlaybackPreparer(
-                        this,
-                        player!!,
-                        mediaController,
-                        mediaSession
-                )
-
                 mediaSessionConnector = MediaSessionConnector(mediaSession).also { connector ->
                     connector.setPlayer(player)
-                    connector.setPlaybackPreparer(playbackPreparer)
-                    connector.setMediaButtonEventHandler(MediaButtonEventHandler())
-                    connector.setEnabledPlaybackActions(
-                                    PlaybackStateCompat.ACTION_PLAY
+                    connector.setPlaybackPreparer(MusicPlayerPlaybackPreparer(this))
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        connector.setCustomActionProviders(
+                            FavoriteModeActionProvider(applicationContext),
+                            PreviousActionProvider(),
+                            NextActionProvider(),
+                        )
+                    } else {
+                        connector.setMediaButtonEventHandler(MediaButtonEventHandler())
+                        connector.setEnabledPlaybackActions(
+                            PlaybackStateCompat.ACTION_PLAY
                                     or PlaybackStateCompat.ACTION_PAUSE
                                     or PlaybackStateCompat.ACTION_REWIND
                                     or PlaybackStateCompat.ACTION_FAST_FORWARD
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -211,7 +210,11 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         }
     }
 
-    override fun onGetRoot(clientPackageName: String, clientUid: Int, rootHints: Bundle?): BrowserRoot? {
+    override fun onGetRoot(
+        clientPackageName: String,
+        clientUid: Int,
+        rootHints: Bundle?
+    ): BrowserRoot? {
         val isKnowCaller = packageValidator?.isKnownCaller(clientPackageName, clientUid) ?: false
 
         return if (isKnowCaller) {
@@ -221,7 +224,10 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         }
     }
 
-    override fun onLoadChildren(parentId: String, result: Result<MutableList<MediaBrowserCompat.MediaItem>>) {
+    override fun onLoadChildren(
+        parentId: String,
+        result: Result<MutableList<MediaBrowserCompat.MediaItem>>
+    ) {
         result.sendResult(mutableListOf())
     }
 
@@ -253,27 +259,29 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         mediaSessionConnector?.setMediaMetadataProvider {
             return@setMediaMetadataProvider metadata
         }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            val timelineQueueNavigator = object : TimelineQueueNavigator(mediaSession!!) {
+                override fun getSupportedQueueNavigatorActions(player: Player): Long {
+                    return PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
+                            PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+                            PlaybackStateCompat.ACTION_SEEK_TO
+                }
 
-        val timelineQueueNavigator = object : TimelineQueueNavigator(mediaSession!!) {
-            override fun getSupportedQueueNavigatorActions(player: Player): Long {
-                var actions: Long = 0
-                actions = actions or PlaybackStateCompat.ACTION_SKIP_TO_QUEUE_ITEM
-                actions = actions or PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
-                actions = actions or PlaybackStateCompat.ACTION_SKIP_TO_NEXT
-                return actions
-            }
-
-            override fun getMediaDescription(player: Player, windowIndex: Int): MediaDescriptionCompat {
-                player.let {
-                    return MediaDescriptionCompat.Builder().apply {
-                        setTitle(media.author)
-                        setSubtitle(media.name)
-                        setIconUri(Uri.parse(media.coverUrl))
-                    }.build()
+                override fun getMediaDescription(
+                    player: Player,
+                    windowIndex: Int
+                ): MediaDescriptionCompat {
+                    player.let {
+                        return MediaDescriptionCompat.Builder().apply {
+                            setTitle(media.author)
+                            setSubtitle(media.name)
+                            setIconUri(Uri.parse(media.coverUrl))
+                        }.build()
+                    }
                 }
             }
+            mediaSessionConnector?.setQueueNavigator(timelineQueueNavigator)
         }
-        mediaSessionConnector?.setQueueNavigator(timelineQueueNavigator)
         val url = media.url
         Log.i(TAG, "Player: URL: $url")
 
@@ -283,17 +291,17 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         Log.i(TAG, "Player: Type: $type HLS: ${C.TYPE_HLS}")
         val source = when (type) {
             C.TYPE_HLS -> HlsMediaSource.Factory(dataSourceFactory)
-                    .setPlaylistParserFactory(SMHlsPlaylistParserFactory())
-                    .setAllowChunklessPreparation(true)
-                    .createMediaSource( MediaItem.fromUri(uri))
+                .setPlaylistParserFactory(SMHlsPlaylistParserFactory())
+                .setAllowChunklessPreparation(true)
+                .createMediaSource(MediaItem.fromUri(uri))
             C.TYPE_OTHER -> {
                 Log.i(TAG, "Player: URI: $uri")
                 val factory: DataSource.Factory =
-                        if (uri.scheme != null && uri.scheme?.startsWith("http") == true) {
-                            dataSourceFactory
-                        } else {
-                            FileDataSource.Factory()
-                        }
+                    if (uri.scheme != null && uri.scheme?.startsWith("http") == true) {
+                        dataSourceFactory
+                    } else {
+                        FileDataSource.Factory()
+                    }
 
                 ProgressiveMediaSource.Factory(factory).createMediaSource(MediaItem.fromUri(uri))
             }
@@ -321,7 +329,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
     fun setFavorite(favorite: Boolean?) {
         media?.let {
             this.media = Media(it.name, it.author, it.url, it.coverUrl, favorite)
-            sendNotification(this.media!! , null)
+            sendNotification(this.media!!, null)
         }
     }
 
@@ -335,7 +343,14 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                 isPlayingExternal
             }
             this.media = media
-            val notification = notificationBuilder?.buildNotification(it, media, onGoing, isPlayingExternal, media.isFavorite, player?.duration)
+            val notification = notificationBuilder?.buildNotification(
+                it,
+                media,
+                onGoing,
+                isPlayingExternal,
+                media.isFavorite,
+                player?.duration
+            )
             notification?.let {
                 notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
             }
@@ -365,7 +380,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
     fun togglePlayPause() {
         performAndDisableTracking {
-            if(player?.isPlaying == true){
+            if (player?.isPlaying == true) {
                 player?.pause()
             } else {
                 player?.play()
@@ -435,7 +450,16 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
     private fun buildNotification(updatedState: Int, onGoing: Boolean): Notification? {
         return if (updatedState != PlaybackStateCompat.STATE_NONE) {
-            mediaSession?.let {notificationBuilder?.buildNotification(it, media!!, onGoing, null, media!!.isFavorite, player?.duration) }
+            mediaSession?.let {
+                notificationBuilder?.buildNotification(
+                    it,
+                    media!!,
+                    onGoing,
+                    null,
+                    media!!.isFavorite,
+                    player?.duration
+                )
+            }
         } else {
             null
         }
@@ -447,8 +471,8 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                 Log.i(TAG, "onTimelineChanged: timeline: $timeline reason: $reason")
             }
 
-            override fun onTracksChanged(trackGroups: TrackGroupArray, trackSelections: TrackSelectionArray) {
-                Log.i(TAG, "onTimelineChanged: trackGroups: $trackGroups trackSelections: $trackSelections")
+            override fun onTracksChanged(tracks: Tracks) {
+                Log.i(TAG, "onTracksChanged: ")
             }
 
             override fun onLoadingChanged(isLoading: Boolean) {
@@ -456,10 +480,17 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             }
 
             override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
-                Log.i(TAG, "onPlayerStateChanged: playWhenReady: $playWhenReady playbackState: $playbackState currentPlaybackState: ${player?.playbackState}")
+                Log.i(
+                    TAG,
+                    "onPlayerStateChanged: playWhenReady: $playWhenReady playbackState: $playbackState currentPlaybackState: ${player?.playbackState}"
+                )
                 if (playWhenReady) {
                     val duration = player?.duration ?: 0L
-                    acquireLock(if (duration > 1L) duration + TimeUnit.MINUTES.toMillis(2) else TimeUnit.MINUTES.toMillis(3))
+                    acquireLock(
+                        if (duration > 1L) duration + TimeUnit.MINUTES.toMillis(2) else TimeUnit.MINUTES.toMillis(
+                            3
+                        )
+                    )
                 } else
                     releaseLock()
 
@@ -477,7 +508,8 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                                 //
                             }
                             ExoPlayer.STATE_READY -> { // 3
-                                val status = if (playWhenReady) PlayerState.PLAYING else PlayerState.PAUSED
+                                val status =
+                                    if (playWhenReady) PlayerState.PLAYING else PlayerState.PAUSED
                                 if (previousState == -1) {
                                     // when we define that the track shall not "playWhenReady"
                                     // no position info is sent
@@ -572,8 +604,8 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
     private inner class MediaControllerCallback : MediaControllerCompat.Callback() {
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
             Log.d(
-                    TAG,
-                    "onMetadataChanged: title: ${metadata?.title} duration: ${metadata?.duration}"
+                TAG,
+                "onMetadataChanged: title: ${metadata?.title} duration: ${metadata?.duration}"
             )
         }
 
@@ -593,7 +625,8 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                 return
             }
 
-            val onGoing = updatedState == PlaybackStateCompat.STATE_PLAYING || updatedState == PlaybackStateCompat.STATE_BUFFERING
+            val onGoing =
+                updatedState == PlaybackStateCompat.STATE_PLAYING || updatedState == PlaybackStateCompat.STATE_BUFFERING
 
             // Skip building a notification when state is "none".
             val notification = if (updatedState != PlaybackStateCompat.STATE_NONE) {
@@ -616,8 +649,8 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                         notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
                         if (!isForegroundService) {
                             ContextCompat.startForegroundService(
-                                    applicationContext,
-                                    Intent(applicationContext, this@MediaService.javaClass)
+                                applicationContext,
+                                Intent(applicationContext, this@MediaService.javaClass)
                             )
                             startForeground(NOW_PLAYING_NOTIFICATION, notification)
 
