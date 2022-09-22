@@ -10,12 +10,10 @@ class PreviousActionProvider :
     MediaSessionConnector.CustomActionProvider {
 
     override fun onCustomAction(player: Player, action: String, extras: Bundle?) {
-        Log.d("TESTE", "onCustomAction PreviousActionProvider")
         PlayerSingleton.previous()
     }
 
     override fun getCustomAction(player: Player): PlaybackStateCompat.CustomAction? {
-        Log.d("TESTE", "getCustomAction PreviousActionProvider ${player.mediaMetadata.extras}")
         return PlaybackStateCompat.CustomAction.Builder(
             "Voltar a música anterior",
             "Voltar a música anterior",

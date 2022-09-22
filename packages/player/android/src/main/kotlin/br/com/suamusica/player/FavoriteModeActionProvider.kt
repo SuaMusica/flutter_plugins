@@ -16,12 +16,10 @@ class FavoriteModeActionProvider(private val context: Context) :
     MediaSessionConnector.CustomActionProvider {
 
     override fun onCustomAction(player: Player, action: String, extras: Bundle?) {
-        Log.d("TESTE", "onCustomAction")
         PlayerSingleton.favorite(action == "Favoritar")
     }
 
     override fun getCustomAction(player: Player): PlaybackStateCompat.CustomAction? {
-        Log.d("TESTE", "getCustomAction ${player.mediaMetadata.extras}")
         if (PlayerSingleton.lastFavorite) {
             return PlaybackStateCompat.CustomAction.Builder("Desfavoritar", "Desfavoritar", R.drawable.ic_unfavorite_notification_player,).build()
         }

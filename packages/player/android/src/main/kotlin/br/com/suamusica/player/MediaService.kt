@@ -129,7 +129,6 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                 mediaSessionConnector = MediaSessionConnector(mediaSession).also { connector ->
                     connector.setPlayer(player)
                     connector.setPlaybackPreparer(MusicPlayerPlaybackPreparer(this))
-                    Log.d("TESTE", "SDK: ${Build.VERSION.SDK_INT}")
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         connector.setCustomActionProviders(
                             FavoriteModeActionProvider(applicationContext),
