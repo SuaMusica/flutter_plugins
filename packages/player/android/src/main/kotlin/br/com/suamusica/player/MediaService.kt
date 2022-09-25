@@ -7,6 +7,7 @@ import android.app.Service
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.net.Uri
 import android.net.wifi.WifiManager
 import android.os.*
@@ -648,19 +649,33 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                     if (notification != null) {
                         notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
                         if (!isForegroundService) {
-                            ContextCompat.startForegroundService(
-                                applicationContext,
-                                Intent(applicationContext, this@MediaService.javaClass)
-                            )
-                            startForeground(NOW_PLAYING_NOTIFICATION, notification)
-
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                startForeground(
+                                    NOW_PLAYING_NOTIFICATION, notification,
+                                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+                                )
+                                ContextCompat.startForegroundService(
+                                    applicationContext,
+                                    Intent(applicationContext, this@MediaService.javaClass)
+                                )
+                            } else {
+                                ContextCompat.startForegroundService(
+                                    applicationContext,
+                                    Intent(applicationContext, this@MediaService.javaClass)
+                                )
+                                startForeground(NOW_PLAYING_NOTIFICATION, notification)
+                            }
                             isForegroundService = true
                         }
                     }
                 }
                 else -> {
                     if (isForegroundService) {
-                        stopForeground(false)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            stopForeground(STOP_FOREGROUND_REMOVE)
+                        } else {
+                            stopForeground(true)
+                        }
                         isForegroundService = false
                         // If playback has ended, also stop the service.
                         if (updatedState == PlaybackStateCompat.STATE_NONE) {
