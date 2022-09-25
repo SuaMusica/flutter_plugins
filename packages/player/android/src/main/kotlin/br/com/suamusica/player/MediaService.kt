@@ -672,9 +672,9 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                 else -> {
                     if (isForegroundService) {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                            stopForeground(STOP_FOREGROUND_REMOVE)
+                            stopForeground(STOP_FOREGROUND_DETACH)
                         } else {
-                            stopForeground(true)
+                            stopForeground(false)
                         }
                         isForegroundService = false
                         // If playback has ended, also stop the service.
