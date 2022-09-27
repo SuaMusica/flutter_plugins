@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 class MediaService : androidx.media.MediaBrowserServiceCompat() {
-    private val TAG = "Player"
+    private val TAG = "MediaService"
     private val userAgent =
         "SuaMusica/player (Linux; Android ${Build.VERSION.SDK_INT}; ${Build.BRAND}/${Build.MODEL})"
     private var packageValidator: PackageValidator? = null
@@ -162,6 +162,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
          * itself as a foreground service, and will then call [stopSelf].
          */
         player?.stop(true)
+        stopService()
     }
 
     override fun onDestroy() {
@@ -602,6 +603,38 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         }
     }
 
+    fun shouldStartService(notification: Notification) {
+        if (!isForegroundService) {
+            Log.i(TAG, "Starting Service")
+            try {
+                ContextCompat.startForegroundService(
+                    applicationContext,
+                    Intent(applicationContext, this@MediaService.javaClass)
+                )
+                startForeground(NOW_PLAYING_NOTIFICATION, notification)
+            }  catch (e: Exception) {
+                startForeground(NOW_PLAYING_NOTIFICATION, notification)
+                ContextCompat.startForegroundService(
+                    applicationContext,
+                    Intent(applicationContext, this@MediaService.javaClass)
+                )
+            }
+            isForegroundService = true
+
+        }
+    }
+    fun stopService(){
+        if(isForegroundService){
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                stopForeground(STOP_FOREGROUND_DETACH)
+            } else {
+                stopForeground(false)
+            }
+            isForegroundService = false
+            stopSelf()
+            Log.i(TAG, "Stopping Service")
+        }
+    }
     private inner class MediaControllerCallback : MediaControllerCompat.Callback() {
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
             Log.d(
@@ -648,39 +681,14 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                      */
                     if (notification != null) {
                         notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
-                        if (!isForegroundService) {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                startForeground(
-                                    NOW_PLAYING_NOTIFICATION, notification,
-                                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-                                )
-                                ContextCompat.startForegroundService(
-                                    applicationContext,
-                                    Intent(applicationContext, this@MediaService.javaClass)
-                                )
-                            } else {
-                                ContextCompat.startForegroundService(
-                                    applicationContext,
-                                    Intent(applicationContext, this@MediaService.javaClass)
-                                )
-                                startForeground(NOW_PLAYING_NOTIFICATION, notification)
-                            }
-                            isForegroundService = true
-                        }
+                        shouldStartService(notification)
                     }
                 }
                 else -> {
                     if (isForegroundService) {
                         // If playback has ended, also stop the service.
-                        if (updatedState == PlaybackStateCompat.STATE_NONE) {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                stopForeground(STOP_FOREGROUND_DETACH)
-                            } else {
-                                stopForeground(false)
-                            }
-                            isForegroundService = false
-                            stopSelf()
-                            Log.i(TAG, "Stopping Service")
+                        if (updatedState == PlaybackStateCompat.STATE_NONE && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                            stopService()
                         }
                         if (notification != null) {
                             notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
