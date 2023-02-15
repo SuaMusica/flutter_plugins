@@ -133,8 +133,8 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         connector.setCustomActionProviders(
                             FavoriteModeActionProvider(applicationContext),
-                            PreviousActionProvider(),
                             NextActionProvider(),
+                            PreviousActionProvider(),
                         )
                     } 
                     connector.setMediaButtonEventHandler(MediaButtonEventHandler())
