@@ -319,7 +319,13 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             player?.play()
         }
     }
-
+    fun adsPlaying(){
+        val notification = buildNotification(PlaybackStateCompat.STATE_PLAYING, true)
+        notification?.let {
+            notificationManager?.notify(NOW_PLAYING_NOTIFICATION, it)
+            shouldStartService(it)
+        }
+    }
     fun sendCommand(type: String) {
         val extra = Bundle()
         extra.putString("type", type)
@@ -454,10 +460,10 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             mediaSession?.let {
                 notificationBuilder?.buildNotification(
                     it,
-                    media!!,
+                    media,
                     onGoing,
                     null,
-                    media!!.isFavorite,
+                    media?.isFavorite,
                     player?.duration
                 )
             }

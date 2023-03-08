@@ -32,6 +32,9 @@ object PlayerSingleton {
         mediaSessionConnection?.togglePlayPause()
         channel?.invokeMethod("commandCenter.onTogglePlayPause", emptyMap<String, String>())
     }
+    fun adsPlaying(){
+        mediaSessionConnection?.adsPlaying()
+    }
     fun pause() {
         if (externalPlayback!!) {
             channel?.invokeMethod("externalPlayback.pause", emptyMap<String, String>())

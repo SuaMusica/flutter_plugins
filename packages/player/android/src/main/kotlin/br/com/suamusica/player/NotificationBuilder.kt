@@ -112,7 +112,7 @@ class NotificationBuilder(private val context: Context) {
         }
     }
 
-    fun buildNotification(mediaSession: MediaSessionCompat, media: Media, onGoing: Boolean, isPlayingExternal: Boolean?, isFavorite: Boolean?, mediaDuration: Long?): Notification {
+    fun buildNotification(mediaSession: MediaSessionCompat, media: Media?, onGoing: Boolean, isPlayingExternal: Boolean?, isFavorite: Boolean?, mediaDuration: Long?): Notification {
         if (shouldCreateNowPlayingChannel()) {
             createNowPlayingChannel()
         }
@@ -158,22 +158,21 @@ class NotificationBuilder(private val context: Context) {
                 .setShowActionsInCompactView(*actions.toIntArray())
                 .setShowCancelButton(true)
                 .setMediaSession(mediaSession.sessionToken)
-
-        val artUri = media.coverUrl
+        val artUri = media?.coverUrl
         val art: Bitmap?
         if (artUri == oldArtUri && this.oldArtBitmap != null) {
             art = oldArtBitmap
         } else {
             art = getArt(context, artUri)
-            oldArtUri = artUri
+            oldArtUri = artUri?:""
             oldArtBitmap = art
         }
 
         if (shouldUseMetadata && currentDuration != duration) {
             mediaSession.setMetadata(
                     MediaMetadataCompat.Builder()
-                            .putString(MediaMetadata.METADATA_KEY_TITLE, media.name)
-                            .putString(MediaMetadata.METADATA_KEY_ARTIST, media.author)
+                            .putString(MediaMetadata.METADATA_KEY_TITLE, media?.name ?: "Propaganda")
+                            .putString(MediaMetadata.METADATA_KEY_ARTIST, media?.author?:"")
                             .putBitmap(
                                     MediaMetadata.METADATA_KEY_ALBUM_ART, art)
                             .putLong(MediaMetadata.METADATA_KEY_DURATION, duration) // 4
@@ -207,8 +206,8 @@ class NotificationBuilder(private val context: Context) {
             }
             if (!shouldUseMetadata) {
                 setLargeIcon(art)
-                setContentTitle(media.name)
-                setContentText(media.author)
+                setContentTitle(media?.name?:"Propaganda")
+                setContentText(media?.author?:"")
             }
 
         }.build()

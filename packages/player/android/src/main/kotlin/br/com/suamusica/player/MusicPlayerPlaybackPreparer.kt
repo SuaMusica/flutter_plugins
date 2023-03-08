@@ -103,6 +103,10 @@ class MusicPlayerPlaybackPreparer(
                         return true
                     } ?: false
                 }
+                "ads_playing" -> {
+                    mediaService.adsPlaying()
+                    return true
+                }
                 FAVORITE -> {
                     return extras?.let {
                         if(it.containsKey(PlayerPlugin.IS_FAVORITE_ARGUMENT)){
