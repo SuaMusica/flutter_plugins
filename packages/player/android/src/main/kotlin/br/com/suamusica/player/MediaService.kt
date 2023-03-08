@@ -321,8 +321,10 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
     }
     fun adsPlaying(){
         val notification = buildNotification(PlaybackStateCompat.STATE_PLAYING, true)
-        notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification!!)
-        shouldStartService(notification!!)
+        notification?.let {
+            notificationManager?.notify(NOW_PLAYING_NOTIFICATION, it)
+            shouldStartService(it)
+        }
     }
     fun sendCommand(type: String) {
         val extra = Bundle()
