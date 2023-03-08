@@ -141,6 +141,9 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin,ActivityAware {
             PAUSE_METHOD -> {
                 PlayerSingleton.mediaSessionConnection?.pause()
             }
+            "ads_playing" -> {
+                PlayerSingleton.mediaSessionConnection?.adsPlaying()
+            }
             STOP_METHOD -> {
                 PlayerSingleton.mediaSessionConnection?.stop()
             }

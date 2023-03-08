@@ -124,6 +124,11 @@ class Player {
     return Ok;
   }
 
+  Future<int> adsPlaying() async {
+    await _invokeMethod('ads_playing');
+    return Ok;
+  }
+
   int enableEvents() {
     this._shallSendEvents = true;
     return Ok;
