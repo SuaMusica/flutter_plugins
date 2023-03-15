@@ -6,7 +6,6 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import com.google.ads.interactivemedia.v3.api.AdErrorEvent
 import com.google.ads.interactivemedia.v3.api.AdEvent
-import com.google.android.exoplayer2.ui.PlayerView
 import com.google.android.exoplayer2.ui.StyledPlayerView
 import com.suamusica.smads.extensions.gone
 import com.suamusica.smads.extensions.hide
