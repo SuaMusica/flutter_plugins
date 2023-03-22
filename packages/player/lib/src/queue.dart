@@ -71,7 +71,7 @@ class Queue {
     await _save(medias: [media]);
   }
 
-  addAll(List<Media> items, [bool shouldRemoveFirst = false]) async {
+  addAll(List<Media> items, {bool shouldRemoveFirst = false}) async {
     for (var media in shouldRemoveFirst ? items.sublist(1) : items) {
       int pos = _nextPosition();
       storage.add(QueueItem(pos, pos, media));

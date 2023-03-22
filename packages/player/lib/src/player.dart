@@ -108,7 +108,7 @@ class Player {
     List<Media> items, {
     bool shouldRemoveFirst = false,
   }) async {
-    _queue.addAll(items, shouldRemoveFirst);
+    _queue.addAll(items, shouldRemoveFirst: shouldRemoveFirst);
     return Ok;
   }
 
