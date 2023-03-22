@@ -6,9 +6,11 @@ import 'package:flutter/services.dart';
 import 'package:smplayer/src/before_play_event.dart';
 import 'package:smplayer/src/event.dart';
 import 'package:smplayer/src/event_type.dart';
+import 'package:smplayer/src/isar_service.dart';
 import 'package:smplayer/src/media.dart';
 import 'package:smplayer/src/duration_change_event.dart';
 import 'package:smplayer/src/position_change_event.dart';
+import 'package:smplayer/src/previous_playlist_model.dart';
 import 'package:smplayer/src/queue.dart';
 import 'package:smplayer/src/repeat_mode.dart';
 import 'package:mutex/mutex.dart';
@@ -103,9 +105,10 @@ class Player {
   }
 
   Future<int> enqueueAll(
-    List<Media> items,
-  ) async {
-    _queue.addAll(items);
+    List<Media> items, [
+    bool shouldRemoveFirst = false,
+  ]) async {
+    _queue.addAll(items, shouldRemoveFirst);
     return Ok;
   }
 
@@ -116,6 +119,7 @@ class Player {
 
   Future<int> removeAll() async {
     _queue.removeAll();
+    await IsarService.instance.removeAll();
     return Ok;
   }
 
@@ -217,7 +221,9 @@ class Player {
   }
 
   List<Media> get items => _queue.items;
+  Future<List<Media>> get previousItems async => await _queue.previousItems;
   int get queuePosition => _queue.index;
+  Future<int> get previousPlaylistIndex async => _queue.previousPlaylistIndex;
   int get size => _queue.size;
   Media? get top => _queue.top;
 
@@ -487,6 +493,38 @@ class Player {
       shallNotify: shallNotify,
       mediaUrl: mediaUrl,
     );
+  }
+
+  Future<void> requestLastMusicPosition() async {
+    final currentPositionFromStorage = await _getCurrentPositionFromStorage();
+    _addUsingPlayer(
+      player,
+      PositionChangeEvent(
+        media: (await player.previousItems).first,
+        queuePosition: await player.previousPlaylistIndex,
+        position: Duration(
+          milliseconds: currentPositionFromStorage?.position.toInt() ?? 0,
+        ),
+        duration: Duration(
+          milliseconds: currentPositionFromStorage?.duration.toInt() ?? 0,
+        ),
+      ),
+    );
+  }
+
+  Future<PreviousPlaylistPosition?> _getCurrentPositionFromStorage() async {
+    final previousPlaylistPosition =
+        await IsarService.instance.getPreviousPlaylistPosition();
+    if (previousPlaylistPosition?.position != null) {
+      return previousPlaylistPosition;
+    }
+    return null;
+  }
+
+  Future<bool> hasPreviousPlaylist() async {
+    final hasPreviousPlaylist =
+        await IsarService.instance.getPreviousPlaylistMusics();
+    return hasPreviousPlaylist != null;
   }
 
   Future<int> pause() async {
@@ -879,6 +917,13 @@ class Player {
           queuePosition: player._queue.index,
           position: newPosition,
           duration: newDuration,
+        ),
+      );
+      IsarService.instance.addPreviousPlaylistPosition(
+        PreviousPlaylistPosition(
+          id: 1,
+          position: newPosition.inMilliseconds.toDouble(),
+          duration: newDuration.inMilliseconds.toDouble(),
         ),
       );
     }

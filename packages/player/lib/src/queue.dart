@@ -1,4 +1,8 @@
+import 'dart:async';
+
+import 'package:smplayer/src/isar_service.dart';
 import 'package:smplayer/src/media.dart';
+import 'package:smplayer/src/previous_playlist_model.dart';
 import 'package:smplayer/src/queue_item.dart';
 import 'package:smplayer/src/shuffler.dart';
 import 'package:smplayer/src/simple_shuffle.dart';
@@ -8,7 +12,7 @@ class Queue {
   var index = -1;
   final Shuffler _shuffler;
   var storage = <QueueItem<Media>>[];
-
+  PreviousPlaylistMusics? previousPlaylistMusics;
   DateTime? _lastPrevious;
 
   Queue({shuffler, mode}) : _shuffler = shuffler ?? SimpleShuffler();
@@ -25,6 +29,18 @@ class Queue {
     return storage.length > 0
         ? List<Media>.unmodifiable((storage.map((i) => i.item).toList()))
         : [];
+  }
+
+  Future<List<Media>> get previousItems async {
+    previousPlaylistMusics =
+        await IsarService.instance.getPreviousPlaylistMusics();
+    return previousPlaylistMusics?.musics?.toListMedia ?? [];
+  }
+
+  Future<int> get previousPlaylistIndex async {
+    final previousPlaylistCurrentIndex =
+        await IsarService.instance.getPreviousPlaylistCurrentIndex();
+    return previousPlaylistCurrentIndex?.currentIndex ?? 0;
   }
 
   int get size => storage.length;
@@ -48,15 +64,41 @@ class Queue {
 
   replaceCurrent(Media media) =>
       storage[index] = storage[index].copyWith(item: media);
-  add(Media media) {
+
+  add(Media media) async {
     int pos = _nextPosition();
     storage.add(QueueItem(pos, pos, media));
+    await _save(medias: [media]);
   }
 
-  addAll(List<Media> items) {
-    for (var media in items) {
+  addAll(List<Media> items, [bool shouldRemoveFirst = false]) async {
+    for (var media in shouldRemoveFirst ? items.sublist(1) : items) {
       int pos = _nextPosition();
       storage.add(QueueItem(pos, pos, media));
+    }
+    await _save(medias: items);
+  }
+
+  Future<void> _save({required List<Media> medias}) async {
+    final items = await previousItems;
+    if (items.length > 0 &&
+        items.length > 0 &&
+        medias.length > 0 &&
+        current != null) {
+      IsarService.instance.addPreviousPlaylistMusics(
+        PreviousPlaylistMusics(
+          musics: [
+            ...medias.toListStringCompressed,
+            ...items.toListStringCompressed,
+          ],
+        ),
+      );
+    } else {
+      IsarService.instance.addPreviousPlaylistMusics(
+        PreviousPlaylistMusics(
+          musics: medias.toListStringCompressed,
+        ),
+      );
     }
   }
 
@@ -162,7 +204,9 @@ class Queue {
     if (storage.length == 0) {
       throw AssertionError("Queue is empty");
     } else if (storage.length > 0 && index < storage.length - 1) {
-      var media = storage.elementAt(++index).item;
+      final newIndex = ++index;
+      var media = storage.elementAt(newIndex).item;
+      _updateIndex(newIndex);
       return media;
     } else {
       return null;
@@ -206,7 +250,14 @@ class Queue {
     }
   }
 
+  void _updateIndex(int newIndex) async {
+    IsarService.instance.addPreviousPlaylistCurrentIndex(
+      PreviousPlaylistCurrentIndex(currentIndex: newIndex),
+    );
+  }
+
   Media? item(int pos) {
+    _updateIndex(pos);
     if (storage.length == 0) {
       return null;
     } else if (storage.length > 0 && pos <= storage.length - 1) {

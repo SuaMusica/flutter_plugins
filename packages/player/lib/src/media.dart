@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 class Media {
   final int id;
@@ -137,4 +138,69 @@ class Media {
         isSpot: isSpot ?? this.isSpot,
         isFavorite: isFavorite ?? this.isFavorite,
       );
+  factory Media.fromJson(Map<String, dynamic> map) {
+    return Media(
+      id: map['id']?.toInt() ?? 0,
+      name: map['name'] ?? '',
+      ownerId: map['ownerId']?.toInt() ?? 0,
+      albumId: map['albumId']?.toInt() ?? 0,
+      albumTitle: map['albumTitle'] ?? '',
+      author: map['author'] ?? '',
+      url: map['url'] ?? '',
+      isLocal: map['is_local'] ?? false,
+      localPath: map['localPath'],
+      coverUrl: map['cover_url'] ?? '',
+      bigCoverUrl: map['bigCover'] ?? '',
+      isVerified: map['is_verified'] ?? false,
+      shareUrl: map['shared_url'],
+      playlistId: map['playlistId']?.toInt(),
+      isSpot: map['isSpot'] ?? false,
+      isFavorite: map['isFavorite'],
+      fallbackUrl: map['fallbackUrl'],
+    );
+  }
+}
+
+extension ListMediaToListStringCompressed on List<Media> {
+  List<String> get toListStringCompressed {
+    return List.generate(
+      length,
+      (index) => this[index].toString().compressWithGzipB64,
+      // (index) => this[index].toString(),
+    );
+  }
+}
+
+extension ListStringToListPlayable on List<String> {
+  List<Media> get toListMedia {
+    {
+      return List.generate(
+        length,
+        (index) {
+          return Media.fromJson(
+            jsonDecode(
+              this[index].restoreFromGzipB64,
+              // this[index],
+            ),
+          );
+        },
+      );
+    }
+  }
+}
+
+extension CompressRestoreWithGzipB64 on String {
+  String get compressWithGzipB64 {
+    final enCodedJson = utf8.encode(this);
+    final gZipJson = gzip.encode(enCodedJson);
+    final base64Json = base64.encode(gZipJson);
+    return base64Json;
+  }
+
+  String get restoreFromGzipB64 {
+    final decodeBase64Json = base64.decode(this);
+    final decodegZipJson = gzip.decode(decodeBase64Json);
+    final originalJson = utf8.decode(decodegZipJson);
+    return originalJson;
+  }
 }
