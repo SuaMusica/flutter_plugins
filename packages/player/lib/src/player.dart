@@ -105,9 +105,9 @@ class Player {
   }
 
   Future<int> enqueueAll(
-    List<Media> items, [
+    List<Media> items, {
     bool shouldRemoveFirst = false,
-  ]) async {
+  }) async {
     _queue.addAll(items, shouldRemoveFirst);
     return Ok;
   }
