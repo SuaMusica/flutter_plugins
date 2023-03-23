@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:smplayer/src/isar_service.dart';
 import 'package:smplayer/src/media.dart';
 import 'package:smplayer/src/previous_playlist_model.dart';
@@ -81,25 +82,17 @@ class Queue {
 
   Future<void> _save({required List<Media> medias}) async {
     final items = await previousItems;
-    if (items.length > 0 &&
-        items.length > 0 &&
-        medias.length > 0 &&
-        current != null) {
-      IsarService.instance.addPreviousPlaylistMusics(
-        PreviousPlaylistMusics(
-          musics: [
-            ...medias.toListStringCompressed,
-            ...items.toListStringCompressed,
-          ],
-        ),
-      );
-    } else {
-      IsarService.instance.addPreviousPlaylistMusics(
-        PreviousPlaylistMusics(
-          musics: medias.toListStringCompressed,
-        ),
-      );
-    }
+    //TODO: REMOVE AFTER APPROVED
+    debugPrint(
+        '[TESTE] overrideList: - ItemsInStorage: ${items.length} - MediasToSave: ${medias.length}');
+    IsarService.instance.addPreviousPlaylistMusics(
+      PreviousPlaylistMusics(
+        musics: [
+          ...medias.toListStringCompressed,
+          ...items.toListStringCompressed,
+        ],
+      ),
+    );
   }
 
   remove(Media media) {

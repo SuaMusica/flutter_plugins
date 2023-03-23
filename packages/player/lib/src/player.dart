@@ -123,6 +123,11 @@ class Player {
     return Ok;
   }
 
+  Future<int> removeAllFromStorage() async {
+    await IsarService.instance.removeAll();
+    return Ok;
+  }
+
   Future<int> removeNotificaton() async {
     await _invokeMethod('remove_notification');
     return Ok;
