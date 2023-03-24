@@ -922,7 +922,7 @@ class Player {
       unawaited(
         IsarService.instance.addPreviousPlaylistPosition(
           PreviousPlaylistPosition(
-            id: 1,
+            mediaId: player._queue.current?.id ?? 0,
             position: newPosition.inMilliseconds.toDouble(),
             duration: newDuration.inMilliseconds.toDouble(),
           ),

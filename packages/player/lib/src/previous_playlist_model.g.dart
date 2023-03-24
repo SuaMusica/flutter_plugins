@@ -562,6 +562,11 @@ const PreviousPlaylistCurrentIndexSchema = CollectionSchema(
       id: 0,
       name: r'currentIndex',
       type: IsarType.long,
+    ),
+    r'mediaId': PropertySchema(
+      id: 1,
+      name: r'mediaId',
+      type: IsarType.long,
     )
   },
   estimateSize: _previousPlaylistCurrentIndexEstimateSize,
@@ -594,6 +599,7 @@ void _previousPlaylistCurrentIndexSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeLong(offsets[0], object.currentIndex);
+  writer.writeLong(offsets[1], object.mediaId);
 }
 
 PreviousPlaylistCurrentIndex _previousPlaylistCurrentIndexDeserialize(
@@ -605,6 +611,7 @@ PreviousPlaylistCurrentIndex _previousPlaylistCurrentIndexDeserialize(
   final object = PreviousPlaylistCurrentIndex(
     currentIndex: reader.readLongOrNull(offsets[0]),
     id: id,
+    mediaId: reader.readLong(offsets[1]),
   );
   return object;
 }
@@ -618,6 +625,8 @@ P _previousPlaylistCurrentIndexDeserializeProp<P>(
   switch (propertyId) {
     case 0:
       return (reader.readLongOrNull(offset)) as P;
+    case 1:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -851,6 +860,62 @@ extension PreviousPlaylistCurrentIndexQueryFilter on QueryBuilder<
       ));
     });
   }
+
+  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
+      QAfterFilterCondition> mediaIdEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'mediaId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
+      QAfterFilterCondition> mediaIdGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'mediaId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
+      QAfterFilterCondition> mediaIdLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'mediaId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
+      QAfterFilterCondition> mediaIdBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'mediaId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension PreviousPlaylistCurrentIndexQueryObject on QueryBuilder<
@@ -876,6 +941,20 @@ extension PreviousPlaylistCurrentIndexQuerySortBy on QueryBuilder<
       QAfterSortBy> sortByCurrentIndexDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'currentIndex', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
+      QAfterSortBy> sortByMediaId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mediaId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
+      QAfterSortBy> sortByMediaIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mediaId', Sort.desc);
     });
   }
 }
@@ -909,6 +988,20 @@ extension PreviousPlaylistCurrentIndexQuerySortThenBy on QueryBuilder<
       return query.addSortBy(r'id', Sort.desc);
     });
   }
+
+  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
+      QAfterSortBy> thenByMediaId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mediaId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
+      QAfterSortBy> thenByMediaIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mediaId', Sort.desc);
+    });
+  }
 }
 
 extension PreviousPlaylistCurrentIndexQueryWhereDistinct on QueryBuilder<
@@ -917,6 +1010,13 @@ extension PreviousPlaylistCurrentIndexQueryWhereDistinct on QueryBuilder<
       QDistinct> distinctByCurrentIndex() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'currentIndex');
+    });
+  }
+
+  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
+      QDistinct> distinctByMediaId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'mediaId');
     });
   }
 }
@@ -938,6 +1038,13 @@ extension PreviousPlaylistCurrentIndexQueryProperty on QueryBuilder<
       return query.addPropertyName(r'currentIndex');
     });
   }
+
+  QueryBuilder<PreviousPlaylistCurrentIndex, int, QQueryOperations>
+      mediaIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'mediaId');
+    });
+  }
 }
 
 // coverage:ignore-file
@@ -957,8 +1064,13 @@ const PreviousPlaylistPositionSchema = CollectionSchema(
       name: r'duration',
       type: IsarType.double,
     ),
-    r'position': PropertySchema(
+    r'mediaId': PropertySchema(
       id: 1,
+      name: r'mediaId',
+      type: IsarType.long,
+    ),
+    r'position': PropertySchema(
+      id: 2,
       name: r'position',
       type: IsarType.double,
     )
@@ -993,7 +1105,8 @@ void _previousPlaylistPositionSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeDouble(offsets[0], object.duration);
-  writer.writeDouble(offsets[1], object.position);
+  writer.writeLong(offsets[1], object.mediaId);
+  writer.writeDouble(offsets[2], object.position);
 }
 
 PreviousPlaylistPosition _previousPlaylistPositionDeserialize(
@@ -1005,7 +1118,8 @@ PreviousPlaylistPosition _previousPlaylistPositionDeserialize(
   final object = PreviousPlaylistPosition(
     duration: reader.readDouble(offsets[0]),
     id: id,
-    position: reader.readDouble(offsets[1]),
+    mediaId: reader.readLong(offsets[1]),
+    position: reader.readDouble(offsets[2]),
   );
   return object;
 }
@@ -1020,6 +1134,8 @@ P _previousPlaylistPositionDeserializeProp<P>(
     case 0:
       return (reader.readDouble(offset)) as P;
     case 1:
+      return (reader.readLong(offset)) as P;
+    case 2:
       return (reader.readDouble(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1246,6 +1362,62 @@ extension PreviousPlaylistPositionQueryFilter on QueryBuilder<
   }
 
   QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
+      QAfterFilterCondition> mediaIdEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'mediaId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
+      QAfterFilterCondition> mediaIdGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'mediaId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
+      QAfterFilterCondition> mediaIdLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'mediaId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
+      QAfterFilterCondition> mediaIdBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'mediaId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
       QAfterFilterCondition> positionEqualTo(
     double value, {
     double epsilon = Query.epsilon,
@@ -1335,6 +1507,20 @@ extension PreviousPlaylistPositionQuerySortBy on QueryBuilder<
   }
 
   QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QAfterSortBy>
+      sortByMediaId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mediaId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QAfterSortBy>
+      sortByMediaIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mediaId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QAfterSortBy>
       sortByPosition() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'position', Sort.asc);
@@ -1380,6 +1566,20 @@ extension PreviousPlaylistPositionQuerySortThenBy on QueryBuilder<
   }
 
   QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QAfterSortBy>
+      thenByMediaId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mediaId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QAfterSortBy>
+      thenByMediaIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mediaId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QAfterSortBy>
       thenByPosition() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'position', Sort.asc);
@@ -1404,6 +1604,13 @@ extension PreviousPlaylistPositionQueryWhereDistinct on QueryBuilder<
   }
 
   QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QDistinct>
+      distinctByMediaId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'mediaId');
+    });
+  }
+
+  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QDistinct>
       distinctByPosition() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'position');
@@ -1423,6 +1630,13 @@ extension PreviousPlaylistPositionQueryProperty on QueryBuilder<
       durationProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'duration');
+    });
+  }
+
+  QueryBuilder<PreviousPlaylistPosition, int, QQueryOperations>
+      mediaIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'mediaId');
     });
   }
 

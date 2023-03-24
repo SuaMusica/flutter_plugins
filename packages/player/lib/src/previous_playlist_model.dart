@@ -18,11 +18,12 @@ class PreviousPlaylistMusics {
 class PreviousPlaylistCurrentIndex {
   PreviousPlaylistCurrentIndex({
     this.id = 1,
-    this.currentIndex,
+    required this.currentIndex,
+    required this.mediaId,
   });
   Id id = Isar.autoIncrement;
   int? currentIndex;
-
+  int mediaId;
   @override
   String toString() =>
       'PreviousPlaylistCurrentIndex(currentIndex: $currentIndex)';
@@ -31,13 +32,16 @@ class PreviousPlaylistCurrentIndex {
 @collection
 class PreviousPlaylistPosition {
   PreviousPlaylistPosition({
-    required this.id,
+    this.id = 1,
+    required this.mediaId,
     required this.position,
     required this.duration,
   });
   Id id = Isar.autoIncrement;
+  int mediaId;
   double position;
   double duration;
   @override
-  String toString() => 'PreviousPlaylistPosition(position: $position)';
+  String toString() =>
+      'PreviousPlaylistPosition(duration: $duration,position: $position,position: $position,mediaId:$mediaId)';
 }

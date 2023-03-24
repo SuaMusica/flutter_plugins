@@ -97,7 +97,11 @@ class Queue {
 
     for (var media in shouldRemoveFirst ? items.sublist(1) : items) {
       int pos = _nextPosition();
-      storage.add(QueueItem(pos, pos, media));
+      if (saveOnTop) {
+        storage.insert(0, QueueItem(pos, pos, media));
+      } else {
+        storage.add(QueueItem(pos, pos, media));
+      }
     }
 
     await _save(medias: items, saveOnTop: saveOnTop);
@@ -233,7 +237,7 @@ class Queue {
     } else if (storage.length > 0 && index < storage.length - 1) {
       final newIndex = ++index;
       var media = storage.elementAt(newIndex).item;
-      _updateIndex(newIndex);
+      _updateIndex(media.id, newIndex);
       return media;
     } else {
       return null;
@@ -277,18 +281,19 @@ class Queue {
     }
   }
 
-  void _updateIndex(int newIndex) async {
+  void _updateIndex(int id, int newIndex) async {
     IsarService.instance.addPreviousPlaylistCurrentIndex(
-      PreviousPlaylistCurrentIndex(currentIndex: newIndex),
+      PreviousPlaylistCurrentIndex(mediaId: id, currentIndex: newIndex),
     );
   }
 
   Media? item(int pos) {
-    _updateIndex(pos);
+    final item = storage.elementAt(pos).item;
+    _updateIndex(item.id, pos);
     if (storage.length == 0) {
       return null;
     } else if (storage.length > 0 && pos <= storage.length - 1) {
-      return storage.elementAt(pos).item;
+      return item;
     } else {
       return null;
     }
