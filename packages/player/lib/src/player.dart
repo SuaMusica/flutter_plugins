@@ -502,7 +502,8 @@ class Player {
 
   Future<PreviousPlaylistPosition?> requestLastMusicPosition() async {
     final currentPositionFromStorage = await _getCurrentPositionFromStorage();
-    if ((currentPositionFromStorage?.mediaId ?? 0) == items.first.id) {
+    final i = await previousPlaylistIndex;
+    if ((currentPositionFromStorage?.mediaId ?? 0) == items[i].id) {
       _addUsingPlayer(
         player,
         PositionChangeEvent(
