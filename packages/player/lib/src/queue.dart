@@ -21,10 +21,9 @@ class Queue {
 
   Future<void> _initialize() async {
     final items = await previousItems;
-    for (var item in items) {
-      int pos = _nextPosition();
-      storage.add(QueueItem(pos, pos, item));
-    }
+    int i = 0;
+    storage.addAll(items.map((e) => QueueItem(i++, i, e)));
+
     print('[TESTE] storage ${storage.length}');
   }
 
@@ -95,13 +94,13 @@ class Queue {
   }) async {
     debugPrint('[TESTE] ADDALL: - ${items.length} saveOnTop: $saveOnTop');
 
-    for (var media in shouldRemoveFirst ? items.sublist(1) : items) {
-      int pos = _nextPosition();
-      if (saveOnTop) {
-        storage.insert(0, QueueItem(pos, pos, media));
-      } else {
-        storage.add(QueueItem(pos, pos, media));
-      }
+    final medias = shouldRemoveFirst ? items.sublist(1) : items;
+
+    int i = 0;
+    if (saveOnTop) {
+      storage.insertAll(0, medias.map((e) => QueueItem(i++, i, e)));
+    } else {
+      storage.addAll(medias.map((e) => QueueItem(i++, i, e)));
     }
 
     await _save(medias: items, saveOnTop: saveOnTop);
