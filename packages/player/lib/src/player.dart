@@ -502,19 +502,21 @@ class Player {
 
   Future<PreviousPlaylistPosition?> requestLastMusicPosition() async {
     final currentPositionFromStorage = await _getCurrentPositionFromStorage();
-    _addUsingPlayer(
-      player,
-      PositionChangeEvent(
-        media: (await player.previousItems).first,
-        queuePosition: await player.previousPlaylistIndex,
-        position: Duration(
-          milliseconds: currentPositionFromStorage?.position.toInt() ?? 0,
+    if ((currentPositionFromStorage?.mediaId ?? 0) == items.first.id) {
+      _addUsingPlayer(
+        player,
+        PositionChangeEvent(
+          media: (await player.previousItems).first,
+          queuePosition: await player.previousPlaylistIndex,
+          position: Duration(
+            milliseconds: currentPositionFromStorage?.position.toInt() ?? 0,
+          ),
+          duration: Duration(
+            milliseconds: currentPositionFromStorage?.duration.toInt() ?? 0,
+          ),
         ),
-        duration: Duration(
-          milliseconds: currentPositionFromStorage?.duration.toInt() ?? 0,
-        ),
-      ),
-    );
+      );
+    }
     return currentPositionFromStorage;
   }
 
