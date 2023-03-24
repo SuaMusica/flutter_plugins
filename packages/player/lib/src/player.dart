@@ -107,8 +107,13 @@ class Player {
   Future<int> enqueueAll(
     List<Media> items, {
     bool shouldRemoveFirst = false,
+    bool saveOnTop = false,
   }) async {
-    _queue.addAll(items, shouldRemoveFirst: shouldRemoveFirst);
+    _queue.addAll(
+      items,
+      shouldRemoveFirst: shouldRemoveFirst,
+      saveOnTop: saveOnTop,
+    );
     return Ok;
   }
 
@@ -119,12 +124,7 @@ class Player {
 
   Future<int> removeAll() async {
     _queue.removeAll();
-    await IsarService.instance.removeAll();
-    return Ok;
-  }
-
-  Future<int> removeAllFromStorage() async {
-    await IsarService.instance.removeAll();
+    await IsarService.instance.removeAllMusics();
     return Ok;
   }
 
@@ -500,7 +500,7 @@ class Player {
     );
   }
 
-  Future<void> requestLastMusicPosition() async {
+  Future<PreviousPlaylistPosition?> requestLastMusicPosition() async {
     final currentPositionFromStorage = await _getCurrentPositionFromStorage();
     _addUsingPlayer(
       player,
@@ -515,6 +515,7 @@ class Player {
         ),
       ),
     );
+    return currentPositionFromStorage;
   }
 
   Future<PreviousPlaylistPosition?> _getCurrentPositionFromStorage() async {
@@ -524,12 +525,6 @@ class Player {
       return previousPlaylistPosition;
     }
     return null;
-  }
-
-  Future<bool> hasPreviousPlaylist() async {
-    final hasPreviousPlaylist =
-        await IsarService.instance.getPreviousPlaylistMusics();
-    return hasPreviousPlaylist != null;
   }
 
   Future<int> pause() async {
@@ -924,11 +919,13 @@ class Player {
           duration: newDuration,
         ),
       );
-      IsarService.instance.addPreviousPlaylistPosition(
-        PreviousPlaylistPosition(
-          id: 1,
-          position: newPosition.inMilliseconds.toDouble(),
-          duration: newDuration.inMilliseconds.toDouble(),
+      unawaited(
+        IsarService.instance.addPreviousPlaylistPosition(
+          PreviousPlaylistPosition(
+            id: 1,
+            position: newPosition.inMilliseconds.toDouble(),
+            duration: newDuration.inMilliseconds.toDouble(),
+          ),
         ),
       );
     }

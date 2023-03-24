@@ -47,7 +47,7 @@ class IsarService {
 
   Future<PreviousPlaylistMusics?> getPreviousPlaylistMusics() async {
     await initializeIfNeeded();
-    return _isarStorage?.previousPlaylistMusics.get(1);
+    return await _isarStorage?.previousPlaylistMusics.get(1);
   }
 
   Future<void> addPreviousPlaylistCurrentIndex(
@@ -65,7 +65,7 @@ class IsarService {
   Future<PreviousPlaylistCurrentIndex?>
       getPreviousPlaylistCurrentIndex() async {
     await initializeIfNeeded();
-    return _isarStorage?.previousPlaylistCurrentIndexs.get(1);
+    return await _isarStorage?.previousPlaylistCurrentIndexs.get(1);
   }
 
   Future<void> addPreviousPlaylistPosition(
@@ -74,13 +74,11 @@ class IsarService {
     if (previousPlaylistPosition.position > 0 &&
         (previousPlaylistPosition.position % 5) == 0) {
       await initializeIfNeeded();
-      unawaited(
-        _isarStorage?.writeTxn(
-          () async {
-            await _isarStorage?.previousPlaylistPositions
-                .put(previousPlaylistPosition);
-          },
-        ),
+      await _isarStorage?.writeTxn(
+        () async {
+          await _isarStorage?.previousPlaylistPositions
+              .put(previousPlaylistPosition);
+        },
       );
     }
   }
@@ -90,9 +88,9 @@ class IsarService {
     return _isarStorage?.previousPlaylistPositions.get(1);
   }
 
-  Future<void> removeAll() async {
+  Future<void> removeAllMusics() async {
     await _isarStorage?.writeTxn(() async {
-      await _isarStorage?.previousPlaylistMusics.delete(1);
+      await _isarStorage?.clear();
     });
   }
 }

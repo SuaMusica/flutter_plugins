@@ -1,22 +1,38 @@
 import 'dart:async';
+import 'dart:isolate';
 
 import 'package:flutter/material.dart';
+// import 'package:flutter/services.dart';
 import 'package:smplayer/src/isar_service.dart';
 import 'package:smplayer/src/media.dart';
 import 'package:smplayer/src/previous_playlist_model.dart';
 import 'package:smplayer/src/queue_item.dart';
+import 'package:smplayer/src/repeat_mode.dart';
 import 'package:smplayer/src/shuffler.dart';
 import 'package:smplayer/src/simple_shuffle.dart';
-import 'package:smplayer/src/repeat_mode.dart';
+
+// RootIsolateToken? rootIsolateToken;
 
 class Queue {
+  Queue({shuffler, mode}) : _shuffler = shuffler ?? SimpleShuffler() {
+    print('[TESTE] INITIALIZE Queue');
+    unawaited(_initialize());
+  }
+
+  Future<void> _initialize() async {
+    final items = await previousItems;
+    for (var item in items) {
+      int pos = _nextPosition();
+      storage.add(QueueItem(pos, pos, item));
+    }
+    print('[TESTE] storage ${storage.length}');
+  }
+
   var index = -1;
   final Shuffler _shuffler;
   var storage = <QueueItem<Media>>[];
   PreviousPlaylistMusics? previousPlaylistMusics;
   DateTime? _lastPrevious;
-
-  Queue({shuffler, mode}) : _shuffler = shuffler ?? SimpleShuffler();
 
   Media? get current {
     if (storage.length > 0 && index >= 0) {
@@ -72,27 +88,45 @@ class Queue {
     await _save(medias: [media]);
   }
 
-  addAll(List<Media> items, {bool shouldRemoveFirst = false}) async {
+  addAll(
+    List<Media> items, {
+    bool shouldRemoveFirst = false,
+    bool saveOnTop = false,
+  }) async {
+    debugPrint('[TESTE] ADDALL: - ${items.length} saveOnTop: $saveOnTop');
+
     for (var media in shouldRemoveFirst ? items.sublist(1) : items) {
       int pos = _nextPosition();
       storage.add(QueueItem(pos, pos, media));
     }
-    await _save(medias: items);
+
+    await _save(medias: items, saveOnTop: saveOnTop);
   }
 
-  Future<void> _save({required List<Media> medias}) async {
+  Future<void> _save(
+      {required List<Media> medias, bool saveOnTop = false}) async {
     final items = await previousItems;
-    //TODO: REMOVE AFTER APPROVED
-    debugPrint(
-        '[TESTE] overrideList: - ItemsInStorage: ${items.length} - MediasToSave: ${medias.length}');
-    IsarService.instance.addPreviousPlaylistMusics(
-      PreviousPlaylistMusics(
-        musics: [
-          ...medias.toListStringCompressed,
-          ...items.toListStringCompressed,
-        ],
-      ),
+    print(
+      '[TESTE] itemsFromStorage: ${items.length} - mediasToSave: ${medias.length}',
     );
+
+    await IsarService.instance.addPreviousPlaylistMusics(
+      PreviousPlaylistMusics(musics: organizeLists(saveOnTop, items, medias)),
+    );
+  }
+
+  List<String> organizeLists(
+    bool saveOnTop,
+    List<Media> items,
+    List<Media> medias,
+  ) {
+    final List<Media> topList = saveOnTop ? medias : items;
+    final List<Media> bottomList = saveOnTop ? items : medias;
+
+    return [
+      ...topList.toListStringCompressed,
+      ...bottomList.toListStringCompressed
+    ];
   }
 
   remove(Media media) {

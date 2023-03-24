@@ -165,8 +165,7 @@ extension ListMediaToListStringCompressed on List<Media> {
   List<String> get toListStringCompressed {
     return List.generate(
       length,
-      (index) => this[index].toString().compressWithGzipB64,
-      // (index) => this[index].toString(),
+      (index) => this[index].toString(),
     );
   }
 }
@@ -179,8 +178,7 @@ extension ListStringToListPlayable on List<String> {
         (index) {
           return Media.fromJson(
             jsonDecode(
-              this[index].restoreFromGzipB64,
-              // this[index],
+              this[index],
             ),
           );
         },
