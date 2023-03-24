@@ -15,7 +15,6 @@ import 'package:smplayer/src/simple_shuffle.dart';
 
 class Queue {
   Queue({shuffler, mode}) : _shuffler = shuffler ?? SimpleShuffler() {
-    print('[TESTE] INITIALIZE Queue');
     unawaited(_initialize());
   }
 
@@ -23,8 +22,6 @@ class Queue {
     final items = await previousItems;
     int i = 0;
     storage.addAll(items.map((e) => QueueItem(i++, i, e)));
-
-    print('[TESTE] storage ${storage.length}');
   }
 
   var index = -1;
@@ -92,8 +89,6 @@ class Queue {
     bool shouldRemoveFirst = false,
     bool saveOnTop = false,
   }) async {
-    debugPrint('[TESTE] ADDALL: - ${items.length} saveOnTop: $saveOnTop');
-
     final medias = shouldRemoveFirst ? items.sublist(1) : items;
 
     int i = 0;
@@ -109,7 +104,7 @@ class Queue {
   Future<void> _save(
       {required List<Media> medias, bool saveOnTop = false}) async {
     final items = await previousItems;
-    print(
+    debugPrint(
       '[TESTE] itemsFromStorage: ${items.length} - mediasToSave: ${medias.length}',
     );
 
