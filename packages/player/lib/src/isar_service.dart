@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:ffi';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:isar/isar.dart';
@@ -20,6 +22,13 @@ class IsarService {
     if (_isarStorage == null) {
       debugPrint('Initializing IsarStorage');
       final directory = await getApplicationDocumentsDirectory();
+      if (Platform.isMacOS || Platform.isLinux) {
+        Isar.initializeIsarCore(libraries: {
+          Abi.macosArm64: 'libisar_macos.dylib',
+          Abi.macosX64: 'libisar_macos.dylib',
+          Abi.linuxX64: 'libisar_linux_x64.so',
+        });
+      }
       _isarStorage = await Isar.open(
         [
           PreviousPlaylistMusicsSchema,
