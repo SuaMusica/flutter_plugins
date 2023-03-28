@@ -373,6 +373,7 @@ Player createPlayer() => Player(
       autoPlay: false,
       playerId: "smplayer",
       localMediaValidator: null,
+      initializeIsar: false,
     );
 
 Future<CookiesForCustomPolicy> cookieSigner() async {

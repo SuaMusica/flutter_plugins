@@ -18,6 +18,16 @@ import 'package:mutex/mutex.dart';
 import 'player_state.dart';
 
 class Player {
+  Player({
+    required this.playerId,
+    required this.cookieSigner,
+    required this.localMediaValidator,
+    required this.initializeIsar,
+    this.autoPlay = false,
+  }) {
+    _queue = Queue(initializeIsar: this.initializeIsar);
+    player = this;
+  }
   static const Ok = 1;
   static const NotOk = -1;
   static const CHANNEL = 'suamusica.com.br/player';
@@ -28,10 +38,11 @@ class Player {
   static bool logEnabled = false;
 
   bool _shallSendEvents = true;
+  bool initializeIsar;
   bool externalPlayback = false;
   CookiesForCustomPolicy? _cookies;
   PlayerState state = PlayerState.IDLE;
-  Queue _queue = Queue();
+  late Queue _queue;
   RepeatMode repeatMode = RepeatMode.NONE;
   final mutex = Mutex();
 
@@ -61,15 +72,6 @@ class Player {
   Stream<Event> get onEvent {
     _stream ??= _eventStreamController.stream.asBroadcastStream();
     return _stream!;
-  }
-
-  Player({
-    required this.playerId,
-    required this.cookieSigner,
-    required this.localMediaValidator,
-    this.autoPlay = false,
-  }) {
-    player = this;
   }
 
   Future<int> _invokeMethod(

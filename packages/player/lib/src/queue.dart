@@ -14,8 +14,14 @@ import 'package:smplayer/src/simple_shuffle.dart';
 // RootIsolateToken? rootIsolateToken;
 
 class Queue {
-  Queue({shuffler, mode}) : _shuffler = shuffler ?? SimpleShuffler() {
-    unawaited(_initialize());
+  Queue({
+    shuffler,
+    mode,
+    this.initializeIsar = false,
+  }) : _shuffler = shuffler ?? SimpleShuffler() {
+    if (initializeIsar) {
+      unawaited(_initialize());
+    }
   }
 
   Future<void> _initialize() async {
@@ -26,6 +32,7 @@ class Queue {
 
   var index = -1;
   final Shuffler _shuffler;
+  final bool initializeIsar;
   var storage = <QueueItem<Media>>[];
   PreviousPlaylistMusics? previousPlaylistMusics;
   DateTime? _lastPrevious;

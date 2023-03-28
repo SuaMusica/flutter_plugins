@@ -29,17 +29,17 @@ class IsarService {
           Abi.linuxX64: 'libisar_linux_x64.so',
         });
       }
-      _isarStorage = await Isar.open(
-        [
-          PreviousPlaylistMusicsSchema,
-          PreviousPlaylistPositionSchema,
-          PreviousPlaylistCurrentIndexSchema,
-        ],
-        name: 'keepListening',
-        directory: directory.path,
-      );
-    } else {
-      _isarStorage = await Future.value(Isar.getInstance('keepListening'));
+      if (!(_isarStorage?.isOpen ?? false)) {
+        _isarStorage = await Isar.open(
+          [
+            PreviousPlaylistMusicsSchema,
+            PreviousPlaylistPositionSchema,
+            PreviousPlaylistCurrentIndexSchema,
+          ],
+          name: 'keepListening',
+          directory: directory.path,
+        );
+      }
     }
   }
 
