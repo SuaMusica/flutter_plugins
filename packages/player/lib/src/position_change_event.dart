@@ -7,11 +7,13 @@ class PositionChangeEvent extends Event {
   final Duration duration;
 
   PositionChangeEvent({
+    playerId,
     required Media media,
     required int queuePosition,
     required this.position,
     required this.duration,
   }) : super(
+            playerId: playerId,
             type: EventType.POSITION_CHANGE,
             media: media,
             queuePosition: queuePosition);

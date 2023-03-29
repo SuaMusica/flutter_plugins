@@ -9,11 +9,12 @@ enum NetworkStatus {
 
 class NetworkChangeEvent extends Event {
   NetworkChangeEvent({
-    String? id,
+    required String playerId,
     required Media media,
     required int queuePosition,
     required this.networkStatus,
   }) : super(
+          playerId: playerId,
           type: EventType.NETWORK_CHANGE,
           media: media,
           queuePosition: queuePosition,

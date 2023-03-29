@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:isolate';
-
 import 'package:flutter/material.dart';
-// import 'package:flutter/services.dart';
 import 'package:smplayer/src/isar_service.dart';
 import 'package:smplayer/src/media.dart';
 import 'package:smplayer/src/previous_playlist_model.dart';
@@ -11,14 +9,13 @@ import 'package:smplayer/src/repeat_mode.dart';
 import 'package:smplayer/src/shuffler.dart';
 import 'package:smplayer/src/simple_shuffle.dart';
 
-// RootIsolateToken? rootIsolateToken;
-
 class Queue {
   Queue({
     shuffler,
     mode,
     this.initializeIsar = false,
   }) : _shuffler = shuffler ?? SimpleShuffler() {
+    print('[TESTE] - CREATE QUEUE!!!!!!!!');
     if (initializeIsar) {
       unawaited(_initialize());
     }
@@ -40,6 +37,9 @@ class Queue {
   Media? get current {
     if (storage.length > 0 && index >= 0) {
       return storage.elementAt(index).item;
+    } else if (storage.length > 0 && index == -1) {
+      index = 0;
+      return current;
     } else {
       return null;
     }
@@ -110,14 +110,16 @@ class Queue {
 
   Future<void> _save(
       {required List<Media> medias, bool saveOnTop = false}) async {
-    final items = await previousItems;
-    debugPrint(
-      '[TESTE] itemsFromStorage: ${items.length} - mediasToSave: ${medias.length}',
-    );
+    if (initializeIsar) {
+      final items = await previousItems;
+      debugPrint(
+        '[TESTE] itemsFromStorage: ${items.length} - mediasToSave: ${medias.length}',
+      );
 
-    await IsarService.instance.addPreviousPlaylistMusics(
-      PreviousPlaylistMusics(musics: organizeLists(saveOnTop, items, medias)),
-    );
+      await IsarService.instance.addPreviousPlaylistMusics(
+        PreviousPlaylistMusics(musics: organizeLists(saveOnTop, items, medias)),
+      );
+    }
   }
 
   List<String> organizeLists(

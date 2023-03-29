@@ -6,11 +6,12 @@ class BeforePlayEvent extends Event {
   Function(bool) operation;
 
   BeforePlayEvent({
-    String? id,
+    required String playerId,
     required Media media,
     required this.operation,
     required int queuePosition,
   }) : super(
+          playerId: playerId,
           type: EventType.BEFORE_PLAY,
           media: media,
           queuePosition: queuePosition,

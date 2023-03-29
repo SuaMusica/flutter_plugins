@@ -21,8 +21,8 @@ class Player {
   Player({
     required this.playerId,
     required this.cookieSigner,
-    required this.localMediaValidator,
-    required this.initializeIsar,
+    this.localMediaValidator,
+    this.initializeIsar = false,
     this.autoPlay = false,
   }) {
     _queue = Queue(initializeIsar: this.initializeIsar);
@@ -46,7 +46,7 @@ class Player {
   RepeatMode repeatMode = RepeatMode.NONE;
   final mutex = Mutex();
 
-  final String playerId;
+  String playerId;
 
   final StreamController<Event> _eventStreamController =
       StreamController<Event>();
@@ -72,6 +72,11 @@ class Player {
   Stream<Event> get onEvent {
     _stream ??= _eventStreamController.stream.asBroadcastStream();
     return _stream!;
+  }
+
+  void setPlayerId(String newPlayerId) {
+    playerId = newPlayerId;
+    print('[TESTE] - QUEUE - ${this.hashCode} - playerId: $playerId');
   }
 
   Future<int> _invokeMethod(
@@ -126,7 +131,9 @@ class Player {
 
   Future<int> removeAll() async {
     _queue.removeAll();
-    await IsarService.instance.removeAllMusics();
+    if (initializeIsar) {
+      await IsarService.instance.removeAllMusics();
+    }
     return Ok;
   }
 
@@ -207,7 +214,7 @@ class Player {
   Future<Media> restartQueue() async {
     final media = _queue.restart();
 
-    await this.load(media);
+    await this.load();
 
     return media;
   }
@@ -234,10 +241,15 @@ class Player {
   int get size => _queue.size;
   Media? get top => _queue.top;
 
-  Future<int> load(Media media) async => _doPlay(
-        _queue.current!,
-        shouldLoadOnly: true,
-      );
+  Future<int> load() async {
+    // _queue.index = 0;
+    final a = _queue.current!;
+    print('[TESTE] - CURRENT: ${a.name} - items: ${_queue.items.length}');
+    return _doPlay(
+      a,
+      shouldLoadOnly: true,
+    );
+  }
 
   Future<int> play(
     Media media, {
@@ -406,7 +418,7 @@ class Player {
       return NotOk;
     }
     final duration = Duration(milliseconds: await getDuration());
-    _notifyPositionChangeEvent(this, duration, duration);
+    _notifyPositionChangeEvent(playerId, this, duration, duration);
     _notifyForward(media);
     return stop();
   }
@@ -503,24 +515,28 @@ class Player {
   }
 
   Future<PreviousPlaylistPosition?> requestLastMusicPosition() async {
-    final currentPositionFromStorage = await _getCurrentPositionFromStorage();
-    final i = await previousPlaylistIndex;
-    if ((currentPositionFromStorage?.mediaId ?? 0) == items[i].id) {
-      _addUsingPlayer(
-        player,
-        PositionChangeEvent(
-          media: (await player.previousItems).first,
-          queuePosition: await player.previousPlaylistIndex,
-          position: Duration(
-            milliseconds: currentPositionFromStorage?.position.toInt() ?? 0,
+    if (initializeIsar) {
+      final currentPositionFromStorage = await _getCurrentPositionFromStorage();
+      final i = await previousPlaylistIndex;
+      if ((currentPositionFromStorage?.mediaId ?? 0) == items[i].id) {
+        _addUsingPlayer(
+          player,
+          PositionChangeEvent(
+            playerId: playerId,
+            media: (await player.previousItems).first,
+            queuePosition: await player.previousPlaylistIndex,
+            position: Duration(
+              milliseconds: currentPositionFromStorage?.position.toInt() ?? 0,
+            ),
+            duration: Duration(
+              milliseconds: currentPositionFromStorage?.duration.toInt() ?? 0,
+            ),
           ),
-          duration: Duration(
-            milliseconds: currentPositionFromStorage?.duration.toInt() ?? 0,
-          ),
-        ),
-      );
+        );
+      }
+      return currentPositionFromStorage;
     }
-    return currentPositionFromStorage;
+    return null;
   }
 
   Future<PreviousPlaylistPosition?> _getCurrentPositionFromStorage() async {
@@ -584,7 +600,7 @@ class Player {
   }
 
   Future<int> seek(Duration position) {
-    _notifyPlayerStateChangeEvent(this, EventType.SEEK_START, "");
+    _notifyPlayerStateChangeEvent(playerId, this, EventType.SEEK_START, "");
     return _invokeMethod('seek', {'position': position.inMilliseconds});
   }
 
@@ -608,9 +624,10 @@ class Player {
     }
   }
 
-  static Future<void> _handleOnComplete(Player player) async {
+  static Future<void> _handleOnComplete(String playerId, Player player) async {
     player.state = PlayerState.COMPLETED;
-    _notifyPlayerStateChangeEvent(player, EventType.FINISHED_PLAYING, "");
+    _notifyPlayerStateChangeEvent(
+        playerId, player, EventType.FINISHED_PLAYING, "");
     switch (player.repeatMode) {
       case RepeatMode.NONE:
       case RepeatMode.QUEUE:
@@ -626,29 +643,32 @@ class Player {
   static Future<void> _doHandlePlatformCall(MethodCall call) async {
     final Map<dynamic, dynamic> callArgs = call.arguments as Map;
     _log('_platformCallHandler call ${call.method} $callArgs');
+    final playerId = callArgs['playerId'];
     switch (call.method) {
       case 'audio.onDuration':
         final duration = callArgs['duration'];
         if (duration > 0) {
           Duration newDuration = Duration(milliseconds: duration);
-          _notifyDurationChangeEvent(player, newDuration);
+          _notifyDurationChangeEvent(playerId, player, newDuration);
         }
         break;
       case 'audio.onCurrentPosition':
         final position = callArgs['position'];
+
         Duration newPosition = Duration(milliseconds: position);
         final duration = callArgs['duration'];
         Duration newDuration = Duration(milliseconds: duration);
-        _notifyPositionChangeEvent(player, newPosition, newDuration);
+        _notifyPositionChangeEvent(playerId, player, newPosition, newDuration);
         break;
       case 'audio.onComplete':
-        _handleOnComplete(player);
+        _handleOnComplete(playerId, player);
         break;
       case 'audio.onError':
         player.state = PlayerState.ERROR;
         final errorType = callArgs['errorType'] ?? 2;
 
         _notifyPlayerErrorEvent(
+          playerId,
           player,
           'error',
           PlayerErrorType.values[errorType],
@@ -656,6 +676,7 @@ class Player {
         break;
       case 'state.change':
         final state = callArgs['state'];
+
         String error = callArgs['error'] ?? "";
         player.state = PlayerState.values[state];
 
@@ -664,6 +685,7 @@ class Player {
             break;
           case PlayerState.BUFFERING:
             _notifyPlayerStateChangeEvent(
+              playerId,
               player,
               EventType.BUFFERING,
               error,
@@ -671,6 +693,7 @@ class Player {
             break;
           case PlayerState.PLAYING:
             _notifyPlayerStateChangeEvent(
+              playerId,
               player,
               EventType.PLAYING,
               error,
@@ -679,6 +702,7 @@ class Player {
 
           case PlayerState.PAUSED:
             _notifyPlayerStateChangeEvent(
+              playerId,
               player,
               EventType.PAUSED,
               error,
@@ -687,6 +711,7 @@ class Player {
 
           case PlayerState.STOPPED:
             _notifyPlayerStateChangeEvent(
+              playerId,
               player,
               EventType.STOP_REQUESTED,
               error,
@@ -695,6 +720,7 @@ class Player {
 
           case PlayerState.SEEK_END:
             _notifyPlayerStateChangeEvent(
+              playerId,
               player,
               EventType.SEEK_END,
               error,
@@ -703,6 +729,7 @@ class Player {
 
           case PlayerState.BUFFER_EMPTY:
             _notifyPlayerStateChangeEvent(
+              playerId,
               player,
               EventType.BUFFER_EMPTY,
               error,
@@ -710,23 +737,25 @@ class Player {
             break;
 
           case PlayerState.COMPLETED:
-            _handleOnComplete(player);
+            _handleOnComplete(playerId, player);
             break;
 
           case PlayerState.ERROR:
             final error = callArgs['error'] ?? "Unknown from Source";
-            _notifyPlayerErrorEvent(player, error);
+            _notifyPlayerErrorEvent(playerId, player, error);
             break;
         }
 
         break;
       case 'commandCenter.onNext':
         _log("Player : Command Center : Got a next request");
+
         player.next();
         if (player.current != null) {
           _addUsingPlayer(
             player,
             Event(
+              playerId: playerId,
               type: EventType.NEXT_NOTIFICATION,
               media: player.current!,
               queuePosition: player._queue.index,
@@ -736,10 +765,12 @@ class Player {
         break;
       case 'commandCenter.onPrevious':
         _log("Player : Command Center : Got a previous request");
+
         if (player.current != null) {
           _addUsingPlayer(
             player,
             Event(
+              playerId: playerId,
               type: EventType.PREVIOUS_NOTIFICATION,
               media: player.current!,
               queuePosition: player._queue.index,
@@ -753,6 +784,7 @@ class Player {
           _addUsingPlayer(
             player,
             Event(
+              playerId: playerId,
               type: EventType.PLAY_NOTIFICATION,
               media: player.current!,
               queuePosition: player._queue.index,
@@ -765,6 +797,7 @@ class Player {
           _addUsingPlayer(
             player,
             Event(
+              playerId: playerId,
               type: EventType.PAUSED_NOTIFICATION,
               media: player.current!,
               queuePosition: player._queue.index,
@@ -777,6 +810,7 @@ class Player {
           _addUsingPlayer(
             player,
             Event(
+              playerId: playerId,
               type: EventType.TOGGLE_PLAY_PAUSE,
               media: player.current!,
               queuePosition: player._queue.index,
@@ -787,11 +821,16 @@ class Player {
       case 'externalPlayback.play':
         print("Player: externalPlayback : Play");
         _notifyPlayerStateChangeEvent(
-            player, EventType.EXTERNAL_RESUME_REQUESTED, "");
+          playerId,
+          player,
+          EventType.EXTERNAL_RESUME_REQUESTED,
+          "",
+        );
         break;
       case 'externalPlayback.pause':
         print("Player: externalPlayback : Pause");
         _notifyPlayerStateChangeEvent(
+          playerId,
           player,
           EventType.EXTERNAL_PAUSE_REQUESTED,
           "",
@@ -801,6 +840,7 @@ class Player {
         final favorite = callArgs['favorite'];
         print("Player: onFavorite : $favorite");
         _notifyPlayerStateChangeEvent(
+          playerId,
           player,
           favorite ? EventType.FAVORITE_MUSIC : EventType.UNFAVORITE_MUSIC,
           "",
@@ -814,18 +854,31 @@ class Player {
 
   _notifyChangeToNext(Media media) {
     _add(
-        Event(type: EventType.NEXT, media: media, queuePosition: _queue.index));
+      Event(
+        playerId: playerId,
+        type: EventType.NEXT,
+        media: media,
+        queuePosition: _queue.index,
+      ),
+    );
   }
 
   _notifyChangeToPrevious(Media media) {
-    _add(Event(
-        type: EventType.PREVIOUS, media: media, queuePosition: _queue.index));
+    _add(
+      Event(
+        playerId: playerId,
+        type: EventType.PREVIOUS,
+        media: media,
+        queuePosition: _queue.index,
+      ),
+    );
   }
 
   _notifyRewind(Media media) async {
     final positionInMilli = await getCurrentPosition();
     final durationInMilli = await getDuration();
     _add(Event(
+      playerId: playerId,
       type: EventType.REWIND,
       media: media,
       queuePosition: _queue.index,
@@ -839,6 +892,7 @@ class Player {
     final durationInMilli = await getDuration();
 
     _add(Event(
+      playerId: playerId,
       type: EventType.FORWARD,
       media: media,
       queuePosition: _queue.index,
@@ -850,44 +904,58 @@ class Player {
   _notifyPlayerStatusChangeEvent(EventType type) {
     if (_queue.current != null) {
       _add(Event(
-          type: type, media: _queue.current!, queuePosition: _queue.index));
+          playerId: playerId,
+          type: type,
+          media: _queue.current!,
+          queuePosition: _queue.index));
     }
   }
 
   _notifyBeforePlayEvent(Function(bool) operation) {
     _add(BeforePlayEvent(
+        playerId: playerId,
         media: _queue.current!,
         queuePosition: _queue.index,
         operation: operation));
   }
 
-  static _notifyDurationChangeEvent(Player player, Duration newDuration) {
+  static _notifyDurationChangeEvent(
+      String playerId, Player player, Duration newDuration) {
     if (player._queue.current != null) {
       _addUsingPlayer(
-          player,
-          DurationChangeEvent(
-              media: player._queue.current!,
-              queuePosition: player._queue.index,
-              duration: newDuration));
+        player,
+        DurationChangeEvent(
+          playerId: playerId,
+          media: player._queue.current!,
+          queuePosition: player._queue.index,
+          duration: newDuration,
+        ),
+      );
     }
   }
 
   static _notifyPlayerStateChangeEvent(
+    String playerId,
     Player player,
     EventType eventType,
     String error,
   ) {
     if (error.isNotEmpty) {
       _notifyPlayerErrorEvent(
+        playerId,
         player,
         error,
         PlayerErrorType.INFORMATION,
       );
     }
+    print([
+      "[TESTE] _queue.current - ${player._queue.current != null} playerId: $playerId"
+    ]);
     if (player._queue.current != null) {
       _addUsingPlayer(
         player,
         Event(
+          playerId: playerId,
           type: eventType,
           media: player._queue.current!,
           queuePosition: player._queue.index,
@@ -896,12 +964,17 @@ class Player {
     }
   }
 
-  static _notifyPlayerErrorEvent(Player player, String error,
-      [PlayerErrorType errorType = PlayerErrorType.UNDEFINED]) {
+  static _notifyPlayerErrorEvent(
+    String playerId,
+    Player player,
+    String error, [
+    PlayerErrorType errorType = PlayerErrorType.UNDEFINED,
+  ]) {
     if (player._queue.current != null) {
       _addUsingPlayer(
         player,
         Event(
+          playerId: playerId,
           type: EventType.ERROR_OCCURED,
           media: player._queue.current!,
           queuePosition: player._queue.index,
@@ -913,26 +986,33 @@ class Player {
   }
 
   static _notifyPositionChangeEvent(
-      Player player, Duration newPosition, Duration newDuration) {
+    String playerId,
+    Player player,
+    Duration newPosition,
+    Duration newDuration,
+  ) {
     if (player._queue.current != null) {
       _addUsingPlayer(
         player,
         PositionChangeEvent(
+          playerId: playerId,
           media: player._queue.current!,
           queuePosition: player._queue.index,
           position: newPosition,
           duration: newDuration,
         ),
       );
-      unawaited(
-        IsarService.instance.addPreviousPlaylistPosition(
-          PreviousPlaylistPosition(
-            mediaId: player._queue.current?.id ?? 0,
-            position: newPosition.inMilliseconds.toDouble(),
-            duration: newDuration.inMilliseconds.toDouble(),
+      if (player._queue.initializeIsar) {
+        unawaited(
+          IsarService.instance.addPreviousPlaylistPosition(
+            PreviousPlaylistPosition(
+              mediaId: player._queue.current?.id ?? 0,
+              position: newPosition.inMilliseconds.toDouble(),
+              duration: newDuration.inMilliseconds.toDouble(),
+            ),
           ),
-        ),
-      );
+        );
+      }
     }
   }
 
@@ -964,5 +1044,6 @@ class Player {
       futures.add(_eventStreamController.close());
     }
     await Future.wait(futures);
+    release();
   }
 }

@@ -36,6 +36,7 @@ class IsarService {
             PreviousPlaylistPositionSchema,
             PreviousPlaylistCurrentIndexSchema,
           ],
+          maxSizeMiB: 32,
           name: 'keepListening',
           directory: directory.path,
         );

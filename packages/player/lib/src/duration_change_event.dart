@@ -10,7 +10,9 @@ class DurationChangeEvent extends Event {
     required Media media,
     required this.duration,
     required queuePosition,
+    required playerId,
   }) : super(
+          playerId: playerId,
           type: EventType.DURATION_CHANGE,
           media: media,
           queuePosition: queuePosition,

@@ -9,12 +9,14 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 
+var PLAYERID :String = "";
 
 class PlayerPlugin : MethodCallHandler, FlutterPlugin,ActivityAware {
 
     companion object {
         // Argument names
         const val NAME_ARGUMENT = "name"
+        const val PLAYER_ID = "playerId"
         const val AUTHOR_ARGUMENT = "author"
         const val URL_ARGUMENT = "url"
         const val COVER_URL_ARGUMENT = "coverUrl"
@@ -93,6 +95,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin,ActivityAware {
         Log.d(TAG, "method: ${call.method} cookie: $cookie externalPlayback: ${PlayerSingleton.externalPlayback}")
         when (call.method) {
             LOAD_METHOD -> {
+                PLAYERID = call.argument<String>(PLAYER_ID)!!
                 val name = call.argument<String>(NAME_ARGUMENT)!!
                 val author = call.argument<String>(AUTHOR_ARGUMENT)!!
                 val url = call.argument<String>(URL_ARGUMENT)!!
@@ -108,6 +111,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin,ActivityAware {
                 Log.d(TAG, "method: ${call.method} name: $name author: $author")
             }
             SEND_NOTIFICATION -> {
+                PLAYERID = call.argument<String>(PLAYER_ID)!!
                 val name = call.argument<String>(NAME_ARGUMENT)!!
                 val author = call.argument<String>(AUTHOR_ARGUMENT)!!
                 val url = call.argument<String>(URL_ARGUMENT)!!
@@ -117,6 +121,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin,ActivityAware {
                 PlayerSingleton.mediaSessionConnection?.sendNotification(name, author, url, coverUrl, isPlaying, isFavorite)
             }
             PLAY_METHOD -> {
+                PLAYERID = call.argument<String>(PLAYER_ID)!!
                 val name = call.argument<String>(NAME_ARGUMENT)!!
                 val author = call.argument<String>(AUTHOR_ARGUMENT)!!
                 val url = call.argument<String>(URL_ARGUMENT)!!
@@ -136,39 +141,49 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin,ActivityAware {
                 }
             }
             RESUME_METHOD -> {
+                PLAYERID = call.argument<String>(PLAYER_ID)!!
                 PlayerSingleton.mediaSessionConnection?.play()
             }
             PAUSE_METHOD -> {
+                PLAYERID = call.argument<String>(PLAYER_ID)!!
                 PlayerSingleton.mediaSessionConnection?.pause()
             }
             "ads_playing" -> {
+                PLAYERID = call.argument<String>(PLAYER_ID)!!
                 PlayerSingleton.mediaSessionConnection?.adsPlaying()
             }
             STOP_METHOD -> {
+                PLAYERID = call.argument<String>(PLAYER_ID)!!
                 PlayerSingleton.mediaSessionConnection?.stop()
             }
             RELEASE_METHOD -> {
+                PLAYERID = call.argument<String>(PLAYER_ID)!!
                 PlayerSingleton.mediaSessionConnection?.release()
             }
             SEEK_METHOD -> {
+                PLAYERID = call.argument<String>(PLAYER_ID)!!
                 val position = call.argument<Long>(POSITION_ARGUMENT)!!
                 PlayerSingleton.mediaSessionConnection?.seek(position, true)
             }
             REMOVE_NOTIFICATION_METHOD -> {
+                PLAYERID = call.argument<String>(PLAYER_ID)!!
                 PlayerSingleton.mediaSessionConnection?.removeNotification()
             }
             SET_VOLUME_METHOD -> {
 
             }
             GET_DURATION_METHOD -> {
+                PLAYERID = call.argument<String>(PLAYER_ID)!!
                 response.success(PlayerSingleton.mediaSessionConnection?.duration)
                 return
             }
             GET_CURRENT_POSITION_METHOD -> {
+                PLAYERID = call.argument<String>(PLAYER_ID)!!
                 response.success(PlayerSingleton.mediaSessionConnection?.currentPosition)
                 return
             }
             SET_RELEASE_MODE_METHOD -> {
+                PLAYERID = call.argument<String>(PLAYER_ID)!!
                 val releaseModeName = call.argument<String>(RELEASE_MODE_ARGUMENT)
                 val releaseMode = ReleaseMode.valueOf(releaseModeName!!.substring("ReleaseMode.".length))
                 PlayerSingleton.mediaSessionConnection?.releaseMode = releaseMode.ordinal
