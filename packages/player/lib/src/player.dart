@@ -22,7 +22,7 @@ class Player {
     required this.playerId,
     required this.cookieSigner,
     required this.localMediaValidator,
-    required this.initializeIsar,
+    this.initializeIsar = false,
     this.autoPlay = false,
   }) {
     _queue = Queue(initializeIsar: this.initializeIsar);
@@ -126,7 +126,7 @@ class Player {
 
   Future<int> removeAll() async {
     _queue.removeAll();
-    await IsarService.instance.removeAllMusics();
+    await IsarService.instance(initializeIsar)?.removeAllMusics();
     return Ok;
   }
 
@@ -524,8 +524,8 @@ class Player {
   }
 
   Future<PreviousPlaylistPosition?> _getCurrentPositionFromStorage() async {
-    final previousPlaylistPosition =
-        await IsarService.instance.getPreviousPlaylistPosition();
+    final previousPlaylistPosition = await IsarService.instance(initializeIsar)
+        ?.getPreviousPlaylistPosition();
     if (previousPlaylistPosition?.position != null) {
       return previousPlaylistPosition;
     }
@@ -925,7 +925,8 @@ class Player {
         ),
       );
       unawaited(
-        IsarService.instance.addPreviousPlaylistPosition(
+        IsarService.instance(player._queue.initializeIsar)
+            ?.addPreviousPlaylistPosition(
           PreviousPlaylistPosition(
             mediaId: player._queue.current?.id ?? 0,
             position: newPosition.inMilliseconds.toDouble(),

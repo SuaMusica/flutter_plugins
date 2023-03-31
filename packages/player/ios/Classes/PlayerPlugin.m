@@ -874,7 +874,7 @@ PlaylistItem *currentItem = nil;
             NSMutableDictionary * playerInfo = players[_playerId];
             [playerInfo setValue:@(false) forKey:@"isSeeking"];
             int state = STATE_SEEK_END;
-            [self notifyStateChange:_playerId state:state overrideBlock:false];
+                [self notifyStateChange:_playerId state:state overrideBlock:false];
             NSLog(@"Player: AVPlayerItemTimeJumpedNotification: %@", [note object]);
         }];
         id failedEndTimeObserver = [[ NSNotificationCenter defaultCenter ] addObserverForName: AVPlayerItemFailedToPlayToEndTimeNotification
@@ -1817,6 +1817,11 @@ isNotification: (bool) respectSilence
             int state = STATE_PLAYING;
             [self notifyStateChange:_playerId state:state overrideBlock:false];
         }
+         if(loadOnly && lastTime.value > 0){
+             [self doPause:_playerId];
+             int state = STATE_PAUSED;
+             [self notifyStateChange:_playerId state:state overrideBlock:false];
+         }
         shouldAutoStart = false;
     } else {
         // Any unrecognized context must belong to super

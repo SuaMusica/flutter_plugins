@@ -53,13 +53,14 @@ class Queue {
 
   Future<List<Media>> get previousItems async {
     previousPlaylistMusics =
-        await IsarService.instance.getPreviousPlaylistMusics();
+        await IsarService.instance(initializeIsar)?.getPreviousPlaylistMusics();
     return previousPlaylistMusics?.musics?.toListMedia ?? [];
   }
 
   Future<int> get previousPlaylistIndex async {
     final previousPlaylistCurrentIndex =
-        await IsarService.instance.getPreviousPlaylistCurrentIndex();
+        await IsarService.instance(initializeIsar)
+            ?.getPreviousPlaylistCurrentIndex();
     return previousPlaylistCurrentIndex?.currentIndex ?? 0;
   }
 
@@ -115,7 +116,7 @@ class Queue {
       '[TESTE] itemsFromStorage: ${items.length} - mediasToSave: ${medias.length}',
     );
 
-    await IsarService.instance.addPreviousPlaylistMusics(
+    await IsarService.instance(initializeIsar)?.addPreviousPlaylistMusics(
       PreviousPlaylistMusics(musics: organizeLists(saveOnTop, items, medias)),
     );
   }
@@ -283,7 +284,7 @@ class Queue {
   }
 
   void _updateIndex(int id, int newIndex) async {
-    IsarService.instance.addPreviousPlaylistCurrentIndex(
+    IsarService.instance(initializeIsar)?.addPreviousPlaylistCurrentIndex(
       PreviousPlaylistCurrentIndex(mediaId: id, currentIndex: newIndex),
     );
   }

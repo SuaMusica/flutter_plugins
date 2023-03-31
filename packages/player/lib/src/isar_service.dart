@@ -13,7 +13,13 @@ class IsarService {
   }
   static IsarService? _instance;
 
-  static IsarService get instance => _instance ??= IsarService._();
+  static IsarService? instance(bool initializeIsar) {
+    if (_instance == null && initializeIsar) {
+      _instance = IsarService._();
+    }
+
+    return _instance;
+  }
 
   PreviousPlaylistMusics? playlistMusics;
 
@@ -36,6 +42,7 @@ class IsarService {
             PreviousPlaylistPositionSchema,
             PreviousPlaylistCurrentIndexSchema,
           ],
+          maxSizeMiB: 16,
           name: 'keepListening',
           directory: directory.path,
         );
