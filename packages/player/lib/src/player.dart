@@ -230,7 +230,8 @@ class Player {
   List<Media> get items => _queue.items;
   Future<List<Media>> get previousItems async => await _queue.previousItems;
   int get queuePosition => _queue.index;
-  Future<int> get previousPlaylistIndex async => _queue.previousPlaylistIndex;
+  Future<int> get previousPlaylistIndex async =>
+      await _queue.previousPlaylistIndex;
   int get size => _queue.size;
   Media? get top => _queue.top;
 

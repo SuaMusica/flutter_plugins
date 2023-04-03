@@ -104,9 +104,8 @@ class IsarService {
     return _isarStorage?.previousPlaylistPositions.get(1);
   }
 
-  Future<void> removeAllMusics() async {
-    await _isarStorage?.writeTxn(() async {
-      await _isarStorage?.clear();
-    });
-  }
+  Future<void> removeAllMusics() async =>
+      await _isarStorage?.writeTxn(() async {
+        await _isarStorage?.clear();
+      });
 }

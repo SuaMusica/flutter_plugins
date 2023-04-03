@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:isolate';
 
 import 'package:flutter/material.dart';
-// import 'package:flutter/services.dart';
 import 'package:smplayer/src/isar_service.dart';
 import 'package:smplayer/src/media.dart';
 import 'package:smplayer/src/previous_playlist_model.dart';
@@ -10,8 +8,6 @@ import 'package:smplayer/src/queue_item.dart';
 import 'package:smplayer/src/repeat_mode.dart';
 import 'package:smplayer/src/shuffler.dart';
 import 'package:smplayer/src/simple_shuffle.dart';
-
-// RootIsolateToken? rootIsolateToken;
 
 class Queue {
   Queue({
