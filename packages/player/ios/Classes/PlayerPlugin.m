@@ -1814,7 +1814,6 @@ isNotification: (bool) respectSilence
         if (shouldStartPlaySoon && player.rate == 0 && shouldAutoStart && !loadOnly) {
             player.rate = 1.0;
         }
-        NSLog(@"[TESTE] - PASSOU1");
         if (shouldStartPlaySoon && player.rate != 0) {
             [ playerInfo setObject:@true forKey:@"isPlaying" ];
             int state = STATE_PLAYING;
