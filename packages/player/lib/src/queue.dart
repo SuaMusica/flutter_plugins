@@ -16,19 +16,27 @@ class Queue {
     this.initializeIsar = false,
   }) : _shuffler = shuffler ?? SimpleShuffler() {
     if (initializeIsar) {
-      unawaited(_initialize());
+      _initialize();
+    } else {
+      itemsReady = true;
     }
   }
 
   Future<void> _initialize() async {
     final items = await previousItems;
+    previousIndex = await previousPlaylistIndex;
+    previousPosition = await _previousPlaylistPosition;
     int i = 0;
     storage.addAll(items.map((e) => QueueItem(i++, i, e)));
+    itemsReady = true;
   }
 
   var index = -1;
   final Shuffler _shuffler;
   final bool initializeIsar;
+  bool itemsReady = false;
+  int previousIndex = 0;
+  PreviousPlaylistPosition? previousPosition;
   var storage = <QueueItem<Media>>[];
   PreviousPlaylistMusics? previousPlaylistMusics;
   DateTime? _lastPrevious;
@@ -48,16 +56,41 @@ class Queue {
   }
 
   Future<List<Media>> get previousItems async {
-    previousPlaylistMusics =
-        await IsarService.instance(initializeIsar)?.getPreviousPlaylistMusics();
-    return previousPlaylistMusics?.musics?.toListMedia ?? [];
+    try {
+      previousPlaylistMusics = await IsarService.instance(initializeIsar)
+          ?.getPreviousPlaylistMusics();
+      return previousPlaylistMusics?.musics?.toListMedia ?? [];
+    } catch (e) {
+      itemsReady = true;
+      return [];
+    }
+  }
+
+  Future<PreviousPlaylistPosition?> get _previousPlaylistPosition async {
+    try {
+      final previousPlaylistPosition =
+          await IsarService.instance(initializeIsar)
+              ?.getPreviousPlaylistPosition();
+      if (previousPlaylistPosition?.position != null) {
+        return previousPlaylistPosition;
+      }
+      return null;
+    } catch (e) {
+      itemsReady = true;
+      return null;
+    }
   }
 
   Future<int> get previousPlaylistIndex async {
-    final previousPlaylistCurrentIndex =
-        await IsarService.instance(initializeIsar)
-            ?.getPreviousPlaylistCurrentIndex();
-    return previousPlaylistCurrentIndex?.currentIndex ?? 0;
+    try {
+      final previousPlaylistCurrentIndex =
+          await IsarService.instance(initializeIsar)
+              ?.getPreviousPlaylistCurrentIndex();
+      return previousPlaylistCurrentIndex?.currentIndex ?? 0;
+    } catch (e) {
+      itemsReady = true;
+      return 0;
+    }
   }
 
   int get size => storage.length;

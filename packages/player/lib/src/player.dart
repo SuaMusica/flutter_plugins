@@ -40,6 +40,8 @@ class Player {
   bool _shallSendEvents = true;
   bool initializeIsar;
   bool externalPlayback = false;
+  bool get itemsReady => _queue.itemsReady;
+
   CookiesForCustomPolicy? _cookies;
   PlayerState state = PlayerState.IDLE;
   late Queue _queue;
@@ -230,8 +232,12 @@ class Player {
   List<Media> get items => _queue.items;
   Future<List<Media>> get previousItems async => await _queue.previousItems;
   int get queuePosition => _queue.index;
-  Future<int> get previousPlaylistIndex async =>
-      await _queue.previousPlaylistIndex;
+  int get previousPlaylistIndex => _queue.previousIndex;
+  PreviousPlaylistPosition? get previousPlaylistPosition {
+    unawaited(requestLastMusicPosition());
+    return _queue.previousPosition;
+  }
+
   int get size => _queue.size;
   Media? get top => _queue.top;
 
@@ -503,9 +509,9 @@ class Player {
     );
   }
 
-  Future<PreviousPlaylistPosition?> requestLastMusicPosition() async {
-    final currentPositionFromStorage = await _getCurrentPositionFromStorage();
-    final i = await previousPlaylistIndex;
+  Future<void> requestLastMusicPosition() async {
+    final currentPositionFromStorage = _queue.previousPosition;
+    final i = previousPlaylistIndex;
     if ((currentPositionFromStorage?.mediaId ?? 0) == items[i].id) {
       _addUsingPlayer(
         player,
@@ -521,16 +527,6 @@ class Player {
         ),
       );
     }
-    return currentPositionFromStorage;
-  }
-
-  Future<PreviousPlaylistPosition?> _getCurrentPositionFromStorage() async {
-    final previousPlaylistPosition = await IsarService.instance(initializeIsar)
-        ?.getPreviousPlaylistPosition();
-    if (previousPlaylistPosition?.position != null) {
-      return previousPlaylistPosition;
-    }
-    return null;
   }
 
   Future<int> pause() async {
