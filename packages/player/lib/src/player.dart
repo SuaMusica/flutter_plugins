@@ -568,7 +568,7 @@ class Player {
       state = PlayerState.STOPPED;
       _notifyPlayerStatusChangeEvent(EventType.RELEASED);
     }
-
+    _queue.dispose();
     return result;
   }
 

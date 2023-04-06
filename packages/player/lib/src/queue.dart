@@ -363,4 +363,8 @@ class Queue {
     final playingIndex = storage.indexOf(playingItem);
     this.index = playingIndex;
   }
+
+  void dispose() {
+    IsarService.instance.dispose();
+  }
 }
