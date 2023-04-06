@@ -8,24 +8,17 @@ import 'package:path_provider/path_provider.dart';
 import 'package:smplayer/src/previous_playlist_model.dart';
 
 class IsarService {
-  IsarService._() {
-    initializeIfNeeded();
-  }
+  IsarService._();
   static IsarService? _instance;
 
-  static IsarService? instance(bool initializeIsar) {
-    if (_instance == null && initializeIsar) {
-      _instance = IsarService._();
-    }
-
-    return _instance;
-  }
+  static IsarService get instance => _instance ?? IsarService._();
 
   PreviousPlaylistMusics? playlistMusics;
-
+  bool _isIsarEnabled = true;
+  set isarEnabled(bool isarEnabled) => _isIsarEnabled = isarEnabled;
   Isar? _isarStorage;
   Future<void> initializeIfNeeded() async {
-    if (_isarStorage == null) {
+    if (_isarStorage == null && _isIsarEnabled) {
       debugPrint('Initializing IsarStorage');
       final directory = await getApplicationDocumentsDirectory();
       if (Platform.isMacOS || Platform.isLinux) {

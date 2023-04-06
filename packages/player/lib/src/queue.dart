@@ -15,6 +15,7 @@ class Queue {
     mode,
     this.initializeIsar = false,
   }) : _shuffler = shuffler ?? SimpleShuffler() {
+    IsarService.instance.isarEnabled = initializeIsar;
     if (initializeIsar) {
       _initialize();
     } else {
@@ -57,8 +58,8 @@ class Queue {
 
   Future<List<Media>> get previousItems async {
     try {
-      previousPlaylistMusics = await IsarService.instance(initializeIsar)
-          ?.getPreviousPlaylistMusics();
+      previousPlaylistMusics =
+          await IsarService.instance.getPreviousPlaylistMusics();
       return previousPlaylistMusics?.musics?.toListMedia ?? [];
     } catch (e) {
       itemsReady = true;
@@ -69,8 +70,7 @@ class Queue {
   Future<PreviousPlaylistPosition?> get _previousPlaylistPosition async {
     try {
       final previousPlaylistPosition =
-          await IsarService.instance(initializeIsar)
-              ?.getPreviousPlaylistPosition();
+          await IsarService.instance.getPreviousPlaylistPosition();
       if (previousPlaylistPosition?.position != null) {
         return previousPlaylistPosition;
       }
@@ -84,8 +84,7 @@ class Queue {
   Future<int> get previousPlaylistIndex async {
     try {
       final previousPlaylistCurrentIndex =
-          await IsarService.instance(initializeIsar)
-              ?.getPreviousPlaylistCurrentIndex();
+          await IsarService.instance.getPreviousPlaylistCurrentIndex();
       return previousPlaylistCurrentIndex?.currentIndex ?? 0;
     } catch (e) {
       itemsReady = true;
@@ -145,7 +144,7 @@ class Queue {
       '[TESTE] itemsFromStorage: ${items.length} - mediasToSave: ${medias.length}',
     );
 
-    await IsarService.instance(initializeIsar)?.addPreviousPlaylistMusics(
+    await IsarService.instance.addPreviousPlaylistMusics(
       PreviousPlaylistMusics(musics: organizeLists(saveOnTop, items, medias)),
     );
   }
@@ -313,7 +312,7 @@ class Queue {
   }
 
   void _updateIndex(int id, int newIndex) async {
-    IsarService.instance(initializeIsar)?.addPreviousPlaylistCurrentIndex(
+    IsarService.instance.addPreviousPlaylistCurrentIndex(
       PreviousPlaylistCurrentIndex(mediaId: id, currentIndex: newIndex),
     );
   }

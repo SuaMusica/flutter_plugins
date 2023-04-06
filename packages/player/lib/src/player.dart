@@ -128,7 +128,7 @@ class Player {
 
   Future<int> removeAll() async {
     _queue.removeAll();
-    await IsarService.instance(initializeIsar)?.removeAllMusics();
+    await IsarService.instance.removeAllMusics();
     return Ok;
   }
 
@@ -922,8 +922,7 @@ class Player {
         ),
       );
       unawaited(
-        IsarService.instance(player._queue.initializeIsar)
-            ?.addPreviousPlaylistPosition(
+        IsarService.instance.addPreviousPlaylistPosition(
           PreviousPlaylistPosition(
             mediaId: player._queue.current?.id ?? 0,
             position: newPosition.inMilliseconds.toDouble(),
