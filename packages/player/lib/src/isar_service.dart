@@ -18,7 +18,7 @@ class IsarService {
   set isarEnabled(bool isarEnabled) => _isIsarEnabled = isarEnabled;
   Isar? _isarStorage;
 
-  Future<void> initializeIfNeeded(String x) async {
+  Future<void> initializeIfNeeded() async {
     if (_isarStorage == null && _isIsarEnabled) {
       debugPrint('Initializing IsarStorage');
       if (Platform.isMacOS || Platform.isLinux) {
@@ -47,13 +47,14 @@ class IsarService {
   }
 
   void dispose() {
+    _isarStorage?.close();
     _isarStorage = null;
   }
 
   Future<void> addPreviousPlaylistMusics(
     PreviousPlaylistMusics previousPlaylistMusics,
   ) async {
-    await initializeIfNeeded('addPreviousPlaylistMusics');
+    await initializeIfNeeded();
     await _isarStorage?.writeTxn(
       () async {
         await _isarStorage?.previousPlaylistMusics.put(previousPlaylistMusics);
@@ -62,14 +63,14 @@ class IsarService {
   }
 
   Future<PreviousPlaylistMusics?> getPreviousPlaylistMusics() async {
-    await initializeIfNeeded('getPreviousPlaylistMusics');
+    await initializeIfNeeded();
     return _isarStorage?.previousPlaylistMusics.getSync(1);
   }
 
   Future<void> addPreviousPlaylistCurrentIndex(
     PreviousPlaylistCurrentIndex previousPlaylistCurrentIndex,
   ) async {
-    await initializeIfNeeded('addPreviousPlaylistCurrentIndex');
+    await initializeIfNeeded();
     await _isarStorage?.writeTxn(
       () async {
         await _isarStorage?.previousPlaylistCurrentIndexs
@@ -80,27 +81,24 @@ class IsarService {
 
   Future<PreviousPlaylistCurrentIndex?>
       getPreviousPlaylistCurrentIndex() async {
-    await initializeIfNeeded('getPreviousPlaylistCurrentIndex');
+    await initializeIfNeeded();
     return _isarStorage?.previousPlaylistCurrentIndexs.getSync(1);
   }
 
   Future<void> addPreviousPlaylistPosition(
     PreviousPlaylistPosition previousPlaylistPosition,
   ) async {
-    if (previousPlaylistPosition.position > 0 &&
-        (previousPlaylistPosition.position % 5) == 0) {
-      await initializeIfNeeded('addPreviousPlaylistPosition');
-      await _isarStorage?.writeTxn(
-        () async {
-          await _isarStorage?.previousPlaylistPositions
-              .put(previousPlaylistPosition);
-        },
-      );
-    }
+    await initializeIfNeeded();
+    await _isarStorage?.writeTxn(
+      () async {
+        await _isarStorage?.previousPlaylistPositions
+            .put(previousPlaylistPosition);
+      },
+    );
   }
 
   Future<PreviousPlaylistPosition?> getPreviousPlaylistPosition() async {
-    await initializeIfNeeded('getPreviousPlaylistPosition');
+    await initializeIfNeeded();
     return _isarStorage?.previousPlaylistPositions.getSync(1);
   }
 

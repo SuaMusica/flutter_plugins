@@ -230,13 +230,10 @@ class Player {
   }
 
   List<Media> get items => _queue.items;
-  Future<List<Media>> get previousItems async => await _queue.previousItems;
   int get queuePosition => _queue.index;
   int get previousPlaylistIndex => _queue.previousIndex;
-  PreviousPlaylistPosition? get previousPlaylistPosition {
-    unawaited(requestLastMusicPosition());
-    return _queue.previousPosition;
-  }
+  PreviousPlaylistPosition? get previousPlaylistPosition =>
+      _queue.previousPosition;
 
   int get size => _queue.size;
   Media? get top => _queue.top;
@@ -507,26 +504,6 @@ class Player {
       shallNotify: shallNotify,
       mediaUrl: mediaUrl,
     );
-  }
-
-  Future<void> requestLastMusicPosition() async {
-    final currentPositionFromStorage = _queue.previousPosition;
-    final i = previousPlaylistIndex;
-    if ((currentPositionFromStorage?.mediaId ?? 0) == items[i].id) {
-      _addUsingPlayer(
-        player,
-        PositionChangeEvent(
-          media: (await player.previousItems).first,
-          queuePosition: await player.previousPlaylistIndex,
-          position: Duration(
-            milliseconds: currentPositionFromStorage?.position.toInt() ?? 0,
-          ),
-          duration: Duration(
-            milliseconds: currentPositionFromStorage?.duration.toInt() ?? 0,
-          ),
-        ),
-      );
-    }
   }
 
   Future<int> pause() async {
@@ -911,25 +888,29 @@ class Player {
 
   static _notifyPositionChangeEvent(
       Player player, Duration newPosition, Duration newDuration) {
-    if (player._queue.current != null) {
+    final media = player.current;
+    if (media != null) {
+      final position = newPosition.inSeconds;
       _addUsingPlayer(
         player,
         PositionChangeEvent(
-          media: player._queue.current!,
-          queuePosition: player._queue.index,
+          media: media,
+          queuePosition: player.queuePosition,
           position: newPosition,
           duration: newDuration,
         ),
       );
-      unawaited(
-        IsarService.instance.addPreviousPlaylistPosition(
-          PreviousPlaylistPosition(
-            mediaId: player._queue.current?.id ?? 0,
-            position: newPosition.inMilliseconds.toDouble(),
-            duration: newDuration.inMilliseconds.toDouble(),
+      if (position > 0 && position % 5 == 0) {
+        unawaited(
+          IsarService.instance.addPreviousPlaylistPosition(
+            PreviousPlaylistPosition(
+              mediaId: media.id,
+              position: newPosition.inMilliseconds.toDouble(),
+              duration: newDuration.inMilliseconds.toDouble(),
+            ),
           ),
-        ),
-      );
+        );
+      }
     }
   }
 
