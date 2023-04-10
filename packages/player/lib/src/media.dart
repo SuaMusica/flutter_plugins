@@ -169,43 +169,29 @@ class Media {
 }
 
 extension ListMediaToListStringCompressed on List<Media> {
-  List<String> get toListStringCompressed {
-    return List.generate(
-      length,
-      (index) => this[index].toString(),
-    );
-  }
+  List<String> get toListStringCompressed => map((e) => e.toString()).toList();
 }
 
 extension ListStringToListPlayable on List<String> {
-  List<Media> get toListMedia {
-    {
-      return List.generate(
-        length,
-        (index) {
-          return Media.fromJson(
-            jsonDecode(
-              this[index],
-            ),
-          );
-        },
-      );
-    }
-  }
+  List<Media> get toListMedia => map(
+        (e) => Media.fromJson(
+          jsonDecode(
+            e,
+          ),
+        ),
+      ).toList();
 }
 
 extension CompressRestoreWithGzipB64 on String {
   String get compressWithGzipB64 {
     final enCodedJson = utf8.encode(this);
     final gZipJson = gzip.encode(enCodedJson);
-    final base64Json = base64.encode(gZipJson);
-    return base64Json;
+    return base64.encode(gZipJson);
   }
 
   String get restoreFromGzipB64 {
     final decodeBase64Json = base64.decode(this);
     final decodegZipJson = gzip.decode(decodeBase64Json);
-    final originalJson = utf8.decode(decodegZipJson);
-    return originalJson;
+    return utf8.decode(decodegZipJson);
   }
 }
