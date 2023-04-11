@@ -37,6 +37,7 @@ class _SMPlayerState extends State<SMPlayer> {
         cookieSigner: cookieSigner,
         autoPlay: false,
         localMediaValidator: (m) async => m.url,
+        initializeIsar: false,
       );
       player.onEvent.listen((Event event) async {
         // print(

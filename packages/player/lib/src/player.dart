@@ -6,9 +6,11 @@ import 'package:flutter/services.dart';
 import 'package:smplayer/src/before_play_event.dart';
 import 'package:smplayer/src/event.dart';
 import 'package:smplayer/src/event_type.dart';
+import 'package:smplayer/src/isar_service.dart';
 import 'package:smplayer/src/media.dart';
 import 'package:smplayer/src/duration_change_event.dart';
 import 'package:smplayer/src/position_change_event.dart';
+import 'package:smplayer/src/previous_playlist_model.dart';
 import 'package:smplayer/src/queue.dart';
 import 'package:smplayer/src/repeat_mode.dart';
 import 'package:mutex/mutex.dart';
@@ -16,6 +18,16 @@ import 'package:mutex/mutex.dart';
 import 'player_state.dart';
 
 class Player {
+  Player({
+    required this.playerId,
+    required this.cookieSigner,
+    required this.localMediaValidator,
+    this.initializeIsar = false,
+    this.autoPlay = false,
+  }) {
+    _queue = Queue(initializeIsar: this.initializeIsar);
+    player = this;
+  }
   static const Ok = 1;
   static const NotOk = -1;
   static const CHANNEL = 'suamusica.com.br/player';
@@ -26,10 +38,13 @@ class Player {
   static bool logEnabled = false;
 
   bool _shallSendEvents = true;
+  bool initializeIsar;
   bool externalPlayback = false;
+  bool get itemsReady => _queue.itemsReady;
+
   CookiesForCustomPolicy? _cookies;
   PlayerState state = PlayerState.IDLE;
-  Queue _queue = Queue();
+  late Queue _queue;
   RepeatMode repeatMode = RepeatMode.NONE;
   final mutex = Mutex();
 
@@ -59,15 +74,6 @@ class Player {
   Stream<Event> get onEvent {
     _stream ??= _eventStreamController.stream.asBroadcastStream();
     return _stream!;
-  }
-
-  Player({
-    required this.playerId,
-    required this.cookieSigner,
-    required this.localMediaValidator,
-    this.autoPlay = false,
-  }) {
-    player = this;
   }
 
   Future<int> _invokeMethod(
@@ -103,9 +109,15 @@ class Player {
   }
 
   Future<int> enqueueAll(
-    List<Media> items,
-  ) async {
-    _queue.addAll(items);
+    List<Media> items, {
+    bool shouldRemoveFirst = false,
+    bool saveOnTop = false,
+  }) async {
+    _queue.addAll(
+      items,
+      shouldRemoveFirst: shouldRemoveFirst,
+      saveOnTop: saveOnTop,
+    );
     return Ok;
   }
 
@@ -116,6 +128,7 @@ class Player {
 
   Future<int> removeAll() async {
     _queue.removeAll();
+    await IsarService.instance.removeAllMusics();
     return Ok;
   }
 
@@ -218,6 +231,10 @@ class Player {
 
   List<Media> get items => _queue.items;
   int get queuePosition => _queue.index;
+  int get previousPlaylistIndex => _queue.previousIndex;
+  PreviousPlaylistPosition? get previousPlaylistPosition =>
+      _queue.previousPosition;
+
   int get size => _queue.size;
   Media? get top => _queue.top;
 
@@ -528,7 +545,7 @@ class Player {
       state = PlayerState.STOPPED;
       _notifyPlayerStatusChangeEvent(EventType.RELEASED);
     }
-
+    _queue.dispose();
     return result;
   }
 
@@ -871,16 +888,29 @@ class Player {
 
   static _notifyPositionChangeEvent(
       Player player, Duration newPosition, Duration newDuration) {
-    if (player._queue.current != null) {
+    final media = player.current;
+    if (media != null) {
+      final position = newPosition.inSeconds;
       _addUsingPlayer(
         player,
         PositionChangeEvent(
-          media: player._queue.current!,
-          queuePosition: player._queue.index,
+          media: media,
+          queuePosition: player.queuePosition,
           position: newPosition,
           duration: newDuration,
         ),
       );
+      if (position > 0 && position % 5 == 0) {
+        unawaited(
+          IsarService.instance.addPreviousPlaylistPosition(
+            PreviousPlaylistPosition(
+              mediaId: media.id,
+              position: newPosition.inMilliseconds.toDouble(),
+              duration: newDuration.inMilliseconds.toDouble(),
+            ),
+          ),
+        );
+      }
     }
   }
 

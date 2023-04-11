@@ -1455,7 +1455,9 @@ isNotification: (bool) respectSilence
         AVPlayer *player = playerInfo[@"player"];
         [ player setVolume:volume ];
         [ player seekToTime:time ];
+        if(!loadOnly){
         [ player play];
+        }
     };
     
     NSLog(@"Player: Volume: %f", volume);
