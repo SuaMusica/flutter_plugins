@@ -68,7 +68,8 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin,ActivityAware {
 //        val isStopped = (binding.activity.applicationInfo.flags and ApplicationInfo.FLAG_STOPPED) == ApplicationInfo.FLAG_STOPPED
 //        if(!isStopped){
 //            alreadyAttachedToActivity = true
-//        }    }
+//        }
+    }
 
     override fun onDetachedFromActivityForConfigChanges() {
         Log.d(TAG, "onDetachedFromActivityForConfigChanges")
