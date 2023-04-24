@@ -95,6 +95,7 @@ class Queue {
       int pos = _nextPosition();
       storage.add(QueueItem(pos, pos, media));
     }
+    _save(medias: [media]);
     index = 0;
   }
 
