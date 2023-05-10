@@ -81,7 +81,7 @@ class CookieSigner {
     var signer = pointycastle.Signer("SHA-1/RSA");
     var privateKey = await privateKeyLoader.load();
     if (privateKey == null) {
-      throw NullThrownError();
+      throw Exception();
     }
     var privk = pointycastle.RSAPrivateKey(privateKey.modulus,
         privateKey.privateExponent, privateKey.prime1, privateKey.prime2);
