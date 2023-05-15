@@ -1,7 +1,6 @@
 package com.suamusica.mediascanner
 
 import android.annotation.SuppressLint
-import android.annotation.TargetApi
 import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.Context
@@ -220,7 +219,7 @@ class MediaScanner(
                                 cursor?.use { c ->
                                     if (c.moveToNext()) {
                                         val scannedMedia = extractMedia(c, null, null)
-                                        if (scannedMedia != null && scannedMedia?.path?.trim()?.isBlank() && scannedMedia?.title?.contains(".")) {
+                                        if (scannedMedia != null && scannedMedia?.path?.trim()?.isBlank() == true && scannedMedia?.title?.contains(".") == true) {
                                             val newPath = "${Environment.getExternalStorageDirectory()}/Download/${scannedMedia!!.title}"
                                             return readMediaFromMediaMetadataRetriever(newPath)
                                         }
