@@ -900,7 +900,7 @@ class Player {
           duration: newDuration,
         ),
       );
-      if (position > 0 && position % 5 == 0) {
+      if (position >= 0 && position % 5 == 0) {
         unawaited(
           IsarService.instance.addPreviousPlaylistPosition(
             PreviousPlaylistPosition(
