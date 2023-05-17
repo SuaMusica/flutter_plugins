@@ -16,10 +16,6 @@ import com.suamusica.smads.platformview.AdPlayerView
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
-import kotlinx.android.synthetic.main.layout_ad_player.view.companionAdSlot
-import kotlinx.android.synthetic.main.layout_ad_player.view.progressBar
-import kotlinx.android.synthetic.main.layout_ad_player.view.videoAdContainer
-import kotlinx.android.synthetic.main.layout_ad_player.view.view
 import timber.log.Timber
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.ceil
@@ -43,14 +39,14 @@ class AdPlayerViewController(
         Timber.d("load(input=%s)", input)
         dispose()
         this.adPlayerView = adPlayerView
-        this.view = adPlayerView.view
-        this.videoAdContainer = adPlayerView.videoAdContainer
-        this.companionAdSlot = adPlayerView.companionAdSlot
-        this.progressBar = adPlayerView.progressBar
+        this.view = adPlayerView.binding.view
+        this.videoAdContainer = adPlayerView.binding.videoAdContainer
+        this.companionAdSlot = adPlayerView.binding.companionAdSlot
+        this.progressBar = adPlayerView.binding.progressBar
         ignorePausedEvent.set(true)
         adPlayerManager = AdPlayerManager(context, input)
         configureAdPlayerEventObservers()
-        adPlayerManager?.load(adPlayerView.videoAdContainer, adPlayerView.companionAdSlot)
+        adPlayerManager?.load(adPlayerView.binding.videoAdContainer, adPlayerView.binding.companionAdSlot)
     }
 
     fun play() {

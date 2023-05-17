@@ -27,7 +27,7 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
     private lateinit var callback: SmadsCallback
     private lateinit var controller: AdPlayerViewController
 
-    override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+    override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         Initializer.run()
         Timber.d("onAttachedToEngine")
         this.channel = MethodChannel(flutterPluginBinding.binaryMessenger, CHANNEL_NAME)
@@ -40,13 +40,13 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
                 .registerViewFactory(AdPlayer.VIEW_TYPE_ID, AdPlayerFactory(controller))
     }
 
-    override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
+    override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         Timber.d("onDetachedFromEngine")
         channel?.setMethodCallHandler(null)
         channel = null
     }
 
-    override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
+    override fun onMethodCall(call: MethodCall, result: Result) {
         Timber.d("onMethodCall")
         Timber.d("call.method: %s", call.method)
         when (call.method) {

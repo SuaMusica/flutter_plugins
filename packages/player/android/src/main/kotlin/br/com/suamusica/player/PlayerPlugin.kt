@@ -47,7 +47,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin,ActivityAware {
         private var alreadyAttachedToActivity: Boolean = false
     }
 
-    override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+    override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         Log.d(TAG, "onAttachedToEngine $alreadyAttachedToActivity")
         if (alreadyAttachedToActivity)
             return
@@ -57,7 +57,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin,ActivityAware {
         PlayerSingleton.setChannel(channel, context)
     }
 
-    override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
+    override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         Log.d(TAG, "onDetachedFromEngine")
         PlayerSingleton.channel?.setMethodCallHandler(null)
         PlayerSingleton.channel = null
