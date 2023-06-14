@@ -5,7 +5,7 @@ import android.content.Intent
 import android.media.audiofx.AudioEffect
 
 class AudioEffectUtil(private val context: Context) {
-
+    /// TODO: is here
     fun deviceHasEqualizer(sessionId: Int): Boolean {
         val intent = Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL)
         intent.putExtra(AudioEffect.EXTRA_PACKAGE_NAME, context.packageName)

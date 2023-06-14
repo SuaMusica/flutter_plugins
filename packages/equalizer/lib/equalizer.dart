@@ -4,8 +4,6 @@ import 'dart:io';
 import 'package:equalizer/equalizer_controller.dart';
 import 'package:flutter/services.dart';
 
-import 'equalizer_controller.dart';
-
 enum CONTENT_TYPE { MUSIC, MOVIE, GAME, VOICE }
 
 class Equalizer {

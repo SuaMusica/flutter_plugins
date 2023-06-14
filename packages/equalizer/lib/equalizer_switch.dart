@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:equalizer/equalizer.dart';
 import 'package:equalizer/equalizer_controller.dart';
 import 'package:flutter/material.dart';
@@ -44,7 +46,9 @@ class _EqualizerSwitchState extends State<EqualizerSwitch> {
         widget.onSwitch?.call(value);
         if (value) {
           widget.onSelectType?.call(
-              style[widget.controller.currentPresetPositionNotifier.value]);
+            style[
+                max(0, widget.controller.currentPresetPositionNotifier.value)],
+          );
         }
         widget.controller.setEnabled(value);
         setState(() {
