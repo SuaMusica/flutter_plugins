@@ -2,4 +2,16 @@
   package="com.suamusica.equalizer">
 
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
+    <!-- <queries> creeate to check if xiaomi device has permission to use equalizer -->
+    <!-- <receiver android:name=".receivers.AudioSessionReceiver">
+        <intent-filter>
+            <action android:name="android.media.action.OPEN_AUDIO_EFFECT_CONTROL_SESSION"/>
+        </intent-filter>
+    </receiver> -->
+
+    <!-- <queries>
+        <package android:name="com.miui.equalizer" />
+    </queries> -->
 </manifest>
