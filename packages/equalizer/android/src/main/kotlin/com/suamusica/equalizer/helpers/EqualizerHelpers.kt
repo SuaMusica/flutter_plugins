@@ -2,6 +2,11 @@ import android.os.Build
 import java.lang.reflect.Method
 
 class EqualizerHelpers {
+
+    fun isSpecialDevice(): Boolean {
+        return isTecnoCamonDevice() || isMiuiVersionEqualsOrGreatherThan11()
+    }
+
     fun isMiuiVersionEqualsOrGreatherThan11(): Boolean {
         try {
             val propertyClass =
