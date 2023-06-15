@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:equalizer/equalizer_controller.dart';
 import 'package:flutter/services.dart';
 
-enum CONTENT_TYPE { MUSIC, MOVIE, GAME, VOICE }
+enum ContentType { MUSIC, MOVIE, GAME, VOICE }
 
 class Equalizer {
   static const MethodChannel _channel = const MethodChannel('equalizer');
@@ -22,7 +22,7 @@ class Equalizer {
   /// [android]:
   /// https://developer.android.com/reference/android/media/MediaPlayer#getAudioSessionId()
   static Future open(int audioSessionId,
-      [CONTENT_TYPE contentType = CONTENT_TYPE.MUSIC]) async {
+      [ContentType contentType = ContentType.MUSIC]) async {
     return await _channel.invokeMethod(
       appendMethodPrefix('open'),
       {'audioSessionId': audioSessionId, 'contentType': contentType.index},
