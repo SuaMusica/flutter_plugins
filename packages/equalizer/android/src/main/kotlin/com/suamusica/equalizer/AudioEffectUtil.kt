@@ -1,5 +1,6 @@
 package com.suamusica.equalizer
 
+import EqualizerHelpers
 import android.content.Context
 import android.content.Intent
 import android.media.audiofx.AudioEffect
@@ -17,6 +18,14 @@ class AudioEffectUtil(private val context: Context) {
         val intent = Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL)
         intent.putExtra(AudioEffect.EXTRA_PACKAGE_NAME, context.packageName)
         intent.putExtra(AudioEffect.EXTRA_AUDIO_SESSION, sessionId)
+        /// for xiaomi devices
+        intent.putExtra("android.media.extra.CONTENT_TYPE", 0)
+        intent.putExtra("android.media.extra.AUDIO_SESSION", sessionId)
+        intent.putExtra(AudioEffect.EXTRA_CONTENT_TYPE, 0)
+//        intent.putExtra(AudioEffect.EFFECT_TYPE_EQUALIZER, sessionId)
+        intent.putExtra(AudioEffect.EXTRA_AUDIO_SESSION, sessionId)
+//        EFFECT_TYPE_EQUALIZER
+        println("XIAOMI INTENT: $intent")
         println("XIAOMI isMiUi: ${isMiUi()}")
         println("XIAOMI Build.MANUFACTURER: ${Build.MANUFACTURER}")
         println("XIAOMI Build.MODEL: ${Build.MODEL}")
@@ -25,7 +34,9 @@ class AudioEffectUtil(private val context: Context) {
         println("XIAOMI readMIVersion: ${readMIVersion()}")
         println("XIAOMI isMiuiVersionNameEqualsOrGreatherThan11: ${isMiuiVersionNameEqualsOrGreatherThan11()}")
 //        println("XIAOMI hasMiuiEqualizer: ${hasMiuiEqualizer(context)}")
-        return isMiUi() || context.packageManager?.let { intent.resolveActivity(it) != null }
+        return EqualizerHelpers().isMiuiVersionEqualsOrGreatherThan11() || context.packageManager?.let { intent.resolveActivity(it) != null }
+                ?: false
+        return context.packageManager?.let { intent.resolveActivity(it) != null }
                 ?: false
     }
 
@@ -74,6 +85,8 @@ class AudioEffectUtil(private val context: Context) {
             val propertyClass =
                 Class.forName("android.os.SystemProperties")
             val method: Method = propertyClass.getMethod("get", String::class.java)
+            val miuiVersion = method.invoke(propertyClass, "ro.miui.ui.version.name") as String
+            println("xiaomi Version Name: $miuiVersion")
             val versionCode = method.invoke(propertyClass, "ro.miui.ui.version.code") as String
             println("xiaomi Version Code: $versionCode")
             val versionName = method.invoke(propertyClass, "ro.miui.ui.version.name") as String
@@ -95,9 +108,11 @@ class AudioEffectUtil(private val context: Context) {
                 Class.forName("android.os.SystemProperties")
             val method: Method = propertyClass.getMethod("get", String::class.java)
             val versionName = method.invoke(propertyClass, "ro.miui.ui.version.name") as String
-            val versionNameWithoutV = versionName.substring(1)
-            val versionNameWithoutVInt = versionNameWithoutV.toInt()
-            return versionNameWithoutVInt >= 11
+            if (versionName.isEmpty()) return false
+            if (!versionName.startsWith("V")) {
+                return versionName.toInt() >= 11
+            }
+            return versionName.substring(1).toInt() >= 11
         } catch (e: ClassNotFoundException) {
             e.printStackTrace()
         } catch (e: NoSuchMethodException) {
