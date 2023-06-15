@@ -23,6 +23,7 @@ class AudioEffectUtil(private val context: Context) {
         println("XIAOMI Build.VERSION_CODES: ${Build.VERSION_CODES.M}")
 //        println("XIAOMI isXiaomiWithVersionGreaterThan11: ${isXiaomiWithVersionGreaterThan11(context)}")
         println("XIAOMI readMIVersion: ${readMIVersion()}")
+        println("XIAOMI isMiuiVersionNameEqualsOrGreatherThan11: ${isMiuiVersionNameEqualsOrGreatherThan11()}")
 //        println("XIAOMI hasMiuiEqualizer: ${hasMiuiEqualizer(context)}")
         return isMiUi() || context.packageManager?.let { intent.resolveActivity(it) != null }
                 ?: false
@@ -43,7 +44,7 @@ class AudioEffectUtil(private val context: Context) {
     }
 
     private fun isMiUi(): Boolean {
-        return !TextUtils.isEmpty(getSystemProperty("ro.miui.ui.version.name"));
+        return !TextUtils.isEmpty(getSystemProperty("ro.miui.ui.version.name"))
     }
 
     private fun getSystemProperty(propName: String): String? {
@@ -73,6 +74,8 @@ class AudioEffectUtil(private val context: Context) {
             val propertyClass =
                 Class.forName("android.os.SystemProperties")
             val method: Method = propertyClass.getMethod("get", String::class.java)
+            val versionCode = method.invoke(propertyClass, "ro.miui.ui.version.code") as String
+            println("xiaomi Version Code: $versionCode")
             val versionName = method.invoke(propertyClass, "ro.miui.ui.version.name") as String
             val versionNameWithoutV = versionName.substring(1)
             println("xiaomi Version Name: $versionName")
@@ -84,6 +87,25 @@ class AudioEffectUtil(private val context: Context) {
         } catch (e: IllegalAccessException) {
             e.printStackTrace()
         }
+    }
+
+    private fun isMiuiVersionNameEqualsOrGreatherThan11(): Boolean {
+        try {
+            val propertyClass =
+                Class.forName("android.os.SystemProperties")
+            val method: Method = propertyClass.getMethod("get", String::class.java)
+            val versionName = method.invoke(propertyClass, "ro.miui.ui.version.name") as String
+            val versionNameWithoutV = versionName.substring(1)
+            val versionNameWithoutVInt = versionNameWithoutV.toInt()
+            return versionNameWithoutVInt >= 11
+        } catch (e: ClassNotFoundException) {
+            e.printStackTrace()
+        } catch (e: NoSuchMethodException) {
+            e.printStackTrace()
+        } catch (e: IllegalAccessException) {
+            e.printStackTrace()
+        }
+        return false
     }
 
 //    private fun isXiaomiWithVersionGreaterThan11(context: Context): Boolean {
