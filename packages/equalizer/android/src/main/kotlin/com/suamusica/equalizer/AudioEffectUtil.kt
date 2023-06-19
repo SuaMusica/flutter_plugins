@@ -1,16 +1,16 @@
 package com.suamusica.equalizer
 
+import EqualizerHelpers
 import android.content.Context
 import android.content.Intent
 import android.media.audiofx.AudioEffect
 
 class AudioEffectUtil(private val context: Context) {
-
     fun deviceHasEqualizer(sessionId: Int): Boolean {
         val intent = Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL)
         intent.putExtra(AudioEffect.EXTRA_PACKAGE_NAME, context.packageName)
         intent.putExtra(AudioEffect.EXTRA_AUDIO_SESSION, sessionId)
-        return context.packageManager?.let { intent.resolveActivity(it) != null }
+        return EqualizerHelpers().isSpecialDevice() || context.packageManager?.let { intent.resolveActivity(it) != null }
                 ?: false
     }
 

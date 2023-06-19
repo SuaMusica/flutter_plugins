@@ -6,7 +6,7 @@ void main() => runApp(MyApp());
 
 class MyApp extends StatefulWidget {
   @override
-  _MyAppState createState() => _MyAppState();
+  State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
@@ -23,20 +23,73 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Equalizer example'),
+          title: const Text('Equalizer Example App'),
+          centerTitle: true,
         ),
-        body: EqualizerWidget(
-          equalizerController,
-          titleEnabled: Text("Habilitado"),
-          titleDisabled: Text("Desabilitado"),
-          onSwitch: (value) {
-            debugPrint("Test trackSwitch $value");
-          },
-          onSelectType: (value) {
-            debugPrint("Test trackSelectType $value");
-          },
+        body: ListView(
+          children: [
+            Equalizer(
+              equalizerController: equalizerController,
+            ),
+            Divider(),
+            EqualizerWidget(
+              equalizerController,
+              titleEnabled: Text('Habilitado'),
+              titleDisabled: Text('Desabilitado'),
+              onSwitch: (value) => debugPrint('Test trackSwitch $value'),
+              onSelectType: (value) =>
+                  debugPrint('Test trackSelectType $value'),
+            ),
+          ],
         ),
       ),
+    );
+  }
+}
+
+class Equalizer extends StatefulWidget {
+  const Equalizer({
+    super.key,
+    required this.equalizerController,
+  });
+
+  final EqualizerController equalizerController;
+
+  @override
+  State<Equalizer> createState() => _EqualizerState();
+}
+
+class _EqualizerState extends State<Equalizer> {
+  Future<bool?> hasEqualizer = Future.value(false);
+
+  @override
+  void initState() {
+    super.initState();
+    hasEqualizer = widget.equalizerController.deviceHasEqualizer();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: hasEqualizer,
+      builder: (context, AsyncSnapshot snapshot) {
+        if (!snapshot.hasData || snapshot.data == null) {
+          return Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+        return Padding(
+          padding: EdgeInsets.all(16),
+          child: Text(
+            'This device ${snapshot.data ? 'has' : 'does not have'} equalizer',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        );
+      },
     );
   }
 }
