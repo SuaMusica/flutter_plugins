@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ffi';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
@@ -63,7 +64,7 @@ class IsarService {
           await _isarStorage?.previousPlaylistMusics
               .put(previousPlaylistMusics);
         },
-        silent: true,
+        silent: !kDebugMode,
       );
     } catch (_) {}
   }
@@ -83,7 +84,7 @@ class IsarService {
           await _isarStorage?.previousPlaylistCurrentIndexs
               .put(previousPlaylistCurrentIndex);
         },
-        silent: true,
+        silent: !kDebugMode,
       );
     } catch (_) {}
   }
@@ -104,7 +105,7 @@ class IsarService {
           await _isarStorage?.previousPlaylistPositions
               .put(previousPlaylistPosition);
         },
-        silent: true,
+        silent: !kDebugMode,
       );
     } catch (_) {}
   }
@@ -118,6 +119,6 @@ class IsarService {
         () async {
           await _isarStorage?.clear();
         },
-        silent: true,
+        silent: !kDebugMode,
       );
 }
