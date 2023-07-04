@@ -19,31 +19,33 @@ class IsarService {
   Isar? _isarStorage;
 
   Future<void> initializeIfNeeded() async {
-    if (_isarStorage == null && _isIsarEnabled) {
-      debugPrint('Initializing IsarStorage');
-      if (Platform.isMacOS || Platform.isLinux) {
-        Isar.initializeIsarCore(libraries: {
-          Abi.macosArm64: 'libisar_macos.dylib',
-          Abi.macosX64: 'libisar_macos.dylib',
-          Abi.linuxX64: 'libisar_linux_x64.so',
-        });
-      }
+    try {
+      if (_isarStorage == null && _isIsarEnabled) {
+        debugPrint('Initializing IsarStorage');
+        if (Platform.isMacOS || Platform.isLinux) {
+          Isar.initializeIsarCore(libraries: {
+            Abi.macosArm64: 'libisar_macos.dylib',
+            Abi.macosX64: 'libisar_macos.dylib',
+            Abi.linuxX64: 'libisar_linux_x64.so',
+          });
+        }
 
-      if (!(_isarStorage?.isOpen ?? false)) {
-        final directory = await getApplicationDocumentsDirectory();
-        debugPrint('Initializing IsarStorage isOpen');
-        _isarStorage = await Isar.open(
-          [
-            PreviousPlaylistMusicsSchema,
-            PreviousPlaylistPositionSchema,
-            PreviousPlaylistCurrentIndexSchema,
-          ],
-          maxSizeMiB: 16,
-          name: 'keepListening',
-          directory: directory.path,
-        );
+        if (!(_isarStorage?.isOpen ?? false)) {
+          final directory = await getApplicationDocumentsDirectory();
+          debugPrint('Initializing IsarStorage isOpen');
+          _isarStorage = await Isar.open(
+            [
+              PreviousPlaylistMusicsSchema,
+              PreviousPlaylistPositionSchema,
+              PreviousPlaylistCurrentIndexSchema,
+            ],
+            maxSizeMiB: 16,
+            name: 'keepListening',
+            directory: directory.path,
+          );
+        }
       }
-    }
+    } catch (_) {}
   }
 
   void dispose() {
@@ -55,11 +57,15 @@ class IsarService {
     PreviousPlaylistMusics previousPlaylistMusics,
   ) async {
     await initializeIfNeeded();
-    await _isarStorage?.writeTxn(
-      () async {
-        await _isarStorage?.previousPlaylistMusics.put(previousPlaylistMusics);
-      },
-    );
+    try {
+      await _isarStorage?.writeTxn(
+        () async {
+          await _isarStorage?.previousPlaylistMusics
+              .put(previousPlaylistMusics);
+        },
+        silent: true,
+      );
+    } catch (_) {}
   }
 
   Future<PreviousPlaylistMusics?> getPreviousPlaylistMusics() async {
@@ -71,12 +77,15 @@ class IsarService {
     PreviousPlaylistCurrentIndex previousPlaylistCurrentIndex,
   ) async {
     await initializeIfNeeded();
-    await _isarStorage?.writeTxn(
-      () async {
-        await _isarStorage?.previousPlaylistCurrentIndexs
-            .put(previousPlaylistCurrentIndex);
-      },
-    );
+    try {
+      await _isarStorage?.writeTxn(
+        () async {
+          await _isarStorage?.previousPlaylistCurrentIndexs
+              .put(previousPlaylistCurrentIndex);
+        },
+        silent: true,
+      );
+    } catch (_) {}
   }
 
   Future<PreviousPlaylistCurrentIndex?>
@@ -89,12 +98,15 @@ class IsarService {
     PreviousPlaylistPosition previousPlaylistPosition,
   ) async {
     await initializeIfNeeded();
-    await _isarStorage?.writeTxn(
-      () async {
-        await _isarStorage?.previousPlaylistPositions
-            .put(previousPlaylistPosition);
-      },
-    );
+    try {
+      await _isarStorage?.writeTxn(
+        () async {
+          await _isarStorage?.previousPlaylistPositions
+              .put(previousPlaylistPosition);
+        },
+        silent: true,
+      );
+    } catch (_) {}
   }
 
   Future<PreviousPlaylistPosition?> getPreviousPlaylistPosition() async {
@@ -102,8 +114,10 @@ class IsarService {
     return _isarStorage?.previousPlaylistPositions.getSync(1);
   }
 
-  Future<void> removeAllMusics() async =>
-      await _isarStorage?.writeTxn(() async {
-        await _isarStorage?.clear();
-      });
+  Future<void> removeAllMusics() async => await _isarStorage?.writeTxn(
+        () async {
+          await _isarStorage?.clear();
+        },
+        silent: true,
+      );
 }
