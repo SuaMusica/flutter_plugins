@@ -745,7 +745,8 @@ PlaylistItem *currentItem = nil;
                     if ([category isEqualToString:AVAudioSessionCategoryPlayback]) {
                         NSLog(@"Category: %@ RESUME %@", category, playerInfo[@"pausedByVoiceSearch"]);
                         int pausedByVoice = [playerInfo[@"pausedByVoiceSearch"] intValue];
-                        if (pausedByVoice == 1) {
+                        int isPlaying = [playerInfo[@"isPlaying"] intValue];
+                        if (pausedByVoice == 1 && isPlaying == 1) {
                             [playerInfo setValue:@(false) forKey:@"pausedByVoiceSearch"];
                             [self resume:_playerId];
                         } else {
