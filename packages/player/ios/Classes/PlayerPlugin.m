@@ -112,6 +112,7 @@ CMTime lastTime;
 BOOL lastRespectSilence;
 
 BOOL shallSendEvents = true;
+int wasPlayingBeforeVoiceSearch = -1;
 
 PlaylistItem *currentItem = nil;
 
@@ -736,22 +737,24 @@ PlaylistItem *currentItem = nil;
                 case AVAudioSessionRouteChangeReasonCategoryChange:
                 {
                     NSString *category = [[AVAudioSession sharedInstance] category];
-                    
                     if ([category isEqualToString:AVAudioSessionCategoryPlayAndRecord]) {
-                        NSLog(@"Category: %@ PAUSE", category);
+                        if(wasPlayingBeforeVoiceSearch == -1){
+                            wasPlayingBeforeVoiceSearch = [playerInfo[@"isPlaying"] intValue];
+                        }
+                        NSLog(@"Category: %@, wasPlaying: %i PAUSE", category, [playerInfo[@"isPlaying"] intValue]);
                         [playerInfo setValue:@(true) forKey:@"pausedByVoiceSearch"];
                         [self pause:_playerId];
                     }
                     if ([category isEqualToString:AVAudioSessionCategoryPlayback]) {
                         NSLog(@"Category: %@ RESUME %@", category, playerInfo[@"pausedByVoiceSearch"]);
                         int pausedByVoice = [playerInfo[@"pausedByVoiceSearch"] intValue];
-                        int isPlaying = [playerInfo[@"isPlaying"] intValue];
-                        if (pausedByVoice == 1 && isPlaying == 1) {
+                        if (pausedByVoice == 1 && wasPlayingBeforeVoiceSearch == 1) {
                             [playerInfo setValue:@(false) forKey:@"pausedByVoiceSearch"];
                             [self resume:_playerId];
                         } else {
                             NSLog(@"No operation required!");
                         }
+                            wasPlayingBeforeVoiceSearch = -1;
                     }
                 }
                 break;
@@ -787,7 +790,7 @@ PlaylistItem *currentItem = nil;
                                                                                        queue: NSOperationQueue.mainQueue
                                                                                   usingBlock:^(NSNotification* notification){
             NSDictionary *dict = notification.userInfo;
-            NSLog(@"Player: AVAudioSessionInterruptionNotification received. UserInfo: %@", dict);
+            NSLog(@"Player: AVAudioSessionInterruptionNotification received. UserInfo: %@ | ====> %@", dict, interruptionObserver);
             NSNumber *interruptionType = [[notification userInfo] objectForKey:AVAudioSessionInterruptionTypeKey];
             NSNumber *interruptionOption = [[notification userInfo] objectForKey:AVAudioSessionInterruptionOptionKey];
                         
