@@ -741,7 +741,7 @@ PlaylistItem *currentItem = nil;
                         if(wasPlayingBeforeVoiceSearch == -1){
                             wasPlayingBeforeVoiceSearch = [playerInfo[@"isPlaying"] intValue];
                         }
-                        NSLog(@"Category: %@, wasPlaying: %i PAUSE", category, [playerInfo[@"isPlaying"] intValue]);
+                        NSLog(@"Category: %@, wasPlaying: %i PAUSE", category, wasPlayingBeforeVoiceSearch);
                         [playerInfo setValue:@(true) forKey:@"pausedByVoiceSearch"];
                         [self pause:_playerId];
                     }
@@ -790,7 +790,7 @@ PlaylistItem *currentItem = nil;
                                                                                        queue: NSOperationQueue.mainQueue
                                                                                   usingBlock:^(NSNotification* notification){
             NSDictionary *dict = notification.userInfo;
-            NSLog(@"Player: AVAudioSessionInterruptionNotification received. UserInfo: %@ | ====> %@", dict, interruptionObserver);
+            NSLog(@"Player: AVAudioSessionInterruptionNotification received. UserInfo: %@", dict);
             NSNumber *interruptionType = [[notification userInfo] objectForKey:AVAudioSessionInterruptionTypeKey];
             NSNumber *interruptionOption = [[notification userInfo] objectForKey:AVAudioSessionInterruptionOptionKey];
                         
