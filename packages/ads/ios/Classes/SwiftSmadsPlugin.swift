@@ -1,5 +1,6 @@
 import Flutter
 import UIKit
+import GoogleInteractiveMediaAds
 
 public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
     static var channel: FlutterMethodChannel?
@@ -8,7 +9,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
     static let ScreenIsLocked = -2;
     static let UnlockedScreen = 1;
     static let LockedScreen = 0;
-
+    var iMASettings : IMASettings = IMASettings();
     fileprivate static func verifyNetworkAccess() {
         do {
             try Network.reachability = Reachability(hostname: "www.google.com")
@@ -64,6 +65,10 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                         let args = call.arguments as! [String: Any]
                         let adUrl = args["__URL__"] as! String
                         let contentUrl = args["__CONTENT__"] as! String
+                        let ppID = args["ppid"] as? String;
+                        if(ppID != nil){
+                            self.iMASettings.ppid = ppID
+                        }
 
                         if !Network.reachability.isReachable {
                             // if for any reason we are not reachable
@@ -72,7 +77,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                         }
                         
                         if (self.screen.status == .unlocked) {
-                            if (Network.reachability.isReachable) {                                
+                            if (Network.reachability.isReachable) {
                                 let adsViewController:AdsViewController = AdsViewController.instantiateFromNib()
                                 adsViewController.setup(
                                     channel: SwiftSmadsPlugin.channel,
@@ -80,6 +85,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                                     contentUrl: contentUrl,
                                     screen: self.screen,
                                     args: args)
+                                adsViewController.iMASettings = self.iMASettings
                                 adsViewController.modalPresentationStyle = .fullScreen
                                 let rootViewController = UIApplication.shared.keyWindow?.rootViewController
                                 rootViewController?.present(adsViewController, animated: false, completion: nil)

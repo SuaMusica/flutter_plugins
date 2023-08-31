@@ -6,6 +6,7 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import com.google.ads.interactivemedia.v3.api.AdErrorEvent
 import com.google.ads.interactivemedia.v3.api.AdEvent
+import com.google.ads.interactivemedia.v3.api.ImaSdkSettings
 import com.google.android.exoplayer2.ui.StyledPlayerView
 import com.suamusica.smads.extensions.gone
 import com.suamusica.smads.extensions.hide
@@ -34,8 +35,7 @@ class AdPlayerViewController(
     private var companionAdSlot: LinearLayout? = null
     private var progressBar: ProgressBar? = null
     private val ignorePausedEvent = AtomicBoolean(true)
-
-    fun load(input: LoadMethodInput, adPlayerView: AdPlayerView) {
+    fun load(input: LoadMethodInput, adPlayerView: AdPlayerView, imaSdkSettings: ImaSdkSettings?) {
         Timber.d("load(input=%s)", input)
         dispose()
         this.adPlayerView = adPlayerView
@@ -44,7 +44,7 @@ class AdPlayerViewController(
         this.companionAdSlot = adPlayerView.binding.companionAdSlot
         this.progressBar = adPlayerView.binding.progressBar
         ignorePausedEvent.set(true)
-        adPlayerManager = AdPlayerManager(context, input)
+        adPlayerManager = AdPlayerManager(context, input, imaSdkSettings )
         configureAdPlayerEventObservers()
         adPlayerManager?.load(adPlayerView.binding.videoAdContainer, adPlayerView.binding.companionAdSlot)
     }

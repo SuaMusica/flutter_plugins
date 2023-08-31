@@ -24,7 +24,8 @@ import timber.log.Timber
 
 class AdPlayerManager(
     private var context: Context,
-    input: LoadMethodInput
+    input: LoadMethodInput,
+    private var imaSdkSettings: ImaSdkSettings?,
 ) {
     private var adsLoader: ImaAdsLoader? = null
     private val adTagUrl = Uri.parse(input.adTagUrl)
@@ -76,7 +77,8 @@ class AdPlayerManager(
     }
 
     private fun getAdsRenderingSettings(): AdsRenderingSettings {
-        val adsRenderingSettings: AdsRenderingSettings = ImaSdkFactory.getInstance().createAdsRenderingSettings()
+        val adsRenderingSettings: AdsRenderingSettings =
+            ImaSdkFactory.getInstance().createAdsRenderingSettings()
         if (supportedMimeTypes != null && supportedMimeTypes!!.isNotEmpty()) {
             adsRenderingSettings.mimeTypes = supportedMimeTypes
         }
@@ -96,7 +98,7 @@ class AdPlayerManager(
     }
 
     fun load(playerView: StyledPlayerView, companionAdSlotView: ViewGroup) {
-        Timber.d("load")
+        Timber.d("load %s", imaSdkSettings?.ppid)
         val companionAdSlot = ImaSdkFactory.getInstance().createCompanionAdSlot()
         companionAdSlot.container = companionAdSlotView
         companionAdSlot.setSize(300, 250)
@@ -111,6 +113,9 @@ class AdPlayerManager(
                 errorEventDispatcher.onNext(it)
             }
             setCompanionAdSlots(companionAdSlots)
+            imaSdkSettings?.let {
+                setImaSdkSettings(it)
+            }
         }.build()
         val dataSpec = DataSpec(adTagUrl)
         adsLoader?.requestAds(dataSpec, ++_adsID, playerView)
@@ -124,14 +129,15 @@ class AdPlayerManager(
 
         player?.setMediaSource(
 
-                AdsMediaSource(
-                        SilenceMediaSource(100),
-                        dataSpec,
-                        _adsID,
-                        ProgressiveMediaSource.Factory(dataSourceFactory),
-                        adsLoader!!,
-                        playerView
-                ))
+            AdsMediaSource(
+                SilenceMediaSource(100),
+                dataSpec,
+                _adsID,
+                ProgressiveMediaSource.Factory(dataSourceFactory),
+                adsLoader!!,
+                playerView
+            )
+        )
         player?.prepare()
     }
 

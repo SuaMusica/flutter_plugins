@@ -4,6 +4,8 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import androidx.annotation.NonNull
+import com.google.ads.interactivemedia.v3.api.ImaSdkFactory
+import com.google.ads.interactivemedia.v3.api.ImaSdkSettings
 import com.suamusica.smads.helpers.ScreenHelper
 import com.suamusica.smads.input.LoadMethodInput
 import com.suamusica.smads.platformview.AdPlayer
@@ -22,6 +24,7 @@ import timber.log.Timber
 class SmadsPlugin : FlutterPlugin, MethodCallHandler {
 
     private val TAG = "SmadsPlugin"
+    private var imaSdkSettings: ImaSdkSettings? = null
     private var channel: MethodChannel? = null
     private lateinit var context: Context
     private lateinit var callback: SmadsCallback
@@ -61,10 +64,19 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     private fun load(input: Any, result: Result) {
-        Timber.d("load()")
+        Timber.d("load() input: %s", input)
         try {
+            val args = input as Map<String, Any?>
+            val ppID = args["ppid"] as? String
+            if (ppID != null) {
+                imaSdkSettings = ImaSdkFactory.getInstance().createImaSdkSettings()
+                imaSdkSettings?.let {
+                    Timber.d("PPID %s", ppID)
+                    it.ppid  = ppID
+                }
+            }
             Handler(Looper.getMainLooper()).post {
-                controller.load(LoadMethodInput(input), AdPlayerView(context))
+                controller.load(LoadMethodInput(input), AdPlayerView(context), imaSdkSettings)
                 result.success(LoadResult.SUCCESS)
             }
         } catch (t: Throwable) {
