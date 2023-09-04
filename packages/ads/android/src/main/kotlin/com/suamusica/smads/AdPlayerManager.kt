@@ -25,7 +25,6 @@ import timber.log.Timber
 class AdPlayerManager(
     private var context: Context,
     input: LoadMethodInput,
-    private var imaSdkSettings: ImaSdkSettings?,
 ) {
     private var adsLoader: ImaAdsLoader? = null
     private val adTagUrl = Uri.parse(input.adTagUrl)
@@ -97,8 +96,8 @@ class AdPlayerManager(
         }
     }
 
-    fun load(playerView: StyledPlayerView, companionAdSlotView: ViewGroup) {
-        Timber.d("load %s", imaSdkSettings?.ppid)
+    fun load(playerView: StyledPlayerView, companionAdSlotView: ViewGroup, ppID: String? = null) {
+        Timber.d("====> load %s",ppID)
         val companionAdSlot = ImaSdkFactory.getInstance().createCompanionAdSlot()
         companionAdSlot.container = companionAdSlotView
         companionAdSlot.setSize(300, 250)
@@ -113,8 +112,10 @@ class AdPlayerManager(
                 errorEventDispatcher.onNext(it)
             }
             setCompanionAdSlots(companionAdSlots)
-            imaSdkSettings?.let {
-                setImaSdkSettings(it)
+            if(ppID != null){
+                setImaSdkSettings(ImaSdkFactory.getInstance().createImaSdkSettings().apply {
+                    this.ppid = ppid
+                })
             }
         }.build()
         val dataSpec = DataSpec(adTagUrl)

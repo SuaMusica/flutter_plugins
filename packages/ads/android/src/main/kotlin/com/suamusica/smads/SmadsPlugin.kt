@@ -3,8 +3,6 @@ package com.suamusica.smads
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
-import androidx.annotation.NonNull
-import com.google.ads.interactivemedia.v3.api.ImaSdkFactory
 import com.google.ads.interactivemedia.v3.api.ImaSdkSettings
 import com.suamusica.smads.helpers.ScreenHelper
 import com.suamusica.smads.input.LoadMethodInput
@@ -66,17 +64,8 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
     private fun load(input: Any, result: Result) {
         Timber.d("load() input: %s", input)
         try {
-            val args = input as Map<String, Any?>
-            val ppID = args["ppid"] as? String
-            if (ppID != null) {
-                imaSdkSettings = ImaSdkFactory.getInstance().createImaSdkSettings()
-                imaSdkSettings?.let {
-                    Timber.d("PPID %s", ppID)
-                    it.ppid  = ppID
-                }
-            }
             Handler(Looper.getMainLooper()).post {
-                controller.load(LoadMethodInput(input), AdPlayerView(context), imaSdkSettings)
+                controller.load(LoadMethodInput(input), AdPlayerView(context))
                 result.success(LoadResult.SUCCESS)
             }
         } catch (t: Throwable) {

@@ -35,7 +35,7 @@ class AdPlayerViewController(
     private var companionAdSlot: LinearLayout? = null
     private var progressBar: ProgressBar? = null
     private val ignorePausedEvent = AtomicBoolean(true)
-    fun load(input: LoadMethodInput, adPlayerView: AdPlayerView, imaSdkSettings: ImaSdkSettings?) {
+    fun load(input: LoadMethodInput, adPlayerView: AdPlayerView) {
         Timber.d("load(input=%s)", input)
         dispose()
         this.adPlayerView = adPlayerView
@@ -44,9 +44,9 @@ class AdPlayerViewController(
         this.companionAdSlot = adPlayerView.binding.companionAdSlot
         this.progressBar = adPlayerView.binding.progressBar
         ignorePausedEvent.set(true)
-        adPlayerManager = AdPlayerManager(context, input, imaSdkSettings )
+        adPlayerManager = AdPlayerManager(context, input )
         configureAdPlayerEventObservers()
-        adPlayerManager?.load(adPlayerView.binding.videoAdContainer, adPlayerView.binding.companionAdSlot)
+        adPlayerManager?.load(adPlayerView.binding.videoAdContainer, adPlayerView.binding.companionAdSlot,  input.ppID)
     }
 
     fun play() {
