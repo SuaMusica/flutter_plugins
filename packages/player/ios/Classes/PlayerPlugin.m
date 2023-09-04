@@ -112,6 +112,7 @@ CMTime lastTime;
 BOOL lastRespectSilence;
 
 BOOL shallSendEvents = true;
+int wasPlayingBeforeVoiceSearch = -1;
 
 PlaylistItem *currentItem = nil;
 
@@ -736,21 +737,24 @@ PlaylistItem *currentItem = nil;
                 case AVAudioSessionRouteChangeReasonCategoryChange:
                 {
                     NSString *category = [[AVAudioSession sharedInstance] category];
-                    
                     if ([category isEqualToString:AVAudioSessionCategoryPlayAndRecord]) {
-                        NSLog(@"Category: %@ PAUSE", category);
+                        if(wasPlayingBeforeVoiceSearch == -1){
+                            wasPlayingBeforeVoiceSearch = [playerInfo[@"isPlaying"] intValue];
+                        }
+                        NSLog(@"Category: %@, wasPlaying: %i PAUSE", category, wasPlayingBeforeVoiceSearch);
                         [playerInfo setValue:@(true) forKey:@"pausedByVoiceSearch"];
                         [self pause:_playerId];
                     }
                     if ([category isEqualToString:AVAudioSessionCategoryPlayback]) {
                         NSLog(@"Category: %@ RESUME %@", category, playerInfo[@"pausedByVoiceSearch"]);
                         int pausedByVoice = [playerInfo[@"pausedByVoiceSearch"] intValue];
-                        if (pausedByVoice == 1) {
+                        if (pausedByVoice == 1 && wasPlayingBeforeVoiceSearch == 1) {
                             [playerInfo setValue:@(false) forKey:@"pausedByVoiceSearch"];
                             [self resume:_playerId];
                         } else {
                             NSLog(@"No operation required!");
                         }
+                            wasPlayingBeforeVoiceSearch = -1;
                     }
                 }
                 break;
