@@ -9,7 +9,6 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
     static let ScreenIsLocked = -2;
     static let UnlockedScreen = 1;
     static let LockedScreen = 0;
-    var iMASettings : IMASettings = IMASettings();
     fileprivate static func verifyNetworkAccess() {
         do {
             try Network.reachability = Reachability(hostname: "www.google.com")
@@ -66,10 +65,6 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                         let adUrl = args["__URL__"] as! String
                         let contentUrl = args["__CONTENT__"] as! String
                         let ppID = args["ppid"] as? String;
-                        if(ppID != nil){
-                            self.iMASettings.ppid = ppID
-                        }
-
                         if !Network.reachability.isReachable {
                             // if for any reason we are not reachable
                             // we shall try to update the network manager
@@ -85,7 +80,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                                     contentUrl: contentUrl,
                                     screen: self.screen,
                                     args: args)
-                                adsViewController.iMASettings = self.iMASettings
+                                adsViewController.ppID = ppID
                                 adsViewController.modalPresentationStyle = .fullScreen
                                 let rootViewController = UIApplication.shared.keyWindow?.rootViewController
                                 rootViewController?.present(adsViewController, animated: false, completion: nil)
