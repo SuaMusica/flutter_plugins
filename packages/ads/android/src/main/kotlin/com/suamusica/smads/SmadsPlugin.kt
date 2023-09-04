@@ -3,7 +3,6 @@ package com.suamusica.smads
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
-import com.google.ads.interactivemedia.v3.api.ImaSdkSettings
 import com.suamusica.smads.helpers.ScreenHelper
 import com.suamusica.smads.input.LoadMethodInput
 import com.suamusica.smads.platformview.AdPlayer
@@ -22,7 +21,6 @@ import timber.log.Timber
 class SmadsPlugin : FlutterPlugin, MethodCallHandler {
 
     private val TAG = "SmadsPlugin"
-    private var imaSdkSettings: ImaSdkSettings? = null
     private var channel: MethodChannel? = null
     private lateinit var context: Context
     private lateinit var callback: SmadsCallback
