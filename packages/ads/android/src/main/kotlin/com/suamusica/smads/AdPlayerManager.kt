@@ -33,9 +33,9 @@ class AdPlayerManager(
     private var adsManager: AdsManager? = null
     private var supportedMimeTypes: List<String>? = null
     private val uAmpAudioAttributes = AudioAttributes.Builder()
-            .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
-            .setUsage(C.USAGE_MEDIA)
-            .build()
+        .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+        .setUsage(C.USAGE_MEDIA)
+        .build()
 
     val errorEventDispatcher = PublishSubject.create<AdErrorEvent>()
     val adEventDispatcher = PublishSubject.create<AdEvent>()
@@ -97,7 +97,7 @@ class AdPlayerManager(
     }
 
     fun load(playerView: StyledPlayerView, companionAdSlotView: ViewGroup, ppID: String? = null) {
-        Timber.d("====> load %s",ppID)
+        Timber.d("====> load %s", ppID)
         val companionAdSlot = ImaSdkFactory.getInstance().createCompanionAdSlot()
         companionAdSlot.container = companionAdSlotView
         companionAdSlot.setSize(300, 250)
@@ -112,7 +112,7 @@ class AdPlayerManager(
                 errorEventDispatcher.onNext(it)
             }
             setCompanionAdSlots(companionAdSlots)
-            if(ppID != null){
+            if (ppID != null) {
                 setImaSdkSettings(ImaSdkFactory.getInstance().createImaSdkSettings().apply {
                     this.ppid = ppid
                 })
