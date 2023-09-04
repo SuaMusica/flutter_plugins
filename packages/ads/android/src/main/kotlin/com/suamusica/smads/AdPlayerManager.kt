@@ -97,7 +97,7 @@ class AdPlayerManager(
     }
 
     fun load(playerView: StyledPlayerView, companionAdSlotView: ViewGroup, ppID: String? = null) {
-        Timber.d("====> load %s", ppID)
+        Timber.d("load")
         val companionAdSlot = ImaSdkFactory.getInstance().createCompanionAdSlot()
         companionAdSlot.container = companionAdSlotView
         companionAdSlot.setSize(300, 250)

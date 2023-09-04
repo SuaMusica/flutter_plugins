@@ -62,7 +62,7 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     private fun load(input: Any, result: Result) {
-        Timber.d("load() input: %s", input)
+        Timber.d("load()")
         try {
             Handler(Looper.getMainLooper()).post {
                 controller.load(LoadMethodInput(input), AdPlayerView(context))
