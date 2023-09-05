@@ -113,8 +113,7 @@ class AdPlayerManager(
             }
             setCompanionAdSlots(companionAdSlots)
             if (ppID != null) {
-                setImaSdkSettings(ImaSdkFactory.getInstance().createImaSdkSettings().apply {
-                    this.ppid = ppid
+                setImaSdkSettings(ImaSdkFactory.getInstance().createImaSdkSettings().apply { ppid = ppID
                 })
             }
         }.build()
