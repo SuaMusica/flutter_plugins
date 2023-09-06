@@ -15,6 +15,7 @@ A new flutter plugin project.
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*.{swift,h,m}'
   s.public_header_files = 'Classes/**/*.h'
+  s.resources  = ['Classes/**/*.{storyboard,xib,png}']
   s.dependency 'Flutter'
   s.dependency 'AFNetworking'
   s.dependency 'SDWebImage'

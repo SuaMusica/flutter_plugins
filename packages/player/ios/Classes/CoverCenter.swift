@@ -50,12 +50,14 @@ extension String {
     }
     
     private func getCover(item: PlaylistItem?, url: String) -> MPMediaItemArtwork? {
+        /// TODO: Aqui
         var data = getCoverFromCache(albumId: item?.albumId ?? "0", url: url)
         if (data == nil) {
             data = getCoverFromWeb(url: url)
-            if data == nil {
+            if (data == nil) {
                 data = getCoverFromCache(albumId: "0", url: defaultCover)
             } else {
+                print("Player: Cover: Got cover from web");
                 saveToLocalCache(item: item, url: url, data: data!)
             }
         }
@@ -85,6 +87,7 @@ extension String {
         }
     }
     
+    // url - defaultCover
     private func getDefaultCover() -> MPMediaItemArtwork? {
         let data = getCoverFromCache(albumId: "0", url: defaultCover)
         let image = UIImage.init(data: Data.init(referencing: data!))
@@ -99,7 +102,9 @@ extension String {
         return art
     }
     
+    // atribuído
     private func getCoverFromCache(albumId: String, url: String) -> NSData? {
+        /// TODO: Aqui
         let coverPath = getCoverPath(albumId: albumId, url: url)
         do {
             let data = try NSData.init(contentsOfFile: coverPath, options: NSData.ReadingOptions.mappedRead)
@@ -113,6 +118,7 @@ extension String {
     
     private func getCoverFromWeb(url: String) -> NSData? {
         do {
+            //Synchronous URL loading of // https://images.suamusica.com.br/BEjpAEa8ysoK8k4p0uSaCGlGAVo=/240x240/filters:format(webp)/47353991/3207921/cd_cover.png should // not occur on this application's main thread as it may lead to UI unresponsiveness. Please switch to an asynchronous // networking API such as URLSession.
             let data = try NSData.init(contentsOf: URL.init(string: url)!, options: Data.ReadingOptions.mappedIfSafe)
             return data
         } catch let error as NSError {
@@ -121,6 +127,7 @@ extension String {
         }
     }
     
+    // atribuido
     private func saveToLocalCache(item: PlaylistItem?, url: String, data: NSData) {
         DispatchQueue.global().async {
             do {
@@ -132,12 +139,61 @@ extension String {
     }
     
     private func getCoverPath(albumId: String, url: String) -> String {
-        let paths = NSSearchPathForDirectoriesInDomains(FileManager.SearchPathDirectory.applicationSupportDirectory, FileManager.SearchPathDomainMask.userDomainMask, true)
+        // var paths = NSSearchPathForDirectoriesInDomains(
+        //     FileManager.SearchPathDirectory.applicationSupportDirectory,
+        //     FileManager.SearchPathDomainMask.userDomainMask,
+        //     true
+        // )
+        // var paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, true)
+        // var applicationSupportDirectory = paths[0]
+
+        var paths = [""];
+
+        // if (paths.isEmpty || paths[0].isEmpty) {
+        //     print("coverpath Player: Cover: Failed to get application support directory")
+        //     paths = NSSearchPathForDirectoriesInDomains(
+        //         FileManager.SearchPathDirectory.documentDirectory,
+        //         FileManager.SearchPathDomainMask.userDomainMask,
+        //         true
+        //     )
+        //     return paths.isEmpty || paths[0].isEmpty ? defaultCover : "\(paths[0])/covers/\(albumId)\(self.fileExt(url: url))"
+        // }
+
+        print("coverpath \(albumId)")
+
+        // paths is empty or null, try to get the documents directory
+        print("coverpath paths \(paths)")
+        /// TODO: AQUI!
+        
+        if (paths.isEmpty || paths[0].isEmpty) {
+            /// return asset cover
+            // return uIIMageToAssetString()
+            print("coverpath ASSETSTRING")
+            return uIIMageToAssetString()
+            print("coverpath ASSETSTRING 2")
+            do {
+                // try paths = NSSearchPathForDirectoriesInDomains(
+                //     FileManager.SearchPathDirectory.documentDirectory,
+                //     FileManager.SearchPathDomainMask.userDomainMask,
+                //     true
+                // )
+                // print("coverpath \(paths)")
+
+            } catch {
+                print("catch coverpath error \(error.localizedDescription)");
+                // return UIImage(named: "./assets/cover")
+//                 return uIIMageToAssetString()
+            }
+        }
+
         let documentDirectory = "\(paths[0])/covers"
+        print("coverpath dir \(documentDirectory)")
         if !FileManager.default.fileExists(atPath: documentDirectory) {
             do {
+                print("coverpath is \(documentDirectory)")
                 try FileManager.default.createDirectory(atPath: documentDirectory, withIntermediateDirectories: true, attributes: nil)
             } catch {
+                print("coverpath error \(error.localizedDescription)");
                 print("Player: Cover: Failed to create directory \(error.localizedDescription)");
             }
         }
@@ -153,5 +209,15 @@ extension String {
         let index = url.lastIndex(of: ".")
         let fileExt = url.suffix(from: index!)
         return "\(fileExt)"
+    }
+
+    private func uIIMageToAssetString() -> String {
+        /// return without nullity and the file are in ./assets/
+        print("coverpath uiimage local")
+        let image = UIImage(named: "cover")
+        guard let data = image?.pngData() else { return "" }
+        let asset = NSData(data: data)
+        let assetString = asset.base64EncodedString(options: NSData.Base64EncodingOptions(rawValue: 0))
+        return assetString
     }
 }
