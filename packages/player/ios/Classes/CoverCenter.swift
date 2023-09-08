@@ -53,7 +53,7 @@ extension String {
         /// TODO: Aqui
         var data = getCoverFromCache(albumId: item?.albumId ?? "0", url: url)
         if (data == nil) {
-            data = getCoverFromWeb(url: url)
+            data = getCoverFromWebURLSession(url: url)
             if (data == nil) {
                 data = getCoverFromCache(albumId: "0", url: defaultCover)
             } else {
@@ -87,7 +87,6 @@ extension String {
         }
     }
     
-    // url - defaultCover
     private func getDefaultCover() -> MPMediaItemArtwork? {
         let data = getCoverFromCache(albumId: "0", url: defaultCover)
         let image = UIImage.init(data: Data.init(referencing: data!))
@@ -102,7 +101,6 @@ extension String {
         return art
     }
     
-    // atribuído
     private func getCoverFromCache(albumId: String, url: String) -> NSData? {3
         /// TODO: Aqui
         let coverPath = getCoverPath(albumId: albumId, url: url)
@@ -128,13 +126,33 @@ extension String {
         }
     }
 
-    // private func getCoverFromWebAsync(url: String) -> NSData? {
-    //     do {
-            
-    //     }
+    private func getCoverFromWebURLSession(url: String) -> NSData? {
+        do {
+            let semaphore = DispatchSemaphore(value: 0)
+            var data: NSData? = nil
+            let task = URLSession.shared.dataTask(with: URL.init(string: url)!) { (taskData, response, error) in
+                if (error != nil) {
+                    print("Player: Cover: Failed to set retrieve cover from web: \(error!.localizedDescription)")
+                } else {
+                    data = NSData.init(data: taskData!)
+                }
+                semaphore.signal()
+            }
+            task.resume()
+            semaphore.wait()
+            return data
+        } catch let error as NSError {
+            print("Player: Cover: Failed to set retrieve cover from web: \(error.localizedDescription)")
+            return nil
+        } catch {
+            print("Player: Cover: Failed to set retrieve cover from web: Unknown error")
+            return nil
+        }
+    }
+
+    // private func getCoverFromWebURLSession(url: String) -> NSData? {
     // }
-    
-    // atribuido
+
     private func saveToLocalCache(item: PlaylistItem?, url: String, data: NSData) {
         DispatchQueue.global().async {
             do {
