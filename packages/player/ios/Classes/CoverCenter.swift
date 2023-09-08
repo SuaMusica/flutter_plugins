@@ -118,7 +118,8 @@ extension String {
     
     private func getCoverFromWeb(url: String) -> NSData? {
         do {
-            //Synchronous URL loading of // https://images.suamusica.com.br/BEjpAEa8ysoK8k4p0uSaCGlGAVo=/240x240/filters:format(webp)/47353991/3207921/cd_cover.png should // not occur on this application's main thread as it may lead to UI unresponsiveness. Please switch to an asynchronous // networking API such as URLSession.
+            // Synchronous URL loading of should not occur on this application's main thread as it may lead to UI unresponsiveness.
+            // Please switch to an asynchronous networking API such as URLSession.
             let data = try NSData.init(contentsOf: URL.init(string: url)!, options: Data.ReadingOptions.mappedIfSafe)
             return data
         } catch let error as NSError {
@@ -144,46 +145,36 @@ extension String {
         //     FileManager.SearchPathDomainMask.userDomainMask,
         //     true
         // )
-        // var paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, true)
-        // var applicationSupportDirectory = paths[0]
 
         var paths = [""];
 
-        // if (paths.isEmpty || paths[0].isEmpty) {
-        //     print("coverpath Player: Cover: Failed to get application support directory")
-        //     paths = NSSearchPathForDirectoriesInDomains(
-        //         FileManager.SearchPathDirectory.documentDirectory,
-        //         FileManager.SearchPathDomainMask.userDomainMask,
-        //         true
-        //     )
-        //     return paths.isEmpty || paths[0].isEmpty ? defaultCover : "\(paths[0])/covers/\(albumId)\(self.fileExt(url: url))"
-        // }
-
-        print("coverpath \(albumId)")
-
         // paths is empty or null, try to get the documents directory
-        print("coverpath paths \(paths)")
-        /// TODO: AQUI!
-        
-        if (paths.isEmpty || paths[0].isEmpty) {
-            /// return asset cover
-            // return uIIMageToAssetString()
-            print("coverpath ASSETSTRING")
-            return uIIMageToAssetString()
-            print("coverpath ASSETSTRING 2")
-            do {
-                // try paths = NSSearchPathForDirectoriesInDomains(
-                //     FileManager.SearchPathDirectory.documentDirectory,
-                //     FileManager.SearchPathDomainMask.userDomainMask,
-                //     true
-                // )
-                // print("coverpath \(paths)")
+        print("coverpath paths \(paths) - albumId \(albumId) - url \(url)")
 
-            } catch {
-                print("catch coverpath error \(error.localizedDescription)");
-                // return UIImage(named: "./assets/cover")
-//                 return uIIMageToAssetString()
+        if (paths.isEmpty || paths[0].isEmpty) {
+            if let localPath = NSSearchPathForDirectoriesInDomains(
+                .applicationSupportDirectory,
+                .userDomainMask,
+                true
+            ).first {
+                print("coverpath first paths \(paths) - albumId \(albumId) - url \(url) | localPath: \(localPath)")
+                return localPath.isEmpty ? uiImageToAssetString() : "\(localPath)/covers/\(albumId)\(self.fileExt(url: url))"
+            } else {
+                print("coverpath else paths \(paths) - albumId \(albumId) - url \(url)")
+                return uiImageToAssetString()
             }
+            print("coverpath paths \(paths) - albumId \(albumId) - url \(url)")
+            ///
+            // print("coverpath ASSETSTRING")
+            // do {
+            //     try paths = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)
+            //     print("coverpath paths try \(paths) - albumId \(albumId) - url \(url) | paths[0]: \(paths[0]) | isInvalidPath: \(isInvalidPath)")
+            //     return isInvalidPath ? uiImageToAssetString() : "\(paths[0])/covers/\(albumId)\(self.fileExt(url: url))"
+            // } catch {
+            //     print("catch coverpath error \(error.localizedDescription)");
+            //     print("Player: Cover: Failed to get documents directory \(error.localizedDescription)");
+            //     return uiImageToAssetString();
+            // }
         }
 
         let documentDirectory = "\(paths[0])/covers"
@@ -211,13 +202,13 @@ extension String {
         return "\(fileExt)"
     }
 
-    private func uIIMageToAssetString() -> String {
-        /// return without nullity and the file are in ./assets/
+    private func uiImageToAssetString() -> String {
         print("coverpath uiimage local")
         let image = UIImage(named: "cover")
-        guard let data = image?.pngData() else { return "" }
-        let asset = NSData(data: data)
-        let assetString = asset.base64EncodedString(options: NSData.Base64EncodingOptions(rawValue: 0))
-        return assetString
+        guard let data = image?.pngData() else {
+            return ""
+        }
+        print("coverpath uiimage local 2")
+        return data.base64EncodedString(options: .lineLength64Characters)
     }
 }
