@@ -152,29 +152,7 @@ extension String {
         print("coverpath paths \(paths) - albumId \(albumId) - url \(url)")
 
         if (paths.isEmpty || paths[0].isEmpty) {
-            if let localPath = NSSearchPathForDirectoriesInDomains(
-                .applicationSupportDirectory,
-                .userDomainMask,
-                true
-            ).first {
-                print("coverpath first paths \(paths) - albumId \(albumId) - url \(url) | localPath: \(localPath)")
-                return localPath.isEmpty ? uiImageToAssetString() : "\(localPath)/covers/\(albumId)\(self.fileExt(url: url))"
-            } else {
-                print("coverpath else paths \(paths) - albumId \(albumId) - url \(url)")
-                return uiImageToAssetString()
-            }
-            print("coverpath paths \(paths) - albumId \(albumId) - url \(url)")
-            ///
-            // print("coverpath ASSETSTRING")
-            // do {
-            //     try paths = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)
-            //     print("coverpath paths try \(paths) - albumId \(albumId) - url \(url) | paths[0]: \(paths[0]) | isInvalidPath: \(isInvalidPath)")
-            //     return isInvalidPath ? uiImageToAssetString() : "\(paths[0])/covers/\(albumId)\(self.fileExt(url: url))"
-            // } catch {
-            //     print("catch coverpath error \(error.localizedDescription)");
-            //     print("Player: Cover: Failed to get documents directory \(error.localizedDescription)");
-            //     return uiImageToAssetString();
-            // }
+            return uiImageToAssetString()
         }
 
         let documentDirectory = "\(paths[0])/covers"
@@ -186,6 +164,7 @@ extension String {
             } catch {
                 print("coverpath error \(error.localizedDescription)");
                 print("Player: Cover: Failed to create directory \(error.localizedDescription)");
+                return uiImageToAssetString()
             }
         }
         var fileExt = self.fileExt(url: url)
