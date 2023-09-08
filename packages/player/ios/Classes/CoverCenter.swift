@@ -103,7 +103,7 @@ extension String {
     }
     
     // atribuído
-    private func getCoverFromCache(albumId: String, url: String) -> NSData? {
+    private func getCoverFromCache(albumId: String, url: String) -> NSData? {3
         /// TODO: Aqui
         let coverPath = getCoverPath(albumId: albumId, url: url)
         do {
@@ -127,6 +127,12 @@ extension String {
             return nil
         }
     }
+
+    // private func getCoverFromWebAsync(url: String) -> NSData? {
+    //     do {
+            
+    //     }
+    // }
     
     // atribuido
     private func saveToLocalCache(item: PlaylistItem?, url: String, data: NSData) {
@@ -146,7 +152,9 @@ extension String {
         //     true
         // )
 
-        var paths = [""];
+        return uiImageToAssetString()
+
+        var paths = [""]
 
         // paths is empty or null, try to get the documents directory
         print("coverpath paths \(paths) - albumId \(albumId) - url \(url)")
@@ -181,13 +189,26 @@ extension String {
         return "\(fileExt)"
     }
 
+    // private func setImageFromStringURL(stringUrl: String) {
+    //     if let url = URL(string: stringUrl) {
+    //         URLSession.shared.dataTask(with: url) { (data, response, error) in
+    //             guard let imageData = data else { return }
+    //             DispatchQueue.main.async {
+    //                 self.image = UIImage(data: imageData)
+    //             }
+    //         }.resume()
+    //     }
+    // }
+
     private func uiImageToAssetString() -> String {
-        print("coverpath uiimage local")
-        let image = UIImage(named: "cover")
+        print("coverpath uiimage local 1")
+        let image = UIImage(named: "sm_cover")
+        print("coverpath uiimage local 2")
         guard let data = image?.pngData() else {
+            print("coverpath uiimage local 3")
             return ""
         }
-        print("coverpath uiimage local 2")
+        print("coverpath uiimage local 4")
         return data.base64EncodedString(options: .lineLength64Characters)
     }
 }
