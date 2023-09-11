@@ -147,9 +147,6 @@ extension String {
         }
     }
 
-    // private func getCoverFromWebURLSession(url: String) -> NSData? {
-    // }
-
     private func saveToLocalCache(item: PlaylistItem?, url: String, data: NSData) {
         DispatchQueue.global().async {
             do {
@@ -204,17 +201,6 @@ extension String {
         let fileExt = url.suffix(from: index!)
         return "\(fileExt)"
     }
-
-    // private func setImageFromStringURL(stringUrl: String) {
-    //     if let url = URL(string: stringUrl) {
-    //         URLSession.shared.dataTask(with: url) { (data, response, error) in
-    //             guard let imageData = data else { return }
-    //             DispatchQueue.main.async {
-    //                 self.image = UIImage(data: imageData)
-    //             }
-    //         }.resume()
-    //     }
-    // }
 
     private func uiImageToAssetString() -> String {
         print("coverpath uiimage local 1")
