@@ -143,7 +143,7 @@ extension String {
     }
     
     private func getCoverPath(albumId: String, url: String) -> String {
-        var paths = NSSearchPathForDirectoriesInDomains(
+        let paths = NSSearchPathForDirectoriesInDomains(
             FileManager.SearchPathDirectory.applicationSupportDirectory,
             FileManager.SearchPathDomainMask.userDomainMask,
             true
