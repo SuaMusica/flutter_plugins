@@ -50,10 +50,9 @@ extension String {
     }
     
     private func getCover(item: PlaylistItem?, url: String) -> MPMediaItemArtwork? {
-        /// TODO: Aqui
         var data = getCoverFromCache(albumId: item?.albumId ?? "0", url: url)
         if (data == nil) {
-            data = getCoverFromWebURLSession(url: url)
+            data = getCoverFromWeb(url: url)
             if (data == nil) {
                 data = getCoverFromCache(albumId: "0", url: defaultCover)
             } else {
@@ -102,7 +101,6 @@ extension String {
     }
     
     private func getCoverFromCache(albumId: String, url: String) -> NSData? {
-        /// TODO: Aqui
         let coverPath = getCoverPath(albumId: albumId, url: url)
         do {
             let data = try NSData.init(contentsOfFile: coverPath, options: NSData.ReadingOptions.mappedRead)
@@ -115,18 +113,6 @@ extension String {
     }
     
     private func getCoverFromWeb(url: String) -> NSData? {
-        do {
-            // Synchronous URL loading of should not occur on this application's main thread as it may lead to UI unresponsiveness.
-            // Please switch to an asynchronous networking API such as URLSession.
-            let data = try NSData.init(contentsOf: URL.init(string: url)!, options: Data.ReadingOptions.mappedIfSafe)
-            return data
-        } catch let error as NSError {
-            print("Player: Cover: Failed to set retrieve cover from web: \(error.localizedDescription)")
-            return nil
-        }
-    }
-
-    private func getCoverFromWebURLSession(url: String) -> NSData? {
         if let url = URL(string: url) {
             let semaphore = DispatchSemaphore(value: 0)
             var data: NSData? = nil
@@ -158,19 +144,11 @@ extension String {
     }
     
     private func getCoverPath(albumId: String, url: String) -> String {
-        // var paths = NSSearchPathForDirectoriesInDomains(
-        //     FileManager.SearchPathDirectory.applicationSupportDirectory,
-        //     FileManager.SearchPathDomainMask.userDomainMask,
-        //     true
-        // )
-        print("coverpath uiImageToAssetString will be called")
-
-        return uiImageToAssetString()
-
-        var paths = [""]
-
-        // paths is empty or null, try to get the documents directory
-        print("coverpath paths \(paths) - albumId \(albumId) - url \(url)")
+        var paths = NSSearchPathForDirectoriesInDomains(
+            FileManager.SearchPathDirectory.applicationSupportDirectory,
+            FileManager.SearchPathDomainMask.userDomainMask,
+            true
+        )
 
         if (paths.isEmpty || paths[0].isEmpty) {
             return uiImageToAssetString()
