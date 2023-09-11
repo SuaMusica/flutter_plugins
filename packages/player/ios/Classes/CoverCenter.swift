@@ -127,25 +127,22 @@ extension String {
     }
 
     private func getCoverFromWebURLSession(url: String) -> NSData? {
-        do {
+        if let url = URL(string: url) {
             let semaphore = DispatchSemaphore(value: 0)
             var data: NSData? = nil
-            let task = URLSession.shared.dataTask(with: URL.init(string: url)!) { (taskData, response, error) in
-                if (error != nil) {
-                    print("Player: Cover: Failed to set retrieve cover from web: \(error!.localizedDescription)")
+            let task = URLSession.shared.dataTask(with: url) { (taskData, response, error) in
+                if let error = error {
+                    print("Player: Cover: Failed to retrieve cover from web: \(error.localizedDescription)")
                 } else {
-                    data = NSData.init(data: taskData!)
+                    data = NSData(data: taskData!)
                 }
                 semaphore.signal()
             }
             task.resume()
             semaphore.wait()
             return data
-        } catch let error as NSError {
-            print("Player: Cover: Failed to set retrieve cover from web: \(error.localizedDescription)")
-            return nil
-        } catch {
-            print("Player: Cover: Failed to set retrieve cover from web: Unknown error")
+        } else {
+            print("Player: Cover: Invalid URL")
             return nil
         }
     }
