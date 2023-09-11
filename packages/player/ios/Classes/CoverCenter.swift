@@ -56,7 +56,6 @@ extension String {
             if (data == nil) {
                 data = getCoverFromCache(albumId: "0", url: defaultCover)
             } else {
-                print("Player: Cover: Got cover from web");
                 saveToLocalCache(item: item, url: url, data: data!)
             }
         }
@@ -128,7 +127,7 @@ extension String {
             semaphore.wait()
             return data
         } else {
-            print("Player: Cover: Invalid URL")
+            print("Player: Cover: Invalid URL: (\(url))")
             return nil
         }
     }
@@ -155,13 +154,11 @@ extension String {
         }
 
         let documentDirectory = "\(paths[0])/covers"
-        print("coverpath dir \(documentDirectory)")
+
         if !FileManager.default.fileExists(atPath: documentDirectory) {
             do {
-                print("coverpath is \(documentDirectory)")
                 try FileManager.default.createDirectory(atPath: documentDirectory, withIntermediateDirectories: true, attributes: nil)
             } catch {
-                print("coverpath error \(error.localizedDescription)");
                 print("Player: Cover: Failed to create directory \(error.localizedDescription)");
                 return uiImageToAssetString()
             }
@@ -181,14 +178,11 @@ extension String {
     }
 
     private func uiImageToAssetString() -> String {
-        print("coverpath uiimage local 1")
         let image = UIImage(named: "sm_cd_cover")
-        print("coverpath uiimage local 2")
         guard let data = image?.pngData() else {
             print("coverpath uiimage local 3")
             return ""
         }
-        print("coverpath uiimage local 4")
         return data.base64EncodedString(options: .lineLength64Characters)
     }
 }
