@@ -101,7 +101,7 @@ extension String {
         return art
     }
     
-    private func getCoverFromCache(albumId: String, url: String) -> NSData? {3
+    private func getCoverFromCache(albumId: String, url: String) -> NSData? {
         /// TODO: Aqui
         let coverPath = getCoverPath(albumId: albumId, url: url)
         do {
@@ -166,6 +166,7 @@ extension String {
         //     FileManager.SearchPathDomainMask.userDomainMask,
         //     true
         // )
+        print("coverpath uiImageToAssetString will be called")
 
         return uiImageToAssetString()
 
@@ -217,7 +218,7 @@ extension String {
 
     private func uiImageToAssetString() -> String {
         print("coverpath uiimage local 1")
-        let image = UIImage(named: "sm_cover")
+        let image = UIImage(named: "sm_cd_cover")
         print("coverpath uiimage local 2")
         guard let data = image?.pngData() else {
             print("coverpath uiimage local 3")
