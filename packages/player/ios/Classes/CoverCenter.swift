@@ -143,11 +143,7 @@ extension String {
     }
     
     private func getCoverPath(albumId: String, url: String) -> String {
-        let paths = NSSearchPathForDirectoriesInDomains(
-            FileManager.SearchPathDirectory.applicationSupportDirectory,
-            FileManager.SearchPathDomainMask.userDomainMask,
-            true
-        )
+        let paths = NSSearchPathForDirectoriesInDomains(FileManager.SearchPathDirectory.applicationSupportDirectory, FileManager.SearchPathDomainMask.userDomainMask, true)
 
         if (paths.isEmpty || paths[0].isEmpty) {
             return uiImageToAssetString()
