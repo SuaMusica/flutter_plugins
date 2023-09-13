@@ -3,7 +3,6 @@ package com.suamusica.smads
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
-import androidx.annotation.NonNull
 import com.suamusica.smads.helpers.ScreenHelper
 import com.suamusica.smads.input.LoadMethodInput
 import com.suamusica.smads.platformview.AdPlayer
