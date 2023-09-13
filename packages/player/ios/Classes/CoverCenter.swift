@@ -174,9 +174,8 @@ extension String {
     }
 
     private func uiImageToAssetString() -> String {
-        let image = UIImage(named: "sm_cd_cover")
+        let image = UIImage(named: "sm_cd_cover", in: Bundle(for: type(of: self)), compatibleWith: nil)
         guard let data = image?.pngData() else {
-            print("coverpath uiimage local 3")
             return ""
         }
         return data.base64EncodedString(options: .lineLength64Characters)
