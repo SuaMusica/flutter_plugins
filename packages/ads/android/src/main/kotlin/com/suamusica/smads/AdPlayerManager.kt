@@ -24,7 +24,7 @@ import timber.log.Timber
 
 class AdPlayerManager(
     private var context: Context,
-    input: LoadMethodInput
+    input: LoadMethodInput,
 ) {
     private var adsLoader: ImaAdsLoader? = null
     private val adTagUrl = Uri.parse(input.adTagUrl)
@@ -33,9 +33,9 @@ class AdPlayerManager(
     private var adsManager: AdsManager? = null
     private var supportedMimeTypes: List<String>? = null
     private val uAmpAudioAttributes = AudioAttributes.Builder()
-            .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
-            .setUsage(C.USAGE_MEDIA)
-            .build()
+        .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+        .setUsage(C.USAGE_MEDIA)
+        .build()
 
     val errorEventDispatcher = PublishSubject.create<AdErrorEvent>()
     val adEventDispatcher = PublishSubject.create<AdEvent>()
@@ -76,7 +76,8 @@ class AdPlayerManager(
     }
 
     private fun getAdsRenderingSettings(): AdsRenderingSettings {
-        val adsRenderingSettings: AdsRenderingSettings = ImaSdkFactory.getInstance().createAdsRenderingSettings()
+        val adsRenderingSettings: AdsRenderingSettings =
+            ImaSdkFactory.getInstance().createAdsRenderingSettings()
         if (supportedMimeTypes != null && supportedMimeTypes!!.isNotEmpty()) {
             adsRenderingSettings.mimeTypes = supportedMimeTypes
         }
@@ -95,7 +96,7 @@ class AdPlayerManager(
         }
     }
 
-    fun load(playerView: StyledPlayerView, companionAdSlotView: ViewGroup) {
+    fun load(playerView: StyledPlayerView, companionAdSlotView: ViewGroup, ppID: String? = null) {
         Timber.d("load")
         val companionAdSlot = ImaSdkFactory.getInstance().createCompanionAdSlot()
         companionAdSlot.container = companionAdSlotView
@@ -111,6 +112,11 @@ class AdPlayerManager(
                 errorEventDispatcher.onNext(it)
             }
             setCompanionAdSlots(companionAdSlots)
+            if (ppID != null) {
+                setImaSdkSettings(ImaSdkFactory.getInstance().createImaSdkSettings().apply {
+                    ppid = ppID
+                })
+            }
         }.build()
         val dataSpec = DataSpec(adTagUrl)
         adsLoader?.requestAds(dataSpec, ++_adsID, playerView)
@@ -124,14 +130,15 @@ class AdPlayerManager(
 
         player?.setMediaSource(
 
-                AdsMediaSource(
-                        SilenceMediaSource(100),
-                        dataSpec,
-                        _adsID,
-                        ProgressiveMediaSource.Factory(dataSourceFactory),
-                        adsLoader!!,
-                        playerView
-                ))
+            AdsMediaSource(
+                SilenceMediaSource(100),
+                dataSpec,
+                _adsID,
+                ProgressiveMediaSource.Factory(dataSourceFactory),
+                adsLoader!!,
+                playerView
+            )
+        )
         player?.prepare()
     }
 

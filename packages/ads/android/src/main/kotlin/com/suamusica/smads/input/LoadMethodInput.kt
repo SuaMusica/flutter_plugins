@@ -3,13 +3,14 @@ package com.suamusica.smads.input
 import com.suamusica.smads.extensions.getRequired
 
 class LoadMethodInput(
-        tagUrl: String,
-        queryParams: Map<String, Any>
+    tagUrl: String,
+    queryParams: Map<String, Any>
 ) {
     private constructor(args: Map<String, Any>)
             : this(
-            args.getRequired(AD_TAG_URL_KEY),
-            args.toQueryParams())
+        args.getRequired(AD_TAG_URL_KEY),
+        args.toQueryParams()
+    )
 
     @Suppress("UNCHECKED_CAST")
     constructor(args: Any) : this(args = args as Map<String, Any>)
@@ -19,7 +20,9 @@ class LoadMethodInput(
             QUERY_PARAM_FORMAT.format(it.key, it.value.toString())
         }.joinToString("")
     }
-    
+
+    val ppID: String? = queryParams["ppid"] as? String
+
     val adTagUrl: String by lazy {
         val parts = tagUrl.split("&")
         when {
@@ -27,9 +30,11 @@ class LoadMethodInput(
             parts.last().endsWith(QUERY_CUSTOM_PARAMS_TAG) -> {
                 tagUrl.plus(FIXED_PARAMS).plus(queryString)
             }
+
             parts.last().contains(QUERY_CUSTOM_PARAMS_TAG) -> {
                 tagUrl.plus(AND_ENCODED).plus(FIXED_PARAMS).plus(queryString)
             }
+
             else -> tagUrl
         }
     }
@@ -40,7 +45,8 @@ class LoadMethodInput(
         private const val QUERY_CUSTOM_PARAMS_TAG = "cust_params="
         private const val AND_ENCODED = "%26"
         private const val EQUAL_ENCODED = "%3D"
-        private const val FIXED_PARAMS = "platform${EQUAL_ENCODED}android${AND_ENCODED}Domain${EQUAL_ENCODED}suamusica"
+        private const val FIXED_PARAMS =
+            "platform${EQUAL_ENCODED}android${AND_ENCODED}Domain${EQUAL_ENCODED}suamusica"
         private const val QUERY_PARAM_FORMAT = "%%26%s%%3D%s"
 
         private fun Map<String, Any>.toQueryParams(): Map<String, Any> {

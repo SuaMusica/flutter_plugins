@@ -30,6 +30,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     var playing: Bool = false
     var isRemoteControlOn = false
     var sentOnComplete = false
+    var ppID: String? = nil
     
     @IBOutlet weak var totalProgress: UILabel!
     @IBOutlet weak var currentProgress: UILabel!
@@ -225,6 +226,10 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     
     func setUpAdsLoader() {
         let settings = IMASettings()
+        if(ppID != nil){
+            settings.ppid = ppID
+        }
+        debugPrint("PPID: \(String(describing: settings.ppid))")
         settings.enableBackgroundPlayback = true
         adsLoader = IMAAdsLoader(settings: settings)
         adsLoader?.delegate = self
