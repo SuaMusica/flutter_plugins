@@ -53,7 +53,7 @@ extension String {
         var data = getCoverFromCache(albumId: item?.albumId ?? "0", url: url)
         if (data == nil) {
             data = getCoverFromWeb(url: url)
-            if data == nil {
+            if (data == nil) {
                 data = getCoverFromCache(albumId: "0", url: defaultCover)
             } else {
                 saveToLocalCache(item: item, url: url, data: data!)
@@ -112,15 +112,26 @@ extension String {
     }
     
     private func getCoverFromWeb(url: String) -> NSData? {
-        do {
-            let data = try NSData.init(contentsOf: URL.init(string: url)!, options: Data.ReadingOptions.mappedIfSafe)
+        if let url = URL(string: url) {
+            let semaphore = DispatchSemaphore(value: 0)
+            var data: NSData? = nil
+            let task = URLSession.shared.dataTask(with: url) { (taskData, response, error) in
+                if let error = error {
+                    print("Player: Cover: Failed to retrieve cover from web: \(error.localizedDescription)")
+                } else {
+                    data = NSData(data: taskData!)
+                }
+                semaphore.signal()
+            }
+            task.resume()
+            semaphore.wait()
             return data
-        } catch let error as NSError {
-            print("Player: Cover: Failed to set retrieve cover from web: \(error.localizedDescription)")
+        } else {
+            print("Player: Cover: Invalid URL: (\(url))")
             return nil
         }
     }
-    
+
     private func saveToLocalCache(item: PlaylistItem?, url: String, data: NSData) {
         DispatchQueue.global().async {
             do {
@@ -133,12 +144,19 @@ extension String {
     
     private func getCoverPath(albumId: String, url: String) -> String {
         let paths = NSSearchPathForDirectoriesInDomains(FileManager.SearchPathDirectory.applicationSupportDirectory, FileManager.SearchPathDomainMask.userDomainMask, true)
+
+        if (paths.isEmpty || paths[0].isEmpty) {
+            return uiImageToAssetString()
+        }
+
         let documentDirectory = "\(paths[0])/covers"
+
         if !FileManager.default.fileExists(atPath: documentDirectory) {
             do {
                 try FileManager.default.createDirectory(atPath: documentDirectory, withIntermediateDirectories: true, attributes: nil)
             } catch {
                 print("Player: Cover: Failed to create directory \(error.localizedDescription)");
+                return uiImageToAssetString()
             }
         }
         var fileExt = self.fileExt(url: url)
@@ -153,5 +171,13 @@ extension String {
         let index = url.lastIndex(of: ".")
         let fileExt = url.suffix(from: index!)
         return "\(fileExt)"
+    }
+
+    private func uiImageToAssetString() -> String {
+        let image = UIImage(named: "sm_cd_cover", in: Bundle(for: type(of: self)), compatibleWith: nil)
+        guard let data = image?.pngData() else {
+            return ""
+        }
+        return data.base64EncodedString(options: .lineLength64Characters)
     }
 }
