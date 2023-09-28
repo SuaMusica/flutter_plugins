@@ -152,12 +152,12 @@ class Queue {
   }
 
   remove(Media media) {
-    final itemToBeRemoved = storage.firstWhere((i) => i.item == media);
+    final itemToBeRemoved = storage.firstWhere((i) => i.item.id == media.id);
     if (itemToBeRemoved.position < index) {
       --index;
     }
     storage.remove(itemToBeRemoved);
-    for (var i = itemToBeRemoved.position + 1; i < storage.length; ++i) {
+    for (var i = itemToBeRemoved.position; i < storage.length; ++i) {
       storage[i].position -= 1;
       storage[i].originalPosition -= 1;
     }
