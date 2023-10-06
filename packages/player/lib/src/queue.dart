@@ -35,7 +35,19 @@ class Queue {
     }
   }
 
-  var index = -1;
+  var _index = 0;
+  int get index => _index;
+  Media? _current;
+
+  set setIndex(int index) {
+    _index = index;
+    if (storage.length > 0 && index >= 0) {
+      _current = storage[index].item;
+    } else {
+      return null;
+    }
+  }
+
   final Shuffler _shuffler;
   final bool initializeIsar;
   bool itemsReady = false;
@@ -45,13 +57,7 @@ class Queue {
   PreviousPlaylistMusics? previousPlaylistMusics;
   DateTime? _lastPrevious;
 
-  Media? get current {
-    if (storage.length > 0 && index >= 0) {
-      return storage.elementAt(index).item;
-    } else {
-      return null;
-    }
-  }
+  Media? get current => _current;
 
   List<Media> get items {
     return storage.length > 0
@@ -96,7 +102,7 @@ class Queue {
       storage.add(QueueItem(pos, pos, media));
     }
     _save(medias: [media]);
-    index = 0;
+    setIndex = 0;
   }
 
   replaceCurrent(Media media) =>
@@ -115,7 +121,14 @@ class Queue {
   }) async {
     final medias = shouldRemoveFirst ? items.sublist(1) : items;
 
-    int i = 0;
+    int i = shouldRemoveFirst
+        ? storage.length > 1
+            ? storage.last.originalPosition + 1
+            : 0
+        : storage.length > 0
+            ? storage.last.originalPosition + 1
+            : 0;
+
     if (saveOnTop) {
       storage.insertAll(0, medias.map((e) => QueueItem(i++, i, e)));
     } else {
@@ -153,13 +166,25 @@ class Queue {
 
   remove(Media media) {
     final itemToBeRemoved = storage.firstWhere((i) => i.item.id == media.id);
-    if (itemToBeRemoved.position < index) {
-      --index;
-    }
     storage.remove(itemToBeRemoved);
+    if (itemToBeRemoved.position < index) {
+      setIndex = index - 1;
+    }
     for (var i = itemToBeRemoved.position; i < storage.length; ++i) {
-      storage[i].position -= 1;
-      storage[i].originalPosition -= 1;
+      storage[i].position--;
+      storage[i].originalPosition--;
+    }
+  }
+
+  removeByIndex(int index) {
+    final itemToBeRemoved = storage.removeAt(index);
+    storage.remove(itemToBeRemoved);
+    if (itemToBeRemoved.position < index) {
+      setIndex = index - 1;
+    }
+    for (var i = itemToBeRemoved.position; i < storage.length; ++i) {
+      storage[i].position--;
+      storage[i].originalPosition--;
     }
   }
 
@@ -167,31 +192,31 @@ class Queue {
 
   removeAll() {
     storage.clear();
-    index = -1;
+    setIndex = -1;
   }
 
   shuffle() {
     if (storage.length > 2) {
-      var current = storage.elementAt(index);
+      var current = storage[index];
       _shuffler.shuffle(storage);
       for (var i = 0; i < storage.length; ++i) {
-        storage.elementAt(i).position = i;
+        storage[i].position = i;
       }
       var currentIndex = storage.indexOf(current);
       reorder(currentIndex, 0, true);
-      this.index = 0;
+      setIndex = 0;
     }
   }
 
   unshuffle() {
     if (storage.length > 2) {
-      var current = storage.elementAt(index);
+      var current = storage[index];
       _shuffler.unshuffle(storage);
       for (var i = 0; i < storage.length; ++i) {
-        final item = storage.elementAt(i);
+        final item = storage[i];
         item.position = i;
       }
-      this.index = current.originalPosition;
+      setIndex = current.originalPosition;
     }
   }
 
@@ -202,7 +227,7 @@ class Queue {
 
   Media rewind() {
     assert(index >= 0);
-    return storage.elementAt(index).item;
+    return storage[index].item;
   }
 
   Media previous() {
@@ -216,9 +241,9 @@ class Queue {
       print("diff: $diff");
       if (diff < 3000) {
         if (index > 0) {
-          --index;
+          setIndex = index - 1;
         }
-        return storage.elementAt(index).item;
+        return storage[index].item;
       } else {
         _lastPrevious = now;
         return rewind();
@@ -230,7 +255,7 @@ class Queue {
     if (index >= 0) {
       final now = DateTime.now();
       if (_lastPrevious == null) {
-        return storage.elementAt(index).item;
+        return storage[index].item;
       } else {
         final diff = now.difference(_lastPrevious!).inMilliseconds;
         if (diff < 3000) {
@@ -238,23 +263,22 @@ class Queue {
           if (index > 0) {
             --workIndex;
           }
-          return storage.elementAt(workIndex).item;
+          return storage[workIndex].item;
         } else {
-          return storage.elementAt(index).item;
+          return storage[index].item;
         }
       }
     }
-    return storage.isNotEmpty && index >= 0
-        ? storage.elementAt(index).item
-        : null;
+    return storage.isNotEmpty && index >= 0 ? storage[index].item : null;
   }
 
   Media? next() {
     if (storage.length == 0) {
       throw AssertionError("Queue is empty");
     } else if (storage.length > 0 && index < storage.length - 1) {
-      final newIndex = ++index;
-      var media = storage.elementAt(newIndex).item;
+      final newIndex = index + 1;
+      setIndex = newIndex;
+      var media = storage[newIndex].item;
       _updateIndex(media.id, newIndex);
       return media;
     } else {
@@ -267,7 +291,7 @@ class Queue {
       return _next();
     } else if (repeatMode == RepeatMode.QUEUE) {
       if (storage.length - 1 == index) {
-        return storage.elementAt(0).item;
+        return storage[0].item;
       } else {
         return _next();
       }
@@ -280,7 +304,7 @@ class Queue {
     if (storage.length == 0) {
       return null;
     } else if (storage.length > 0 && index < storage.length - 1) {
-      var media = storage.elementAt(index + 1).item;
+      var media = storage[index + 1].item;
       return media;
     } else {
       return null;
@@ -291,8 +315,8 @@ class Queue {
     if (storage.length == 0) {
       throw AssertionError("Queue is empty");
     } else if (storage.length > 0 && pos <= storage.length - 1) {
-      var media = storage.elementAt(pos).item;
-      index = pos;
+      var media = storage[pos].item;
+      setIndex = pos;
       return media;
     } else {
       return null;
@@ -306,7 +330,7 @@ class Queue {
   }
 
   Media? item(int pos) {
-    final item = storage.elementAt(pos).item;
+    final item = storage[pos].item;
     _updateIndex(item.id, pos);
     if (storage.length == 0) {
       return null;
@@ -318,38 +342,35 @@ class Queue {
   }
 
   Media restart() {
-    index = 0;
-    return storage.elementAt(0).item;
+    setIndex = 0;
+    return storage.first.item;
   }
 
   void reorder(int oldIndex, int newIndex, [bool isShuffle = false]) {
     final playingItem = storage.elementAt(index);
-
     if (newIndex > oldIndex) {
       for (int i = oldIndex + 1; i <= newIndex; i++) {
         if (!isShuffle) {
-          storage.elementAt(i).originalPosition--;
+          storage[i].originalPosition--;
         }
-        storage.elementAt(i).position--;
+        storage[i].position--;
       }
     } else {
       for (int i = newIndex; i < oldIndex; i++) {
         if (!isShuffle) {
-          storage.elementAt(i).originalPosition++;
+          storage[i].originalPosition++;
         }
-        storage.elementAt(i).position++;
+        storage[i].position++;
       }
     }
 
-    storage.elementAt(oldIndex).position = newIndex;
-
+    storage[oldIndex].position = newIndex;
     if (!isShuffle) {
-      storage.elementAt(oldIndex).originalPosition = newIndex;
+      storage[oldIndex].originalPosition = newIndex;
     }
-
     storage.sort((a, b) => a.position.compareTo(b.position));
     final playingIndex = storage.indexOf(playingItem);
-    this.index = playingIndex;
+    setIndex = playingIndex;
   }
 
   void dispose() {

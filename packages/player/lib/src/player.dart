@@ -126,6 +126,11 @@ class Player {
     return Ok;
   }
 
+  Future<int> removeByIndex(int index) async {
+    _queue.removeByIndex(index);
+    return Ok;
+  }
+
   Future<int> removeAll() async {
     _queue.removeAll();
     await IsarService.instance.removeAllMusics();
@@ -483,7 +488,7 @@ class Player {
         return _forward(current);
       } else {
         if (repeatMode == RepeatMode.NONE) {
-          _queue.index = -1;
+          _queue.setIndex = -1;
           return NotOk;
         } else if (repeatMode == RepeatMode.QUEUE) {
           next = _queue.restart();
