@@ -114,6 +114,15 @@ class Queue {
     await _save(medias: [media]);
   }
 
+  List<QueueItem<Media>> _toQueueItems(List<Media> items, int i) {
+    return items.map(
+      (e) {
+        i++;
+        return QueueItem(i, i, e);
+      },
+    ).toList();
+  }
+
   addAll(
     List<Media> items, {
     bool shouldRemoveFirst = false,
@@ -121,18 +130,11 @@ class Queue {
   }) async {
     final medias = shouldRemoveFirst ? items.sublist(1) : items;
 
-    int i = shouldRemoveFirst
-        ? storage.length > 1
-            ? storage.last.originalPosition + 1
-            : 0
-        : storage.length > 0
-            ? storage.last.originalPosition + 1
-            : 0;
-
+    int i = storage.length == 1 ? 0 : storage.length - 1;
     if (saveOnTop) {
-      storage.insertAll(0, medias.map((e) => QueueItem(i++, i, e)));
+      storage.insertAll(0, _toQueueItems(medias, i));
     } else {
-      storage.addAll(medias.map((e) => QueueItem(i++, i, e)));
+      storage.addAll(_toQueueItems(medias, i));
     }
 
     await _save(medias: items, saveOnTop: saveOnTop);
@@ -172,7 +174,9 @@ class Queue {
     }
     for (var i = itemToBeRemoved.position; i < storage.length; ++i) {
       storage[i].position--;
-      storage[i].originalPosition--;
+      if (storage[i].originalPosition > 0) {
+        storage[i].originalPosition--;
+      }
     }
   }
 
@@ -349,8 +353,8 @@ class Queue {
   void reorder(int oldIndex, int newIndex, [bool isShuffle = false]) {
     final playingItem = storage.elementAt(index);
     if (newIndex > oldIndex) {
-      for (int i = oldIndex + 1; i <= newIndex; i++) {
-        if (!isShuffle) {
+      for (int i = oldIndex; i <= newIndex; i++) {
+        if (!isShuffle && storage[i].originalPosition > 0) {
           storage[i].originalPosition--;
         }
         storage[i].position--;
