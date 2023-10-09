@@ -60,7 +60,8 @@ class IsarService {
     try {
       await _isarStorage?.writeTxn(
         () async {
-          await _isarStorage?.previousPlaylistMusics
+          await _isarStorage
+              ?.collection<PreviousPlaylistMusics>()
               .put(previousPlaylistMusics);
         },
         silent: !kDebugMode,
@@ -70,7 +71,10 @@ class IsarService {
 
   Future<PreviousPlaylistMusics?> getPreviousPlaylistMusics() async {
     await initializeIfNeeded();
-    return _isarStorage?.previousPlaylistMusics.getSync(1);
+    return await _isarStorage
+        ?.collection<PreviousPlaylistMusics>()
+        .buildQuery<PreviousPlaylistMusics>()
+        .findFirst();
   }
 
   Future<void> addPreviousPlaylistCurrentIndex(
@@ -91,7 +95,10 @@ class IsarService {
   Future<PreviousPlaylistCurrentIndex?>
       getPreviousPlaylistCurrentIndex() async {
     await initializeIfNeeded();
-    return _isarStorage?.previousPlaylistCurrentIndexs.getSync(1);
+    return await _isarStorage
+        ?.collection<PreviousPlaylistCurrentIndex>()
+        .buildQuery<PreviousPlaylistCurrentIndex>()
+        .findFirst();
   }
 
   Future<void> addPreviousPlaylistPosition(
@@ -111,7 +118,10 @@ class IsarService {
 
   Future<PreviousPlaylistPosition?> getPreviousPlaylistPosition() async {
     await initializeIfNeeded();
-    return _isarStorage?.previousPlaylistPositions.getSync(1);
+    return await _isarStorage
+        ?.collection<PreviousPlaylistPosition>()
+        .buildQuery<PreviousPlaylistPosition>()
+        .findFirst();
   }
 
   Future<void> removeAllMusics() async => await _isarStorage?.writeTxn(
