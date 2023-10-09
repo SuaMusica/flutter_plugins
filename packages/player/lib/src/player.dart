@@ -126,11 +126,6 @@ class Player {
     return Ok;
   }
 
-  Future<int> removeByIndex(int index) async {
-    _queue.removeByIndex(index);
-    return Ok;
-  }
-
   Future<int> removeAll() async {
     _queue.removeAll();
     await IsarService.instance.removeAllMusics();

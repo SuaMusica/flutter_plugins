@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:smplayer/src/isar_service.dart';
 import 'package:smplayer/src/media.dart';
 import 'package:smplayer/src/previous_playlist_model.dart';
@@ -178,17 +178,11 @@ class Queue {
         storage[i].originalPosition--;
       }
     }
-  }
-
-  removeByIndex(int index) {
-    final itemToBeRemoved = storage.removeAt(index);
-    storage.remove(itemToBeRemoved);
-    if (itemToBeRemoved.position < index) {
-      setIndex = index - 1;
-    }
-    for (var i = itemToBeRemoved.position; i < storage.length; ++i) {
-      storage[i].position--;
-      storage[i].originalPosition--;
+    if (kDebugMode) {
+      for (var e in storage) {
+        debugPrint(
+            '=====> storage remove: ${e.item.name} - ${e.position} | ${e.originalPosition}');
+      }
     }
   }
 
@@ -374,6 +368,21 @@ class Queue {
     }
     storage.sort((a, b) => a.position.compareTo(b.position));
     final playingIndex = storage.indexOf(playingItem);
+
+    if (kDebugMode) {
+      debugPrint(
+        '=====> ${storage[oldIndex].item.name} - storage[oldIndex]: ${storage[oldIndex].originalPosition}',
+      );
+      debugPrint(
+        '=====> ${storage[newIndex].item.name} - storage[newIndex]: ${storage[newIndex].originalPosition}',
+      );
+      for (var e in storage) {
+        debugPrint(
+          '=====> storage Reorder: ${e.item.name} - ${e.position} - ${e.originalPosition}',
+        );
+      }
+    }
+
     setIndex = playingIndex;
   }
 
