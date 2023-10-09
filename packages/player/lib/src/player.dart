@@ -483,7 +483,7 @@ class Player {
         return _forward(current);
       } else {
         if (repeatMode == RepeatMode.NONE) {
-          _queue.setIndex = -1;
+          _queue.setIndex = 0;
           return NotOk;
         } else if (repeatMode == RepeatMode.QUEUE) {
           next = _queue.restart();
