@@ -89,7 +89,7 @@ void main() {
       subject.add(media2);
       subject.add(media3);
 
-      subject.remove(media2);
+      subject.remove(media: media2, isShuffle: false);
 
       expect(subject.size, 2);
       expect(subject.top, media1);

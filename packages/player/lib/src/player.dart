@@ -121,8 +121,8 @@ class Player {
     return Ok;
   }
 
-  Future<int> remove(Media media) async {
-    _queue.remove(media);
+  Future<int> remove({required Media media, required bool isShuffle}) async {
+    _queue.remove(media: media, isShuffle: isShuffle);
     return Ok;
   }
 

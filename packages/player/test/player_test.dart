@@ -100,7 +100,7 @@ void main() {
       subject.enqueue(media2);
       subject.enqueue(media3);
 
-      subject.remove(media2);
+      subject.remove(media: media2, isShuffle: false);
 
       expect(subject.size, 2);
       expect(subject.top, media1);

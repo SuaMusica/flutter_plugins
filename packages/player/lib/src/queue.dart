@@ -40,11 +40,9 @@ class Queue {
   Media? _current;
 
   set setIndex(int index) {
-    _index = index;
-    if (storage.length > 0 && index >= 0) {
+    if (storage.isNotEmpty && index >= 0) {
+      _index = index;
       _current = storage[index].item;
-    } else {
-      return null;
     }
   }
 
@@ -166,18 +164,29 @@ class Queue {
     ];
   }
 
-  remove(Media media) {
+  remove({required Media media, required bool isShuffle}) {
     final itemToBeRemoved = storage.firstWhere((i) => i.item.id == media.id);
     storage.remove(itemToBeRemoved);
     if (itemToBeRemoved.position < index) {
       setIndex = index - 1;
     }
-    for (var i = itemToBeRemoved.position; i < storage.length; ++i) {
-      storage[i].position--;
-      if (storage[i].originalPosition > 0) {
-        storage[i].originalPosition--;
+    if (!isShuffle) {
+      for (var i = itemToBeRemoved.position; i < storage.length; ++i) {
+        storage[i].position--;
+        if (storage[i].originalPosition > 0) {
+          storage[i].originalPosition--;
+        }
+      }
+    } else {
+      for (var i = 0; i < storage.length; ++i) {
+        storage[i].position = i;
+        if (storage[i].originalPosition > 0 &&
+            storage[i].originalPosition > itemToBeRemoved.originalPosition) {
+          storage[i].originalPosition--;
+        }
       }
     }
+
     if (kDebugMode) {
       for (var e in storage) {
         debugPrint(
