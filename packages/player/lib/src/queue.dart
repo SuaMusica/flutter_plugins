@@ -190,7 +190,7 @@ class Queue {
 
   removeAll() {
     storage.clear();
-    setIndex = -1;
+    setIndex = 0;
   }
 
   shuffle() {
