@@ -55,7 +55,7 @@ class Queue {
   PreviousPlaylistMusics? previousPlaylistMusics;
   DateTime? _lastPrevious;
 
-  Media? get current => _current;
+  Media? get current => _current ?? storage[index].item;
 
   List<Media> get items {
     return storage.length > 0
