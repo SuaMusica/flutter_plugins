@@ -241,7 +241,7 @@ class Queue {
   }
 
   Media rewind() {
-    assert(index >= 0);
+    assert(index >= 0 && index < storage.length);
     return storage[index].item;
   }
 
