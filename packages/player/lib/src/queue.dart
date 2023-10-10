@@ -184,8 +184,7 @@ class Queue {
       } else {
         for (var i = 0; i < storage.length; ++i) {
           storage[i].position = i;
-          if (storage[i].originalPosition > 0 &&
-              storage[i].originalPosition > itemToBeRemoved.originalPosition) {
+          if (storage[i].originalPosition > itemToBeRemoved.originalPosition) {
             storage[i].originalPosition--;
           }
         }
