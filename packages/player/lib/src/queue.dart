@@ -40,7 +40,7 @@ class Queue {
   Media? _current;
 
   set setIndex(int index) {
-    if (storage.isNotEmpty && index >= 0) {
+    if (storage.isNotEmpty && index >= 0 && index < storage.length) {
       _index = index;
       _current = storage[index].item;
     }
@@ -55,7 +55,9 @@ class Queue {
   PreviousPlaylistMusics? previousPlaylistMusics;
   DateTime? _lastPrevious;
 
-  Media? get current => _current ?? storage[index].item;
+  Media? get current =>
+      _current ??
+      (index >= 0 && index < storage.length ? storage[index].item : null);
 
   List<Media> get items {
     return storage.length > 0
@@ -164,35 +166,41 @@ class Queue {
     ];
   }
 
-  remove({required Media media, required bool isShuffle}) {
-    final itemToBeRemoved = storage.firstWhere((i) => i.item.id == media.id);
-    storage.remove(itemToBeRemoved);
-    if (itemToBeRemoved.position < index) {
-      setIndex = index - 1;
-    }
-    if (!isShuffle) {
-      for (var i = itemToBeRemoved.position; i < storage.length; ++i) {
-        storage[i].position--;
-        if (storage[i].originalPosition > 0) {
-          storage[i].originalPosition--;
-        }
-      }
-    } else {
-      for (var i = 0; i < storage.length; ++i) {
-        storage[i].position = i;
-        if (storage[i].originalPosition > 0 &&
-            storage[i].originalPosition > itemToBeRemoved.originalPosition) {
-          storage[i].originalPosition--;
-        }
-      }
-    }
+  int remove({required Media media, required bool isShuffle}) {
+    try {
+      final itemToBeRemoved = storage.firstWhere(
+        (i) => i.item.id == media.id,
+      );
 
-    if (kDebugMode) {
-      for (var e in storage) {
-        debugPrint(
-            '=====> storage remove: ${e.item.name} - ${e.position} | ${e.originalPosition}');
+      storage.remove(itemToBeRemoved);
+      if (itemToBeRemoved.position < index) {
+        setIndex = index - 1;
       }
+      if (!isShuffle) {
+        for (var i = itemToBeRemoved.position; i < storage.length; ++i) {
+          storage[i].position--;
+          storage[i].originalPosition--;
+        }
+      } else {
+        for (var i = 0; i < storage.length; ++i) {
+          storage[i].position = i;
+          if (storage[i].originalPosition > 0 &&
+              storage[i].originalPosition > itemToBeRemoved.originalPosition) {
+            storage[i].originalPosition--;
+          }
+        }
+      }
+
+      if (kDebugMode) {
+        for (var e in storage) {
+          debugPrint(
+              '=====> storage remove: ${e.item.name} - ${e.position} | ${e.originalPosition}');
+        }
+      }
+    } catch (e) {
+      return 0;
     }
+    return 1;
   }
 
   clear() => removeAll();
