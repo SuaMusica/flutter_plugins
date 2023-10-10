@@ -149,8 +149,8 @@ void main() {
       () {
         final subject = Queue();
         expect(
-          subject.rewind(),
-          throwsException,
+          () => subject.rewind(),
+          throwsAssertionError,
         );
       },
     );
@@ -180,7 +180,7 @@ void main() {
 
     test('Previous on empty queue shall raise an error', () {
       final subject = Queue();
-      expect(() => subject.previous(), throwsRangeError);
+      expect(() => subject.previous(), throwsAssertionError);
     });
 
     test('Previous on a queue', () {
