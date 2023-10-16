@@ -171,29 +171,16 @@ class Queue {
       {required List<int> positionsToDelete, required bool isShuffle}) {
     try {
       int lastLength = storage.length;
-      List<int> originalPosition = [];
       for (var i = 0; i < positionsToDelete.length; ++i) {
         final pos = positionsToDelete[i] - i;
         if (pos < index) {
           setIndex = index - 1;
         }
-        originalPosition.add(storage[pos].originalPosition);
-        storage.removeWhere(
-          (e) => e.position == pos,
-        );
-        if (!isShuffle) {
-          for (var j = pos; j < storage.length; ++j) {
-            storage[j].position = j;
-            storage[j].originalPosition = j;
-          }
-        } else {
-          for (var j = 0; j < storage.length; ++j) {
-            storage[j].position = j;
-            if (storage[j].originalPosition > originalPosition[i]) {
-              storage[j].originalPosition--;
-            }
-          }
-        }
+        storage.removeAt(pos);
+      }
+
+      for (var j = 0; j < storage.length; ++j) {
+        storage[j].position = j;
       }
 
       if (kDebugMode) {
@@ -278,7 +265,7 @@ class Queue {
               '=====> storage unshuffle: ${e.item.name} - ${e.position} | ${e.originalPosition}');
         }
       }
-      setIndex = current.originalPosition;
+      setIndex = current.position;
     }
   }
 
@@ -411,8 +398,8 @@ class Queue {
   void reorder(int oldIndex, int newIndex, [bool isShuffle = false]) {
     final playingItem = storage.elementAt(index);
     if (newIndex > oldIndex) {
-      for (int i = oldIndex; i <= newIndex; i++) {
-        if (!isShuffle && storage[i].originalPosition > 0) {
+      for (int i = oldIndex + 1; i <= newIndex; i++) {
+        if (!isShuffle) {
           storage[i].originalPosition--;
         }
         storage[i].position--;
