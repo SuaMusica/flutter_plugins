@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:smplayer/src/isar_service.dart';
@@ -166,6 +167,45 @@ class Queue {
     ];
   }
 
+  int removeByPosition(
+      {required List<int> positionsToDelete, required bool isShuffle}) {
+    try {
+      int lastLength = storage.length;
+      for (var i = 0; i < positionsToDelete.length; ++i) {
+        final pos = positionsToDelete[i] - i;
+        if (pos < index) {
+          setIndex = index - 1;
+        }
+        storage.removeWhere(
+          (e) => e.position == pos,
+        );
+        if (!isShuffle) {
+          for (var j = pos; j < storage.length; ++j) {
+            storage[j].position = j;
+            storage[j].originalPosition = j;
+          }
+        } else {
+          for (var j = 0; j < storage.length; ++j) {
+            storage[j].position = j;
+            if (storage[j].originalPosition > pos) {
+              storage[j].originalPosition = j;
+            }
+          }
+        }
+      }
+
+      if (kDebugMode) {
+        for (var e in storage) {
+          debugPrint(
+              '=====> storage remove: ${e.item.name} - ${e.position} | ${e.originalPosition}');
+        }
+      }
+      return lastLength - storage.length;
+    } catch (e) {
+      return 0;
+    }
+  }
+
   int remove({required Media media, required bool isShuffle}) {
     try {
       final itemToBeRemoved = storage.firstWhere(
@@ -229,6 +269,12 @@ class Queue {
       for (var i = 0; i < storage.length; ++i) {
         final item = storage[i];
         item.position = i;
+      }
+      if (kDebugMode) {
+        for (var e in storage) {
+          debugPrint(
+              '=====> storage unshuffle: ${e.item.name} - ${e.position} | ${e.originalPosition}');
+        }
       }
       setIndex = current.originalPosition;
     }

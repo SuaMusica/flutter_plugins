@@ -125,6 +125,12 @@ class Player {
     return _queue.remove(media: media, isShuffle: isShuffle);
   }
 
+  int removeByPosition(
+      {required List<int> positionsToDelete, required bool isShuffle}) {
+    return _queue.removeByPosition(
+        positionsToDelete: positionsToDelete, isShuffle: isShuffle);
+  }
+
   Future<int> removeAll() async {
     _queue.removeAll();
     await IsarService.instance.removeAllMusics();
