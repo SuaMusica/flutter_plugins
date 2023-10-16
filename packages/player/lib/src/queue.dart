@@ -171,11 +171,13 @@ class Queue {
       {required List<int> positionsToDelete, required bool isShuffle}) {
     try {
       int lastLength = storage.length;
+      List<int> originalPosition = [];
       for (var i = 0; i < positionsToDelete.length; ++i) {
         final pos = positionsToDelete[i] - i;
         if (pos < index) {
           setIndex = index - 1;
         }
+        originalPosition.add(storage[pos].originalPosition);
         storage.removeWhere(
           (e) => e.position == pos,
         );
@@ -187,8 +189,8 @@ class Queue {
         } else {
           for (var j = 0; j < storage.length; ++j) {
             storage[j].position = j;
-            if (storage[j].originalPosition > pos) {
-              storage[j].originalPosition = j;
+            if (storage[j].originalPosition > originalPosition[i]) {
+              storage[j].originalPosition--;
             }
           }
         }
