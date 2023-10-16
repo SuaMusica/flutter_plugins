@@ -195,42 +195,6 @@ class Queue {
     }
   }
 
-  int remove({required Media media, required bool isShuffle}) {
-    try {
-      final itemToBeRemoved = storage.firstWhere(
-        (i) => i.item.id == media.id,
-      );
-
-      storage.remove(itemToBeRemoved);
-      if (itemToBeRemoved.position < index) {
-        setIndex = index - 1;
-      }
-      if (!isShuffle) {
-        for (var i = itemToBeRemoved.position; i < storage.length; ++i) {
-          storage[i].position--;
-          storage[i].originalPosition--;
-        }
-      } else {
-        for (var i = 0; i < storage.length; ++i) {
-          storage[i].position = i;
-          if (storage[i].originalPosition > itemToBeRemoved.originalPosition) {
-            storage[i].originalPosition--;
-          }
-        }
-      }
-
-      if (kDebugMode) {
-        for (var e in storage) {
-          debugPrint(
-              '=====> storage remove: ${e.item.name} - ${e.position} | ${e.originalPosition}');
-        }
-      }
-    } catch (e) {
-      return 0;
-    }
-    return 1;
-  }
-
   clear() => removeAll();
 
   removeAll() {

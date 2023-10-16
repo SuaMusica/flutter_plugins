@@ -121,10 +121,6 @@ class Player {
     return Ok;
   }
 
-  int remove({required Media media, required bool isShuffle}) {
-    return _queue.remove(media: media, isShuffle: isShuffle);
-  }
-
   int removeByPosition(
       {required List<int> positionsToDelete, required bool isShuffle}) {
     return _queue.removeByPosition(

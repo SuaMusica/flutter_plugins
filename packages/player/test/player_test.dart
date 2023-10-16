@@ -100,7 +100,7 @@ void main() {
       subject.enqueue(media2);
       subject.enqueue(media3);
 
-      subject.remove(media: media2, isShuffle: false);
+      subject.removeByPosition(positionsToDelete: [1], isShuffle: false);
 
       expect(subject.size, 2);
       expect(subject.top, media1);
@@ -154,7 +154,7 @@ void main() {
     });
     test('Rewind on empty queue shall raise an error', () async {
       final subject = createPlayer();
-      expect(subject.rewind(), throwsRangeError);
+      expect(subject.rewind(), throwsAssertionError);
     });
     test('Rewind on a queue that was not played shall raise an error',
         () async {

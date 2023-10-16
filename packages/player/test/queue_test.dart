@@ -89,7 +89,8 @@ void main() {
       subject.add(media2);
       subject.add(media3);
 
-      subject.remove(media: media2, isShuffle: false);
+      subject.removeByPosition(
+          positionsToDelete: [subject.storage[1].position], isShuffle: false);
 
       expect(subject.size, 2);
       expect(subject.top, media1);
