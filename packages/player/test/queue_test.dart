@@ -89,7 +89,8 @@ void main() {
       subject.add(media2);
       subject.add(media3);
 
-      subject.remove(media2);
+      subject.removeByPosition(
+          positionsToDelete: [subject.storage[1].position], isShuffle: false);
 
       expect(subject.size, 2);
       expect(subject.top, media1);
@@ -144,10 +145,16 @@ void main() {
       expect(subject.items, items);
     });
 
-    test('Rewind on empty queue shall raise an error', () {
-      final subject = Queue();
-      expect(() => subject.rewind(), throwsAssertionError);
-    });
+    test(
+      'Rewind on empty queue shall raise an error',
+      () {
+        final subject = Queue();
+        expect(
+          () => subject.rewind(),
+          throwsAssertionError,
+        );
+      },
+    );
 
     test('Rewind on a queue that was not played shall raise an error', () {
       final subject = Queue();
@@ -155,7 +162,7 @@ void main() {
       subject.add(media2);
       subject.add(media3);
 
-      expect(() => subject.rewind(), throwsAssertionError);
+      expect(subject.rewind(), media1);
     });
 
     test('Rewind shall be supported', () {
@@ -177,13 +184,13 @@ void main() {
       expect(() => subject.previous(), throwsAssertionError);
     });
 
-    test('Previous on a queue that was not played shall raise an error', () {
+    test('Previous on a queue', () {
       final subject = Queue();
       subject.add(media1);
       subject.add(media2);
       subject.add(media3);
 
-      expect(() => subject.previous(), throwsAssertionError);
+      expect(subject.previous(), media1);
     });
 
     test('Previous shall act as rewind', () {
@@ -209,21 +216,21 @@ void main() {
 
       final next1 = subject.next();
       expect(subject.size, 3);
-      expect(subject.current, media1);
-      expect(next1, media1);
+      expect(subject.current, media2);
+      expect(next1, media2);
       expect(subject.items, [media1, media2, media3]);
 
       final next2 = subject.next();
       expect(subject.size, 3);
-      expect(subject.current, media2);
-      expect(next2, media2);
+      expect(subject.current, media3);
+      expect(next2, media3);
       expect(subject.items, [media1, media2, media3]);
 
       subject.previous();
       final previous = subject.previous();
       expect(subject.size, 3);
-      expect(subject.current, media1);
-      expect(previous, media1);
+      expect(subject.current, media2);
+      expect(previous, media2);
       expect(subject.items, [media1, media2, media3]);
     });
     test(
@@ -236,22 +243,22 @@ void main() {
 
       final next1 = subject.next();
       expect(subject.size, 3);
-      expect(subject.current, media1);
-      expect(next1, media1);
+      expect(subject.current, media2);
+      expect(next1, media2);
       expect(subject.items, [media1, media2, media3]);
 
       final next2 = subject.next();
       expect(subject.size, 3);
-      expect(subject.current, media2);
-      expect(next2, media2);
+      expect(subject.current, media3);
+      expect(next2, media3);
       expect(subject.items, [media1, media2, media3]);
 
       subject.previous();
       sleep(Duration(seconds: 3));
       final previous = subject.previous();
       expect(subject.size, 3);
-      expect(subject.current, media2);
-      expect(previous, media2);
+      expect(subject.current, media3);
+      expect(previous, media3);
       expect(subject.items, [media1, media2, media3]);
     });
     test('Next on empty queue shall raise an error', () {
@@ -268,27 +275,30 @@ void main() {
 
       expect(subject.size, 3);
       expect(subject.top, media1);
-      expect(next, media1);
+      expect(next, media2);
       expect(subject.items, [media1, media2, media3]);
     });
-    test('Next on a queue that is playing shall move to the next', () {
-      final subject = Queue();
-      subject.add(media1);
-      subject.add(media2);
-      subject.add(media3);
+    test(
+      'Next on a queue that is playing shall move to the next',
+      () {
+        final subject = Queue();
+        subject.add(media1);
+        subject.add(media2);
+        subject.add(media3);
 
-      final next1 = subject.next();
-      expect(subject.size, 3);
-      expect(subject.current, media1);
-      expect(next1, media1);
-      expect(subject.items, [media1, media2, media3]);
+        final next1 = subject.next();
+        expect(subject.size, 3);
+        expect(subject.current, media2);
+        expect(next1, media2);
+        expect(subject.items, [media1, media2, media3]);
 
-      final next2 = subject.next();
-      expect(subject.size, 3);
-      expect(subject.current, media2);
-      expect(next2, media2);
-      expect(subject.items, [media1, media2, media3]);
-    });
+        final next2 = subject.next();
+        expect(subject.size, 3);
+        expect(subject.current, media3);
+        expect(next2, media3);
+        expect(subject.items, [media1, media2, media3]);
+      },
+    );
     test('Next when reaching the end of the queue shall return null', () {
       final subject = Queue();
       subject.add(media1);
@@ -297,20 +307,20 @@ void main() {
 
       final next1 = subject.next();
       expect(subject.size, 3);
-      expect(subject.current, media1);
-      expect(next1, media1);
+      expect(subject.current, media2);
+      expect(next1, media2);
       expect(subject.items, [media1, media2, media3]);
 
       final next2 = subject.next();
       expect(subject.size, 3);
-      expect(subject.current, media2);
-      expect(next2, media2);
+      expect(subject.current, media3);
+      expect(next2, media3);
       expect(subject.items, [media1, media2, media3]);
 
       final next3 = subject.next();
       expect(subject.size, 3);
       expect(subject.current, media3);
-      expect(next3, media3);
+      expect(next3, null);
       expect(subject.items, [media1, media2, media3]);
 
       final next4 = subject.next();
@@ -352,7 +362,7 @@ void main() {
       subject.add(media2);
       subject.add(media3);
       expect(subject.size, 3);
-      expect(subject.current, null);
+      expect(subject.current, media1);
     });
   });
 }

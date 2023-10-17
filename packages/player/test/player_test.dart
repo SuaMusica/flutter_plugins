@@ -7,16 +7,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:smplayer/player.dart';
 
 void main() {
-  const MethodChannel channel = MethodChannel('suamusica_player');
-  setUp(() {
-    channel.setMockMethodCallHandler((MethodCall methodCall) async {
-      return Player.Ok;
-    });
-  });
+  TestWidgetsFlutterBinding.ensureInitialized();
+  const MethodChannel channel = MethodChannel('suamusica.com.br/player');
 
-  tearDown(() {
-    channel.setMockMethodCallHandler(null);
-  });
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(
+    channel,
+    (MethodCall methodCall) async {
+      return Player.Ok;
+    },
+  );
 
   final media1 = Media(
       id: 1,
@@ -100,7 +100,7 @@ void main() {
       subject.enqueue(media2);
       subject.enqueue(media3);
 
-      subject.remove(media2);
+      subject.removeByPosition(positionsToDelete: [1], isShuffle: false);
 
       expect(subject.size, 2);
       expect(subject.top, media1);
@@ -154,7 +154,7 @@ void main() {
     });
     test('Rewind on empty queue shall raise an error', () async {
       final subject = createPlayer();
-      expect(() => subject.rewind(), throwsAssertionError);
+      expect(subject.rewind(), throwsAssertionError);
     });
     test('Rewind on a queue that was not played shall raise an error',
         () async {
@@ -162,34 +162,39 @@ void main() {
       subject.enqueue(media1);
       subject.enqueue(media2);
       subject.enqueue(media3);
-
-      expect(() => subject.rewind(), throwsAssertionError);
+      expect(await subject.rewind(), 1);
     });
-    test('Rewind shall be supported', () async {
-      final subject = createPlayer();
-      subject.enqueue(media1);
-      subject.enqueue(media2);
-      subject.enqueue(media3);
-      subject.play(media1);
+    test(
+      'Rewind shall be supported',
+      () async {
+        final subject = createPlayer();
+        subject.enqueue(media1);
+        subject.enqueue(media2);
+        subject.enqueue(media3);
+        subject.play(media1);
 
-      subject.rewind();
+        subject.rewind();
 
-      expect(subject.size, 3);
-      expect(subject.top, media1);
-      expect(subject.items, [media1, media2, media3]);
-    });
-    test('Previous on empty queue shall raise an error', () async {
-      final subject = createPlayer();
-      expect(() => subject.previous(), throwsAssertionError);
-    });
+        expect(subject.size, 3);
+        expect(subject.top, media1);
+        expect(subject.items, [media1, media2, media3]);
+      },
+    );
+    test(
+      'Previous on empty queue shall raise an error',
+      () async {
+        final subject = createPlayer();
+        expect(() => subject.previous(), throwsRangeError);
+      },
+    );
     test('Previous on a queue that was not played shall raise an error',
         () async {
       final subject = createPlayer();
       subject.enqueue(media1);
       subject.enqueue(media2);
       subject.enqueue(media3);
-
-      expect(() => subject.previous(), throwsAssertionError);
+      final a = await subject.previous();
+      expect(a, 1);
     });
     test('Previous shall act as rewind', () async {
       final subject = createPlayer();
@@ -214,18 +219,18 @@ void main() {
 
       expect(await subject.next(), Player.Ok);
       expect(subject.size, 3);
-      expect(subject.current, media1);
+      expect(subject.current, media2);
       expect(subject.items, [media1, media2, media3]);
 
       expect(await subject.next(), Player.Ok);
       expect(subject.size, 3);
-      expect(subject.current, media2);
+      expect(subject.current, media3);
       expect(subject.items, [media1, media2, media3]);
 
       expect(await subject.previous(), Player.Ok);
       expect(await subject.previous(), Player.Ok);
       expect(subject.size, 3);
-      expect(subject.current, media1);
+      expect(subject.current, media2);
       expect(subject.items, [media1, media2, media3]);
     });
     test(
@@ -239,24 +244,24 @@ void main() {
 
       expect(await subject.next(), Player.Ok);
       expect(subject.size, 3);
-      expect(subject.current, media1);
+      expect(subject.current, media2);
       expect(subject.items, [media1, media2, media3]);
 
       expect(await subject.next(), Player.Ok);
       expect(subject.size, 3);
-      expect(subject.current, media2);
+      expect(subject.current, media3);
       expect(subject.items, [media1, media2, media3]);
 
       expect(await subject.previous(), Player.Ok);
       sleep(Duration(seconds: 3));
       expect(await subject.previous(), Player.Ok);
       expect(subject.size, 3);
-      expect(subject.current, media2);
+      expect(subject.current, media3);
       expect(subject.items, [media1, media2, media3]);
     });
     test('Next on empty queue shall raise an error', () async {
       final subject = createPlayer();
-      expect(() => subject.next(), throwsAssertionError);
+      expect(await subject.next(), null);
     });
     test('Next on a queue that was not played shall start playing it',
         () async {
@@ -280,12 +285,12 @@ void main() {
       expect(await subject.next(), Player.Ok);
 
       expect(subject.size, 3);
-      expect(subject.current, media1);
+      expect(subject.current, media2);
       expect(subject.items, [media1, media2, media3]);
 
       expect(await subject.next(), Player.Ok);
       expect(subject.size, 3);
-      expect(subject.current, media2);
+      expect(subject.current, media3);
       expect(subject.items, [media1, media2, media3]);
     });
     test('Next when reaching the end of the queue shall return null', () async {
@@ -297,11 +302,6 @@ void main() {
 
       expect(await subject.next(), Player.Ok);
       expect(subject.size, 3);
-      expect(subject.current, media1);
-      expect(subject.items, [media1, media2, media3]);
-
-      expect(await subject.next(), Player.Ok);
-      expect(subject.size, 3);
       expect(subject.current, media2);
       expect(subject.items, [media1, media2, media3]);
 
@@ -310,7 +310,12 @@ void main() {
       expect(subject.current, media3);
       expect(subject.items, [media1, media2, media3]);
 
-      expect(await subject.next(), Player.NotOk);
+      expect(await subject.next(), null);
+      expect(subject.size, 3);
+      expect(subject.current, media3);
+      expect(subject.items, [media1, media2, media3]);
+
+      expect(await subject.next(), null);
       expect(subject.size, 3);
       expect(subject.current, media3);
       expect(subject.items, [media1, media2, media3]);
@@ -343,13 +348,13 @@ void main() {
       expect(subject.size, 3);
       expect(subject.top, media1);
     });
-    test('Current on an unplayed queue shall return null', () async {
+    test('Current on an unplayed queue shall return media1', () async {
       final subject = createPlayer();
       subject.enqueue(media1);
       subject.enqueue(media2);
       subject.enqueue(media3);
       expect(subject.size, 3);
-      expect(subject.current, null);
+      expect(subject.current, media1);
     });
   });
   group('Events', () {
