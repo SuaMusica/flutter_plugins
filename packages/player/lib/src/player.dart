@@ -121,9 +121,10 @@ class Player {
     return Ok;
   }
 
-  Future<int> remove(Media media) async {
-    _queue.remove(media);
-    return Ok;
+  int removeByPosition(
+      {required List<int> positionsToDelete, required bool isShuffle}) {
+    return _queue.removeByPosition(
+        positionsToDelete: positionsToDelete, isShuffle: isShuffle);
   }
 
   Future<int> removeAll() async {
@@ -483,7 +484,7 @@ class Player {
         return _forward(current);
       } else {
         if (repeatMode == RepeatMode.NONE) {
-          _queue.index = -1;
+          _queue.setIndex = 0;
           return NotOk;
         } else if (repeatMode == RepeatMode.QUEUE) {
           next = _queue.restart();
