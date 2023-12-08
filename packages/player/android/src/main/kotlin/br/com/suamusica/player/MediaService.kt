@@ -7,10 +7,12 @@ import android.app.Service
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ServiceInfo
 import android.net.Uri
 import android.net.wifi.WifiManager
-import android.os.*
+import android.os.Build
+import android.os.Bundle
+import android.os.Handler
+import android.os.PowerManager
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
@@ -22,7 +24,15 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.media.session.MediaButtonReceiver
 import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
-import com.google.android.exoplayer2.*
+import com.google.android.exoplayer2.C
+import com.google.android.exoplayer2.ExoPlayer
+import com.google.android.exoplayer2.MediaItem
+import com.google.android.exoplayer2.PlaybackException
+import com.google.android.exoplayer2.PlaybackParameters
+import com.google.android.exoplayer2.Player
+import com.google.android.exoplayer2.Player.DISCONTINUITY_REASON_SEEK
+import com.google.android.exoplayer2.Timeline
+import com.google.android.exoplayer2.Tracks
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.ext.mediasession.TimelineQueueNavigator
@@ -108,8 +118,8 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                     setSessionActivity(sessionActivityPendingIntent)
                     isActive = true
                 }
-
-        mediaSession?.setFlags(MediaSessionCompat.FLAG_HANDLES_QUEUE_COMMANDS)
+                
+            mediaSession?.setFlags(MediaSessionCompat.FLAG_HANDLES_QUEUE_COMMANDS)
 
         player = ExoPlayer.Builder(this).build().apply {
             setAudioAttributes(uAmpAudioAttributes, true)
@@ -131,18 +141,27 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                     connector.setPlayer(player)
                     connector.setPlaybackPreparer(MusicPlayerPlaybackPreparer(this))
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        connector.setCustomActionProviders(
-                            FavoriteModeActionProvider(applicationContext),
-                            NextActionProvider(),
+                        if(Build.MANUFACTURER.equals("samsung", ignoreCase = true)){
+                            connector.setCustomActionProviders(
+                                FavoriteModeActionProvider(applicationContext),
+                                NextActionProvider(),
+                                PreviousActionProvider(),
+                            )
+                        } else {
+                            connector.setCustomActionProviders(
+                                FavoriteModeActionProvider(applicationContext),
                             PreviousActionProvider(),
+                            NextActionProvider(),
                         )
-                    } 
+                        }
+                    }
                     connector.setMediaButtonEventHandler(MediaButtonEventHandler())
                     connector.setEnabledPlaybackActions(
                             PlaybackStateCompat.ACTION_PLAY
                                     or PlaybackStateCompat.ACTION_PAUSE
                                     or PlaybackStateCompat.ACTION_REWIND
                                     or PlaybackStateCompat.ACTION_FAST_FORWARD
+                                    or PlaybackStateCompat.ACTION_SEEK_TO
                         )
                 }
             }
@@ -160,7 +179,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
          * be reported as [PlaybackStateCompat.STATE_NONE], the service will first remove
          * itself as a foreground service, and will then call [stopSelf].
          */
-        player?.stop(true)
+        player?.stop()
         stopService()
     }
 
@@ -563,18 +582,18 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
             override fun onPositionDiscontinuity(reason: Int) {
                 Log.i(TAG, "onPositionDiscontinuity: $reason")
+                if(reason == DISCONTINUITY_REASON_SEEK){
+                    val bundle = Bundle()
+                    bundle.putString("type", "seek-end")
+                    mediaSession?.setExtras(bundle)
+                }
+
             }
 
             override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters) {
                 Log.i(TAG, "onPlaybackParametersChanged: $playbackParameters")
             }
 
-            override fun onSeekProcessed() {
-                Log.i(TAG, "onSeekProcessed")
-                val bundle = Bundle()
-                bundle.putString("type", "seek-end")
-                mediaSession?.setExtras(bundle)
-            }
         }
     }
 

@@ -372,7 +372,7 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
                                 /* groupId= */ null, /* name= */ null, urlToVariantInfos.get(variant.url));
                 deduplicatedVariants.add(
                         variant.copyWithFormat(
-                                variant.format.copyWithMetadata(new Metadata(hlsMetadataEntry))));
+                                variant.format.buildUpon().setMetadata((new Metadata(hlsMetadataEntry))).build()));
             }
         }
 
@@ -456,7 +456,7 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
                         // TODO: Remove muxedAudioFormat and add a Rendition with a null uri to audios.
                         muxedAudioFormat = format;
                     } else {
-                        audios.add(new CustomHlsMasterPlaylist.Rendition(uri, format.copyWithMetadata(metadata), groupId, name));
+                        audios.add(new CustomHlsMasterPlaylist.Rendition(uri, format.buildUpon().setMetadata(metadata).build(), groupId, name));
                     }
                     break;
                 case TYPE_SUBTITLES:

@@ -4,7 +4,7 @@ version '1.0.4'
 
 buildscript {
     ext.kotlin_version = '1.8.21'
-    ext.exoplayer_version = '2.18.4'
+    ext.exoplayer_version = '2.19.1'
     repositories {
         google()
         mavenCentral()
@@ -32,7 +32,7 @@ kapt {
 }
 
 android {
-    compileSdkVersion 33
+    compileSdkVersion 34
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
@@ -52,12 +52,12 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2'
     implementation "com.google.android.exoplayer:exoplayer:$exoplayer_version"
     implementation "com.google.android.exoplayer:extension-mediasession:$exoplayer_version"
-    implementation "androidx.media:media:1.6.0"
+    implementation "androidx.media:media:1.7.0"
     implementation "org.jetbrains.kotlin:kotlin-reflect"
 
     // Glide dependencies
     implementation "com.github.bumptech.glide:glide:4.12.0"
-    // implementation files('/Users/alantrope/flutter/bin/cache/artifacts/engine/android-x64/flutter.jar')
+//    implementation files('/Users/alantrope/flutter/bin/cache/artifacts/engine/android-x64/flutter.jar')
     kapt "com.github.bumptech.glide:compiler:4.12.0"
 
 }
