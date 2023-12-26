@@ -20,6 +20,7 @@ class Media {
   final bool? isFavorite;
   String? fallbackUrl;
   final int? indexInPlaylist;
+  final int categoryId;
 
   Media({
     required this.id,
@@ -40,6 +41,7 @@ class Media {
     this.fallbackUrl,
     this.isFavorite,
     this.indexInPlaylist,
+    this.categoryId = 0,
   }) : super() {
     fallbackUrl = fallbackUrl ?? url;
   }
@@ -62,6 +64,7 @@ class Media {
         'is_spot': isSpot,
         'isFavorite': isFavorite,
         'indexInPlaylist': indexInPlaylist,
+        'catid': categoryId,
       };
 
   @override
@@ -125,6 +128,7 @@ class Media {
     bool? isFavorite,
     String? fallbackUrl,
     int? indexInPlaylist,
+    int? categoryId,
   }) =>
       Media(
         id: id ?? this.id,
@@ -144,6 +148,7 @@ class Media {
         isSpot: isSpot ?? this.isSpot,
         isFavorite: isFavorite ?? this.isFavorite,
         indexInPlaylist: indexInPlaylist ?? this.indexInPlaylist,
+        categoryId: categoryId ?? this.categoryId,
       );
   factory Media.fromJson(Map<String, dynamic> map) {
     return Media(
@@ -164,6 +169,7 @@ class Media {
       isSpot: map['isSpot'] ?? false,
       isFavorite: map['isFavorite'],
       fallbackUrl: map['fallbackUrl'],
+      categoryId: map['catid']?.toInt() ?? 0,
     );
   }
 }
