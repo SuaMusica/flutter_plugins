@@ -180,7 +180,7 @@ class MediaSessionConnection(
                                 }
                                 "error" -> {
                                     val error = extras.getString("error")
-                                    playerChangeNotifier.notifyStateChange(PlayerState.ERROR.ordinal, error)
+                                    playerChangeNotifier.notifyStateChange(PlaybackStateCompat.STATE_ERROR, error)
                                 }
                                 "seek-end" -> {
                                     playerChangeNotifier.notifySeekEnd()
