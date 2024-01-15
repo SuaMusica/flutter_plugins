@@ -624,9 +624,9 @@ class Player {
         final errorType = callArgs['errorType'] ?? 2;
 
         _notifyPlayerErrorEvent(
-          player,
-          'error',
-          PlayerErrorType.values[errorType],
+          player: player,
+          error: 'error',
+          errorType: PlayerErrorType.values[errorType],
         );
         break;
       case 'state.change':
@@ -690,7 +690,14 @@ class Player {
 
           case PlayerState.ERROR:
             final error = callArgs['error'] ?? "Unknown from Source";
-            _notifyPlayerErrorEvent(player, error);
+            final isPermissionError =
+                (error as String).contains('Permission denied');
+            _notifyPlayerErrorEvent(
+                player: player,
+                error: error,
+                errorType: isPermissionError
+                    ? PlayerErrorType.PERMISSION_DENIED
+                    : null);
             break;
         }
 
@@ -854,9 +861,9 @@ class Player {
   ) {
     if (error.isNotEmpty) {
       _notifyPlayerErrorEvent(
-        player,
-        error,
-        PlayerErrorType.INFORMATION,
+        player: player,
+        error: error,
+        errorType: PlayerErrorType.INFORMATION,
       );
     }
     if (player._queue.current != null) {
@@ -871,8 +878,11 @@ class Player {
     }
   }
 
-  static _notifyPlayerErrorEvent(Player player, String error,
-      [PlayerErrorType errorType = PlayerErrorType.UNDEFINED]) {
+  static _notifyPlayerErrorEvent({
+    required Player player,
+    required String error,
+    PlayerErrorType? errorType,
+  }) {
     if (player._queue.current != null) {
       _addUsingPlayer(
         player,
@@ -881,7 +891,7 @@ class Player {
           media: player._queue.current!,
           queuePosition: player._queue.index,
           error: error,
-          errorType: errorType,
+          errorType: errorType ?? PlayerErrorType.UNDEFINED,
         ),
       );
     }

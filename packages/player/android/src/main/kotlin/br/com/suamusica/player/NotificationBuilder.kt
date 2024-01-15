@@ -7,11 +7,11 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.media.MediaMetadata
 import android.net.Uri
 import android.os.Build
 import android.support.v4.media.MediaMetadataCompat
-import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat.*
 import android.util.Log
@@ -36,44 +36,56 @@ const val FAVORITE: String = "favorite"
  */
 class NotificationBuilder(private val context: Context) {
     private val platformNotificationManager: NotificationManager =
-            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
     private val skipToPreviousAction = NotificationCompat.Action(
-            R.drawable.ic_prev_notification_player,
-            context.getString(R.string.notification_skip_to_previous),
-            MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_SKIP_TO_PREVIOUS))
+        R.drawable.ic_prev_notification_player,
+        context.getString(R.string.notification_skip_to_previous),
+        MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_SKIP_TO_PREVIOUS)
+    )
     private val playAction = NotificationCompat.Action(
-            R.drawable.ic_play_notification_player,
-            context.getString(R.string.notification_play),
-            MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_PLAY))
+        R.drawable.ic_play_notification_player,
+        context.getString(R.string.notification_play),
+        MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_PLAY)
+    )
     private val pauseAction = NotificationCompat.Action(
-            R.drawable.ic_pause_notification_player,
-            context.getString(R.string.notification_pause),
-            MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_PAUSE))
+        R.drawable.ic_pause_notification_player,
+        context.getString(R.string.notification_pause),
+        MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_PAUSE)
+    )
 
     private val favoriteAction = NotificationCompat.Action(
-            R.drawable.ic_favorite_notification_player,
-            context.getString(R.string.notification_favorite),
-            PendingIntent.getBroadcast(context, UUID.randomUUID().hashCode()
-                    , Intent(context, MediaControlBroadcastReceiver::class.java).apply {
+        R.drawable.ic_favorite_notification_player,
+        context.getString(R.string.notification_favorite),
+        PendingIntent.getBroadcast(context,
+            UUID.randomUUID().hashCode(),
+            Intent(context, MediaControlBroadcastReceiver::class.java).apply {
                 putExtra(FAVORITE, true)
-            }, if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+            },
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
+        )
     )
 
     private val unFavoriteAction = NotificationCompat.Action(
-            R.drawable.ic_unfavorite_notification_player,
-            context.getString(R.string.notification_unfavorite),
-            PendingIntent.getBroadcast(context, UUID.randomUUID().hashCode(), Intent(context, MediaControlBroadcastReceiver::class.java).apply {
+        R.drawable.ic_unfavorite_notification_player,
+        context.getString(R.string.notification_unfavorite),
+        PendingIntent.getBroadcast(
+            context,
+            UUID.randomUUID().hashCode(),
+            Intent(context, MediaControlBroadcastReceiver::class.java).apply {
                 putExtra(FAVORITE, false)
-            },  if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+            },
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
+        )
     )
 
     private val skipToNextAction = NotificationCompat.Action(
-            R.drawable.ic_next_notification_player,
-            context.getString(R.string.notification_skip_to_next),
-            MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_SKIP_TO_NEXT))
+        R.drawable.ic_next_notification_player,
+        context.getString(R.string.notification_skip_to_next),
+        MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_SKIP_TO_NEXT)
+    )
     private val stopPendingIntent =
-            MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_STOP)
+        MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_STOP)
     private var oldArtBitmap: Bitmap? = null
     private var oldArtUri: String = ""
 
@@ -93,34 +105,53 @@ class NotificationBuilder(private val context: Context) {
             val file = File(context.filesDir, LOCAL_COVER_PNG)
             var bitmap: Bitmap? = null
             val futureTarget: FutureTarget<Bitmap>? = when {
-                artUri != null && artUri.isNotBlank() ->
-                    glider.load(artUri).submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
+                !artUri.isNullOrBlank() ->
+                    glider.load(artUri)
+                        .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
+
                 file.exists() -> glider
                     .load(Uri.fromFile(file))
                     .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
+
                 else -> null
             }
-            
-            if(futureTarget != null){
+
+            if (futureTarget != null) {
                 bitmap = try {
                     futureTarget.get()
                 } catch (e: Exception) {
-                    null
+                    if (file.exists()) {
+                        BitmapFactory.decodeFile(file.absolutePath)
+                    } else {
+                        null
+                    }
                 }
             }
             return bitmap
         }
     }
 
-    fun buildNotification(mediaSession: MediaSessionCompat, media: Media?, onGoing: Boolean, isPlayingExternal: Boolean?, isFavorite: Boolean?, mediaDuration: Long?): Notification {
+    fun buildNotification(
+        mediaSession: MediaSessionCompat,
+        media: Media?,
+        onGoing: Boolean,
+        isPlayingExternal: Boolean?,
+        isFavorite: Boolean?,
+        mediaDuration: Long?
+    ): Notification {
         if (shouldCreateNowPlayingChannel()) {
             createNowPlayingChannel()
         }
         val playbackState = mediaSession.controller.playbackState
         val builder = NotificationCompat.Builder(context, NOW_PLAYING_CHANNEL)
-        val actions = if (isFavorite == null) mutableListOf(0, 1, 2) else mutableListOf(0, 2, 3) // favorite,play/pause,next
+        val actions = if (isFavorite == null) mutableListOf(0, 1, 2) else mutableListOf(
+            0,
+            2,
+            3
+        ) // favorite,play/pause,next
         val duration = mediaDuration ?: 0L
-        val currentDuration = mediaSession.controller.metadata.getLong(MediaMetadata.METADATA_KEY_DURATION)
+        val currentDuration =
+            mediaSession.controller.metadata.getLong(MediaMetadata.METADATA_KEY_DURATION)
         val shouldUseMetadata = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
 
         isFavorite?.let {
@@ -136,14 +167,17 @@ class NotificationBuilder(private val context: Context) {
                     builder.addAction(playAction)
                 }
             }
+
             playbackState.isPlaying -> {
                 Log.i("NotificationBuilder", "Player is playing... onGoing: $onGoing")
                 builder.addAction(pauseAction)
             }
+
             playbackState.isPlayEnabled -> {
                 Log.i("NotificationBuilder", "Player is NOT playing... onGoing: $onGoing")
                 builder.addAction(playAction)
             }
+
             else -> {
                 Log.i("NotificationBuilder", "ELSE")
                 builder.addAction(playAction)
@@ -153,29 +187,31 @@ class NotificationBuilder(private val context: Context) {
         builder.addAction(skipToNextAction)
 
         val mediaStyle = MediaStyle()
-                .setCancelButtonIntent(stopPendingIntent)
-                .setShowActionsInCompactView(*actions.toIntArray())
-                .setShowCancelButton(true)
-                .setMediaSession(mediaSession.sessionToken)
+            .setCancelButtonIntent(stopPendingIntent)
+            .setShowActionsInCompactView(*actions.toIntArray())
+            .setShowCancelButton(true)
+            .setMediaSession(mediaSession.sessionToken)
         val artUri = media?.coverUrl
         val art: Bitmap?
         if (artUri == oldArtUri && this.oldArtBitmap != null) {
             art = oldArtBitmap
         } else {
             art = getArt(context, artUri)
-            oldArtUri = artUri?:""
+            oldArtUri = artUri ?: ""
             oldArtBitmap = art
         }
 
         if (shouldUseMetadata && currentDuration != duration) {
             mediaSession.setMetadata(
-                    MediaMetadataCompat.Builder()
-                            .putString(MediaMetadata.METADATA_KEY_TITLE, media?.name ?: "Propaganda")
-                            .putString(MediaMetadata.METADATA_KEY_ARTIST, media?.author?:"")
-                            .putBitmap(
-                                    MediaMetadata.METADATA_KEY_ALBUM_ART, art)
-                            .putLong(MediaMetadata.METADATA_KEY_DURATION, duration) // 4
-                            .build())
+                MediaMetadataCompat.Builder()
+                    .putString(MediaMetadata.METADATA_KEY_TITLE, media?.name ?: "Propaganda")
+                    .putString(MediaMetadata.METADATA_KEY_ARTIST, media?.author ?: "")
+                    .putBitmap(
+                        MediaMetadata.METADATA_KEY_ALBUM_ART, art
+                    )
+                    .putLong(MediaMetadata.METADATA_KEY_DURATION, duration) // 4
+                    .build()
+            )
         }
 
 
@@ -184,7 +220,10 @@ class NotificationBuilder(private val context: Context) {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
         val notifyPendingIntent = PendingIntent.getActivity(
-                context, 0, notifyIntent, if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT else PendingIntent.FLAG_UPDATE_CURRENT
+            context,
+            0,
+            notifyIntent,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT else PendingIntent.FLAG_UPDATE_CURRENT
         )
         val notification = builder.apply {
             setContentIntent(notifyPendingIntent)
@@ -205,8 +244,8 @@ class NotificationBuilder(private val context: Context) {
             }
             if (!shouldUseMetadata) {
                 setLargeIcon(art)
-                setContentTitle(media?.name?:"Propaganda")
-                setContentText(media?.author?:"")
+                setContentTitle(media?.name ?: "Propaganda")
+                setContentText(media?.author ?: "")
             }
 
         }.build()
@@ -222,24 +261,26 @@ class NotificationBuilder(private val context: Context) {
     }
 
     private fun shouldCreateNowPlayingChannel() =
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !nowPlayingChannelExists()
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !nowPlayingChannelExists()
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun nowPlayingChannelExists() =
-            platformNotificationManager.getNotificationChannel(NOW_PLAYING_CHANNEL) != null
+        platformNotificationManager.getNotificationChannel(NOW_PLAYING_CHANNEL) != null
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun createNowPlayingChannel() {
-        val notificationChannel = NotificationChannel(NOW_PLAYING_CHANNEL,
-                context.getString(R.string.notification_channel),
-                NotificationManager.IMPORTANCE_LOW)
-                .apply {
-                    description = context.getString(R.string.notification_channel_description)
-                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-                        this.vibrationPattern = longArrayOf(0)
-                        this.enableVibration(true)
-                    }
+        val notificationChannel = NotificationChannel(
+            NOW_PLAYING_CHANNEL,
+            context.getString(R.string.notification_channel),
+            NotificationManager.IMPORTANCE_LOW
+        )
+            .apply {
+                description = context.getString(R.string.notification_channel_description)
+                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+                    this.vibrationPattern = longArrayOf(0)
+                    this.enableVibration(true)
                 }
+            }
 
         platformNotificationManager.createNotificationChannel(notificationChannel)
     }

@@ -576,7 +576,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                 Log.e(TAG, "onPLayerError: ${error.message}", error)
                 val bundle = Bundle()
                 bundle.putString("type", "error")
-                bundle.putString("error", error.message)
+                bundle.putString("error", if(error.cause.toString().contains("Permission denied")) "Permission denied" else error.message )
                 mediaSession?.setExtras(bundle)
             }
 
