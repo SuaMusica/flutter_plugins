@@ -42,6 +42,7 @@ enum PlayerErrorType {
   FAILED_TO_PLAY_ERROR,
   NETWORK_ERROR,
   INFORMATION,
+  PERMISSION_DENIED,
 }
 
 extension FeedTypeString on PlayerErrorType {
