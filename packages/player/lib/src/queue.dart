@@ -41,7 +41,7 @@ class Queue {
   Media? _current;
 
   set setIndex(int index) {
-    if (storage.isNotEmpty && index >= 0 && index < storage.length) {
+    if (storage.isNotEmpty && index >= 0 && index < storage.length - 1) {
       _index = index;
       _current = storage[index].item;
     }
@@ -106,8 +106,11 @@ class Queue {
     setIndex = 0;
   }
 
-  replaceCurrent(Media media) =>
+  void replaceCurrent(Media media) {
+    if (index > -1 && index <= (storage.length - 1) && storage.isNotEmpty) {
       storage[index] = storage[index].copyWith(item: media);
+    }
+  }
 
   add(Media media) async {
     int pos = _nextPosition();
