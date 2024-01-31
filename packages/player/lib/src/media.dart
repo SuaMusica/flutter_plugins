@@ -22,6 +22,7 @@ class Media {
   final int? indexInPlaylist;
   final int categoryId;
   final String? playlistTitle;
+  final int playlistOwnerId;
 
   Media({
     required this.id,
@@ -44,6 +45,7 @@ class Media {
     this.indexInPlaylist,
     this.categoryId = 0,
     this.playlistTitle,
+    this.playlistOwnerId,
   }) : super() {
     fallbackUrl = fallbackUrl ?? url;
   }
@@ -68,6 +70,7 @@ class Media {
         'indexInPlaylist': indexInPlaylist,
         'catid': categoryId,
         'playlistTitle': playlistTitle,
+        'playlistOwnerId': playlistOwnerId,
       };
 
   @override
@@ -133,6 +136,7 @@ class Media {
     int? indexInPlaylist,
     int? categoryId,
     String? playlistTitle,
+    int? playlistOwnerId,
   }) =>
       Media(
         id: id ?? this.id,
@@ -154,6 +158,7 @@ class Media {
         indexInPlaylist: indexInPlaylist ?? this.indexInPlaylist,
         categoryId: categoryId ?? this.categoryId,
         playlistTitle: playlistTitle ?? this.playlistTitle,
+        playlistOwnerId: playlistOwnerId ?? this.playlistOwnerId,
       );
   factory Media.fromJson(Map<String, dynamic> map) {
     return Media(
@@ -176,6 +181,7 @@ class Media {
       fallbackUrl: map['fallbackUrl'],
       categoryId: map['catid']?.toInt() ?? 0,
       playlistTitle: map['playlistTitle'] ?? '',
+      playlistOwnerId: map['playlistOwnerId']?.toInt() ?? 0,
     );
   }
 }
