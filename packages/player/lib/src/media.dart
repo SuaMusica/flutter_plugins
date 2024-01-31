@@ -22,7 +22,7 @@ class Media {
   final int? indexInPlaylist;
   final int categoryId;
   final String? playlistTitle;
-  final int playlistOwnerId;
+  final int? playlistOwnerId;
 
   Media({
     required this.id,
