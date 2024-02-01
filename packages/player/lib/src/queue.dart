@@ -107,7 +107,7 @@ class Queue {
   }
 
   void replaceCurrent(Media media) {
-    if (index > -1 && index <= (storage.length - 1) && storage.isNotEmpty) {
+    if (storage.isNotEmpty && index > -1 && index <= (storage.length - 1)) {
       storage[index] = storage[index].copyWith(item: media);
     }
   }
