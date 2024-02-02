@@ -185,9 +185,9 @@ class Media {
       isFavorite: map['isFavorite'],
       fallbackUrl: map['fallbackUrl'],
       categoryId: map['catid']?.toInt() ?? 0,
-      playlistTitle: map['playlistTitle'] ?? '',
-      playlistCoverUrl: map['playlistCoverUrl'] ?? '',
-      playlistOwnerId: map['playlistOwnerId']?.toInt() ?? 0,
+      playlistTitle: map['playlistTitle'],
+      playlistCoverUrl: map['playlistCoverUrl'],
+      playlistOwnerId: map['playlistOwnerId'],
     );
   }
 }
