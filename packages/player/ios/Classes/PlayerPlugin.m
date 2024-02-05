@@ -98,6 +98,9 @@ id pauseId = nil;
 id nextTrackId = nil;
 id previousTrackId = nil;
 id togglePlayPauseId = nil;
+id seekForwardId = nil;
+id seekBackwardId = nil;
+id changePlaybackPositionId = nil;
 BOOL isConnected = true;
 BOOL alreadyhasEnded = false;
 BOOL shouldAutoStart = false;
@@ -201,6 +204,10 @@ PlaylistItem *currentItem = nil;
 }
 
 -(void)configureRemoteCommandCenter {
+
+    // @property (nonatomic, readonly) MPRemoteCommand *seekForwardCommand;
+    // @property (nonatomic, readonly) MPRemoteCommand *seekBackwardCommand;
+    // @property (nonatomic, readonly) MPChangePlaybackPositionCommand *changePlaybackPositionCommand MP_API(ios(9.1), macos(10.12.2));
     NSLog(@"Player: MPRemote: Enabling Remote Command Center...");
     // TODO: Review this
     // For now I will keep it disabled
@@ -215,6 +222,7 @@ PlaylistItem *currentItem = nil;
     dispatch_async(dispatch_get_main_queue(), ^{
         [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
     });
+
     MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
     
     if (playId != nil) {
@@ -317,6 +325,57 @@ PlaylistItem *currentItem = nil;
         return MPRemoteCommandHandlerStatusSuccess;
     }];
     commandCenter.previousTrackCommand.enabled = TRUE;
+
+    seekForwardId = [commandCenter.seekForwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+        NSLog(@"Player: Remote Command SeekForward: START");
+        if (_playerId != nil) {
+            NSMutableDictionary * playerInfo = players[_playerId];
+            if ([playerInfo[@"areNotificationCommandsEnabled"] boolValue]) {
+                NSLog(@"Player: Remote Command SeekForward: Enabled");
+                [self seek:_playerId time:CMTimeMakeWithSeconds(30, NSEC_PER_SEC)];
+            } else {
+                NSLog(@"Player: Remote Command SeekForward: Disabled");
+            }
+        }
+        NSLog(@"Player: Remote Command SeekForward: END");
+        return MPRemoteCommandHandlerStatusSuccess;
+    }];
+    commandCenter.seekForwardCommand.enabled = TRUE;
+
+    seekBackwardId = [commandCenter.seekBackwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+        NSLog(@"Player: Remote Command SeekBackward: START");
+        if (_playerId != nil) {
+            NSMutableDictionary * playerInfo = players[_playerId];
+            if ([playerInfo[@"areNotificationCommandsEnabled"] boolValue]) {
+                NSLog(@"Player: Remote Command SeekBackward: Enabled");
+                [self seek:_playerId time:CMTimeMakeWithSeconds(-30, NSEC_PER_SEC)];
+            } else {
+                NSLog(@"Player: Remote Command SeekBackward: Disabled");
+            }
+        }
+        NSLog(@"Player: Remote Command SeekBackward: END");
+        return MPRemoteCommandHandlerStatusSuccess;
+    }];
+    commandCenter.seekBackwardCommand.enabled = TRUE;
+
+    changePlaybackPositionId = [commandCenter.changePlaybackPositionCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+        NSLog(@"Player: Remote Command ChangePlaybackPosition: START");
+        if (_playerId != nil) {
+            NSMutableDictionary * playerInfo = players[_playerId];
+            if ([playerInfo[@"areNotificationCommandsEnabled"] boolValue]) {
+                NSLog(@"Player: Remote Command ChangePlaybackPosition: Enabled");
+                MPChangePlaybackPositionCommandEvent * playbackEvent = (MPChangePlaybackPositionCommandEvent *)event;
+                [self seek:_playerId time:CMTimeMakeWithSeconds(playbackEvent.positionTime, NSEC_PER_SEC)];
+            } else {
+                NSLog(@"Player: Remote Command ChangePlaybackPosition: Disabled");
+            }
+        }
+        NSLog(@"Player: Remote Command ChangePlaybackPosition: END");
+        return MPRemoteCommandHandlerStatusSuccess;
+    }];
+    commandCenter.changePlaybackPositionCommand.enabled = TRUE;
+
+    NSLog(@"Player: MPRemote: Enabled Remote Command Center! Done!");
 }
 
 -(void)disableRemoteCommandCenter:(NSString *) playerId {
@@ -338,7 +397,12 @@ PlaylistItem *currentItem = nil;
     commandCenter.nextTrackCommand.enabled = FALSE;
     [commandCenter.togglePlayPauseCommand removeTarget:togglePlayPauseId];
     commandCenter.togglePlayPauseCommand.enabled = FALSE;
-    
+    [commandCenter.seekForwardCommand removeTarget:seekForwardId];
+    [commandCenter.seekBackwardCommand removeTarget:seekBackwardId];
+    [commandCenter.changePlaybackPositionCommand removeTarget:changePlaybackPositionId];
+    commandCenter.changePlaybackPositionCommand.enabled = FALSE;
+    commandCenter.seekForwardCommand.enabled = FALSE;
+    commandCenter.seekBackwardCommand.enabled = FALSE;
     NSLog(@"Player: MPRemote: Disabled Remote Command Center! Done!");
 }
 
@@ -586,6 +650,7 @@ PlaylistItem *currentItem = nil;
             ^{
                 NSLog(@"Player: seek");
                 if (!call.arguments[@"position"]) {
+                    NSLog(@"Player: seek: position is null");
                     result(0);
                 } else {
                     int milliseconds = [call.arguments[@"position"] intValue];
@@ -877,6 +942,7 @@ PlaylistItem *currentItem = nil;
                                                                                 usingBlock:^(NSNotification* note){
             NSMutableDictionary * playerInfo = players[_playerId];
             [playerInfo setValue:@(false) forKey:@"isSeeking"];
+            NSLog(@"Player: 1 AVPlayerItemTimeJumpedNotification: %@", [note object]);
             int state = STATE_SEEK_END;
             [self notifyStateChange:_playerId state:state overrideBlock:false];
             NSLog(@"Player: AVPlayerItemTimeJumpedNotification: %@", [note object]);
@@ -1459,6 +1525,7 @@ isNotification: (bool) respectSilence
         AVPlayer *player = playerInfo[@"player"];
         [ player setVolume:volume ];
         [ player seekToTime:time ];
+        NSLog(@"Player: Inside OnReady: Volume: %f", volume);
         if(!loadOnly){
         [ player play];
         }
@@ -1612,7 +1679,9 @@ isNotification: (bool) respectSilence
 -(void) onTimeInterval: (NSString *) playerId
                   time: (CMTime) time {
     NSMutableDictionary * playerInfo = players[_playerId];
+    NSLog(@"Player: onTimeInterval... %@", playerInfo);
     if (![playerInfo[@"isSeeking"] boolValue]) {
+        NSLog(@"Player: onTimeInterval...");
         int position =  CMTimeGetSeconds(time);
         AVPlayer *player = playerInfo[@"player"];
         
@@ -1631,19 +1700,25 @@ isNotification: (bool) respectSilence
             author = @"Sua Musica";
             coverUrl = DEFAULT_COVER;
         }
+
+        
         
         int durationInMillis = _duration*1000;
         int positionInMillis = position*1000;
         
         if (shallSendEvents) {
+            // NSLOG(@"Player: 1 onTimeInterval... %@", playerInfo);
             [_channel_player invokeMethod:@"audio.onCurrentPosition" arguments:@{@"playerId": playerId, @"position": @(positionInMillis), @"duration": @(durationInMillis)}];
             
             dispatch_async(dispatch_get_global_queue(0,0), ^{
                 dispatch_async(dispatch_get_main_queue(), ^{
+//                    NSLOG(@"Player: 1.5 onTimeInterval... %@", playerInfo);
                     [NowPlayingCenter updateWithItem:currentItem rate:1.0 position:position duration:_duration];
                 });
             });
         }
+
+//        NSLOG(@"Player: 2 onTimeInterval... %@", playerInfo);
         
         
         
@@ -1718,6 +1793,7 @@ isNotification: (bool) respectSilence
     if ([playerInfo[@"isPlaying"] boolValue]) {
         [ self pause:playerId ];
         [ self seek:playerId time:CMTimeMake(0, 1) ];
+//        NSLOG(@"Player: stop -> onSoundComplete...");
         [playerInfo setObject:@false forKey:@"isPlaying"];
         int state = STATE_STOPPED;
         [self notifyStateChange:playerId state:state overrideBlock:false];
@@ -1734,6 +1810,7 @@ isNotification: (bool) respectSilence
     [playerInfo setValue:@(true) forKey:@"isSeeking"];
     AVPlayer *player = playerInfo[@"player"];
     [[player currentItem] seekToTime:time];
+    NSLog(@"Player: seek -> onTimeInterval...");
     [self onTimeInterval:playerId time:time];
     return Ok;
 }
