@@ -326,54 +326,65 @@ PlaylistItem *currentItem = nil;
     }];
     commandCenter.previousTrackCommand.enabled = TRUE;
 
-    seekForwardId = [commandCenter.seekForwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
-        NSLog(@"Player: Remote Command SeekForward: START");
-        if (_playerId != nil) {
-            NSMutableDictionary * playerInfo = players[_playerId];
-            if ([playerInfo[@"areNotificationCommandsEnabled"] boolValue]) {
-                NSLog(@"Player: Remote Command SeekForward: Enabled");
-                [self seek:_playerId time:CMTimeMakeWithSeconds(30, NSEC_PER_SEC)];
-            } else {
-                NSLog(@"Player: Remote Command SeekForward: Disabled");
-            }
+    if (@available(iOS 17.0, *)) {
+        if (seekForwardId != nil) {
+            [commandCenter.seekForwardCommand removeTarget:seekForwardId];
         }
-        NSLog(@"Player: Remote Command SeekForward: END");
-        return MPRemoteCommandHandlerStatusSuccess;
-    }];
-    commandCenter.seekForwardCommand.enabled = TRUE;
+        seekForwardId = [commandCenter.seekForwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+            NSLog(@"Player: Remote Command SeekForward: START");
+            if (_playerId != nil) {
+                NSMutableDictionary * playerInfo = players[_playerId];
+                if ([playerInfo[@"areNotificationCommandsEnabled"] boolValue]) {
+                    NSLog(@"Player: Remote Command SeekForward: Enabled");
+                    [self seek:_playerId time:CMTimeMakeWithSeconds(30, NSEC_PER_SEC)];
+                } else {
+                    NSLog(@"Player: Remote Command SeekForward: Disabled");
+                }
+            }
+            NSLog(@"Player: Remote Command SeekForward: END");
+            return MPRemoteCommandHandlerStatusSuccess;
+        }];
+        commandCenter.seekForwardCommand.enabled = TRUE;
 
-    seekBackwardId = [commandCenter.seekBackwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
-        NSLog(@"Player: Remote Command SeekBackward: START");
-        if (_playerId != nil) {
-            NSMutableDictionary * playerInfo = players[_playerId];
-            if ([playerInfo[@"areNotificationCommandsEnabled"] boolValue]) {
-                NSLog(@"Player: Remote Command SeekBackward: Enabled");
-                [self seek:_playerId time:CMTimeMakeWithSeconds(-30, NSEC_PER_SEC)];
-            } else {
-                NSLog(@"Player: Remote Command SeekBackward: Disabled");
-            }
+        if (seekBackwardId != nil) {
+            [commandCenter.seekBackwardCommand removeTarget:seekBackwardId];
         }
-        NSLog(@"Player: Remote Command SeekBackward: END");
-        return MPRemoteCommandHandlerStatusSuccess;
-    }];
-    commandCenter.seekBackwardCommand.enabled = TRUE;
+        seekBackwardId = [commandCenter.seekBackwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+            NSLog(@"Player: Remote Command SeekBackward: START");
+            if (_playerId != nil) {
+                NSMutableDictionary * playerInfo = players[_playerId];
+                if ([playerInfo[@"areNotificationCommandsEnabled"] boolValue]) {
+                    NSLog(@"Player: Remote Command SeekBackward: Enabled");
+                    [self seek:_playerId time:CMTimeMakeWithSeconds(-30, NSEC_PER_SEC)];
+                } else {
+                    NSLog(@"Player: Remote Command SeekBackward: Disabled");
+                }
+            }
+            NSLog(@"Player: Remote Command SeekBackward: END");
+            return MPRemoteCommandHandlerStatusSuccess;
+        }];
+        commandCenter.seekBackwardCommand.enabled = TRUE;
 
-    changePlaybackPositionId = [commandCenter.changePlaybackPositionCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
-        NSLog(@"Player: Remote Command ChangePlaybackPosition: START");
-        if (_playerId != nil) {
-            NSMutableDictionary * playerInfo = players[_playerId];
-            if ([playerInfo[@"areNotificationCommandsEnabled"] boolValue]) {
-                NSLog(@"Player: Remote Command ChangePlaybackPosition: Enabled");
-                MPChangePlaybackPositionCommandEvent * playbackEvent = (MPChangePlaybackPositionCommandEvent *)event;
-                [self seek:_playerId time:CMTimeMakeWithSeconds(playbackEvent.positionTime, NSEC_PER_SEC)];
-            } else {
-                NSLog(@"Player: Remote Command ChangePlaybackPosition: Disabled");
-            }
+        if (changePlaybackPositionId != nil) {
+            [commandCenter.changePlaybackPositionCommand removeTarget:changePlaybackPositionId];
         }
-        NSLog(@"Player: Remote Command ChangePlaybackPosition: END");
-        return MPRemoteCommandHandlerStatusSuccess;
-    }];
-    commandCenter.changePlaybackPositionCommand.enabled = TRUE;
+        changePlaybackPositionId = [commandCenter.changePlaybackPositionCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+            NSLog(@"Player: Remote Command ChangePlaybackPosition: START");
+            if (_playerId != nil) {
+                NSMutableDictionary * playerInfo = players[_playerId];
+                if ([playerInfo[@"areNotificationCommandsEnabled"] boolValue]) {
+                    NSLog(@"Player: Remote Command ChangePlaybackPosition: Enabled");
+                    MPChangePlaybackPositionCommandEvent * playbackEvent = (MPChangePlaybackPositionCommandEvent *)event;
+                    [self seek:_playerId time:CMTimeMakeWithSeconds(playbackEvent.positionTime, NSEC_PER_SEC)];
+                } else {
+                    NSLog(@"Player: Remote Command ChangePlaybackPosition: Disabled");
+                }
+            }
+            NSLog(@"Player: Remote Command ChangePlaybackPosition: END");
+            return MPRemoteCommandHandlerStatusSuccess;
+        }];
+        commandCenter.changePlaybackPositionCommand.enabled = TRUE;
+    }
 
     NSLog(@"Player: MPRemote: Enabled Remote Command Center! Done!");
 }
@@ -396,13 +407,16 @@ PlaylistItem *currentItem = nil;
     [commandCenter.previousTrackCommand removeTarget:previousTrackId];
     commandCenter.nextTrackCommand.enabled = FALSE;
     [commandCenter.togglePlayPauseCommand removeTarget:togglePlayPauseId];
-    commandCenter.togglePlayPauseCommand.enabled = FALSE;
-    [commandCenter.seekForwardCommand removeTarget:seekForwardId];
-    [commandCenter.seekBackwardCommand removeTarget:seekBackwardId];
-    [commandCenter.changePlaybackPositionCommand removeTarget:changePlaybackPositionId];
-    commandCenter.changePlaybackPositionCommand.enabled = FALSE;
-    commandCenter.seekForwardCommand.enabled = FALSE;
-    commandCenter.seekBackwardCommand.enabled = FALSE;
+
+    if (@available(iOS 17.0, *)) {
+        [commandCenter.seekForwardCommand removeTarget:seekForwardId];
+        commandCenter.seekForwardCommand.enabled = FALSE;
+        [commandCenter.seekBackwardCommand removeTarget:seekBackwardId];
+        commandCenter.seekBackwardCommand.enabled = FALSE;
+        [commandCenter.changePlaybackPositionCommand removeTarget:changePlaybackPositionId];
+        commandCenter.changePlaybackPositionCommand.enabled = FALSE;
+    }
+
     NSLog(@"Player: MPRemote: Disabled Remote Command Center! Done!");
 }
 
@@ -422,7 +436,7 @@ PlaylistItem *currentItem = nil;
 
 
 -(void)setCurrentResourceLoadingRequest: (AVAssetResourceLoadingRequest*) resourceLoadingRequest {
-    NSLog(@"===> set.resourceLoading: %@", resourceLoadingRequest);
+    // NSLog(@"===> set.resourceLoading: %@", resourceLoadingRequest);
     if (currentResourceLoadingRequest != nil) {
         if (!currentResourceLoadingRequest.cancelled && !currentResourceLoadingRequest.finished) {
             [currentResourceLoadingRequest finishLoading];
@@ -1430,7 +1444,7 @@ PlaylistItem *currentItem = nil;
     NSDictionary * headers = [NSHTTPCookie requestHeaderFieldsWithCookies:[cookiesStorage cookies]];
     NSMutableURLRequest *redirect = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:[[[sourceURL URL] absoluteString] stringByReplacingOccurrencesOfString:redirectScheme withString:httpsScheme]]];
     [redirect setAllHTTPHeaderFields:headers];
-    NSLog(@"Player: ==> Redirect.URL: %@", [[redirect URL] absoluteString]);
+    // NSLog(@"Player: ==> Redirect.URL: %@", [[redirect URL] absoluteString]);
     return redirect;
 }
 /*!
@@ -1700,7 +1714,6 @@ isNotification: (bool) respectSilence
             author = @"Sua Musica";
             coverUrl = DEFAULT_COVER;
         }
-
         
         
         int durationInMillis = _duration*1000;
