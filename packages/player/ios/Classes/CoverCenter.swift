@@ -168,12 +168,7 @@ extension String {
     }
     
     private func fileExt(url: String) -> String {
-        let hasDot = url.contains(".")
-        if (!hasDot) {
-            return ""
-        }
         let index = url.lastIndex(of: ".")
-
         let fileExt = url.suffix(from: index!)
         return "\(fileExt)"
     }
