@@ -41,7 +41,7 @@ class Queue {
   Media? _current;
 
   set setIndex(int index) {
-    if (storage.isNotEmpty && index >= 0 && index < storage.length - 1) {
+    if (storage.isNotEmpty && index >= 0 && index <= storage.length - 1) {
       _index = index;
       _current = storage[index].item;
     }
