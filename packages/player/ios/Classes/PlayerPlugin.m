@@ -98,6 +98,9 @@ id pauseId = nil;
 id nextTrackId = nil;
 id previousTrackId = nil;
 id togglePlayPauseId = nil;
+id seekForwardId = nil;
+id seekBackwardId = nil;
+id changePlaybackPositionId = nil;
 BOOL isConnected = true;
 BOOL alreadyhasEnded = false;
 BOOL shouldAutoStart = false;
@@ -317,6 +320,68 @@ PlaylistItem *currentItem = nil;
         return MPRemoteCommandHandlerStatusSuccess;
     }];
     commandCenter.previousTrackCommand.enabled = TRUE;
+
+    if (@available(iOS 17.0, *)) {
+        if (seekForwardId != nil) {
+            [commandCenter.seekForwardCommand removeTarget:seekForwardId];
+        }
+        seekForwardId = [commandCenter.seekForwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+            NSLog(@"Player: Remote Command SeekForward: START");
+            if (_playerId != nil) {
+                NSMutableDictionary * playerInfo = players[_playerId];
+                if ([playerInfo[@"areNotificationCommandsEnabled"] boolValue]) {
+                    NSLog(@"Player: Remote Command SeekForward: Enabled");
+                    [self seek:_playerId time:CMTimeMakeWithSeconds(30, NSEC_PER_SEC)];
+                } else {
+                    NSLog(@"Player: Remote Command SeekForward: Disabled");
+                }
+            }
+            NSLog(@"Player: Remote Command SeekForward: END");
+            return MPRemoteCommandHandlerStatusSuccess;
+        }];
+        commandCenter.seekForwardCommand.enabled = TRUE;
+
+        if (seekBackwardId != nil) {
+            [commandCenter.seekBackwardCommand removeTarget:seekBackwardId];
+        }
+        seekBackwardId = [commandCenter.seekBackwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+            NSLog(@"Player: Remote Command SeekBackward: START");
+            if (_playerId != nil) {
+                NSMutableDictionary * playerInfo = players[_playerId];
+                if ([playerInfo[@"areNotificationCommandsEnabled"] boolValue]) {
+                    NSLog(@"Player: Remote Command SeekBackward: Enabled");
+                    [self seek:_playerId time:CMTimeMakeWithSeconds(-30, NSEC_PER_SEC)];
+                } else {
+                    NSLog(@"Player: Remote Command SeekBackward: Disabled");
+                }
+            }
+            NSLog(@"Player: Remote Command SeekBackward: END");
+            return MPRemoteCommandHandlerStatusSuccess;
+        }];
+        commandCenter.seekBackwardCommand.enabled = TRUE;
+
+        if (changePlaybackPositionId != nil) {
+            [commandCenter.changePlaybackPositionCommand removeTarget:changePlaybackPositionId];
+        }
+        changePlaybackPositionId = [commandCenter.changePlaybackPositionCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+            NSLog(@"Player: Remote Command ChangePlaybackPosition: START");
+            if (_playerId != nil) {
+                NSMutableDictionary * playerInfo = players[_playerId];
+                if ([playerInfo[@"areNotificationCommandsEnabled"] boolValue]) {
+                    NSLog(@"Player: Remote Command ChangePlaybackPosition: Enabled");
+                    MPChangePlaybackPositionCommandEvent * playbackEvent = (MPChangePlaybackPositionCommandEvent *)event;
+                    [self seek:_playerId time:CMTimeMakeWithSeconds(playbackEvent.positionTime, NSEC_PER_SEC)];
+                } else {
+                    NSLog(@"Player: Remote Command ChangePlaybackPosition: Disabled");
+                }
+            }
+            NSLog(@"Player: Remote Command ChangePlaybackPosition: END");
+            return MPRemoteCommandHandlerStatusSuccess;
+        }];
+        commandCenter.changePlaybackPositionCommand.enabled = TRUE;
+    }
+
+    NSLog(@"Player: MPRemote: Enabled Remote Command Center! Done!");
 }
 
 -(void)disableRemoteCommandCenter:(NSString *) playerId {
@@ -337,8 +402,16 @@ PlaylistItem *currentItem = nil;
     [commandCenter.previousTrackCommand removeTarget:previousTrackId];
     commandCenter.nextTrackCommand.enabled = FALSE;
     [commandCenter.togglePlayPauseCommand removeTarget:togglePlayPauseId];
-    commandCenter.togglePlayPauseCommand.enabled = FALSE;
-    
+
+    if (@available(iOS 17.0, *)) {
+        [commandCenter.seekForwardCommand removeTarget:seekForwardId];
+        commandCenter.seekForwardCommand.enabled = FALSE;
+        [commandCenter.seekBackwardCommand removeTarget:seekBackwardId];
+        commandCenter.seekBackwardCommand.enabled = FALSE;
+        [commandCenter.changePlaybackPositionCommand removeTarget:changePlaybackPositionId];
+        commandCenter.changePlaybackPositionCommand.enabled = FALSE;
+    }
+
     NSLog(@"Player: MPRemote: Disabled Remote Command Center! Done!");
 }
 
@@ -586,6 +659,7 @@ PlaylistItem *currentItem = nil;
             ^{
                 NSLog(@"Player: seek");
                 if (!call.arguments[@"position"]) {
+                    NSLog(@"Player: seek: position is null");
                     result(0);
                 } else {
                     int milliseconds = [call.arguments[@"position"] intValue];
