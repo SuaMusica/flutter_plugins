@@ -321,7 +321,7 @@ PlaylistItem *currentItem = nil;
     }];
     commandCenter.previousTrackCommand.enabled = TRUE;
 
-    if (@available(iOS 17.0, *)) {
+    if (@available(iOS 15.0, *)) {
         if (seekForwardId != nil) {
             [commandCenter.seekForwardCommand removeTarget:seekForwardId];
         }
@@ -403,7 +403,7 @@ PlaylistItem *currentItem = nil;
     commandCenter.nextTrackCommand.enabled = FALSE;
     [commandCenter.togglePlayPauseCommand removeTarget:togglePlayPauseId];
 
-    if (@available(iOS 17.0, *)) {
+    if (@available(iOS 15.0, *)) {
         [commandCenter.seekForwardCommand removeTarget:seekForwardId];
         commandCenter.seekForwardCommand.enabled = FALSE;
         [commandCenter.seekBackwardCommand removeTarget:seekBackwardId];
