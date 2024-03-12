@@ -8,12 +8,13 @@ import 'package:smads/pre_roll_controller.dart';
 class PreRoll extends StatelessWidget {
   final double? maxHeight;
   final PreRollController? controller;
-  final bool useHybridComposition;
+  final bool useHybridComposition, useinitExpensiveAndroidView;
   PreRoll({
     Key? key,
     this.maxHeight,
     this.controller,
     this.useHybridComposition = false,
+    this.useinitExpensiveAndroidView = false,
   }) : super(key: key);
 
   @override
@@ -43,18 +44,26 @@ class PreRoll extends StatelessWidget {
                           PlatformViewController controller) =>
                       AndroidViewSurface(
                     controller: controller as AndroidViewController,
-                    gestureRecognizers: const <
-                        Factory<OneSequenceGestureRecognizer>>{},
+                    gestureRecognizers: const <Factory<
+                        OneSequenceGestureRecognizer>>{},
                     hitTestBehavior: PlatformViewHitTestBehavior.opaque,
                   ),
                   onCreatePlatformView: (PlatformViewCreationParams params) =>
-                      PlatformViewsService.initSurfaceAndroidView(
-                    id: params.id,
-                    viewType: viewType,
-                    layoutDirection: TextDirection.ltr,
-                    creationParams: creationParams,
-                    creationParamsCodec: const StandardMessageCodec(),
-                  )
+                      (useinitExpensiveAndroidView
+                          ? PlatformViewsService.initExpensiveAndroidView(
+                              id: params.id,
+                              viewType: viewType,
+                              layoutDirection: TextDirection.ltr,
+                              creationParams: creationParams,
+                              creationParamsCodec: const StandardMessageCodec(),
+                            )
+                          : PlatformViewsService.initSurfaceAndroidView(
+                              id: params.id,
+                              viewType: viewType,
+                              layoutDirection: TextDirection.ltr,
+                              creationParams: creationParams,
+                              creationParamsCodec: const StandardMessageCodec(),
+                            ))
                         ..addOnPlatformViewCreatedListener((int id) {
                           params.onPlatformViewCreated(id);
                           _onPlatformViewCreated(id);
