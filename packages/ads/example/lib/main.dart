@@ -48,24 +48,27 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('Plugin example app'),
         ),
-        body: Center(
-          child: Column(
-            children: <Widget>[
-              MaterialButton(
-                  child: Text('Load'),
-                  color: Colors.blueAccent,
-                  onPressed: () async {
-                    await ads.load(
-                      {"gender": "female", "age": 45, "typead": "audio"},
-                      onComplete: () {
-                        print("Ad display have been completed!");
-                      },
-                      onError: (error) {
-                        print("error!");
-                      },
-                    );
-                  })
-            ],
+        body: ColoredBox(
+          color: Colors.red,
+          child: Center(
+            child: Column(
+              children: <Widget>[
+                MaterialButton(
+                    child: Text('Load'),
+                    color: Colors.blueAccent,
+                    onPressed: () async {
+                      await ads.load(
+                        {"gender": "female", "age": 45, "typead": "audio"},
+                        onComplete: () {
+                          print("Ad display have been completed!");
+                        },
+                        onError: (error) {
+                          print("error!");
+                        },
+                      );
+                    })
+              ],
+            ),
           ),
         ),
       ),

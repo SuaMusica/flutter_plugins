@@ -65,6 +65,16 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        // limit height to 227
+        // let height = UIScreen.main.bounds.height - getsafeAreaBottomMargin()
+        // if (height > 227) {
+        //     self.view.autoSetDimension(.height, to: 227)
+        // }
+
+        // videoView.heightAnchor.constraint(equalToConstant: 227).isActive = true
+        // videoView.autoSetDimension(.height, toSize: 227)
+        // videoView.translatesAutoresizingMaskIntoConstraints = false
+        // videoView.heightAnchor.constraint(equalToConstant: 227).isActive = true
         setUpContentPlayer()
         setUpAdsLoader()
         setupAudioSession()
