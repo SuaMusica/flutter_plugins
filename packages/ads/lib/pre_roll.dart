@@ -91,6 +91,6 @@ class PreRoll extends StatelessWidget {
 
   void _onPlatformViewCreated(int id) {
     debugPrint('Platform view created with id: $id');
-    // controller?.play();
+    controller?.play();
   }
 }

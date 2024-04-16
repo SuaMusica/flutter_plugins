@@ -33,7 +33,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
     public static func register(with registrar: FlutterPluginRegistrar) {
         SwiftSmadsPlugin.synced(self) {
             if SwiftSmadsPlugin.channel == nil {
-                SwiftSmadsPlugin.channel = FlutterMethodChannel(name: "smads", binaryMessenger: registrar.messenger())
+                SwiftSmadsPlugin.channel = FlutterMethodChannel(name: "suamusica/pre_roll", binaryMessenger: registrar.messenger())
                 let instance = SwiftSmadsPlugin(channel: SwiftSmadsPlugin.channel!)
                 registrar.addMethodCallDelegate(instance, channel: SwiftSmadsPlugin.channel!)
             }
@@ -77,6 +77,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        print("Method call: \(call.method), arguments: \(call.arguments ?? "N/A"), result: \(result)")
         switch call.method {
         case "load":
             DispatchQueue.main.async {
@@ -110,7 +111,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                                     controller:adsViewController
                                 )
 
-                                registrarAds!.register(viewFactory, withId: "suamusica/pre_roll_view")
+                                registrarAds?.register(viewFactory, withId: "suamusica/pre_roll_view") 
 
                                 // SwiftSmadsPlugin.channel?.setMethodCallHandler { (call, result) in
                                 //     switch call.method {
@@ -145,6 +146,10 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
             }
         case "screen_status":
             result(self.screen.status == .unlocked ? SwiftSmadsPlugin.UnlockedScreen : SwiftSmadsPlugin.LockedScreen)
+        case "play":
+            print("Playing ads")
+            print("Ads view controller: \(AdsViewController.self)")
+//            print("saved internal data: \(AdsViewController.savedInternalData)")
         default:
             result(FlutterError(code: "-1", message: "Operation not supported", details: nil))
         }
