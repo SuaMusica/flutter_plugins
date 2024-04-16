@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:smads/adevent.dart';
 
@@ -45,6 +46,7 @@ class SMAds {
     SMAds.lastAd = this;
     args["__URL__"] = adUrl;
     args["__CONTENT__"] = contentUrl;
+    debugPrint('SMAds.load $args');
     final int result = await _channel.invokeMethod('load', args) ?? 0;
     return result;
   }

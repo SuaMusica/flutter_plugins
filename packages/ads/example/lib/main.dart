@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:smads/smads.dart';
+import 'package:smads/sm.dart';
 
 void main() => runApp(MyApp());
 
@@ -20,6 +21,8 @@ class _MyAppState extends State<MyApp> {
         "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=",
     contentUrl: "https://assets.suamusica.com.br/video/virgula.mp3",
   );
+
+  ValueNotifier<bool> adsValueNotifier = ValueNotifier(false);
 
   @override
   void initState() {
@@ -53,10 +56,13 @@ class _MyAppState extends State<MyApp> {
           child: Center(
             child: Column(
               children: <Widget>[
+                PreRollUI(adsValueNotifier: adsValueNotifier),
                 MaterialButton(
                     child: Text('Load'),
                     color: Colors.blueAccent,
                     onPressed: () async {
+                      adsValueNotifier.value = true;
+
                       await ads.load(
                         {"gender": "female", "age": 45, "typead": "audio"},
                         onComplete: () {
@@ -66,6 +72,10 @@ class _MyAppState extends State<MyApp> {
                           print("error!");
                         },
                       );
+
+                      Future.delayed(Duration(seconds: 15), () {
+                        adsValueNotifier.value = false;
+                      });
                     })
               ],
             ),
@@ -74,4 +84,35 @@ class _MyAppState extends State<MyApp> {
       ),
     );
   }
+}
+
+class PreRollUI extends StatelessWidget {
+  const PreRollUI({
+    Key? key,
+    required this.adsValueNotifier,
+  }) : super(key: key);
+
+  final ValueNotifier<bool> adsValueNotifier;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: adsValueNotifier,
+      builder: (context, child) => adsValueNotifier.value
+          ? AspectRatio(
+              aspectRatio: 640 / 480,
+              child: PreRoll(
+                controller: PreRollController(preRollListener),
+                maxHeight: 480,
+                useHybridComposition: true,
+                useinitExpensiveAndroidView: true,
+              ),
+            )
+          : SizedBox.shrink(),
+    );
+  }
+}
+
+void preRollListener(PreRollEvent event, Map<String, dynamic> args) {
+  debugPrint("Event: $event, args: $args");
 }

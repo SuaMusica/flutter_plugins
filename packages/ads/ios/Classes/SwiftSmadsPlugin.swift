@@ -2,6 +2,8 @@ import Flutter
 import UIKit
 import GoogleInteractiveMediaAds
 
+var registrarAds: FlutterPluginRegistrar? = nil
+
 public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
     static var channel: FlutterMethodChannel?
     private var screen: Screen
@@ -35,10 +37,29 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                 let instance = SwiftSmadsPlugin(channel: SwiftSmadsPlugin.channel!)
                 registrar.addMethodCallDelegate(instance, channel: SwiftSmadsPlugin.channel!)
             }
-
+            registrarAds = registrar
+            // let channel = FlutterMethodChannel(name: CHANNEL, binaryMessenger: registrar.messenger())
+            // let instance = SwiftSmadsPlugin()
+            // registrar.addMethodCallDelegate(instance, channel: channel)
+            // registrarAds = registrar
             verifyNetworkAccess()
         }
     }
+
+    // suamusica/pre_roll_view
+    // public static func registrarPreroll() {
+    //     let registrar = FlutterMethodChannel(
+    //         name: "suamusica/pre_roll_view",
+    //         binaryMessenger: FlutterMethodChannel(
+    //             name: "suamusica/pre_roll_view",
+    //             binaryMessenger: FlutterEngine()
+    //         )
+    //     )
+    //     let instance = SwiftSmadsPlugin(channel: registrar)
+    //     registrar.setMethodCallHandler { (call, result) in
+    //         instance.handle(call, result: result)
+    //     }
+    // }
 
     init(channel: FlutterMethodChannel) {
         SwiftSmadsPlugin.channel = channel
@@ -73,6 +94,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                         
                         if (self.screen.status == .unlocked) {
                             if (Network.reachability.isReachable) {
+                                print("Screen is unlocked and ready to show ads | ppID: \(ppID ?? "N/A") | all args: \(args)")
                                 let adsViewController:AdsViewController = AdsViewController.instantiateFromNib()
                                 adsViewController.setup(
                                     channel: SwiftSmadsPlugin.channel,
@@ -82,8 +104,29 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                                     args: args)
                                 adsViewController.ppID = ppID
                                 adsViewController.modalPresentationStyle = .fullScreen
-                                let rootViewController = UIApplication.shared.keyWindow?.rootViewController
-                                rootViewController?.present(adsViewController, animated: false, completion: nil)
+
+                                let viewFactory = FLNativeViewFactory(
+                                    messenger: registrarAds!.messenger(),
+                                    controller:adsViewController
+                                )
+
+                                registrarAds!.register(viewFactory, withId: "suamusica/pre_roll_view")
+
+                                // SwiftSmadsPlugin.channel?.setMethodCallHandler { (call, result) in
+                                //     switch call.method {
+                                //     case "onComplete":
+                                //         self.onComplete()
+                                //     default:
+                                //         result(FlutterError(code: "-1", message: "Operation not supported", details: nil))
+                                //     }
+                                // }
+                                // let viewId = SwiftSmadsPlugin.channel!.registrar!.register(viewFactory, withId: "suamusica/pre_roll_view")
+                                
+                                // adsViewController.modalPresentationStyle = .overCurrentContext
+                                // adsViewController.preferredContentSize = CGSize(width: UIScreen.main.bounds.width, height: 200)
+                                // let rootViewController = UIApplication.shared.keyWindow?.rootViewController
+                                // rootViewController?.present(adsViewController, animated: false, completion: nil)
+
                                 result(1)
                             } else {
                                 self.onError(code: SwiftSmadsPlugin.NoConnectivity)
@@ -111,5 +154,49 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
         objc_sync_enter(lock)
         closure()
         objc_sync_exit(lock)
+    }
+}
+
+private let tag:String = "FLNativeViewFactory"
+class FLNativeViewFactory: NSObject, FlutterPlatformViewFactory {
+    private var messenger: FlutterBinaryMessenger
+    private var controller: AdsViewController
+    
+    init(messenger: FlutterBinaryMessenger, controller:AdsViewController) {
+        self.messenger = messenger
+        self.controller = controller
+        super.init()
+    }
+    
+    func create(
+        withFrame frame: CGRect,
+        viewIdentifier viewId: Int64,
+        arguments args: Any?
+    ) -> FlutterPlatformView {
+        return FLNativeView(
+            frame: frame,
+            viewIdentifier: viewId,
+            arguments: args,
+            binaryMessenger: messenger,
+            controller: controller)
+    }
+}
+
+class FLNativeView: NSObject, FlutterPlatformView {
+    private var controller: AdsViewController
+
+    init(
+        frame: CGRect,
+        viewIdentifier viewId: Int64,
+        arguments args: Any?,
+        binaryMessenger messenger: FlutterBinaryMessenger?,
+        controller:AdsViewController
+    ) {
+        self.controller = controller
+        super.init()
+    }
+
+    func view() -> UIView {
+        return controller.view
     }
 }
