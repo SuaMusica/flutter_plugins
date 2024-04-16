@@ -11,6 +11,8 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
     static let ScreenIsLocked = -2;
     static let UnlockedScreen = 1;
     static let LockedScreen = 0;
+    let adsViewController:AdsViewController = AdsViewController.instantiateFromNib()
+
     fileprivate static func verifyNetworkAccess() {
         do {
             try Network.reachability = Reachability(hostname: "www.google.com")
@@ -38,6 +40,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                 registrar.addMethodCallDelegate(instance, channel: SwiftSmadsPlugin.channel!)
             }
             registrarAds = registrar
+
             // let channel = FlutterMethodChannel(name: CHANNEL, binaryMessenger: registrar.messenger())
             // let instance = SwiftSmadsPlugin()
             // registrar.addMethodCallDelegate(instance, channel: channel)
@@ -82,7 +85,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
         case "load":
             DispatchQueue.main.async {
                 do {
-                    try ObjC.catchException {
+                    try ObjC.catchException { [self] in
                         let args = call.arguments as! [String: Any]
                         let adUrl = args["__URL__"] as! String
                         let contentUrl = args["__CONTENT__"] as! String
@@ -96,7 +99,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                         if (self.screen.status == .unlocked) {
                             if (Network.reachability.isReachable) {
                                 print("Screen is unlocked and ready to show ads | ppID: \(ppID ?? "N/A") | all args: \(args)")
-                                let adsViewController:AdsViewController = AdsViewController.instantiateFromNib()
+                                // adsViewController.setup(
                                 adsViewController.setup(
                                     channel: SwiftSmadsPlugin.channel,
                                     adUrl: adUrl,
@@ -149,7 +152,25 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
         case "play":
             print("Playing ads")
             print("Ads view controller: \(AdsViewController.self)")
-//            print("saved internal data: \(AdsViewController.savedInternalData)")
+            let savedArgsFromController = adsViewController.args
+            print("Saved args from controller: \(String(describing: savedArgsFromController))")
+            // let viewFactory = FLNativeViewFactory(
+            //     messenger: registrarAds!.messenger(),
+            //     controller: adsViewController
+            // )
+            // registrarAds?.register(viewFactory, withId: "suamusica/pre_roll_view")
+            // show factory
+            // registrarAds?.registerViewFactory(
+
+            // let viewFactory = FLNativeViewFactory(
+            //     messenger: registrarAds!.messenger(),
+            //     controller: adsViewController
+            // )
+            // registrarAds?.register(viewFactory, withId: "suamusica/pre_roll_view")
+
+            print("View factory registered")
+
+            result(1)
         default:
             result(FlutterError(code: "-1", message: "Operation not supported", details: nil))
         }
