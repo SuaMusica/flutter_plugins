@@ -201,10 +201,11 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
 
     // Register companion slots.
     func setUpCompanions() {
+        print("AD: Setting up companion slot - w: \(companionView.frame.size.width) h: \(companionView.frame.size.height)")
       companionSlot = IMACompanionAdSlot(
         view: companionView,
-        width: 300,
-        height: 250)
+        width: Int(companionView.frame.size.width),
+        height: Int(companionView.frame.size.height))
     }
 
     @objc func applicationDidBecomeActive(notification: NSNotification) {        print("AD: applicationDidBecomeActive")
