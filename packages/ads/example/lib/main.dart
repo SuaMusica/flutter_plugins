@@ -78,27 +78,61 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 MaterialButton(
-                    child: Text('Load'),
-                    color: Colors.blueAccent,
-                    onPressed: () async {
-                      adsValueNotifier.value = true;
+                  child: Text('Load'),
+                  color: Colors.blueAccent,
+                  onPressed: () async {
+                    adsValueNotifier.value = true;
 
-                      controller.play();
+                    controller.play();
 
-                      // await ads.load(
-                      //   {"gender": "female", "age": 45, "typead": "audio"},
-                      //   onComplete: () {
-                      //     print("Ad display have been completed!");
-                      //   },
-                      //   onError: (error) {
-                      //     print("error!");
-                      //   },
-                      // );
-
-                      Future.delayed(Duration(seconds: 8), () {
-                        adsValueNotifier.value = false;
-                      });
-                    })
+                    Future.delayed(Duration(seconds: 8), () {
+                      adsValueNotifier.value = false;
+                    });
+                  },
+                ),
+                SizedBox(
+                  height: 20,
+                ),
+                MaterialButton(
+                  child: Text('Pause'),
+                  color: Colors.blueAccent,
+                  onPressed: () {
+                    controller.pause();
+                  },
+                ),
+                SizedBox(height: 20),
+                //skip
+                MaterialButton(
+                  child: Text('Skip'),
+                  color: Colors.blueAccent,
+                  onPressed: () {
+                    controller.skip();
+                  },
+                ),
+                SizedBox(height: 20),
+                //dispose
+                MaterialButton(
+                  child: Text('Dispose'),
+                  color: Colors.blueAccent,
+                  onPressed: () {
+                    controller.dispose();
+                  },
+                ),
+                SizedBox(height: 20),
+                //screen status
+                SizedBox(
+                  height: 50,
+                  child: FutureBuilder<int>(
+                    future: controller.screenStatus,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.done) {
+                        return Text("Screen Status: ${snapshot.data}");
+                      } else {
+                        return CircularProgressIndicator();
+                      }
+                    },
+                  ),
+                ),
               ],
             ),
           ),

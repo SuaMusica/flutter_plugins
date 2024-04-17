@@ -69,14 +69,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         requestAds()
     }
     
-    @IBAction func playPauseHandler(_ sender: Any) {
-        if (playing) {
-            adsManager?.pause()
-        } else {
-            adsManager?.resume()
-        }
-    }
-    
     func setup(channel: FlutterMethodChannel?, adUrl: String?, contentUrl: String?, screen: Screen, args: [String: Any]?) {
         self.channel = channel
         self.adUrl = adUrl
@@ -575,7 +567,30 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         contentPlayer?.play()
         adsManager?.start()
     }
-    
+
+    func pause() {
+        contentPlayer?.pause()
+        adsManager?.pause()
+    }
+
+    func dispose() {
+        contentPlayer?.pause()
+        adsManager?.destroy()
+        adsLoader?.contentComplete()
+        adsLoader = nil
+        adsManager = nil
+        contentPlayer = nil
+        contentPlayerLayer = nil
+        contentPlayhead = nil
+        pictureInPictureController = nil
+        pictureInPictureProxy = nil
+        self.dismiss(animated: false, completion: nil)
+    }
+
+    func skip() {
+        adsManager?.skip()
+    }
+
     class func instantiateFromNib() -> AdsViewController {
         return AdsViewController(nibName: String(describing:self), bundle: Bundle(identifier: "org.cocoapods.smads"))
     }

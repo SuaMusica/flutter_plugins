@@ -171,6 +171,16 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
             print("View factory registered")
 
             result(1)
+        case "pause":
+            adsViewController.pause()
+            result(1)
+        case "dispose":
+            adsViewController.dispose()
+            result(1)
+        case "skip":
+            adsViewController.skip()
+            result(1)
+            
         default:
             result(FlutterError(code: "-1", message: "Operation not supported", details: nil))
         }
