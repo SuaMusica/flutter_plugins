@@ -32,11 +32,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     var sentOnComplete = false
     var ppID: String? = nil
     
-    @IBOutlet weak var totalProgress: UILabel!
-    @IBOutlet weak var currentProgress: UILabel!
-    @IBOutlet weak var progressSlider: UISlider!
-    @IBOutlet weak var whyListenAdView: UIView!
-    @IBOutlet weak var playPauseButton: UIButton!
     @IBOutlet weak var videoView: UIView!
     @IBOutlet weak var companionView: UIView!
     @IBOutlet weak var pictureInPictureButton: UIButton!
@@ -65,16 +60,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // limit height to 227
-        // let height = UIScreen.main.bounds.height - getsafeAreaBottomMargin()
-        // if (height > 227) {
-        //     self.view.autoSetDimension(.height, to: 227)
-        // }
-
-        // videoView.heightAnchor.constraint(equalToConstant: 227).isActive = true
-        // videoView.autoSetDimension(.height, toSize: 227)
-        // videoView.translatesAutoresizingMaskIntoConstraints = false
-        // videoView.heightAnchor.constraint(equalToConstant: 227).isActive = true
         setUpContentPlayer()
         setUpAdsLoader()
         setupAudioSession()
@@ -90,22 +75,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         } else {
             adsManager?.resume()
         }
-    }
-    
-    @IBAction func understoodAdHandler(_ sender: Any) {UIView.animate(withDuration: 0.6, delay: 0, options: .curveEaseInOut, animations: { [weak self] in
-            self?.whyListenAdView.alpha = 0.0
-        }) { [weak self] (isCompleted) in
-        self?.whyListenAdView.isHidden = true
-        }
-    }
-    
-    @IBAction func whyListenAdHandler(_ sender: Any) {
-        whyListenAdView.alpha = 0.0
-        whyListenAdView.isHidden = false
-            
-        UIView.animate(withDuration: 0.6, delay: 0, options: .curveEaseInOut, animations: { [weak self] in
-            self?.whyListenAdView.alpha = 1.0
-            }) { (isCompleted) in }
     }
     
     func setup(channel: FlutterMethodChannel?, adUrl: String?, contentUrl: String?, screen: Screen, args: [String: Any]?) {
@@ -424,12 +393,10 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     
     func setPlaying() {
         self.playing = true
-        self.playPauseButton.setImage(UIImage(named: "bt_pause.png", in: Bundle(identifier: "org.cocoapods.smads"), compatibleWith: nil), for: UIControl.State.normal)
     }
     
     func setPaused() {
         self.playing = false
-        self.playPauseButton.setImage(UIImage(named: "bt_play.png", in: Bundle(identifier: "org.cocoapods.smads"), compatibleWith: nil), for: UIControl.State.normal)
     }
     
     func adsManager(_ adsManager: IMAAdsManager!, didReceive error: IMAAdError!) {
@@ -458,9 +425,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     
     func adsManager(_ adsManager: IMAAdsManager!, adDidProgressToTime mediaTime: TimeInterval, totalTime: TimeInterval) {
         let progress = Float(mediaTime/totalTime)
-        currentProgress?.text = formatTimeInterval(mediaTime)
-        totalProgress?.text = formatTimeInterval(totalTime)
-        progressSlider?.value = progress
         
         if (progress == 1.0) {
             onComplete()
@@ -609,37 +573,5 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     
     class func instantiateFromNib() -> AdsViewController {
         return AdsViewController(nibName: String(describing:self), bundle: Bundle(identifier: "org.cocoapods.smads"))
-    }
-}
-
-@IBDesignable extension UIButton {
-
-    @IBInspectable var borderWidth: CGFloat {
-        set {
-            layer.borderWidth = newValue
-        }
-        get {
-            return layer.borderWidth
-        }
-    }
-
-    @IBInspectable var cornerRadius: CGFloat {
-        set {
-            layer.cornerRadius = newValue
-        }
-        get {
-            return layer.cornerRadius
-        }
-    }
-
-    @IBInspectable var borderColor: UIColor? {
-        set {
-            guard let uiColor = newValue else { return }
-            layer.borderColor = uiColor.cgColor
-        }
-        get {
-            guard let color = layer.borderColor else { return nil }
-            return UIColor(cgColor: color)
-        }
     }
 }
