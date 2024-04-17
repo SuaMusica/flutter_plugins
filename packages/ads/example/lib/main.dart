@@ -83,9 +83,9 @@ class _MyAppState extends State<MyApp> {
                   onPressed: () {
                     adsValueNotifier.value = true;
                     controller.load(target);
-                    Future.delayed(Duration(seconds: 9), () {
-                      adsValueNotifier.value = false;
-                    });
+                    // Future.delayed(Duration(seconds: 9), () {
+                    //   adsValueNotifier.value = false;
+                    // });
                   },
                 ),
                 SizedBox(height: 20),
