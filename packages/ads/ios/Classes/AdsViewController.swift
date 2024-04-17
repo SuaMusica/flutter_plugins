@@ -360,7 +360,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
                 videoView.isHidden = false
                 companionView.isHidden = true
             }
-            adsManager.start()
+            // adsManager.start()
         case IMAAdEventType.AD_BREAK_STARTED:
             print("AD: Got a AD_BREAK_STARTED event")
         case IMAAdEventType.AD_BREAK_ENDED:
@@ -569,6 +569,11 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         }
         
         return type
+    }
+
+    func playNow() {
+        contentPlayer?.play()
+        adsManager?.start()
     }
     
     class func instantiateFromNib() -> AdsViewController {

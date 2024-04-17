@@ -25,7 +25,6 @@ class PreRoll extends StatelessWidget {
     }
     final UniqueKey _key = UniqueKey();
     final viewType = 'suamusica/pre_roll_view';
-    // final viewType = 'smads';
     final creationParams = <String, dynamic>{
       'adSize': {
         'width': 640,
@@ -91,6 +90,6 @@ class PreRoll extends StatelessWidget {
 
   void _onPlatformViewCreated(int id) {
     debugPrint('Platform view created with id: $id');
-    controller?.play();
+    // controller?.play();
   }
 }

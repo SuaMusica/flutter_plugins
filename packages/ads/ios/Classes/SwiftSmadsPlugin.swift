@@ -107,7 +107,6 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                                     screen: self.screen,
                                     args: args)
                                 adsViewController.ppID = ppID
-                                adsViewController.modalPresentationStyle = .fullScreen
 
                                 let viewFactory = FLNativeViewFactory(
                                     messenger: registrarAds!.messenger(),
@@ -154,6 +153,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
             print("Ads view controller: \(AdsViewController.self)")
             let savedArgsFromController = adsViewController.args
             print("Saved args from controller: \(String(describing: savedArgsFromController))")
+            adsViewController.playNow()
             // let viewFactory = FLNativeViewFactory(
             //     messenger: registrarAds!.messenger(),
             //     controller: adsViewController

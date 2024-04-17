@@ -122,7 +122,7 @@ class PreRollUI extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: adsValueNotifier,
-      builder: (context, child) => adsValueNotifier.value
+      builder: (context, child) => true
           ? AspectRatio(
               aspectRatio: 640 / 480,
               child: PreRoll(
