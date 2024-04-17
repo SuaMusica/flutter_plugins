@@ -153,7 +153,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
             print("Ads view controller: \(AdsViewController.self)")
             let savedArgsFromController = adsViewController.args
             print("Saved args from controller: \(String(describing: savedArgsFromController))")
-            adsViewController.playNow()
+            // adsViewController.play()
             // let viewFactory = FLNativeViewFactory(
             //     messenger: registrarAds!.messenger(),
             //     controller: adsViewController
@@ -180,7 +180,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
         case "skip":
             adsViewController.skip()
             result(1)
-            
+
         default:
             result(FlutterError(code: "-1", message: "Operation not supported", details: nil))
         }

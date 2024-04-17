@@ -21,6 +21,17 @@ class _MyAppState extends State<MyApp> {
 //         "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=",
 //     contentUrl: "https://assets.suamusica.com.br/video/virgula.mp3",
 //   );
+  static const target = {
+    "age": "34",
+    "tipo": "1",
+    "vip": "0",
+    "gender": "1",
+    "version": "6867",
+    "ppid": "6d83fd8be4872555440fab67103896c8bee7b064b1b3ab0260f503c8dfc76e39",
+    "__URL__":
+        "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=",
+    "__CONTENT__": "https://assets.suamusica.com.br/video/virgula.mp3",
+  };
 
   ValueNotifier<bool> adsValueNotifier = ValueNotifier(false);
   final PreRollController controller = PreRollController(preRollListener);
@@ -43,18 +54,6 @@ class _MyAppState extends State<MyApp> {
     // ads.onEvent.listen((e) {
     //   print("Got an AdEvent: ${e.toString()}");
     // });
-    controller.load({
-      "age": "34",
-      "tipo": "1",
-      "vip": "0",
-      "gender": "1",
-      "version": "6867",
-      "ppid":
-          "6d83fd8be4872555440fab67103896c8bee7b064b1b3ab0260f503c8dfc76e39",
-      "__URL__":
-          "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=",
-      "__CONTENT__": "https://assets.suamusica.com.br/video/virgula.mp3",
-    });
   }
 
   @override
@@ -77,19 +76,26 @@ class _MyAppState extends State<MyApp> {
                     controller: controller,
                   ),
                 ),
+                // load
                 MaterialButton(
                   child: Text('Load'),
                   color: Colors.blueAccent,
-                  onPressed: () async {
+                  onPressed: () {
                     adsValueNotifier.value = true;
-
-                    controller.play();
-
-                    Future.delayed(Duration(seconds: 8), () {
+                    controller.load(target);
+                    Future.delayed(Duration(seconds: 9), () {
                       adsValueNotifier.value = false;
                     });
                   },
                 ),
+                SizedBox(height: 20),
+                // MaterialButton(
+                //   child: Text('play'),
+                //   color: Colors.blueAccent,
+                //   onPressed: () async {
+                //     controller.play();
+                //   },
+                // ),
                 SizedBox(
                   height: 20,
                 ),
@@ -101,7 +107,6 @@ class _MyAppState extends State<MyApp> {
                   },
                 ),
                 SizedBox(height: 20),
-                //skip
                 MaterialButton(
                   child: Text('Skip'),
                   color: Colors.blueAccent,
@@ -110,7 +115,6 @@ class _MyAppState extends State<MyApp> {
                   },
                 ),
                 SizedBox(height: 20),
-                //dispose
                 MaterialButton(
                   child: Text('Dispose'),
                   color: Colors.blueAccent,
@@ -119,7 +123,6 @@ class _MyAppState extends State<MyApp> {
                   },
                 ),
                 SizedBox(height: 20),
-                //screen status
                 SizedBox(
                   height: 50,
                   child: FutureBuilder<int>(
@@ -156,7 +159,7 @@ class PreRollUI extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: adsValueNotifier,
-      builder: (context, child) => true
+      builder: (context, child) => adsValueNotifier.value
           ? AspectRatio(
               aspectRatio: 640 / 480,
               child: PreRoll(

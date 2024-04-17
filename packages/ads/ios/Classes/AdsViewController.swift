@@ -352,7 +352,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
                 videoView.isHidden = false
                 companionView.isHidden = true
             }
-            // adsManager.start()
+            adsManager.start()
         case IMAAdEventType.AD_BREAK_STARTED:
             print("AD: Got a AD_BREAK_STARTED event")
         case IMAAdEventType.AD_BREAK_ENDED:
@@ -563,28 +563,35 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         return type
     }
 
-    func playNow() {
-        contentPlayer?.play()
-        adsManager?.start()
+    func play() {
+        if self.playing {
+            adsManager?.resume()
+        } else {
+            adsManager?.start()
+        }
     }
 
     func pause() {
-        contentPlayer?.pause()
-        adsManager?.pause()
+        // adsManager?.pause()
+        if self.playing {
+            adsManager?.pause()
+        } else {
+            adsManager?.resume()
+        }
     }
 
     func dispose() {
-        contentPlayer?.pause()
         adsManager?.destroy()
         adsLoader?.contentComplete()
-        adsLoader = nil
-        adsManager = nil
+        contentPlayer?.pause()
         contentPlayer = nil
         contentPlayerLayer = nil
         contentPlayhead = nil
+        adsLoader = nil
+        adsManager = nil
+        companionSlot = nil
         pictureInPictureController = nil
         pictureInPictureProxy = nil
-        self.dismiss(animated: false, completion: nil)
     }
 
     func skip() {
