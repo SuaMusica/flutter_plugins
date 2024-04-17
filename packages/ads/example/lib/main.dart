@@ -39,6 +39,9 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
+    controller.load(target);
+    adsValueNotifier.value = true;
+
     initPlatformState();
   }
 
@@ -81,11 +84,10 @@ class _MyAppState extends State<MyApp> {
                   child: Text('Load'),
                   color: Colors.blueAccent,
                   onPressed: () {
-                    adsValueNotifier.value = true;
                     controller.load(target);
-                    // Future.delayed(Duration(seconds: 9), () {
-                    //   adsValueNotifier.value = false;
-                    // });
+                    Future.delayed(Duration(seconds: 2), () {
+                      adsValueNotifier.value = true;
+                    });
                   },
                 ),
                 SizedBox(height: 20),
