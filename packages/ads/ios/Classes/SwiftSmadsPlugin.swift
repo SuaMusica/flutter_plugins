@@ -2,7 +2,6 @@ import Flutter
 import UIKit
 import GoogleInteractiveMediaAds
 
-
 public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
     static var channel: FlutterMethodChannel?
     private var screen: Screen
@@ -41,21 +40,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                 registrar.addMethodCallDelegate(instance, channel: SwiftSmadsPlugin.channel!)
             }
             
-            // if (registrarAds == nil) {
             registrarAds = registrar
-            // }
-
-            // aqui não funciona registrar o view factory porque preciso do controller
-            // se coloco adsViewController não funciona;
-            // se coloco AdsViewController.instantiateFromNib() não funciona;
-
-            // let viewFactory = FLNativeViewFactory(
-            //     messenger: registrarAds!.messenger(),
-            //     controller: 
-            // )
-
-            // Thread 1: signal SIGABRT
-            // registrarAds?.register(viewFactory, withId: "suamusica/pre_roll_view")
             verifyNetworkAccess()
         }
     }
@@ -119,11 +104,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
 
                                 // Thread 1: signal SIGABRT
 
-                                print("Registering view factory - registrarAds: \(String(describing: SwiftSmadsPlugin.registrarAds))")
-
-//                                if (registrarAds != nil) {
                                 SwiftSmadsPlugin.registrarAds!.register(viewFactory, withId: "suamusica/pre_roll_view")
-//                                }
 
                                 result(1)
                             } else {
