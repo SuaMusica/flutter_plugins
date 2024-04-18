@@ -33,6 +33,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
     }
 
     public static func register(with registrar: FlutterPluginRegistrar) {
+        print("Registering plugin at registrar: \(registrar), datetime: \(Date()), SwiftSmadsPlugin.channel: \(String(describing: SwiftSmadsPlugin.channel))")
         SwiftSmadsPlugin.synced(self) {
             if SwiftSmadsPlugin.channel == nil {
                 SwiftSmadsPlugin.channel = FlutterMethodChannel(name: "suamusica/pre_roll", binaryMessenger: registrar.messenger())
@@ -105,6 +106,8 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                                 // Thread 1: signal SIGABRT
 
                                 SwiftSmadsPlugin.registrarAds!.register(viewFactory, withId: "suamusica/pre_roll_view")
+
+                                print("Registering would view factory - registrarAds: \(String(describing: SwiftSmadsPlugin.registrarAds)) at \(Date())")
 
                                 result(1)
                             } else {

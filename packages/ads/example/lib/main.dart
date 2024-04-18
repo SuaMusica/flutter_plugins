@@ -84,8 +84,8 @@ class _MyAppState extends State<MyApp> {
                   child: Text('Load'),
                   color: Colors.blueAccent,
                   onPressed: () {
-                    controller.load(target);
                     adsValueNotifier.value = true;
+                    controller.load(target);
                     // Future.delayed(Duration(seconds: 5), () {
                     // });
                     // Future.delayed(Duration(seconds: 3), () {

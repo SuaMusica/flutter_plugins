@@ -59,6 +59,14 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     
     override func viewDidLoad() {
         super.viewDidLoad()
+
+        print("AD: viewDidLoad at \(Date())")
+        // let viewFactory = FLNativeViewFactory(
+        //     messenger: SwiftSmadsPlugin.registrarAds!.messenger(),
+        //     controller: self
+        // )
+
+        // SwiftSmadsPlugin.registrarAds!.register(viewFactory, withId: "suamusica/pre_roll_view")
         
         setUpContentPlayer()
         setUpAdsLoader()
@@ -153,6 +161,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     func createAdDisplayContainer() -> IMAAdDisplayContainer {
       // Create our AdDisplayContainer. Initialize it with our videoView as the container. This
       // will result in ads being displayed over our content video.
+      print("AD: createAdDisplayContainer - companionView: \(companionView)")
       if companionView != nil {
         return IMAAdDisplayContainer(adContainer: videoView, companionSlots: [companionSlot!])
       } else {
