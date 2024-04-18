@@ -14,9 +14,9 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
 //   final ads = SMAds(
 // //    adUrl:
-// //    "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=",
-// //    adUrl:
-// //        "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=",
+//    "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=",
+//    adUrl:
+//        "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=",
 //     adUrl:
 //         "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=",
 //     contentUrl: "https://assets.suamusica.com.br/video/virgula.mp3",
@@ -57,6 +57,12 @@ class _MyAppState extends State<MyApp> {
     // ads.onEvent.listen((e) {
     //   print("Got an AdEvent: ${e.toString()}");
     // });
+    adsValueNotifier.value = true;
+    controller.load(target);
+    Future.delayed(Duration(seconds: 9), () {
+      adsValueNotifier.value = false;
+      controller.dispose();
+    });
   }
 
   @override
@@ -133,6 +139,7 @@ class _MyAppState extends State<MyApp> {
                   color: Colors.blueAccent,
                   onPressed: () {
                     controller.dispose();
+                    adsValueNotifier.value = false;
                   },
                 ),
                 SizedBox(height: 20),
@@ -158,7 +165,7 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
-class PreRollUI extends StatelessWidget {
+class PreRollUI extends StatefulWidget {
   const PreRollUI({
     Key? key,
     required this.adsValueNotifier,
@@ -169,20 +176,35 @@ class PreRollUI extends StatelessWidget {
   final PreRollController controller;
 
   @override
+  State<PreRollUI> createState() => _PreRollUIState();
+}
+
+class _PreRollUIState extends State<PreRollUI> {
+  @override
   Widget build(BuildContext context) {
+    /// With this, platform view will be created multiple times
+    // for (int i = 0; i < 1000; i++) {
+    //   debugPrint("Rebuilding $i");
+    //   WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+    //     setState(() {});
+    //   });
+    // }
+
     return AnimatedBuilder(
-      animation: adsValueNotifier,
-      builder: (context, child) => adsValueNotifier.value
-          ? AspectRatio(
-              aspectRatio: 640 / 480,
-              child: PreRoll(
-                controller: controller,
-                maxHeight: 480,
-                useHybridComposition: true,
-                useinitExpensiveAndroidView: true,
-              ),
-            )
-          : SizedBox.shrink(),
+      animation: widget.adsValueNotifier,
+      builder: (context, child) {
+        return widget.adsValueNotifier.value
+            ? AspectRatio(
+                aspectRatio: 640 / 480,
+                child: PreRoll(
+                  controller: widget.controller,
+                  maxHeight: 480,
+                  useHybridComposition: true,
+                  useinitExpensiveAndroidView: true,
+                ),
+              )
+            : SizedBox.shrink();
+      },
     );
   }
 }

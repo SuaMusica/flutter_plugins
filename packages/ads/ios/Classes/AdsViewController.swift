@@ -31,7 +31,8 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     var isRemoteControlOn = false
     var sentOnComplete = false
     var ppID: String? = nil
-    
+    var isRegistered = false
+
     @IBOutlet weak var videoView: UIView!
     @IBOutlet weak var companionView: UIView!
     @IBOutlet weak var pictureInPictureButton: UIButton!
@@ -78,11 +79,23 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     }
     
     func setup(channel: FlutterMethodChannel?, adUrl: String?, contentUrl: String?, screen: Screen, args: [String: Any]?) {
+        
         self.channel = channel
         self.adUrl = adUrl
         self.contentUrl = contentUrl
         self.screen = screen
         self.args = args
+        
+        if (!isRegistered) {
+            let viewFactory = FLNativeViewFactory(
+                messenger: SwiftSmadsPlugin.registrarAds!.messenger(),
+                controller:self
+            )
+
+            SwiftSmadsPlugin.registrarAds!.register(viewFactory, withId: "suamusica/pre_roll_view")
+
+            isRegistered = true
+        }
     }
     
     func setupAudioSession() {
@@ -593,14 +606,14 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         adsManager?.destroy()
         adsLoader?.contentComplete()
         contentPlayer?.pause()
-        contentPlayer = nil
-        contentPlayerLayer = nil
-        contentPlayhead = nil
-        adsLoader = nil
-        adsManager = nil
-        companionSlot = nil
-        pictureInPictureController = nil
-        pictureInPictureProxy = nil
+//        contentPlayer = nil
+//        contentPlayerLayer = nil
+//        contentPlayhead = nil
+//        adsLoader = nil
+//        adsManager = nil
+//        companionSlot = nil
+//        pictureInPictureController = nil
+//        pictureInPictureProxy = nil
     }
 
     func skip() {

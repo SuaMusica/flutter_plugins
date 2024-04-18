@@ -10,7 +10,6 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
     static let UnlockedScreen = 1;
     static let LockedScreen = 0;
     let adsViewController:AdsViewController = AdsViewController.instantiateFromNib()
-
     static var registrarAds: FlutterPluginRegistrar? = nil
 
     fileprivate static func verifyNetworkAccess() {
@@ -89,24 +88,6 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                                     args: args)
                                 adsViewController.ppID = ppID
 
-                                let viewFactory = FLNativeViewFactory(
-                                    messenger: SwiftSmadsPlugin.registrarAds!.messenger(),
-                                    controller:adsViewController
-                                )
-
-                                // setupAdsViewController(
-                                //     adsViewController: adsViewController,
-                                //     adUrl: adUrl,
-                                //     contentUrl: contentUrl,
-                                //     ppID: ppID,
-                                //     args: args,
-                                //     result: result
-                                // )
-
-                                // Thread 1: signal SIGABRT
-
-                                SwiftSmadsPlugin.registrarAds!.register(viewFactory, withId: "suamusica/pre_roll_view")
-
                                 print("Registering would view factory - registrarAds: \(String(describing: SwiftSmadsPlugin.registrarAds)) at \(Date())")
 
                                 result(1)
@@ -155,34 +136,6 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
         closure()
         objc_sync_exit(lock)
     }
-    
-//    private func setupAdsViewController(
-//        adsViewController: AdsViewController,
-//        adUrl: String,
-//        contentUrl: String,
-//        ppID: String?,
-//        args: [String: Any],
-//        result: @escaping FlutterResult
-//    ) throws {
-//        adsViewController.setup(
-//            channel: SwiftSmadsPlugin.channel,
-//            adUrl: adUrl,
-//            contentUrl: contentUrl,
-//            screen: self.screen,
-//            args: args)
-//        adsViewController.ppID = ppID
-//
-//        let viewFactory = FLNativeViewFactory(
-//            messenger: registrarAds!.messenger(),
-//            controller: adsViewController
-//        )
-//        
-//        print("Registering view factory - registrarAds: \(String(describing: registrarAds))")
-//
-//        try registrarAds?.register(viewFactory, withId: "suamusica/pre_roll_view")
-//        
-//        result(1)
-//    }
 }
 
 private let tag:String = "FLNativeViewFactory"
@@ -228,59 +181,3 @@ class FLNativeView: NSObject, FlutterPlatformView {
         return controller.view
     }
 }
-
-// class FLNativeViewFactory: NSObject, FlutterPlatformViewFactory {
-//     private var messenger: FlutterBinaryMessenger
-
-//     init(messenger: FlutterBinaryMessenger, adsViewController:AdsViewController) {
-//         self.messenger = messenger
-//         self.adsViewController = adsViewController
-//         super.init()
-//     }
-
-//     func create(
-//         withFrame frame: CGRect,
-//         viewIdentifier viewId: Int64,
-//         arguments args: Any?
-//     ) -> FlutterPlatformView {
-//         return FLNativeView(
-//             frame: frame,
-//             viewIdentifier: viewId,
-//             arguments: args,
-//             binaryMessenger: messenger)
-//     }
-
-//     /// Implementing this method is only necessary when the `arguments` in `createWithFrame` is not `nil`.
-//     public func createArgsCodec() -> FlutterMessageCodec & NSObjectProtocol {
-//           return FlutterStandardMessageCodec.sharedInstance()
-//     }
-// }
-
-// class FLNativeView: NSObject, FlutterPlatformView {
-//     private var _view: UIView
-
-//     init(
-//         frame: CGRect,
-//         viewIdentifier viewId: Int64,
-//         arguments args: Any?,
-//         binaryMessenger messenger: FlutterBinaryMessenger?
-//     ) {
-//         _view = UIView()
-//         super.init()
-//         createNativeView(view: _view)
-//     }
-
-//     func view() -> UIView {
-//         return _view
-//     }
-
-//     func createNativeView(view _view: UIView){
-//         _view.backgroundColor = UIColor.blue
-//         let nativeLabel = UILabel()
-//         nativeLabel.text = "Native text from iOS"
-//         nativeLabel.textColor = UIColor.white
-//         nativeLabel.textAlignment = .center
-//         nativeLabel.frame = CGRect(x: 0, y: 0, width: 180, height: 48.0)
-//         _view.addSubview(nativeLabel)
-//     }
-// }
