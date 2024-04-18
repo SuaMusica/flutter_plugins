@@ -84,13 +84,21 @@ class _MyAppState extends State<MyApp> {
                   child: Text('Load'),
                   color: Colors.blueAccent,
                   onPressed: () {
+                    /// TODO:
+
+                    // ok, works as expected
                     adsValueNotifier.value = true;
                     controller.load(target);
+
+                    // not works as well, giving signal fatal error
+                    // adsValueNotifier.value = true;
                     // Future.delayed(Duration(seconds: 5), () {
+                    //   controller.load(target);
                     // });
-                    // Future.delayed(Duration(seconds: 3), () {
-                    //   adsValueNotifier.value = true;
-                    // });
+
+                    // also not works as well, giving signal fatal error
+                    // controller.load(target);
+                    // adsValueNotifier.value = true;
                   },
                 ),
                 SizedBox(height: 20),
