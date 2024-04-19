@@ -14,7 +14,7 @@ abstract class PreRollEventHandler {
     if (call.method == "onAdEvent") {
       final args = Map<String, dynamic>.from(call.arguments);
       final String? type = args["type"];
-      debugPrint("PREROLL: handleEvent - onAdEvent - $type | $args");
+      debugPrint("[PREROLL]: handleEvent - onAdEvent - $type | $args");
       _listener(type!.toPreRollEvent(), args);
     }
     return null;
