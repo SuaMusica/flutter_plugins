@@ -317,12 +317,14 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     // MARK: - IMAAdsManagerDelegate
     
     func adsManager(_ adsManager: IMAAdsManager!, didReceive event: IMAAdEvent!) {
+        print("[PREROLL] AD: didReceive event: \(event.type)")
         switch event.type {
         case IMAAdEventType.ALL_ADS_COMPLETED:
             print("AD: Got a ALL_ADS_COMPLETED event")
         case IMAAdEventType.CLICKED:
             print("AD: Got a CLICKED event")
         case IMAAdEventType.COMPLETE:
+            // dispose()
             print("AD: Got a COMPLETE event")
             onComplete()
             adsManager.destroy()
@@ -439,7 +441,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     
     func adsManager(_ adsManager: IMAAdsManager!, adDidProgressToTime mediaTime: TimeInterval, totalTime: TimeInterval) {
         let progress = Float(mediaTime/totalTime)
-        
+        print("PREROLL: Progress: \(progress), current: \(formatTimeInterval(mediaTime)), total: \(formatTimeInterval(totalTime))")
         if (progress == 1.0) {
             onComplete()
         }
@@ -603,9 +605,13 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     }
 
     func dispose() {
+        // onComplete()
         adsManager?.destroy()
         adsLoader?.contentComplete()
         contentPlayer?.pause()
+        // self.adsManager = nil
+        // self.adsLoader = nil
+        // self.dismiss(animated: false, completion: nil)
 //        contentPlayer = nil
 //        contentPlayerLayer = nil
 //        contentPlayhead = nil

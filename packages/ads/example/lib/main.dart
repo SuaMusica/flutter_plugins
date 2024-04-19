@@ -57,12 +57,12 @@ class _MyAppState extends State<MyApp> {
     // ads.onEvent.listen((e) {
     //   print("Got an AdEvent: ${e.toString()}");
     // });
-    adsValueNotifier.value = true;
-    controller.load(target);
-    Future.delayed(Duration(seconds: 9), () {
-      adsValueNotifier.value = false;
-      controller.dispose();
-    });
+    // adsValueNotifier.value = true;
+    // controller.load(target);
+    // Future.delayed(Duration(seconds: 9), () {
+    //   adsValueNotifier.value = false;
+    //   controller.dispose();
+    // });
   }
 
   @override
