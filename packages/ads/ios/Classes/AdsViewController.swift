@@ -388,6 +388,8 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         default:
             print("AD: Got an unknown event")
         }
+
+        print("AD: Event: \(event.type), Ad: \(event.ad.adTitle), Advertiser: \(event.ad.advertiserName)")
         
         let type = AdsViewController.toEventType(event: event)
         
@@ -441,7 +443,15 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     
     func adsManager(_ adsManager: IMAAdsManager!, adDidProgressToTime mediaTime: TimeInterval, totalTime: TimeInterval) {
         let progress = Float(mediaTime/totalTime)
-        print("PREROLL: Progress: \(progress), current: \(formatTimeInterval(mediaTime)), total: \(formatTimeInterval(totalTime))")
+        let args = [
+            "type": "AD_PROGRESS",
+            "progress": progress,
+            "current": formatTimeInterval(mediaTime),
+            "total": formatTimeInterval(totalTime)
+        ] as [String : Any]
+
+        self.channel?.invokeMethod("onAdEvent", arguments: args)
+
         if (progress == 1.0) {
             onComplete()
         }

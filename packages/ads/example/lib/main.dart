@@ -210,5 +210,5 @@ class _PreRollUIState extends State<PreRollUI> {
 }
 
 void preRollListener(PreRollEvent event, Map<String, dynamic> args) {
-  debugPrint("Event: $event, args: $args");
+  debugPrint('[PREROLL]: Event: $event, args: $args');
 }
