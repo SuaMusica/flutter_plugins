@@ -58,7 +58,7 @@ class _MyAppState extends State<MyApp> {
     //   print("Got an AdEvent: ${e.toString()}");
     // });
     // adsValueNotifier.value = true;
-    // controller.load(target);
+    // controller.init();
     // Future.delayed(Duration(seconds: 9), () {
     //   adsValueNotifier.value = false;
     //   controller.dispose();
@@ -85,7 +85,14 @@ class _MyAppState extends State<MyApp> {
                     controller: controller,
                   ),
                 ),
-                // load
+                MaterialButton(
+                  child: Text('init'),
+                  color: Colors.blueAccent,
+                  onPressed: () {
+                    print("init");
+                    controller.init();
+                  },
+                ),
                 MaterialButton(
                   child: Text('Load'),
                   color: Colors.blueAccent,
@@ -95,6 +102,9 @@ class _MyAppState extends State<MyApp> {
                     // ok, works as expected
                     adsValueNotifier.value = true;
                     controller.load(target);
+                    Future.delayed(Duration(seconds: 12), () {
+                      adsValueNotifier.value = false;
+                    });
 
                     // not works as well, giving signal fatal error
                     // adsValueNotifier.value = true;

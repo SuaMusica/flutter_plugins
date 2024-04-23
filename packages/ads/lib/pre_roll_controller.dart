@@ -33,4 +33,8 @@ class PreRollController extends PreRollEventHandler {
   void dispose() {
     _channel.invokeMethod('dispose');
   }
+
+  void init() {
+    _channel.invokeMethod('init');
+  }
 }

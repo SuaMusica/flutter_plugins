@@ -86,13 +86,14 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         self.screen = screen
         self.args = args
         
+        print("[PREROLL] AD: Setting up AdsViewController - isRegistered: \(isRegistered)")
         if (!isRegistered) {
-            let viewFactory = FLNativeViewFactory(
-                messenger: SwiftSmadsPlugin.registrarAds!.messenger(),
-                controller:self
-            )
-
-            SwiftSmadsPlugin.registrarAds!.register(viewFactory, withId: "suamusica/pre_roll_view")
+//             let viewFactory = FLNativeViewFactory(
+//                 messenger: SwiftSmadsPlugin.registrarAds!.messenger(),
+//                 controller:self
+//             )
+//
+//             SwiftSmadsPlugin.registrarAds!.register(viewFactory, withId: "suamusica/pre_roll_view")
 
             isRegistered = true
         }
@@ -243,6 +244,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             
             // we need to notify that the ad was played
             self.channel?.invokeMethod("onComplete", arguments: [String: String]())
+//            isRegistered = false
         }
     }
     
@@ -324,7 +326,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         case IMAAdEventType.CLICKED:
             print("AD: Got a CLICKED event")
         case IMAAdEventType.COMPLETE:
-            // dispose()
             print("AD: Got a COMPLETE event")
             onComplete()
             adsManager.destroy()
@@ -443,11 +444,15 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     
     func adsManager(_ adsManager: IMAAdsManager!, adDidProgressToTime mediaTime: TimeInterval, totalTime: TimeInterval) {
         let progress = Float(mediaTime/totalTime)
+        let progressInMS = Int(mediaTime * 1000)
+        let totalTimeInMS = Int(totalTime * 1000)
         let args = [
             "type": "AD_PROGRESS",
-            "progress": progress,
-            "current": formatTimeInterval(mediaTime),
-            "total": formatTimeInterval(totalTime)
+            // "progress": progress,
+            // "current": formatTimeInterval(mediaTime),
+            // "total": formatTimeInterval(totalTime)
+            "position": progressInMS,
+            "duration": totalTimeInMS
         ] as [String : Any]
 
         self.channel?.invokeMethod("onAdEvent", arguments: args)
@@ -615,10 +620,11 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     }
 
     func dispose() {
-        // onComplete()
-        adsManager?.destroy()
-        adsLoader?.contentComplete()
-        contentPlayer?.pause()
+        self.adsManager?.destroy()
+        self.adsManager = nil
+        self.adsLoader = nil
+        
+            
         // self.adsManager = nil
         // self.adsLoader = nil
         // self.dismiss(animated: false, completion: nil)

@@ -20,7 +20,7 @@
             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
             <subviews>
                 <view contentMode="scaleAspectFit" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="KM2-4Z-mtZ" userLabel="viewView">
-                    <rect key="frame" x="4" y="0.0" width="406" height="227"/>
+                    <rect key="frame" x="0.0" y="0.0" width="414" height="227"/>
                     <color key="backgroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                     <constraints>
                         <constraint firstAttribute="width" secondItem="KM2-4Z-mtZ" secondAttribute="height" multiplier="16:9" constant="1.6666666666666856" id="WYp-gM-iG6"/>
