@@ -588,14 +588,16 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     }
 
     func play() {
+        print("Playing ads? \(self.playing) 1")
         if self.playing {
-            adsManager?.resume()
-        } else {
             adsManager?.pause()
+        } else {
+            adsManager?.resume()
         }
     }
 
     func pause() {
+        print("Playing ads? \(self.playing) 2")
         if self.playing {
             adsManager?.pause()
         } else {

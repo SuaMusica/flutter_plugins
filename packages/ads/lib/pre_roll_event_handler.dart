@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:smads/pre_roll_events.dart';
 
@@ -14,7 +13,6 @@ abstract class PreRollEventHandler {
     if (call.method == "onAdEvent") {
       final args = Map<String, dynamic>.from(call.arguments);
       final String? type = args["type"];
-      debugPrint("[PREROLL]: handleEvent - onAdEvent - $type | $args");
       _listener(type!.toPreRollEvent(), args);
     }
     return null;

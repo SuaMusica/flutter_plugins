@@ -85,7 +85,6 @@ class _MyAppState extends State<MyApp> {
                     controller: controller,
                   ),
                 ),
-
                 MaterialButton(
                   child: Text('Load'),
                   color: Colors.blueAccent,
@@ -111,16 +110,14 @@ class _MyAppState extends State<MyApp> {
                   },
                 ),
                 SizedBox(height: 20),
-                // MaterialButton(
-                //   child: Text('play'),
-                //   color: Colors.blueAccent,
-                //   onPressed: () async {
-                //     controller.play();
-                //   },
-                // ),
-                SizedBox(
-                  height: 20,
+                MaterialButton(
+                  child: Text('play'),
+                  color: Colors.blueAccent,
+                  onPressed: () {
+                    controller.play();
+                  },
                 ),
+                SizedBox(height: 20),
                 MaterialButton(
                   child: Text('Pause'),
                   color: Colors.blueAccent,
