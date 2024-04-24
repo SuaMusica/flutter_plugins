@@ -92,30 +92,25 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                             SwiftSmadsPlugin.verifyNetworkAccess()
                         }
                         
-                        if (self.screen.status == .unlocked) {
-                            if (Network.reachability.isReachable) {
-                                print("AD: Screen is unlocked and ready to show ads | ppID: \(ppID ?? "N/A") | all args: \(args)")
-                                SwiftSmadsPlugin.adsViewController!.ppID = ppID
+                        if (Network.reachability.isReachable) {
+                            print("AD: Screen is unlocked and ready to show ads | ppID: \(ppID ?? "N/A") | all args: \(args)")
+                            SwiftSmadsPlugin.adsViewController!.ppID = ppID
 
-                                SwiftSmadsPlugin.adsViewController!.setup(
-                                    channel: SwiftSmadsPlugin.channel,
-                                    adUrl: adUrl,
-                                    contentUrl: contentUrl,
-                                    screen: self.screen,
-                                    args: args)
+                            SwiftSmadsPlugin.adsViewController!.setup(
+                                channel: SwiftSmadsPlugin.channel,
+                                adUrl: adUrl,
+                                contentUrl: contentUrl,
+                                screen: self.screen,
+                                args: args)
 
-                                print("AD: Registering would view factory - registrarAds: \(String(describing: SwiftSmadsPlugin.registrarAds)) at \(Date())")
+                            print("AD: Registering would view factory - registrarAds: \(String(describing: SwiftSmadsPlugin.registrarAds)) at \(Date())")
 
-                                result(1)
-                            } else {
-                                self.onError(code: SwiftSmadsPlugin.NoConnectivity)
-                                result(SwiftSmadsPlugin.NoConnectivity)
-                            }
+                            result(1)
                         } else {
-                            self.onError(code: SwiftSmadsPlugin.ScreenIsLocked)
-                            result(SwiftSmadsPlugin.ScreenIsLocked)
+                            self.onError(code: SwiftSmadsPlugin.NoConnectivity)
+                            result(SwiftSmadsPlugin.NoConnectivity)
                         }
-                        
+
                     }
                 } catch {
                     result(0)
