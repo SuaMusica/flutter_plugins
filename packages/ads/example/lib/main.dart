@@ -11,6 +11,8 @@ class MyApp extends StatefulWidget {
   _MyAppState createState() => _MyAppState();
 }
 
+ValueNotifier<bool> adsValueNotifier = ValueNotifier(false);
+
 class _MyAppState extends State<MyApp> {
 //   final ads = SMAds(
 // //    adUrl:
@@ -28,12 +30,14 @@ class _MyAppState extends State<MyApp> {
     "gender": "1",
     "version": "6867",
     "ppid": "6d83fd8be4872555440fab67103896c8bee7b064b1b3ab0260f503c8dfc76e39",
+    // video ad
+    // "__URL__":
+    //     "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=",
     "__URL__":
         "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=",
     "__CONTENT__": "https://assets.suamusica.com.br/video/virgula.mp3",
   };
 
-  ValueNotifier<bool> adsValueNotifier = ValueNotifier(false);
   final PreRollController controller = PreRollController(preRollListener);
 
   @override
@@ -59,10 +63,6 @@ class _MyAppState extends State<MyApp> {
     // });
     // adsValueNotifier.value = true;
     // controller.init();
-    // Future.delayed(Duration(seconds: 9), () {
-    //   adsValueNotifier.value = false;
-    //   controller.dispose();
-    // });
   }
 
   @override
@@ -86,17 +86,12 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 MaterialButton(
-                  child: Text('Load'),
+                  child: Text('Load video'),
                   color: Colors.blueAccent,
                   onPressed: () {
-                    /// TODO:
-
                     // ok, works as expected
                     adsValueNotifier.value = true;
                     controller.load(target);
-                    Future.delayed(Duration(seconds: 12), () {
-                      adsValueNotifier.value = false;
-                    });
 
                     // not works as well, giving signal fatal error
                     // adsValueNotifier.value = true;
@@ -107,6 +102,19 @@ class _MyAppState extends State<MyApp> {
                     // also not works as well, giving signal fatal error
                     // controller.load(target);
                     // adsValueNotifier.value = true;
+                  },
+                ),
+                SizedBox(height: 20),
+                MaterialButton(
+                  child: Text('Load audio'),
+                  color: Colors.blueAccent,
+                  onPressed: () {
+                    adsValueNotifier.value = true;
+                    final modifiedTarget = Map<String, dynamic>.from(target);
+                    modifiedTarget["__URL__"] =
+                        "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480%7C400x300%7C730x400&iu=/7090806/Suamusica.com.br-ROA-Preroll&impl=s&gdfp_req=1&env=instream&output=vast&unviewed_position_start=1&description_url=http%3A%2F%2Fwww.suamusica.com.br%2F&correlator=&tfcd=0&npa=0&ad_type=audio&vad_type=linear&ciu_szs=300x250&cust_params=teste%3D1";
+
+                    controller.load(modifiedTarget);
                   },
                 ),
                 SizedBox(height: 20),
@@ -211,4 +219,8 @@ class _PreRollUIState extends State<PreRollUI> {
 
 void preRollListener(PreRollEvent event, Map<String, dynamic> args) {
   debugPrint('[PREROLL]: Event: $event, args: $args');
+
+  if (event == PreRollEvent.COMPLETED) {
+    adsValueNotifier.value = false;
+  }
 }
