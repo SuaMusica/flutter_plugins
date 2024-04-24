@@ -84,18 +84,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         self.contentUrl = contentUrl
         self.screen = screen
         self.args = args
-        
-        print("[PREROLL] AD: Setting up AdsViewController - isRegistered: \(isRegistered)")
-        if (!isRegistered) {
-//             let viewFactory = FLNativeViewFactory(
-//                 messenger: SwiftSmadsPlugin.registrarAds!.messenger(),
-//                 controller:self
-//             )
-//
-//             SwiftSmadsPlugin.registrarAds!.register(viewFactory, withId: "suamusica/pre_roll_view")
 
-            isRegistered = true
-        }
     }
     
     func setupAudioSession() {
@@ -602,12 +591,11 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         if self.playing {
             adsManager?.resume()
         } else {
-            adsManager?.start()
+            adsManager?.pause()
         }
     }
 
     func pause() {
-        // adsManager?.pause()
         if self.playing {
             adsManager?.pause()
         } else {

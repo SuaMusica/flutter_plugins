@@ -130,6 +130,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
 //            let savedArgsFromController = adsViewController.args
             print("Saved args from controller: \(String(describing: SwiftSmadsPlugin.adsViewController?.args))")
             print("View factory registered")
+            SwiftSmadsPlugin.adsViewController!.play()
 
             result(1)
         case "pause":
