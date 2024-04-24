@@ -10,7 +10,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
     static let UnlockedScreen = 1;
     static let LockedScreen = 0;
     // nullable
-    var adsViewController: AdsViewController? = nil
+    static var adsViewController: AdsViewController? = nil
     static var registrarAds: FlutterPluginRegistrar? = nil
 
     fileprivate static func verifyNetworkAccess() {
@@ -47,6 +47,15 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
 
 //            SwiftSmadsPlugin.registrarAds!.register(viewFactory, withId: "suamusica/pre_roll_view")
             registrarAds = registrar
+            adsViewController = AdsViewController.instantiateFromNib()
+            
+            let viewFactory = FLNativeViewFactory(
+                messenger: SwiftSmadsPlugin.registrarAds!.messenger(),
+                controller: adsViewController!
+            )
+
+             SwiftSmadsPlugin.registrarAds!.register(viewFactory, withId: "suamusica/pre_roll_view")
+
             verifyNetworkAccess()
         }
     }
@@ -67,27 +76,8 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-        print("Method call: \(call.method), arguments: \(call.arguments ?? "N/A"), result: \(result)")
+        print("Method call: \(call.method), arguments: \(call.arguments ?? "N/A"), result: \(String(describing: result))")
         switch call.method {
-        case "init":
-            print("init is called");
-            //            load factory e garante que não é nulo
-            // adsViewController = AdsViewController.instantiateFromNib()
-            // SwiftSmadsPlugin.adsViewController = SwiftSmadsPlugin.adsViewController.instantiateFromNib()
-            adsViewController = AdsViewController.instantiateFromNib()
-            
-            if (adsViewController == nil) {
-                print("Ads view controller is nil")
-                result(FlutterError(code: "-1", message: "Ads view controller is nil", details: nil))
-                return
-            }
-
-            let viewFactory = FLNativeViewFactory(
-                messenger: SwiftSmadsPlugin.registrarAds!.messenger(),
-                controller: adsViewController!
-            )
-
-             SwiftSmadsPlugin.registrarAds!.register(viewFactory, withId: "suamusica/pre_roll_view")
         case "load":
             DispatchQueue.main.async {
                 do {
@@ -104,16 +94,17 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                         
                         if (self.screen.status == .unlocked) {
                             if (Network.reachability.isReachable) {
-                                print("Screen is unlocked and ready to show ads | ppID: \(ppID ?? "N/A") | all args: \(args)")
-                                adsViewController!.setup(
+                                print("AD: Screen is unlocked and ready to show ads | ppID: \(ppID ?? "N/A") | all args: \(args)")
+                                SwiftSmadsPlugin.adsViewController!.ppID = ppID
+
+                                SwiftSmadsPlugin.adsViewController!.setup(
                                     channel: SwiftSmadsPlugin.channel,
                                     adUrl: adUrl,
                                     contentUrl: contentUrl,
                                     screen: self.screen,
                                     args: args)
-                                adsViewController!.ppID = ppID
 
-                                print("Registering would view factory - registrarAds: \(String(describing: SwiftSmadsPlugin.registrarAds)) at \(Date())")
+                                print("AD: Registering would view factory - registrarAds: \(String(describing: SwiftSmadsPlugin.registrarAds)) at \(Date())")
 
                                 result(1)
                             } else {
@@ -137,18 +128,18 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
             print("Playing ads")
             print("Ads view controller: \(AdsViewController.self)")
 //            let savedArgsFromController = adsViewController.args
-            print("Saved args from controller: \(String(describing: adsViewController?.args))")
+            print("Saved args from controller: \(String(describing: SwiftSmadsPlugin.adsViewController?.args))")
             print("View factory registered")
 
             result(1)
         case "pause":
-            adsViewController!.pause()
+            SwiftSmadsPlugin.adsViewController!.pause()
             result(1)
         case "dispose":
-            adsViewController!.dispose()
+            SwiftSmadsPlugin.adsViewController!.dispose()
             result(1)
         case "skip":
-            adsViewController!.skip()
+            SwiftSmadsPlugin.adsViewController!.skip()
             result(1)
 
         default:

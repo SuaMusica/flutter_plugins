@@ -85,14 +85,7 @@ class _MyAppState extends State<MyApp> {
                     controller: controller,
                   ),
                 ),
-                MaterialButton(
-                  child: Text('init'),
-                  color: Colors.blueAccent,
-                  onPressed: () {
-                    print("init");
-                    controller.init();
-                  },
-                ),
+
                 MaterialButton(
                   child: Text('Load'),
                   color: Colors.blueAccent,
