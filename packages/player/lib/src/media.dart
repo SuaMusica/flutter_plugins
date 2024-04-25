@@ -197,13 +197,25 @@ extension ListMediaToListStringCompressed on List<Media> {
 }
 
 extension ListStringToListPlayable on List<String> {
-  List<Media> get toListMedia => map(
-        (e) => Media.fromJson(
+  List<Media> get toListMedia => map((e) {
+        final media = Media.fromJson(
           jsonDecode(
             e,
           ),
-        ),
-      ).toList();
+        );
+        return media.copyWith(
+          coverUrl: media.coverUrl.isEmpty
+              ? 'https://suamusica.com.br/cover/cd/${media.albumId}'
+              : media.coverUrl,
+          bigCoverUrl: media.bigCoverUrl.isEmpty
+              ? 'https://suamusica.com.br/cover/cd/${media.albumId}'
+              : media.bigCoverUrl,
+          author: media.author.isEmpty ? 'Desconhecido' : media.author,
+          albumTitle:
+              media.albumTitle.isEmpty ? 'Desconhecido' : media.albumTitle,
+          name: media.name.isEmpty ? 'Desconhecido' : media.name,
+        );
+      }).toList();
 }
 
 extension CompressRestoreWithGzipB64 on String {
