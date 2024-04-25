@@ -103,8 +103,6 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                                 screen: self.screen,
                                 args: args)
 
-                            print("AD: Registering would view factory - registrarAds: \(String(describing: SwiftSmadsPlugin.registrarAds)) at \(Date())")
-
                             result(1)
                         } else {
                             self.onError(code: SwiftSmadsPlugin.NoConnectivity)

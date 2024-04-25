@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:smads/sm.dart';
+import 'package:smads_example/widgets/widgets.dart';
 
 class SMAdsBottomSheet extends StatelessWidget {
   const SMAdsBottomSheet({
@@ -23,38 +24,38 @@ class SMAdsBottomSheet extends StatelessWidget {
               child: ListView(
                 shrinkWrap: true,
                 children: [
-                  ListTile(
-                    title: Text('play'),
-                    leading: Icon(Icons.play_arrow),
+                  SMAdsTile(
+                    title: 'play',
+                    icon: Icons.play_arrow_rounded,
                     onTap: () {
                       controller.play();
                     },
                   ),
-                  ListTile(
-                    title: Text('pause'),
-                    leading: Icon(Icons.pause),
+                  SMAdsTile(
+                    title: 'pause',
+                    icon: Icons.pause_rounded,
                     onTap: () {
                       controller.pause();
                     },
                   ),
-                  ListTile(
-                    title: Text('skip'),
-                    leading: Icon(Icons.skip_next),
+                  SMAdsTile(
+                    title: 'skip',
+                    icon: Icons.skip_next_rounded,
                     onTap: () {
                       controller.skip();
                     },
                   ),
-                  ListTile(
-                    title: Text('dispose'),
-                    leading: Icon(Icons.delete),
+                  SMAdsTile(
+                    title: 'dispose',
+                    icon: Icons.delete_rounded,
                     onTap: () {
                       controller.dispose();
                     },
                   ),
                   Divider(),
-                  ListTile(
-                    title: Text('pop and play'),
-                    leading: Icon(Icons.back_hand),
+                  SMAdsTile(
+                    title: 'pop and play',
+                    icon: Icons.back_hand_rounded,
                     onTap: () {
                       controller.play();
                       Navigator.pop(context);

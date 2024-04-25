@@ -58,9 +58,10 @@ class _MyAppState extends State<MyApp> {
                 controller: controller,
               ),
             ),
-            SMAdsButton(
+            SMAdsTile(
+              icon: Icons.align_vertical_bottom_rounded,
               title: 'Call bottom sheet',
-              onPressed: () {
+              onTap: () {
                 controller.pause();
                 showModalBottomSheet(
                   context: context,
@@ -72,55 +73,63 @@ class _MyAppState extends State<MyApp> {
                 );
               },
             ),
-            SMAdsButton(
+            SMAdsTile(
+              icon: Icons.video_call_rounded,
               title: 'Load video',
-              onPressed: () {
+              onTap: () {
                 loadAds(videoTarget);
               },
             ),
-            SMAdsButton(
+            SMAdsTile(
+              icon: Icons.video_call_rounded,
               title: 'Load video with delay for 5 seconds',
-              onPressed: () {
+              onTap: () {
                 Future.delayed(Duration(seconds: 5), () {
                   loadAds(videoTarget);
                 });
               },
             ),
-            SMAdsButton(
+            SMAdsTile(
+              icon: Icons.audiotrack_rounded,
               title: 'Load audio',
-              onPressed: () {
+              onTap: () {
                 loadAds(audioTarget);
               },
             ),
-            SMAdsButton(
+            SMAdsTile(
+              icon: Icons.audiotrack_rounded,
               title: 'Load audio with delay for 5 seconds',
-              onPressed: () {
+              onTap: () {
                 Future.delayed(Duration(seconds: 5), () {
                   loadAds(audioTarget);
                 });
               },
             ),
-            SMAdsButton(
+            SMAdsTile(
+              icon: Icons.play_arrow_rounded,
               title: 'play',
-              onPressed: () {
+              onTap: () {
                 controller.play();
               },
             ),
-            SMAdsButton(
+            SMAdsTile(
+              icon: Icons.pause_rounded,
               title: 'Pause',
-              onPressed: () {
+              onTap: () {
                 controller.pause();
               },
             ),
-            SMAdsButton(
+            SMAdsTile(
+              icon: Icons.skip_next_rounded,
               title: 'Skip',
-              onPressed: () {
+              onTap: () {
                 controller.skip();
               },
             ),
-            SMAdsButton(
+            SMAdsTile(
+              icon: Icons.delete_rounded,
               title: 'Dispose',
-              onPressed: () {
+              onTap: () {
                 controller.dispose();
                 adsValueNotifier.value = false;
               },

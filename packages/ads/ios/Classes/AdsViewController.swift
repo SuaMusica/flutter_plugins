@@ -60,12 +60,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         super.viewDidLoad()
 
         print("AD: viewDidLoad at \(Date())")
-        // let viewFactory = FLNativeViewFactory(
-        //     messenger: SwiftSmadsPlugin.registrarAds!.messenger(),
-        //     controller: self
-        // )
-
-        // SwiftSmadsPlugin.registrarAds!.register(viewFactory, withId: "suamusica/pre_roll_view")
         
     }
         
