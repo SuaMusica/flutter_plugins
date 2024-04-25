@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 
-// import 'package:smads/smads.dart';
 import 'package:smads/sm.dart';
+import 'package:smads_example/widgets/widgets.dart';
 
-void main() => runApp(MyApp());
+void main() => runApp(
+      MaterialApp(
+        home: MyApp(),
+      ),
+    );
 
 class MyApp extends StatefulWidget {
   @override
@@ -38,135 +42,129 @@ class _MyAppState extends State<MyApp> {
     "__CONTENT__": "https://assets.suamusica.com.br/video/virgula.mp3",
   };
 
-  final PreRollController controller = PreRollController(preRollListener);
+  final audioTarget = Map<String, dynamic>.from(target);
+  final controller = PreRollController(preRollListener);
 
   @override
   void initState() {
     super.initState();
-    // controller.load(target);
-    // adsValueNotifier.value = true;
-
-    initPlatformState();
-  }
-
-  // Platform messages are asynchronous, so we initialize in an async method.
-  Future<void> initPlatformState() async {
-    // Platform messages may fail, so we use a try/catch PlatformException.
-
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) return;
-
-    // ads.onEvent.listen((e) {
-    //   print("Got an AdEvent: ${e.toString()}");
-    // });
-    // adsValueNotifier.value = true;
-    // controller.init();
+    audioTarget["__URL__"] =
+        "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480%7C400x300%7C730x400&iu=/7090806/Suamusica.com.br-ROA-Preroll&impl=s&gdfp_req=1&env=instream&output=vast&unviewed_position_start=1&description_url=http%3A%2F%2Fwww.suamusica.com.br%2F&correlator=&tfcd=0&npa=0&ad_type=audio&vad_type=linear&ciu_szs=300x250&cust_params=teste%3D1";
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Plugin example app'),
-        ),
-        body: ColoredBox(
-          color: Colors.red,
-          child: Center(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                ColoredBox(
-                  color: Colors.green,
-                  child: PreRollUI(
-                    adsValueNotifier: adsValueNotifier,
-                    controller: controller,
-                  ),
-                ),
-                MaterialButton(
-                  child: Text('Load video'),
-                  color: Colors.blueAccent,
-                  onPressed: () {
-                    // ok, works as expected
-                    adsValueNotifier.value = true;
-                    controller.load(target);
-
-                    // not works as well, giving signal fatal error
-                    // adsValueNotifier.value = true;
-                    // Future.delayed(Duration(seconds: 5), () {
-                    //   controller.load(target);
-                    // });
-
-                    // also not works as well, giving signal fatal error
-                    // controller.load(target);
-                    // adsValueNotifier.value = true;
-                  },
-                ),
-                SizedBox(height: 20),
-                MaterialButton(
-                  child: Text('Load audio'),
-                  color: Colors.blueAccent,
-                  onPressed: () {
-                    adsValueNotifier.value = true;
-                    final modifiedTarget = Map<String, dynamic>.from(target);
-                    modifiedTarget["__URL__"] =
-                        "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480%7C400x300%7C730x400&iu=/7090806/Suamusica.com.br-ROA-Preroll&impl=s&gdfp_req=1&env=instream&output=vast&unviewed_position_start=1&description_url=http%3A%2F%2Fwww.suamusica.com.br%2F&correlator=&tfcd=0&npa=0&ad_type=audio&vad_type=linear&ciu_szs=300x250&cust_params=teste%3D1";
-
-                    controller.load(modifiedTarget);
-                  },
-                ),
-                SizedBox(height: 20),
-                MaterialButton(
-                  child: Text('play'),
-                  color: Colors.blueAccent,
-                  onPressed: () {
-                    controller.play();
-                  },
-                ),
-                SizedBox(height: 20),
-                MaterialButton(
-                  child: Text('Pause'),
-                  color: Colors.blueAccent,
-                  onPressed: () {
-                    controller.pause();
-                  },
-                ),
-                SizedBox(height: 20),
-                MaterialButton(
-                  child: Text('Skip'),
-                  color: Colors.blueAccent,
-                  onPressed: () {
-                    controller.skip();
-                  },
-                ),
-                SizedBox(height: 20),
-                MaterialButton(
-                  child: Text('Dispose'),
-                  color: Colors.blueAccent,
-                  onPressed: () {
-                    controller.dispose();
-                    adsValueNotifier.value = false;
-                  },
-                ),
-                SizedBox(height: 20),
-                SizedBox(
-                  height: 50,
-                  child: FutureBuilder<int>(
-                    future: controller.screenStatus,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.done) {
-                        return Text("Screen Status: ${snapshot.data}");
-                      } else {
-                        return CircularProgressIndicator();
-                      }
-                    },
-                  ),
-                ),
-              ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Plugin example app'),
+      ),
+      body: Center(
+        child: ListView(
+          children: [
+            ColoredBox(
+              color: Colors.green,
+              child: PreRollUI(
+                adsValueNotifier: adsValueNotifier,
+                controller: controller,
+              ),
             ),
-          ),
+            SMAdsButton(
+              title: 'Call bottom sheet',
+              onPressed: () {
+                controller.pause();
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  useRootNavigator: true,
+                  builder: (context) {
+                    return SMAdsBottomSheet(controller: controller);
+                  },
+                );
+              },
+            ),
+            SMAdsButton(
+              title: 'Load video',
+              onPressed: () {
+                // ok, works as expected
+                adsValueNotifier.value = true;
+                controller.load(target);
+
+                // not works as well, giving signal fatal error
+                // adsValueNotifier.value = true;
+                // Future.delayed(Duration(seconds: 5), () {
+                //   controller.load(target);
+                // });
+
+                // also not works as well, giving signal fatal error
+                // controller.load(target);
+                // adsValueNotifier.value = true;
+              },
+            ),
+            SMAdsButton(
+              title: 'Load video with delay for 5 seconds',
+              onPressed: () {
+                Future.delayed(Duration(seconds: 5), () {
+                  controller.load(target);
+                });
+              },
+            ),
+            SMAdsButton(
+              title: 'Load audio',
+              onPressed: () {
+                controller.load(audioTarget);
+              },
+            ),
+            SMAdsButton(
+              title: 'Load audio with delay for 5 seconds',
+              onPressed: () {
+                final modifiedTarget = Map<String, dynamic>.from(target);
+                modifiedTarget["__URL__"] =
+                    "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480%7C400x300%7C730x400&iu=/7090806/Suamusica.com.br-ROA-Preroll&impl=s&gdfp_req=1&env=instream&output=vast&unviewed_position_start=1&description_url=http%3A%2F%2Fwww.suamusica.com.br%2F&correlator=&tfcd=0&npa=0&ad_type=audio&vad_type=linear&ciu_szs=300x250&cust_params=teste%3D1";
+
+                controller.load(modifiedTarget);
+              },
+            ),
+            SMAdsButton(
+              title: 'play',
+              onPressed: () {
+                controller.play();
+              },
+            ),
+            SMAdsButton(
+              title: 'Pause',
+              onPressed: () {
+                controller.pause();
+              },
+            ),
+            SMAdsButton(
+              title: 'Skip',
+              onPressed: () {
+                controller.skip();
+              },
+            ),
+            SMAdsButton(
+              title: 'Dispose',
+              onPressed: () {
+                controller.dispose();
+                adsValueNotifier.value = false;
+              },
+            ),
+            SizedBox(
+              height: 50,
+              child: Center(
+                child: FutureBuilder<int>(
+                  future: controller.screenStatus,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.done) {
+                      return Text("Screen Status: ${snapshot.data}");
+                    } else {
+                      return CircularProgressIndicator();
+                    }
+                  },
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -220,7 +218,11 @@ class _PreRollUIState extends State<PreRollUI> {
 void preRollListener(PreRollEvent event, Map<String, dynamic> args) {
   debugPrint('[PREROLL]: Event: $event, args: $args');
 
-  if (event == PreRollEvent.COMPLETED) {
-    adsValueNotifier.value = false;
+  switch (event) {
+    case PreRollEvent.LOADED:
+      adsValueNotifier.value = true;
+    case PreRollEvent.COMPLETED:
+      adsValueNotifier.value = false;
+    default:
   }
 }
