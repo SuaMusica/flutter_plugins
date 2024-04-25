@@ -70,11 +70,18 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     }
         
     override func viewDidAppear(_ animated: Bool) {
+        print("AD: viewDidAppear at \(Date())")
+        if (isRegistered) {
+            return
+        }
+
         setUpContentPlayer()
         setUpAdsLoader()
         setupAudioSession()
 
         requestAds()
+
+        isRegistered = true
     }
     
     func setup(channel: FlutterMethodChannel?, adUrl: String?, contentUrl: String?, screen: Screen, args: [String: Any]?) {
@@ -621,11 +628,10 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     }
 
     func dispose() {
+        isRegistered = false
         self.adsManager?.destroy()
         self.adsManager = nil
         self.adsLoader = nil
-        
-            
         // self.adsManager = nil
         // self.adsLoader = nil
         // self.dismiss(animated: false, completion: nil)

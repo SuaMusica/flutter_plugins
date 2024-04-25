@@ -16,6 +16,7 @@ class MyApp extends StatefulWidget {
 }
 
 ValueNotifier<bool> adsValueNotifier = ValueNotifier(false);
+PreRollController controller = PreRollController(preRollListener);
 
 class _MyAppState extends State<MyApp> {
 //   final ads = SMAds(
@@ -43,7 +44,6 @@ class _MyAppState extends State<MyApp> {
   };
 
   final audioTarget = Map<String, dynamic>.from(target);
-  final controller = PreRollController(preRollListener);
 
   @override
   void initState() {
@@ -223,6 +223,7 @@ void preRollListener(PreRollEvent event, Map<String, dynamic> args) {
       adsValueNotifier.value = true;
     case PreRollEvent.COMPLETED:
       adsValueNotifier.value = false;
+      controller.dispose();
     default:
   }
 }
