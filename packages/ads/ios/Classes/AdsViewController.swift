@@ -374,7 +374,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         case IMAAdEventType.AD_PERIOD_ENDED:
             print("AD: Got a AD_PERIOD_ENDED event")
         default:
-            print("AD: Got an unknown event")
+            print("AD: Got an unknown event - \(event.type)")
         }
 
         print("AD: Event: \(event.type), Ad: \(String(describing: event.ad?.adTitle)), Advertiser: \(String(describing: event.ad?.advertiserName))")
@@ -587,21 +587,36 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         return type
     }
 
+    // func playOrPause() {
+    //     if (self.playing) {
+    //         adsManager?.pause()
+    //     } else {
+    //         adsManager?.resume()
+    //     }
+    // }
+    
     func play() {
         print("Playing ads? \(self.playing) 1")
-        if self.playing {
-            adsManager?.pause()
-        } else {
+        // if self.playing {
+        //     adsManager?.pause()
+        // } else {
+        //     adsManager?.resume()
+        // }
+        if (!self.playing) {
             adsManager?.resume()
         }
     }
 
     func pause() {
-        print("Playing ads? \(self.playing) 2")
-        if self.playing {
+        // print("Playing ads? \(self.playing) 2")
+        // if self.playing {
+        //     adsManager?.pause()
+        // } else {
+        //     adsManager?.resume()
+        // }
+
+        if (self.playing) {
             adsManager?.pause()
-        } else {
-            adsManager?.resume()
         }
     }
 

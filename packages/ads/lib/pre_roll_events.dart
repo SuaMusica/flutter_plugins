@@ -57,6 +57,8 @@ extension ParseToPreRollEvent on String {
       case "PAUSE":
       case "PAUSED":
         return PreRollEvent.PAUSED;
+      // iOS sends "RESUME" instead of "RESUMED"
+      case "RESUME":
       case "RESUMED":
         return PreRollEvent.RESUMED;
       case "SKIPPABLE_STATE_CHANGED":
