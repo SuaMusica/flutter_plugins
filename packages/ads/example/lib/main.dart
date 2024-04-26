@@ -6,7 +6,8 @@ import 'package:smads_example/widgets/widgets.dart';
 
 void main() => runApp(MaterialApp(home: MyApp()));
 
-ValueNotifier<bool> adsValueNotifier = ValueNotifier(false);
+ValueNotifier<bool> preRollNotifier = ValueNotifier(false);
+ValueNotifier<bool> isAudioAd = ValueNotifier(false);
 PreRollController controller = PreRollController(preRollListener);
 
 class MyApp extends StatelessWidget {
@@ -95,7 +96,7 @@ class MyApp extends StatelessWidget {
               title: 'Dispose',
               onTap: () {
                 controller.dispose();
-                adsValueNotifier.value = false;
+                preRollNotifier.value = false;
               },
             ),
             SizedBox(
@@ -117,7 +118,7 @@ class MyApp extends StatelessWidget {
             ColoredBox(
               color: Colors.grey,
               child: PreRollUI(
-                adsValueNotifier: adsValueNotifier,
+                preRollNotifier: preRollNotifier,
                 controller: controller,
               ),
             ),
@@ -131,31 +132,31 @@ class MyApp extends StatelessWidget {
 class PreRollUI extends StatelessWidget {
   const PreRollUI({
     super.key,
-    required this.adsValueNotifier,
+    required this.preRollNotifier,
     required this.controller,
   });
 
-  final ValueNotifier<bool> adsValueNotifier;
+  final ValueNotifier<bool> preRollNotifier;
   final PreRollController controller;
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: adsValueNotifier,
-      builder: (context, child) =>
-          adsValueNotifier.value && child != null ? child : SizedBox.shrink(),
-      child: AspectRatio(
-        aspectRatio: 640 / 480,
-        child: PreRoll(
-          controller: controller,
-          maxHeight: 480,
-          useHybridComposition: true,
-          useinitExpensiveAndroidView: true,
-        ),
-      ),
+      animation: Listenable.merge([preRollNotifier, isAudioAd]),
+      builder: (context, child) => preRollNotifier.value
+          ? PreRoll(
+              controller: controller,
+              maxHeight: isAudioAd.value ? audioAdSize : videoAdSize,
+              useHybridComposition: true,
+              useinitExpensiveAndroidView: true,
+            )
+          : SizedBox.shrink(),
     );
   }
 }
+
+const audioAdSize = 250.0;
+const videoAdSize = 310.0;
 
 const videoTarget = {
   "age": "34",
@@ -186,15 +187,16 @@ void preRollListener(PreRollEvent event, Map<String, dynamic> args) {
 
   switch (event) {
     case PreRollEvent.LOADED:
-      adsValueNotifier.value = true;
+      preRollNotifier.value = true;
+      isAudioAd.value = args['ad.contentType'].contains('audio');
     case PreRollEvent.COMPLETED:
-      adsValueNotifier.value = false;
+      preRollNotifier.value = false;
       controller.dispose();
     default:
   }
 }
 
 void loadAds(Map<String, dynamic> target) {
-  adsValueNotifier.value = true;
+  preRollNotifier.value = true;
   controller.load(target);
 }

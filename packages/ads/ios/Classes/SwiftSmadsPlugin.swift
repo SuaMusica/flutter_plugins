@@ -9,7 +9,6 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
     static let ScreenIsLocked = -2;
     static let UnlockedScreen = 1;
     static let LockedScreen = 0;
-    // nullable
     static var adsViewController: AdsViewController? = nil
     static var registrarAds: FlutterPluginRegistrar? = nil
 
@@ -40,12 +39,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                 let instance = SwiftSmadsPlugin(channel: SwiftSmadsPlugin.channel!)
                 registrar.addMethodCallDelegate(instance, channel: SwiftSmadsPlugin.channel!)
             }
-//            let viewFactory = FLNativeViewFactory(
-//                messenger: SwiftSmadsPlugin.registrarAds!.messenger(),
-//                controller:adsViewController
-//            )
 
-//            SwiftSmadsPlugin.registrarAds!.register(viewFactory, withId: "suamusica/pre_roll_view")
             registrarAds = registrar
             adsViewController = AdsViewController.instantiateFromNib()
             
@@ -118,13 +112,7 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
         case "screen_status":
             result(self.screen.status == .unlocked ? SwiftSmadsPlugin.UnlockedScreen : SwiftSmadsPlugin.LockedScreen)
         case "play":
-            print("Playing ads")
-            print("Ads view controller: \(AdsViewController.self)")
-//            let savedArgsFromController = adsViewController.args
-            print("Saved args from controller: \(String(describing: SwiftSmadsPlugin.adsViewController?.args))")
-            print("View factory registered")
             SwiftSmadsPlugin.adsViewController!.play()
-
             result(1)
         case "pause":
             SwiftSmadsPlugin.adsViewController!.pause()
@@ -148,7 +136,6 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
     }
 }
 
-private let tag:String = "FLNativeViewFactory"
 class FLNativeViewFactory: NSObject, FlutterPlatformViewFactory {
     private var messenger: FlutterBinaryMessenger
     private var controller: AdsViewController

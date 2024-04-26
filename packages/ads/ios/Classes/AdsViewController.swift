@@ -174,15 +174,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
 
     // Register companion slots.
     func setUpCompanions() {
-        // let isAudioFormat = self.contentPlayer?.currentItem?.asset.tracks(withMediaType: .video).count == 0
-        // print("AD: Setting up companion slot - w: \(companionView.frame.size.width) h: \(companionView.frame.size.height) | isAudioFormat: \(isAudioFormat)")
-        // if (isAudioFormat) {
-        //     companionSlot = IMACompanionAdSlot(
-        //         view: companionView,
-        //         width: 300,
-        //         height: 250
-        //     )
-        // }
       companionSlot = IMACompanionAdSlot(
         view: companionView,
         width: Int(companionView.frame.size.width),
