@@ -164,7 +164,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     func createAdDisplayContainer() -> IMAAdDisplayContainer {
       // Create our AdDisplayContainer. Initialize it with our videoView as the container. This
       // will result in ads being displayed over our content video.
-        print("AD: createAdDisplayContainer - companionView: \(String(describing: companionView))")
+        print("AD: createAdDisplayContainer - companionView: \(String(describing: companionView)), sentence: \(companionView != nil) | companionSlot: \(String(describing: companionSlot))")
       if companionView != nil {
           return IMAAdDisplayContainer(adContainer: videoView, viewController: self, companionSlots: [companionSlot!])
       } else {
@@ -174,7 +174,15 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
 
     // Register companion slots.
     func setUpCompanions() {
-        print("AD: Setting up companion slot - w: \(companionView.frame.size.width) h: \(companionView.frame.size.height)")
+        // let isAudioFormat = self.contentPlayer?.currentItem?.asset.tracks(withMediaType: .video).count == 0
+        // print("AD: Setting up companion slot - w: \(companionView.frame.size.width) h: \(companionView.frame.size.height) | isAudioFormat: \(isAudioFormat)")
+        // if (isAudioFormat) {
+        //     companionSlot = IMACompanionAdSlot(
+        //         view: companionView,
+        //         width: 300,
+        //         height: 250
+        //     )
+        // }
       companionSlot = IMACompanionAdSlot(
         view: companionView,
         width: Int(companionView.frame.size.width),
@@ -217,6 +225,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         settings.enableBackgroundPlayback = true
         adsLoader = IMAAdsLoader(settings: settings)
         adsLoader?.delegate = self
+        print("AD: AdsLoader setup, companionView: \(String(describing: companionView))")
         if (companionView != nil) {
             setUpCompanions()
         }
@@ -233,7 +242,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             
             // we need to notify that the ad was played
             self.channel?.invokeMethod("onComplete", arguments: [String: String]())
-//            isRegistered = false
         }
     }
     
@@ -246,6 +254,8 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
                 avPlayerVideoDisplay: IMAAVPlayerVideoDisplay(avPlayer: contentPlayer!),
                 pictureInPictureProxy: pictureInPictureProxy!,
                 userContext: nil)
+
+            print("AD: Requesting ads, request: \(request)")
 
             request.vastLoadTimeout = 30000
 
@@ -356,6 +366,8 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         case IMAAdEventType.LOADED:
             print("AD: Got a LOADED event")
             let contentType = event.ad?.contentType ?? "video"
+            print("AD: contentType: \(contentType), isVideo: \(isVideo), sentence: \(contentType.hasPrefix("audio"))")
+            
             if (contentType.hasPrefix("audio")) {
                 isVideo = false
                 videoView.isHidden = true
@@ -365,6 +377,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
                 videoView.isHidden = false
                 companionView.isHidden = true
             }
+
             adsManager.start()
         case IMAAdEventType.AD_BREAK_STARTED:
             print("AD: Got a AD_BREAK_STARTED event")
@@ -434,9 +447,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         let totalTimeInMS = Int(totalTime * 1000)
         let args = [
             "type": "AD_PROGRESS",
-            // "progress": progress,
-            // "current": formatTimeInterval(mediaTime),
-            // "total": formatTimeInterval(totalTime)
             "position": progressInMS,
             "duration": totalTimeInMS
         ] as [String : Any]
@@ -587,35 +597,15 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         
         return type
     }
-
-    // func playOrPause() {
-    //     if (self.playing) {
-    //         adsManager?.pause()
-    //     } else {
-    //         adsManager?.resume()
-    //     }
-    // }
     
     func play() {
         print("Playing ads? \(self.playing) 1")
-        // if self.playing {
-        //     adsManager?.pause()
-        // } else {
-        //     adsManager?.resume()
-        // }
         if (!self.playing) {
             adsManager?.resume()
         }
     }
 
     func pause() {
-        // print("Playing ads? \(self.playing) 2")
-        // if self.playing {
-        //     adsManager?.pause()
-        // } else {
-        //     adsManager?.resume()
-        // }
-
         if (self.playing) {
             adsManager?.pause()
         }
