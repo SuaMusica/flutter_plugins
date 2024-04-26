@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:smads/smads.dart';
+import 'package:smads_example/main.dart';
 import 'package:smads_example/widgets/widgets.dart';
 
 class SMAdsBottomSheet extends StatelessWidget {
@@ -24,6 +25,20 @@ class SMAdsBottomSheet extends StatelessWidget {
               child: ListView(
                 shrinkWrap: true,
                 children: [
+                  SMAdsTile(
+                    icon: Icons.video_call_rounded,
+                    title: 'Load video',
+                    onTap: () {
+                      loadAds(videoTarget);
+                    },
+                  ),
+                  SMAdsTile(
+                    icon: Icons.audiotrack_rounded,
+                    title: 'Load audio',
+                    onTap: () {
+                      loadAds(audioTarget);
+                    },
+                  ),
                   SMAdsTile(
                     title: 'play',
                     icon: Icons.play_arrow_rounded,
