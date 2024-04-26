@@ -119,6 +119,13 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             print("AD: ERROR: videoView NOT FOUND")
             return
         }
+
+        // // Create a white background view
+        // let whiteBackgroundView = UIView(frame: videoViewUnwraped.bounds)
+        // whiteBackgroundView.backgroundColor = UIColor.white
+        // videoViewUnwraped.addSubview(whiteBackgroundView)
+        // videoViewUnwraped.sendSubviewToBack(whiteBackgroundView) // Send it to the back so it's behind the video
+        
         self.videoView.showLoading()
         contentPlayer = AVPlayer(url: contentUrl)
         
@@ -136,8 +143,12 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         
         // Set up our content playhead and contentComplete callback.
         contentPlayhead = IMAAVPlayerContentPlayhead(avPlayer: contentPlayer!)
+        // let gradientLayer = CAGradientLayer()
+        // gradientLayer.colors = [UIColor.clear.cgColor, UIColor.black.withAlphaComponent(0.5).cgColor]
+        // gradientLayer.locations = [0.0, 1.0]
+        // gradientLayer.frame = videoViewUnwraped.bounds
+        // videoViewUnwraped.layer.addSublayer(gradientLayer)
 
-        
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(AdsViewController.contentDidFinishPlaying(_:)),

@@ -8,10 +8,57 @@ void main() => runApp(MaterialApp(home: MyApp()));
 
 ValueNotifier<bool> preRollNotifier = ValueNotifier(false);
 ValueNotifier<bool> isAudioAd = ValueNotifier(false);
+
 PreRollController controller = PreRollController(preRollListener);
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  late final AppLifecycleListener listener;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
+    listener = AppLifecycleListener(
+      onInactive: () {
+        debugPrint('[AppLifecycleState]: inactive');
+      },
+      onPause: () {
+        debugPrint('[AppLifecycleState]: paused');
+      },
+      onResume: () {
+        debugPrint('[AppLifecycleState]: resumed');
+      },
+    );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    debugPrint('[AppLifecycleState]: (didChangeAppLifecycleState) $state');
+    switch (state) {
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.resumed:
+      case AppLifecycleState.detached:
+      default:
+        debugPrint('[AppLifecycleState]: $state');
+    }
+  }
+
+  @override
+  void dispose() {
+    listener.dispose();
+
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +97,7 @@ class MyApp extends StatelessWidget {
               title: 'Load video with delay for 5 seconds',
               onTap: () {
                 Future.delayed(Duration(seconds: 5), () {
+                  debugPrint('[Background] call load in bg video');
                   loadAds(videoTarget);
                 });
               },
@@ -66,6 +114,7 @@ class MyApp extends StatelessWidget {
               title: 'Load audio with delay for 5 seconds',
               onTap: () {
                 Future.delayed(Duration(seconds: 5), () {
+                  debugPrint('[Background] call load in bg audio');
                   loadAds(audioTarget);
                 });
               },
@@ -115,12 +164,9 @@ class MyApp extends StatelessWidget {
               ),
             ),
             Divider(),
-            ColoredBox(
-              color: Colors.grey,
-              child: PreRollUI(
-                preRollNotifier: preRollNotifier,
-                controller: controller,
-              ),
+            PreRollUI(
+              preRollNotifier: preRollNotifier,
+              controller: controller,
             ),
           ],
         ),
@@ -143,14 +189,20 @@ class PreRollUI extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: Listenable.merge([preRollNotifier, isAudioAd]),
-      builder: (context, child) => preRollNotifier.value
-          ? PreRoll(
-              controller: controller,
-              maxHeight: isAudioAd.value ? audioAdSize : videoAdSize,
-              useHybridComposition: true,
-              useinitExpensiveAndroidView: true,
-            )
-          : SizedBox.shrink(),
+      builder: (context, child) {
+        debugPrint(
+          '[PREROLL]: preRollNotifier, should show: ${preRollNotifier.value}',
+        );
+
+        return preRollNotifier.value
+            ? PreRoll(
+                controller: controller,
+                maxHeight: isAudioAd.value ? audioAdSize : videoAdSize,
+                useHybridComposition: true,
+                useinitExpensiveAndroidView: true,
+              )
+            : SizedBox.shrink();
+      },
     );
   }
 }
@@ -166,6 +218,7 @@ const videoTarget = {
   "version": "6867",
   "ppid": "6d83fd8be4872555440fab67103896c8bee7b064b1b3ab0260f503c8dfc76e39",
   "__URL__":
+      // "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480%7C400x300%7C730x400&iu=/7090806/Suamusica.com.br-ROA-Preroll&impl=s&gdfp_req=1&env=instream&output=vast&unviewed_position_start=1&description_url=http%3A%2F%2Fwww.suamusica.com.br%2F&correlator=&tfcd=0&npa=0&ad_type=video_audio&vad_type=linear&ciu_szs=300x250&cust_params=teste%3D1",
       "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=",
   "__CONTENT__": "https://assets.suamusica.com.br/video/virgula.mp3",
 };

@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   collection: ^1.18.0
+  provider:
 
 dev_dependencies:
   flutter_test:
