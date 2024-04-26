@@ -127,10 +127,14 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
 
         UIView.animate(withDuration: 0.150) {
             /// scaffoldBackgroundColor from design_system
-            self.videoView.backgroundColor = UIColor(red: 0.20, green: 0.20, blue: 0.20, alpha: 1.00)
+            let color = UIColor(red: 0.20, green: 0.20, blue: 0.20, alpha: 1.00)
+            self.videoView.backgroundColor = color
+            self.companionView.backgroundColor = color
         }
 
         self.videoView.showLoading()
+        self.companionView.showLoading()
+
         contentPlayer = AVPlayer(url: contentUrl)
         
         // Create a player layer for the player.
@@ -209,9 +213,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
 
     @objc func applicationDidEnterBackground(notification: NSNotification) {
         print("AD: applicationDidEnterBackground")
-        if (isVideo) {
-            adsManager?.pause()
-        }
         self.active = false
         
     }
@@ -250,6 +251,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             }
             
             // we need to notify that the ad was played
+            isRegistered = false
             self.channel?.invokeMethod("onComplete", arguments: [String: String]())
         }
     }
@@ -377,6 +379,10 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             let contentType = event.ad?.contentType ?? "video"
             print("AD: contentType: \(contentType), isVideo: \(isVideo), sentence: \(contentType.hasPrefix("audio"))")
             if (contentType.hasPrefix("audio")) {
+                UIView.animate(withDuration: 0.4) {
+                    self.companionView.backgroundColor = UIColor.clear
+                }
+
                 isVideo = false
                 videoView.isHidden = true
                 companionView.isHidden = false
@@ -628,15 +634,9 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         self.adsManager?.destroy()
         self.adsManager = nil
         self.adsLoader = nil
-        // self.adsManager = nil
-        // self.adsLoader = nil
-        // self.dismiss(animated: false, completion: nil)
-//        contentPlayer = nil
-//        contentPlayerLayer = nil
-//        contentPlayhead = nil
-//        adsLoader = nil
-//        adsManager = nil
-//        companionSlot = nil
+        self.dismiss(animated: false, completion: nil)
+        
+        onComplete()
     }
 
     func skip() {
