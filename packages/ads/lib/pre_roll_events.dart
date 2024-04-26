@@ -95,7 +95,7 @@ extension ParseToPreRollEvent on String {
   }
 }
 
-extension ParseToString on PreRollEvent {
+extension PreRollEventX on PreRollEvent {
   String toShortString() {
     switch (this) {
       case PreRollEvent.ALL_ADS_COMPLETED:

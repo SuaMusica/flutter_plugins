@@ -1,22 +1,37 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 
-import 'package:smads/sm.dart';
+import 'package:smads/smads.dart';
 import 'package:smads_example/widgets/widgets.dart';
 
-void main() => runApp(
-      MaterialApp(
-        home: MyApp(),
-      ),
-    );
+void main() => runApp(MaterialApp(home: MyApp()));
+
+ValueNotifier<bool> adsValueNotifier = ValueNotifier(false);
+PreRollController controller = PreRollController(preRollListener);
+
+void preRollListener(PreRollEvent event, Map<String, dynamic> args) {
+  debugPrint('[PREROLL]: Event: $event, args: $args');
+
+  switch (event) {
+    case PreRollEvent.LOADED:
+      adsValueNotifier.value = true;
+    case PreRollEvent.COMPLETED:
+      adsValueNotifier.value = false;
+      controller.dispose();
+    default:
+  }
+}
+
+void loadAds(Map<String, dynamic> target) {
+  adsValueNotifier.value = true;
+  controller.load(target);
+}
 
 class MyApp extends StatefulWidget {
   @override
   _MyAppState createState() => _MyAppState();
 }
 
-ValueNotifier<bool> adsValueNotifier = ValueNotifier(false);
-PreRollController controller = PreRollController(preRollListener);
 const videoTarget = {
   "age": "34",
   "tipo": "1",
@@ -144,7 +159,7 @@ class _MyAppState extends State<MyApp> {
             ),
             Divider(),
             ColoredBox(
-              color: Colors.green,
+              color: Colors.grey,
               child: PreRollUI(
                 adsValueNotifier: adsValueNotifier,
                 controller: controller,
@@ -157,7 +172,7 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
-class PreRollUI extends StatefulWidget {
+class PreRollUI extends StatelessWidget {
   const PreRollUI({
     Key? key,
     required this.adsValueNotifier,
@@ -168,28 +183,15 @@ class PreRollUI extends StatefulWidget {
   final PreRollController controller;
 
   @override
-  State<PreRollUI> createState() => _PreRollUIState();
-}
-
-class _PreRollUIState extends State<PreRollUI> {
-  @override
   Widget build(BuildContext context) {
-    /// With this, platform view will be created multiple times
-    // for (int i = 0; i < 1000; i++) {
-    //   debugPrint("Rebuilding $i");
-    //   WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-    //     setState(() {});
-    //   });
-    // }
-
     return AnimatedBuilder(
-      animation: widget.adsValueNotifier,
+      animation: adsValueNotifier,
       builder: (context, child) {
-        return widget.adsValueNotifier.value
+        return adsValueNotifier.value
             ? AspectRatio(
                 aspectRatio: 640 / 480,
                 child: PreRoll(
-                  controller: widget.controller,
+                  controller: controller,
                   maxHeight: 480,
                   useHybridComposition: true,
                   useinitExpensiveAndroidView: true,
@@ -199,22 +201,4 @@ class _PreRollUIState extends State<PreRollUI> {
       },
     );
   }
-}
-
-void preRollListener(PreRollEvent event, Map<String, dynamic> args) {
-  debugPrint('[PREROLL]: Event: $event, args: $args');
-
-  switch (event) {
-    case PreRollEvent.LOADED:
-      adsValueNotifier.value = true;
-    case PreRollEvent.COMPLETED:
-      adsValueNotifier.value = false;
-      controller.dispose();
-    default:
-  }
-}
-
-void loadAds(Map<String, dynamic> target) {
-  adsValueNotifier.value = true;
-  controller.load(target);
 }

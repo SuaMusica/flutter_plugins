@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:smads/sm.dart';
+import 'package:smads/smads.dart';
 import 'package:smads_example/widgets/widgets.dart';
 
 class SMAdsBottomSheet extends StatelessWidget {

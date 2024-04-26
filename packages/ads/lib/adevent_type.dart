@@ -21,7 +21,7 @@ enum AdEventType {
   ERROR,
 }
 
-extension ParseToString on AdEventType {
+extension AdEventTypeX on AdEventType {
   String toShortString() {
     switch (this) {
       case AdEventType.ALL_ADS_COMPLETED:
