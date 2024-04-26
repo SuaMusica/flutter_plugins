@@ -4,6 +4,13 @@ import 'dart:async';
 import 'package:smads/smads.dart';
 import 'package:smads_example/widgets/widgets.dart';
 
+//    adUrl:
+//    "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=",
+//    adUrl:
+//        "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=",
+// adUrl: "https://cmod424.live.streamtheworld.com/ondemand/ars?type=preroll&version=1.5.1&fmt=vast&stid=103013&banners=300x250&dist=testeapp&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear",
+// contentUrl: "https://assets.suamusica.com.br/video/virgula.mp3",
+
 void main() => runApp(MaterialApp(home: MyApp()));
 
 ValueNotifier<bool> preRollNotifier = ValueNotifier(false);
@@ -219,7 +226,8 @@ const videoTarget = {
   "ppid": "6d83fd8be4872555440fab67103896c8bee7b064b1b3ab0260f503c8dfc76e39",
   "__URL__":
       // "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480%7C400x300%7C730x400&iu=/7090806/Suamusica.com.br-ROA-Preroll&impl=s&gdfp_req=1&env=instream&output=vast&unviewed_position_start=1&description_url=http%3A%2F%2Fwww.suamusica.com.br%2F&correlator=&tfcd=0&npa=0&ad_type=video_audio&vad_type=linear&ciu_szs=300x250&cust_params=teste%3D1",
-      "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=",
+      // "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=",
+      "https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/single_ad_samples&sz=640x480&cust_params=sample_ct%3Dlinear&ciu_szs=300x250%2C728x90&gdfp_req=1&output=vast&unviewed_position_start=1&env=vp&impl=s&correlator=",
   "__CONTENT__": "https://assets.suamusica.com.br/video/virgula.mp3",
 };
 
