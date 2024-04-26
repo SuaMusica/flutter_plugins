@@ -51,13 +51,6 @@ class _MyAppState extends State<MyApp> {
       body: Center(
         child: ListView(
           children: [
-            ColoredBox(
-              color: Colors.green,
-              child: PreRollUI(
-                adsValueNotifier: adsValueNotifier,
-                controller: controller,
-              ),
-            ),
             SMAdsTile(
               icon: Icons.align_vertical_bottom_rounded,
               title: 'Call bottom sheet',
@@ -147,6 +140,14 @@ class _MyAppState extends State<MyApp> {
                     }
                   },
                 ),
+              ),
+            ),
+            Divider(),
+            ColoredBox(
+              color: Colors.green,
+              child: PreRollUI(
+                adsValueNotifier: adsValueNotifier,
+                controller: controller,
               ),
             ),
           ],
