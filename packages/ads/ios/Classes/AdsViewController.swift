@@ -3,7 +3,7 @@ import GoogleInteractiveMediaAds
 import UIKit
 import MediaPlayer
 
-class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
+class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDelegate, AVPictureInPictureControllerDelegate {
     var channel: FlutterMethodChannel?
     
     // Video objects
@@ -15,6 +15,10 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     var adsLoader: IMAAdsLoader?
     var adsManager: IMAAdsManager?
     var companionSlot: IMACompanionAdSlot?
+    
+    // PiP objects.
+    var pictureInPictureController: AVPictureInPictureController?
+    var pictureInPictureProxy: IMAPictureInPictureProxy?
     
     var isVideo: Bool = true
     var adUrl: String!
@@ -30,6 +34,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
 
     @IBOutlet weak var videoView: UIView!
     @IBOutlet weak var companionView: UIView!
+    @IBOutlet weak var pictureInPictureButton: UIButton!
     
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
@@ -120,12 +125,11 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             return
         }
 
-        // // Create a white background view
-        // let whiteBackgroundView = UIView(frame: videoViewUnwraped.bounds)
-        // whiteBackgroundView.backgroundColor = UIColor.white
-        // videoViewUnwraped.addSubview(whiteBackgroundView)
-        // videoViewUnwraped.sendSubviewToBack(whiteBackgroundView) // Send it to the back so it's behind the video
-        
+        UIView.animate(withDuration: 0.150) {
+            /// scaffoldBackgroundColor from design_system
+            self.videoView.backgroundColor = UIColor(red: 0.20, green: 0.20, blue: 0.20, alpha: 1.00)
+        }
+
         self.videoView.showLoading()
         contentPlayer = AVPlayer(url: contentUrl)
         
@@ -143,11 +147,17 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         
         // Set up our content playhead and contentComplete callback.
         contentPlayhead = IMAAVPlayerContentPlayhead(avPlayer: contentPlayer!)
-        // let gradientLayer = CAGradientLayer()
-        // gradientLayer.colors = [UIColor.clear.cgColor, UIColor.black.withAlphaComponent(0.5).cgColor]
-        // gradientLayer.locations = [0.0, 1.0]
-        // gradientLayer.frame = videoViewUnwraped.bounds
-        // videoViewUnwraped.layer.addSublayer(gradientLayer)
+        
+        // Set ourselves up for PiP.
+        pictureInPictureProxy = IMAPictureInPictureProxy(avPictureInPictureControllerDelegate: self)
+        pictureInPictureController = AVPictureInPictureController(playerLayer: contentPlayerLayer!)
+        if pictureInPictureController != nil {
+          pictureInPictureController!.delegate = pictureInPictureProxy
+        }
+        if !AVPictureInPictureController.isPictureInPictureSupported() && pictureInPictureButton != nil
+        {
+          pictureInPictureButton.isHidden = true
+        }
 
         NotificationCenter.default.addObserver(
             self,
@@ -250,7 +260,8 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             let request = IMAAdsRequest(
                 adTagUrl: getAdTagUrl(),
                 adDisplayContainer: createAdDisplayContainer(),
-                contentPlayhead: nil,
+                avPlayerVideoDisplay: IMAAVPlayerVideoDisplay(avPlayer: contentPlayer!),
+                pictureInPictureProxy: pictureInPictureProxy!,
                 userContext: nil)
 
             print("AD: Requesting ads, request: \(request)")
@@ -283,7 +294,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         // Create ads rendering settings and tell the SDK to use the in-app browser.
         let adsRenderingSettings = IMAAdsRenderingSettings()
         adsRenderingSettings.loadVideoTimeout = 300
-        
+
         // Commenting this line to open the click in safari Until Apple fixes the Bug!
 //        adsRenderingSettings.webOpenerPresentingController = self
         
@@ -365,12 +376,15 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             print("AD: Got a LOADED event")
             let contentType = event.ad?.contentType ?? "video"
             print("AD: contentType: \(contentType), isVideo: \(isVideo), sentence: \(contentType.hasPrefix("audio"))")
-            
             if (contentType.hasPrefix("audio")) {
                 isVideo = false
                 videoView.isHidden = true
                 companionView.isHidden = false
             } else {
+                UIView.animate(withDuration: 0.4) {
+                    self.videoView.backgroundColor = UIColor.clear
+                }
+
                 isVideo = true
                 videoView.isHidden = false
                 companionView.isHidden = true
