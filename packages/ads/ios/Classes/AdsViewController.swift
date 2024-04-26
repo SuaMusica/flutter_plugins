@@ -155,8 +155,12 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         // Set ourselves up for PiP.
         pictureInPictureProxy = IMAPictureInPictureProxy(avPictureInPictureControllerDelegate: self)
         pictureInPictureController = AVPictureInPictureController(playerLayer: contentPlayerLayer!)
+
         if pictureInPictureController != nil {
-          pictureInPictureController!.delegate = pictureInPictureProxy
+            if #available(iOS 14.0, *) {
+                pictureInPictureController!.requiresLinearPlayback = true
+            }
+            pictureInPictureController!.delegate = pictureInPictureProxy
         }
         if !AVPictureInPictureController.isPictureInPictureSupported() && pictureInPictureButton != nil
         {
