@@ -3,7 +3,7 @@ import GoogleInteractiveMediaAds
 import UIKit
 import MediaPlayer
 
-class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDelegate, AVPictureInPictureControllerDelegate {
+class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
     var channel: FlutterMethodChannel?
     
     // Video objects
@@ -15,10 +15,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     var adsLoader: IMAAdsLoader?
     var adsManager: IMAAdsManager?
     var companionSlot: IMACompanionAdSlot?
-    
-    // PiP objects.
-    var pictureInPictureController: AVPictureInPictureController?
-    var pictureInPictureProxy: IMAPictureInPictureProxy?
     
     var isVideo: Bool = true
     var adUrl: String!
@@ -34,7 +30,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
 
     @IBOutlet weak var videoView: UIView!
     @IBOutlet weak var companionView: UIView!
-    @IBOutlet weak var pictureInPictureButton: UIButton!
     
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
@@ -45,6 +40,8 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     }
     
     deinit {
+        NotificationCenter.default.removeObserver(self)
+
         NotificationCenter.default.removeObserver(
             self,
             name: UIApplication.didBecomeActiveNotification,
@@ -54,6 +51,12 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             self,
             name: UIApplication.didEnterBackgroundNotification,
             object: nil);
+
+        // NotificationCenter.default.removeObserver(
+        //     self,
+        // applicationDidBecomeActive
+        //     name: UIApplication.didBecomeActiveNotification,
+        //     object: nil);
     }
     
     override func viewDidLoad() {
@@ -76,6 +79,10 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         requestAds()
 
         isRegistered = true
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        print("AD: viewWillAppear at \(Date())")
     }
     
     func setup(channel: FlutterMethodChannel?, adUrl: String?, contentUrl: String?, screen: Screen, args: [String: Any]?) {
@@ -130,16 +137,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         // Set up our content playhead and contentComplete callback.
         contentPlayhead = IMAAVPlayerContentPlayhead(avPlayer: contentPlayer!)
 
-        // Set ourselves up for PiP.
-        pictureInPictureProxy = IMAPictureInPictureProxy(avPictureInPictureControllerDelegate: self)
-        pictureInPictureController = AVPictureInPictureController(playerLayer: contentPlayerLayer!)
-        if pictureInPictureController != nil {
-          pictureInPictureController!.delegate = pictureInPictureProxy
-        }
-        if !AVPictureInPictureController.isPictureInPictureSupported() && pictureInPictureButton != nil
-        {
-          pictureInPictureButton.isHidden = true
-        }
         
         NotificationCenter.default.addObserver(
             self,
@@ -242,8 +239,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             let request = IMAAdsRequest(
                 adTagUrl: getAdTagUrl(),
                 adDisplayContainer: createAdDisplayContainer(),
-                avPlayerVideoDisplay: IMAAVPlayerVideoDisplay(avPlayer: contentPlayer!),
-                pictureInPictureProxy: pictureInPictureProxy!,
+                contentPlayhead: nil,
                 userContext: nil)
 
             print("AD: Requesting ads, request: \(request)")
@@ -616,8 +612,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
 //        adsLoader = nil
 //        adsManager = nil
 //        companionSlot = nil
-//        pictureInPictureController = nil
-//        pictureInPictureProxy = nil
     }
 
     func skip() {
