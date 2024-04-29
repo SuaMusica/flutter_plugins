@@ -92,8 +92,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         //     selector: #selector(didBecomeActive),
         //     name: UIApplication.didBecomeActiveNotification,
         //     object: nil
-        // )
-
         // NotificationCenter.default.addObserver(self,
         //     selector: #selector(willEnterForeground),
         //     name: UIApplication.willEnterForegroundNotification,
