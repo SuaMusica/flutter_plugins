@@ -31,6 +31,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     var sentOnComplete = false
     var ppID: String? = nil
     var isRegistered = false
+    var makeSetup = false
 
     @IBOutlet weak var videoView: UIView!
     @IBOutlet weak var companionView: UIView!
@@ -59,6 +60,12 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
 
         // NotificationCenter.default.removeObserver(
         //     self,
+        //     name: UIApplication.willEnterForegroundNotification,
+        //     object: nil);
+        
+        // NotificationCenter.default.removeObserver(self)
+        // NotificationCenter.default.removeObserver(
+        //     self,
         // applicationDidBecomeActive
         //     name: UIApplication.didBecomeActiveNotification,
         //     object: nil);
@@ -67,10 +74,60 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        print("AD: viewDidLoad at \(Date())")
+        print("AD: viewDidLoad at \(Date()), isRegistered: \(isRegistered)")
         
+        // call viewDidAppear if the view is already loaded
+        // if (makeSetup) {
+            // viewDidAppear(false)
+        // }
+
+        // NotificationCenter.default.addObserver(
+        //     self,
+        //     selector: #selector(willEnterForeground),
+        //     name: UIApplication.willEnterForegroundNotification,
+        //     object: nil
+        // )
+
+        // NotificationCenter.default.addObserver(self,
+        //     selector: #selector(didBecomeActive),
+        //     name: UIApplication.didBecomeActiveNotification,
+        //     object: nil
+        // )
+
+        // NotificationCenter.default.addObserver(self,
+        //     selector: #selector(willEnterForeground),
+        //     name: UIApplication.willEnterForegroundNotification,
+        //     object: nil
+        // )
+
+    //         NotificationCenter.default.addObserver(self, selector: "doYourStuff", name: UIApplication.willEnterForegroundNotification, object: nil)
+
+    // }
+
+    //  func doYourStuff() {
+    //      // your code
+    //      print("doYourStuff")
+    //  }
+    NotificationCenter.default.addObserver(self, selector: #selector(willEnterForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
+
+}
+
+// my selector that was defined above
+
+    override func viewWillAppear(_ animated: Bool) {
+        print("view will appear at \(Date())")
     }
-        
+
+    // MARK: - Notification oberserver methods
+
+    @objc func didBecomeActive() {
+        print("did become active at \(Date())")
+    }
+
+    @objc func willEnterForeground() {
+        print("will enter foreground at \(Date())")
+    }
+
     override func viewDidAppear(_ animated: Bool) {
         print("AD: viewDidAppear at \(Date())")
         if (isRegistered) {
@@ -85,19 +142,17 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
 
         isRegistered = true
     }
-
-    override func viewWillAppear(_ animated: Bool) {
-        print("AD: viewWillAppear at \(Date())")
-    }
     
     func setup(channel: FlutterMethodChannel?, adUrl: String?, contentUrl: String?, screen: Screen, args: [String: Any]?) {
-        
+        print("[PREROLL] SETUP IS CALLED")
         self.channel = channel
         self.adUrl = adUrl
         self.contentUrl = contentUrl
         self.screen = screen
         self.args = args
-
+        makeSetup = true
+        
+        // loadViewIfNeeded()
     }
     
     func setupAudioSession() {
@@ -634,6 +689,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     }
 
     func dispose() {
+        makeSetup = false
         isRegistered = false
         self.adsManager?.destroy()
         self.adsManager = nil

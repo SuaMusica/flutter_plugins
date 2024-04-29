@@ -27,6 +27,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   late final AppLifecycleListener listener;
+  ValueNotifier<bool> appLifecycleNotifier = ValueNotifier(false);
 
   @override
   void initState() {
@@ -103,7 +104,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               icon: Icons.video_call_rounded,
               title: 'Load video with delay for 5 seconds',
               onTap: () {
+                appLifecycleNotifier.value = true;
                 Future.delayed(Duration(seconds: 5), () {
+                  setState(() {});
                   debugPrint('[Background] call load in bg video');
                   loadAds(videoTarget);
                 });
@@ -120,6 +123,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               icon: Icons.audiotrack_rounded,
               title: 'Load audio with delay for 5 seconds',
               onTap: () {
+                appLifecycleNotifier.value = true;
                 Future.delayed(Duration(seconds: 5), () {
                   debugPrint('[Background] call load in bg audio');
                   loadAds(audioTarget);
@@ -183,7 +187,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 }
 
 class PreRollUI extends StatelessWidget {
-  const PreRollUI({
+  PreRollUI({
     super.key,
     required this.preRollNotifier,
     required this.controller,
@@ -195,22 +199,34 @@ class PreRollUI extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([preRollNotifier, isAudioAd]),
+      // animation: Listenable.merge([preRollNotifier, isAudioAd]),
+      animation: preRollNotifier,
       builder: (context, child) {
         debugPrint(
           '[PREROLL]: preRollNotifier, should show: ${preRollNotifier.value}',
         );
-
+        // return preRollNotifier.value ? PreRoll(controller: controller) : SizedBox.shrink();
         return preRollNotifier.value
-            ? PreRoll(
-                controller: controller,
-                maxHeight: isAudioAd.value ? audioAdSize : videoAdSize,
-                useHybridComposition: true,
-                useinitExpensiveAndroidView: true,
-              )
+            // ? PreRoll(
+            //     controller: controller,
+            //     maxHeight: isAudioAd.value ? audioAdSize : videoAdSize,
+            //     useHybridComposition: true,
+            //     useinitExpensiveAndroidView: true,
+            //   )
+            ? SizedBox.shrink()
             : SizedBox.shrink();
       },
     );
+  }
+}
+
+class PreRollUI2 extends StatelessWidget {
+  const PreRollUI2({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    debugPrint('[PREROLL]: teste');
+    return SizedBox.shrink();
   }
 }
 
@@ -261,3 +277,71 @@ void loadAds(Map<String, dynamic> target) {
   preRollNotifier.value = true;
   controller.load(target);
 }
+
+// https://github.com/flutter/flutter/issues/33236
+// import 'package:flutter/material.dart';
+
+// void main() => runApp(MyApp());
+
+// class MyApp extends StatelessWidget {
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//       title: 'Flutter Demo',
+//       theme: ThemeData(
+//         primarySwatch: Colors.blue,
+//       ),
+//       home: Scaffold(
+//         body: SecureScreen(
+//           child: Container(
+//             color: Colors.red,
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
+
+// class SecureScreen extends StatefulWidget {
+//   final Widget child;
+//   SecureScreen({required this.child});
+
+//   @override
+//   SecureScreenState createState() => SecureScreenState();
+// }
+
+// class SecureScreenState extends State<SecureScreen>
+//     with WidgetsBindingObserver {
+//   AppLifecycleState? _notification;
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     WidgetsBinding.instance.addObserver(this);
+//   }
+
+//   @override
+//   void dispose() {
+//     WidgetsBinding.instance.removeObserver(this);
+//     super.dispose();
+//   }
+
+//   @override
+//   void didChangeAppLifecycleState(AppLifecycleState state) {
+//     print(state.toString());
+//     setState(() {
+//       _notification = state;
+//     });
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     /// testar com e sem um deles.
+//     return (_notification == AppLifecycleState.paused ||
+//             _notification == AppLifecycleState.inactive)
+//         ? Container(
+//             color: Colors.greenAccent,
+//           )
+//         : widget.child;
+//   }
+// }

@@ -31,6 +31,9 @@ class PreRoll extends StatelessWidget {
         'height': 480,
       },
     };
+
+    debugPrint('[PREROLL] Building PreRoll');
+
     return Container(
       constraints: BoxConstraints(
         maxHeight: maxHeight ?? MediaQuery.of(context).size.height,
