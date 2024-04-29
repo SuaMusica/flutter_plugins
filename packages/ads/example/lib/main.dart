@@ -14,8 +14,6 @@ void main() => runApp(
       ),
     );
 
-// PreRollController controller = PreRollController(preRollListener);
-
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
@@ -23,57 +21,26 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
-  late final AppLifecycleListener listener;
+class _MyAppState extends State<MyApp> {
   late PreRollNotifier preRollNotifier;
-  PreRollController xontroller = PreRollController(preRollListener);
+  late PreRollController controller;
 
   StreamController<bool> _streamController = StreamController<bool>.broadcast();
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     preRollNotifier = context.read<PreRollNotifier>();
+    controller = preRollNotifier.controller;
+
     _streamController.stream.listen((event) {
       print('teste event: $event');
     });
-    listener = AppLifecycleListener(
-      onInactive: () {
-        debugPrint('[AppLifecycleState]: teste inactive');
-      },
-      onPause: () {
-        debugPrint('[AppLifecycleState]: teste paused');
-      },
-      onResume: () {
-        debugPrint('[AppLifecycleState]: teste resumed');
-      },
-    );
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    debugPrint(
-        '[AppLifecycleState]: teste (didChangeAppLifecycleState) $state');
-    switch (state) {
-      case AppLifecycleState.inactive:
-      case AppLifecycleState.paused:
-      case AppLifecycleState.resumed:
-      case AppLifecycleState.detached:
-      default:
-        debugPrint('[AppLifecycleState]: $state');
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant MyApp oldWidget) {
-    print('teste didUpdateWidget');
-    super.didUpdateWidget(oldWidget);
   }
 
   @override
   void dispose() {
-    listener.dispose();
-    WidgetsBinding.instance.removeObserver(this);
+    _streamController.close();
     super.dispose();
   }
 
@@ -91,7 +58,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               icon: Icons.align_vertical_bottom_rounded,
               title: 'Call bottom sheet',
               onTap: () {
-                xontroller.pause();
+                controller.pause();
                 showModalBottomSheet(
                   context: context,
                   isScrollControlled: true,
@@ -104,57 +71,53 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               },
             ),
             SMAdsTile(
-              icon: Icons.video_call_rounded,
-              title: 'Load video',
-              onTap: () {
-                // loadAds(
-                //   preRollNotifier: preRollNotifier,
-                //   target: videoTarget,
-                // );
-                preRollNotifier.setShouldShow(true);
-                xontroller.load(videoTarget);
-              },
-            ),
-            SMAdsTile(
-              icon: Icons.video_call_rounded,
-              title: 'Load video with delay for 5 seconds',
-              onTap: () {
-                debugPrint('[TESTE] 5 before');
-
-                Future.delayed(Duration(seconds: 5), () {
-                  debugPrint('[TESTE] 5 afer');
-
-                  debugPrint('[Background] call load in bg video');
-                  // loadAds(
-                  //   preRollNotifier: preRollNotifier,
-                  //   target: videoTarget,
-                  // );
-                  preRollNotifier.setShouldShow(true);
-                  _streamController.add(true);
-                  xontroller.load(audioTarget);
-                  Future.delayed(Duration(seconds: 3), () {
-                    xontroller.play();
-                  });
-                });
-              },
-            ),
-            SMAdsTile(
               icon: Icons.audiotrack_rounded,
               title: 'Load audio',
               onTap: () {
-                // loadAds(preRollNotifier: preRollNotifier, target: audioTarget);
+                loadAds(
+                  preRollNotifier: preRollNotifier,
+                  target: audioTarget,
+                );
               },
             ),
             SMAdsTile(
               icon: Icons.audiotrack_rounded,
               title: 'Load audio with delay for 5 seconds',
               onTap: () {
+                debugPrint('[TESTE] 5 before');
+
                 Future.delayed(Duration(seconds: 5), () {
-                  debugPrint('[Background] call load in bg audio');
-                  // loadAds(
-                  //   preRollNotifier: preRollNotifier,
-                  //   target: audioTarget,
-                  // );
+                  debugPrint('[TESTE] 5 afer');
+                  debugPrint('[Background] call load in bg video');
+                  preRollNotifier.setShouldShow(true);
+                  _streamController.add(true);
+                  controller.load(audioTarget);
+                  Future.delayed(Duration(seconds: 3), () {
+                    controller.play();
+                  });
+                });
+              },
+            ),
+            SMAdsTile(
+              icon: Icons.video_call_rounded,
+              title: 'Load video',
+              onTap: () {
+                loadAds(
+                  preRollNotifier: preRollNotifier,
+                  target: videoTarget,
+                );
+              },
+            ),
+            SMAdsTile(
+              icon: Icons.video_call_rounded,
+              title: 'Load video with delay for 5 seconds',
+              onTap: () {
+                Future.delayed(Duration(seconds: 5), () {
+                  debugPrint('[Background] call load in bg video');
+                  loadAds(
+                    preRollNotifier: preRollNotifier,
+                    target: videoTarget,
+                  );
                 });
               },
             ),
@@ -162,37 +125,36 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               icon: Icons.play_arrow_rounded,
               title: 'play',
               onTap: () {
-                // controller.play();
+                controller.play();
               },
             ),
             SMAdsTile(
               icon: Icons.pause_rounded,
               title: 'Pause',
               onTap: () {
-                // controller.pause();
+                controller.pause();
               },
             ),
             SMAdsTile(
               icon: Icons.skip_next_rounded,
               title: 'Skip',
               onTap: () {
-                // controller.skip();
+                controller.skip();
               },
             ),
             SMAdsTile(
               icon: Icons.delete_rounded,
               title: 'Dispose',
               onTap: () {
-                // controller.dispose();
                 context.read<PreRollNotifier>().setShouldShow(false);
-                xontroller.dispose();
+                controller.dispose();
               },
             ),
             SizedBox(
               height: 50,
               child: Center(
                 child: FutureBuilder<int>(
-                  future: xontroller.screenStatus,
+                  future: controller.screenStatus,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.done) {
                       return Text("Screen Status: ${snapshot.data}");
@@ -210,9 +172,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                   print('teste snapshot: ${snapshot.data}');
                   return snapshot.hasData && snapshot.data!
                       ? PreRollUI(
-                          controller: xontroller,
+                          controller: controller,
                         )
-                      : SizedBox();
+                      : SizedBox.shrink();
                 }),
           ],
         ),
@@ -231,11 +193,6 @@ class PreRollUI extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    /// seelctor e consuemer
-    /// context.select
-    ///
-    final x = context.watch<PreRollNotifier>();
-    print('teste x: ${x._shouldShow}');
     return Selector<PreRollNotifier, ({bool shouldShow, bool isAudioAd})>(
       selector: (context, notifier) => (
         shouldShow: notifier.shouldShow,
@@ -305,17 +262,19 @@ void preRollListener(PreRollEvent event, Map<String, dynamic> args) {
   }
 }
 
-// void loadAds({
-//   required PreRollNotifier preRollNotifier,
-//   required Map<String, dynamic> target,
-// }) {
-//   preRollNotifier.setShouldShow(true);
-//   xontroller.load(target);
-// }
+void loadAds({
+  required PreRollNotifier preRollNotifier,
+  required Map<String, dynamic> target,
+}) {
+  preRollNotifier
+    ..setShouldShow(true)
+    ..controller.load(target);
+}
 
 class PreRollNotifier extends ChangeNotifier {
   bool _shouldShow = false;
   bool _isAudioAd = false;
+  PreRollController controller = PreRollController(preRollListener);
 
   bool get shouldShow => _shouldShow;
   bool get isAudioAd => _isAudioAd;
