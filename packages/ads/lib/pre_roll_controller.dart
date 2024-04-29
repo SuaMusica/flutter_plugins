@@ -27,6 +27,8 @@ class PreRollController extends PreRollEventHandler {
   }
 
   void load(Map<String, dynamic>? args) {
+    print('[TESTE] load');
+
     _channel.invokeMethod("load", args ?? {});
   }
 

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -92,7 +94,7 @@ class PreRoll extends StatelessWidget {
   }
 
   void _onPlatformViewCreated(int id) {
-    debugPrint('Platform view created with id: $id');
-    // controller?.play();
+    debugPrint('Platform view created withs id: $id');
+    // if (Platform.isAndroid) controller?.play();
   }
 }

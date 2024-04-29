@@ -1,22 +1,20 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:smads/smads.dart';
 import 'package:smads_example/widgets/widgets.dart';
 
-//    adUrl:
-//    "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=",
-//    adUrl:
-//        "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=",
-// adUrl: "https://cmod424.live.streamtheworld.com/ondemand/ars?type=preroll&version=1.5.1&fmt=vast&stid=103013&banners=300x250&dist=testeapp&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear",
-// contentUrl: "https://assets.suamusica.com.br/video/virgula.mp3",
+void main() => runApp(
+      ChangeNotifierProvider(
+        create: (context) => PreRollNotifier(),
+        child: MaterialApp(
+          home: MyApp(),
+        ),
+      ),
+    );
 
-void main() => runApp(MaterialApp(home: MyApp()));
-
-ValueNotifier<bool> preRollNotifier = ValueNotifier(false);
-ValueNotifier<bool> isAudioAd = ValueNotifier(false);
-
-PreRollController controller = PreRollController(preRollListener);
+// PreRollController controller = PreRollController(preRollListener);
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -27,29 +25,35 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   late final AppLifecycleListener listener;
-  ValueNotifier<bool> appLifecycleNotifier = ValueNotifier(false);
+  late PreRollNotifier preRollNotifier;
+  PreRollController xontroller = PreRollController(preRollListener);
 
+  StreamController<bool> _streamController = StreamController<bool>.broadcast();
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-
+    preRollNotifier = context.read<PreRollNotifier>();
+    _streamController.stream.listen((event) {
+      print('teste event: $event');
+    });
     listener = AppLifecycleListener(
       onInactive: () {
-        debugPrint('[AppLifecycleState]: inactive');
+        debugPrint('[AppLifecycleState]: teste inactive');
       },
       onPause: () {
-        debugPrint('[AppLifecycleState]: paused');
+        debugPrint('[AppLifecycleState]: teste paused');
       },
       onResume: () {
-        debugPrint('[AppLifecycleState]: resumed');
+        debugPrint('[AppLifecycleState]: teste resumed');
       },
     );
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    debugPrint('[AppLifecycleState]: (didChangeAppLifecycleState) $state');
+    debugPrint(
+        '[AppLifecycleState]: teste (didChangeAppLifecycleState) $state');
     switch (state) {
       case AppLifecycleState.inactive:
       case AppLifecycleState.paused:
@@ -61,9 +65,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }
 
   @override
+  void didUpdateWidget(covariant MyApp oldWidget) {
+    print('teste didUpdateWidget');
+    super.didUpdateWidget(oldWidget);
+  }
+
+  @override
   void dispose() {
     listener.dispose();
-
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -82,13 +91,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               icon: Icons.align_vertical_bottom_rounded,
               title: 'Call bottom sheet',
               onTap: () {
-                controller.pause();
+                xontroller.pause();
                 showModalBottomSheet(
                   context: context,
                   isScrollControlled: true,
                   useRootNavigator: true,
                   builder: (context) {
-                    return SMAdsBottomSheet(controller: controller);
+                    // return SMAdsBottomSheet(controller: controller);
+                    return SizedBox.shrink();
                   },
                 );
               },
@@ -97,18 +107,34 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               icon: Icons.video_call_rounded,
               title: 'Load video',
               onTap: () {
-                loadAds(videoTarget);
+                // loadAds(
+                //   preRollNotifier: preRollNotifier,
+                //   target: videoTarget,
+                // );
+                preRollNotifier.setShouldShow(true);
+                xontroller.load(videoTarget);
               },
             ),
             SMAdsTile(
               icon: Icons.video_call_rounded,
               title: 'Load video with delay for 5 seconds',
               onTap: () {
-                appLifecycleNotifier.value = true;
+                debugPrint('[TESTE] 5 before');
+
                 Future.delayed(Duration(seconds: 5), () {
-                  setState(() {});
+                  debugPrint('[TESTE] 5 afer');
+
                   debugPrint('[Background] call load in bg video');
-                  loadAds(videoTarget);
+                  // loadAds(
+                  //   preRollNotifier: preRollNotifier,
+                  //   target: videoTarget,
+                  // );
+                  preRollNotifier.setShouldShow(true);
+                  _streamController.add(true);
+                  xontroller.load(audioTarget);
+                  Future.delayed(Duration(seconds: 3), () {
+                    xontroller.play();
+                  });
                 });
               },
             ),
@@ -116,17 +142,19 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               icon: Icons.audiotrack_rounded,
               title: 'Load audio',
               onTap: () {
-                loadAds(audioTarget);
+                // loadAds(preRollNotifier: preRollNotifier, target: audioTarget);
               },
             ),
             SMAdsTile(
               icon: Icons.audiotrack_rounded,
               title: 'Load audio with delay for 5 seconds',
               onTap: () {
-                appLifecycleNotifier.value = true;
                 Future.delayed(Duration(seconds: 5), () {
                   debugPrint('[Background] call load in bg audio');
-                  loadAds(audioTarget);
+                  // loadAds(
+                  //   preRollNotifier: preRollNotifier,
+                  //   target: audioTarget,
+                  // );
                 });
               },
             ),
@@ -134,36 +162,37 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               icon: Icons.play_arrow_rounded,
               title: 'play',
               onTap: () {
-                controller.play();
+                // controller.play();
               },
             ),
             SMAdsTile(
               icon: Icons.pause_rounded,
               title: 'Pause',
               onTap: () {
-                controller.pause();
+                // controller.pause();
               },
             ),
             SMAdsTile(
               icon: Icons.skip_next_rounded,
               title: 'Skip',
               onTap: () {
-                controller.skip();
+                // controller.skip();
               },
             ),
             SMAdsTile(
               icon: Icons.delete_rounded,
               title: 'Dispose',
               onTap: () {
-                controller.dispose();
-                preRollNotifier.value = false;
+                // controller.dispose();
+                context.read<PreRollNotifier>().setShouldShow(false);
+                xontroller.dispose();
               },
             ),
             SizedBox(
               height: 50,
               child: Center(
                 child: FutureBuilder<int>(
-                  future: controller.screenStatus,
+                  future: xontroller.screenStatus,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.done) {
                       return Text("Screen Status: ${snapshot.data}");
@@ -175,10 +204,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               ),
             ),
             Divider(),
-            PreRollUI(
-              preRollNotifier: preRollNotifier,
-              controller: controller,
-            ),
+            StreamBuilder<bool>(
+                stream: _streamController.stream,
+                builder: (context, snapshot) {
+                  print('teste snapshot: ${snapshot.data}');
+                  return snapshot.hasData && snapshot.data!
+                      ? PreRollUI(
+                          controller: xontroller,
+                        )
+                      : SizedBox();
+                }),
           ],
         ),
       ),
@@ -187,46 +222,40 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 }
 
 class PreRollUI extends StatelessWidget {
-  PreRollUI({
+  const PreRollUI({
     super.key,
-    required this.preRollNotifier,
     required this.controller,
   });
 
-  final ValueNotifier<bool> preRollNotifier;
   final PreRollController controller;
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      // animation: Listenable.merge([preRollNotifier, isAudioAd]),
-      animation: preRollNotifier,
-      builder: (context, child) {
+    /// seelctor e consuemer
+    /// context.select
+    ///
+    final x = context.watch<PreRollNotifier>();
+    print('teste x: ${x._shouldShow}');
+    return Selector<PreRollNotifier, ({bool shouldShow, bool isAudioAd})>(
+      selector: (context, notifier) => (
+        shouldShow: notifier.shouldShow,
+        isAudioAd: notifier.isAudioAd,
+      ),
+      builder: (context, value, child) {
         debugPrint(
-          '[PREROLL]: preRollNotifier, should show: ${preRollNotifier.value}',
+          '[teste PREROLL]: preRollNotifier, should show: ${value.shouldShow}, isAudioAd: ${value.isAudioAd}',
         );
-        // return preRollNotifier.value ? PreRoll(controller: controller) : SizedBox.shrink();
-        return preRollNotifier.value
-            // ? PreRoll(
-            //     controller: controller,
-            //     maxHeight: isAudioAd.value ? audioAdSize : videoAdSize,
-            //     useHybridComposition: true,
-            //     useinitExpensiveAndroidView: true,
-            //   )
-            ? SizedBox.shrink()
+
+        return value.shouldShow
+            ? PreRoll(
+                controller: controller,
+                maxHeight: value.isAudioAd ? audioAdSize : videoAdSize,
+                useHybridComposition: true,
+                useinitExpensiveAndroidView: true,
+              )
             : SizedBox.shrink();
       },
     );
-  }
-}
-
-class PreRollUI2 extends StatelessWidget {
-  const PreRollUI2({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    debugPrint('[PREROLL]: teste');
-    return SizedBox.shrink();
   }
 }
 
@@ -242,8 +271,7 @@ const videoTarget = {
   "ppid": "6d83fd8be4872555440fab67103896c8bee7b064b1b3ab0260f503c8dfc76e39",
   "__URL__":
       // "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480%7C400x300%7C730x400&iu=/7090806/Suamusica.com.br-ROA-Preroll&impl=s&gdfp_req=1&env=instream&output=vast&unviewed_position_start=1&description_url=http%3A%2F%2Fwww.suamusica.com.br%2F&correlator=&tfcd=0&npa=0&ad_type=video_audio&vad_type=linear&ciu_szs=300x250&cust_params=teste%3D1",
-      // "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=",
-      "https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/single_ad_samples&sz=640x480&cust_params=sample_ct%3Dlinear&ciu_szs=300x250%2C728x90&gdfp_req=1&output=vast&unviewed_position_start=1&env=vp&impl=s&correlator=",
+      "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=",
   "__CONTENT__": "https://assets.suamusica.com.br/video/virgula.mp3",
 };
 
@@ -264,84 +292,47 @@ void preRollListener(PreRollEvent event, Map<String, dynamic> args) {
 
   switch (event) {
     case PreRollEvent.LOADED:
-      preRollNotifier.value = true;
-      isAudioAd.value = args['ad.contentType'].contains('audio');
+      // preRollNotifier.value = true;
+      // isAudioAd.value = args['ad.contentType'].contains('audio');
+
+      // preRollNotifier.setShouldShow(true);
+      // preRollNotifier.setIsAudioAd(args['ad.contentType'].contains('audio'));
+      break;
     case PreRollEvent.COMPLETED:
-      preRollNotifier.value = false;
-      controller.dispose();
+    // preRollNotifier.value = false;
+    // controller.dispose();
     default:
   }
 }
 
-void loadAds(Map<String, dynamic> target) {
-  preRollNotifier.value = true;
-  controller.load(target);
+// void loadAds({
+//   required PreRollNotifier preRollNotifier,
+//   required Map<String, dynamic> target,
+// }) {
+//   preRollNotifier.setShouldShow(true);
+//   xontroller.load(target);
+// }
+
+class PreRollNotifier extends ChangeNotifier {
+  bool _shouldShow = false;
+  bool _isAudioAd = false;
+
+  bool get shouldShow => _shouldShow;
+  bool get isAudioAd => _isAudioAd;
+
+  void setShouldShow(bool value) {
+    debugPrint('[TESTE] shouldshow $value');
+
+    if (_shouldShow != value) {
+      _shouldShow = value;
+      notifyListeners();
+    }
+  }
+
+  void setIsAudioAd(bool value) {
+    if (_isAudioAd != value) {
+      _isAudioAd = value;
+      notifyListeners();
+    }
+  }
 }
-
-// https://github.com/flutter/flutter/issues/33236
-// import 'package:flutter/material.dart';
-
-// void main() => runApp(MyApp());
-
-// class MyApp extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       title: 'Flutter Demo',
-//       theme: ThemeData(
-//         primarySwatch: Colors.blue,
-//       ),
-//       home: Scaffold(
-//         body: SecureScreen(
-//           child: Container(
-//             color: Colors.red,
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
-
-// class SecureScreen extends StatefulWidget {
-//   final Widget child;
-//   SecureScreen({required this.child});
-
-//   @override
-//   SecureScreenState createState() => SecureScreenState();
-// }
-
-// class SecureScreenState extends State<SecureScreen>
-//     with WidgetsBindingObserver {
-//   AppLifecycleState? _notification;
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     WidgetsBinding.instance.addObserver(this);
-//   }
-
-//   @override
-//   void dispose() {
-//     WidgetsBinding.instance.removeObserver(this);
-//     super.dispose();
-//   }
-
-//   @override
-//   void didChangeAppLifecycleState(AppLifecycleState state) {
-//     print(state.toString());
-//     setState(() {
-//       _notification = state;
-//     });
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     /// testar com e sem um deles.
-//     return (_notification == AppLifecycleState.paused ||
-//             _notification == AppLifecycleState.inactive)
-//         ? Container(
-//             color: Colors.greenAccent,
-//           )
-//         : widget.child;
-//   }
-// }

@@ -29,14 +29,14 @@ class SMAdsBottomSheet extends StatelessWidget {
                     icon: Icons.video_call_rounded,
                     title: 'Load video',
                     onTap: () {
-                      loadAds(videoTarget);
+                      // loadAds(videoTarget);
                     },
                   ),
                   SMAdsTile(
                     icon: Icons.audiotrack_rounded,
                     title: 'Load audio',
                     onTap: () {
-                      loadAds(audioTarget);
+                      // loadAds(audioTarget);
                     },
                   ),
                   SMAdsTile(
