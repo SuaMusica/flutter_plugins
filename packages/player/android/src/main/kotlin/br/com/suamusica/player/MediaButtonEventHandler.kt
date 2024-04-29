@@ -3,10 +3,9 @@ package br.com.suamusica.player
 import android.content.Intent
 import android.util.Log
 import android.view.KeyEvent
-import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
+import androidx.media3.common.Player
 
-class MediaButtonEventHandler : MediaSessionConnector.MediaButtonEventHandler {
+class MediaButtonEventHandler : MediaSessionC.MediaButtonEventHandler {
 
     override fun onMediaButtonEvent(player: Player, intent: Intent): Boolean {
         onMediaButtonEventHandler(intent)

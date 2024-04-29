@@ -5,13 +5,15 @@ import androidx.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-import com.google.android.exoplayer2.offline.FilteringManifestParser;
-import com.google.android.exoplayer2.offline.StreamKey;
-import com.google.android.exoplayer2.source.hls.playlist.HlsMediaPlaylist;
-import com.google.android.exoplayer2.source.hls.playlist.HlsMultivariantPlaylist;
-import com.google.android.exoplayer2.source.hls.playlist.HlsPlaylist;
-import com.google.android.exoplayer2.source.hls.playlist.HlsPlaylistParserFactory;
-import com.google.android.exoplayer2.upstream.ParsingLoadable;
+import androidx.annotation.OptIn;
+import androidx.media3.common.StreamKey;
+import androidx.media3.common.util.UnstableApi;
+import androidx.media3.exoplayer.hls.playlist.HlsMediaPlaylist;
+import androidx.media3.exoplayer.hls.playlist.HlsMultivariantPlaylist;
+import androidx.media3.exoplayer.hls.playlist.HlsPlaylist;
+import androidx.media3.exoplayer.hls.playlist.HlsPlaylistParserFactory;
+import androidx.media3.exoplayer.offline.FilteringManifestParser;
+import androidx.media3.exoplayer.upstream.ParsingLoadable;
 
 public final class SMHlsPlaylistParserFactory implements HlsPlaylistParserFactory {
 
@@ -22,19 +24,19 @@ public final class SMHlsPlaylistParserFactory implements HlsPlaylistParserFactor
         this(Collections.<StreamKey>emptyList());
     }
 
-    /**
-     * Creates an instance that filters the parsing results using the given {@code streamKeys}.
-     *
-     * @param streamKeys See {@link
-     *     FilteringManifestParser#FilteringManifestParser(ParsingLoadable.Parser, List)}.
-     */
+
     public SMHlsPlaylistParserFactory(List<StreamKey> streamKeys) {
         this.streamKeys = streamKeys;
     }
 
-    @Override
+    @OptIn(markerClass = UnstableApi.class) @Override
     public ParsingLoadable.Parser<HlsPlaylist> createPlaylistParser() {
         return new FilteringManifestParser<>(new CustomHlsPlaylistParser(), streamKeys);
+    }
+
+    @Override
+    public ParsingLoadable.Parser<HlsPlaylist> createPlaylistParser(HlsMultivariantPlaylist multivariantPlaylist, @Nullable HlsMediaPlaylist previousMediaPlaylist) {
+        return null;
     }
 
     @Override

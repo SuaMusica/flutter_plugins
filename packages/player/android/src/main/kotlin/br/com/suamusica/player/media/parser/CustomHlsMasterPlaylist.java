@@ -4,11 +4,11 @@ import android.net.Uri;
 
 import androidx.annotation.Nullable;
 
-import com.google.android.exoplayer2.Format;
-import com.google.android.exoplayer2.drm.DrmInitData;
-import com.google.android.exoplayer2.offline.StreamKey;
+import androidx.media3.common.Format;
+import androidx.media3.common.DrmInitData;
+import androidx.media3.common.StreamKey;
 import com.google.android.exoplayer2.source.hls.playlist.HlsPlaylist;
-import com.google.android.exoplayer2.util.MimeTypes;
+import androidx.media3.common.MimeTypes;
 
 import java.util.ArrayList;
 import java.util.Collections;

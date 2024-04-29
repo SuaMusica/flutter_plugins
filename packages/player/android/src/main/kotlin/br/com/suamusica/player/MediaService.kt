@@ -20,28 +20,30 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
+import androidx.annotation.OptIn
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.media.session.MediaButtonReceiver
 import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
-import com.google.android.exoplayer2.C
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.PlaybackException
-import com.google.android.exoplayer2.PlaybackParameters
-import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.Player.DISCONTINUITY_REASON_SEEK
-import com.google.android.exoplayer2.Timeline
-import com.google.android.exoplayer2.Tracks
-import com.google.android.exoplayer2.audio.AudioAttributes
-import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
-import com.google.android.exoplayer2.ext.mediasession.TimelineQueueNavigator
-import com.google.android.exoplayer2.source.ProgressiveMediaSource
-import com.google.android.exoplayer2.source.hls.HlsMediaSource
-import com.google.android.exoplayer2.upstream.DataSource
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
-import com.google.android.exoplayer2.upstream.FileDataSource
-import com.google.android.exoplayer2.util.Util
+import androidx.media3.common.C
+import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.PlaybackParameters
+import androidx.media3.common.Player
+import androidx.media3.common.Player.DISCONTINUITY_REASON_SEEK
+import androidx.media3.common.Timeline
+import androidx.media3.common.Tracks
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.common.util.Util
+import androidx.media3.datasource.DataSource
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.FileDataSource
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.hls.HlsMediaSource
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.media3.session.MediaController
+import androidx.media3.session.MediaSession
 import java.io.File
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -53,8 +55,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
     private var packageValidator: PackageValidator? = null
 
     private var mediaSession: MediaSessionCompat? = null
-    private var mediaController: MediaControllerCompat? = null
-    private var mediaSessionConnector: MediaSessionConnector? = null
+
 
     private var media: Media? = null
 
@@ -63,7 +64,8 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
     private var isForegroundService = false
     private var wifiLock: WifiManager.WifiLock? = null
     private var wakeLock: PowerManager.WakeLock? = null
-
+    private var session: MediaSession? = null
+    private var mediaController: MediaController? = null
     private val uAmpAudioAttributes = AudioAttributes.Builder()
         .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
         .setUsage(C.USAGE_MEDIA)
@@ -118,54 +120,61 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                     setSessionActivity(sessionActivityPendingIntent)
                     isActive = true
                 }
-                
-            mediaSession?.setFlags(MediaSessionCompat.FLAG_HANDLES_QUEUE_COMMANDS)
+
+        mediaSession?.setFlags(MediaSessionCompat.FLAG_HANDLES_QUEUE_COMMANDS)
 
         player = ExoPlayer.Builder(this).build().apply {
             setAudioAttributes(uAmpAudioAttributes, true)
             addListener(playerEventListener())
             // setWakeMode(C.WAKE_MODE_NETWORK)
             setHandleAudioBecomingNoisy(true)
+
         }
-        mediaSession?.let { mediaSession ->
-            val sessionToken = mediaSession.sessionToken
-            // we must connect the service to the media session
-            this.sessionToken = sessionToken
 
-            val mediaControllerCallback = MediaControllerCallback()
-
-            mediaController = MediaControllerCompat(this, sessionToken).also { mediaController ->
-                mediaController.registerCallback(mediaControllerCallback)
-
-                mediaSessionConnector = MediaSessionConnector(mediaSession).also { connector ->
-                    connector.setPlayer(player)
-                    connector.setPlaybackPreparer(MusicPlayerPlaybackPreparer(this))
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        if(Build.MANUFACTURER.equals("samsung", ignoreCase = true)){
-                            connector.setCustomActionProviders(
-                                FavoriteModeActionProvider(applicationContext),
-                                NextActionProvider(),
-                                PreviousActionProvider(),
-                            )
-                        } else {
-                            connector.setCustomActionProviders(
-                                FavoriteModeActionProvider(applicationContext),
-                            PreviousActionProvider(),
-                            NextActionProvider(),
-                        )
-                        }
-                    }
-                    connector.setMediaButtonEventHandler(MediaButtonEventHandler())
-                    connector.setEnabledPlaybackActions(
-                            PlaybackStateCompat.ACTION_PLAY
-                                    or PlaybackStateCompat.ACTION_PAUSE
-                                    or PlaybackStateCompat.ACTION_REWIND
-                                    or PlaybackStateCompat.ACTION_FAST_FORWARD
-                                    or PlaybackStateCompat.ACTION_SEEK_TO
-                        )
-                }
-            }
+        player?.let {
+            session = MediaSession.Builder(this, it).build()
+//            mediaController = MediaController.Builder(this, session!!.token).build()
         }
+
+//        mediaSession?.let { mediaSession ->
+//            val sessionToken = mediaSession.sessionToken
+//            // we must connect the service to the media session
+//            this.sessionToken = sessionToken
+//
+//            val mediaControllerCallback = MediaControllerCallback()
+//
+//            mediaController = MediaControllerCompat(this, sessionToken).also { mediaController ->
+//                mediaController.registerCallback(mediaControllerCallback)
+
+//                mediaSessionConnector = MediaSessionConnector(mediaSession).also { connector ->
+//                    connector.setPlayer(player)
+//                    connector.setPlaybackPreparer(MusicPlayerPlaybackPreparer(this))
+//                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+//                        if(Build.MANUFACTURER.equals("samsung", ignoreCase = true)){
+//                            connector.setCustomActionProviders(
+//                                FavoriteModeActionProvider(applicationContext),
+//                                NextActionProvider(),
+//                                PreviousActionProvider(),
+//                            )
+//                        } else {
+//                            connector.setCustomActionProviders(
+//                                FavoriteModeActionProvider(applicationContext),
+//                            PreviousActionProvider(),
+//                            NextActionProvider(),
+//                        )
+//                        }
+//                    }
+//                    connector.setMediaButtonEventHandler(MediaButtonEventHandler())
+//                    connector.setEnabledPlaybackActions(
+//                            PlaybackStateCompat.ACTION_PLAY
+//                                    or PlaybackStateCompat.ACTION_PAUSE
+//                                    or PlaybackStateCompat.ACTION_REWIND
+//                                    or PlaybackStateCompat.ACTION_FAST_FORWARD
+//                                    or PlaybackStateCompat.ACTION_SEEK_TO
+//                        )
+//                }
+//            }
+//        }
     }
 
     override fun onTaskRemoved(rootIntent: Intent) {
@@ -188,7 +197,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         Log.d(TAG, "onDestroy")
 //        mediaController?.unregisterCallback(mediaControllerCallback)
         releaseLock()
-        mediaSessionConnector?.setPlayer(null)
+//        mediaSessionConnector?.setPlayer(null)
         player?.release()
         stopSelf()
 
@@ -210,7 +219,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         packageValidator = null
         mediaSession = null
         mediaController = null
-        mediaSessionConnector = null
+//        mediaSessionConnector = null
         wifiLock = null
         wakeLock = null
 
@@ -251,7 +260,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         result.sendResult(mutableListOf())
     }
 
-    fun prepare(cookie: String, media: Media) {
+    @OptIn(UnstableApi::class)  fun prepare(cookie: String, media: Media) {
         this.media = media
 
         val dataSourceFactory = DefaultHttpDataSource.Factory()
@@ -276,45 +285,46 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         }
         val metadata = metadataBuilder.build()
         mediaSession?.setMetadata(metadata)
-        mediaSessionConnector?.setMediaMetadataProvider {
-            return@setMediaMetadataProvider metadata
-        }
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            val timelineQueueNavigator = object : TimelineQueueNavigator(mediaSession!!) {
-                override fun getSupportedQueueNavigatorActions(player: Player): Long {
-                    return PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
-                            PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
-                            PlaybackStateCompat.ACTION_SEEK_TO
-                }
-
-                override fun getMediaDescription(
-                    player: Player,
-                    windowIndex: Int
-                ): MediaDescriptionCompat {
-                    player.let {
-                        return MediaDescriptionCompat.Builder().apply {
-                            setTitle(media.author)
-                            setSubtitle(media.name)
-                            setIconUri(Uri.parse(media.coverUrl))
-                        }.build()
-                    }
-                }
-            }
-            mediaSessionConnector?.setQueueNavigator(timelineQueueNavigator)
-        }
+//        mediaSessionConnector?.setMediaMetadataProvider {
+//            return@setMediaMetadataProvider metadata
+//        }
+//        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+//            val timelineQueueNavigator = object : TimelineQueueNavigator(mediaSession!!) {
+//                override fun getSupportedQueueNavigatorActions(player: Player): Long {
+//                    return PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
+//                            PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+//                            PlaybackStateCompat.ACTION_SEEK_TO
+//                }
+//
+//                override fun getMediaDescription(
+//                    player: Player,
+//                    windowIndex: Int
+//                ): MediaDescriptionCompat {
+//                    player.let {
+//                        return MediaDescriptionCompat.Builder().apply {
+//                            setTitle(media.author)
+//                            setSubtitle(media.name)
+//                            setIconUri(Uri.parse(media.coverUrl))
+//                        }.build()
+//                    }
+//                }
+//            }
+//            mediaSessionConnector?.setQueueNavigator(timelineQueueNavigator)
+//        }
         val url = media.url
         Log.i(TAG, "Player: URL: $url")
 
         val uri = if (url.startsWith("/")) Uri.fromFile(File(url)) else Uri.parse(url)
 
         @C.ContentType val type = Util.inferContentType(uri)
-        Log.i(TAG, "Player: Type: $type HLS: ${C.TYPE_HLS}")
+        Log.i(TAG, "Player: Type: $type HLS: ${C.CONTENT_TYPE_HLS}")
         val source = when (type) {
-            C.TYPE_HLS -> HlsMediaSource.Factory(dataSourceFactory)
+            C.CONTENT_TYPE_HLS -> HlsMediaSource.Factory(dataSourceFactory)
                 .setPlaylistParserFactory(SMHlsPlaylistParserFactory())
                 .setAllowChunklessPreparation(true)
                 .createMediaSource(MediaItem.fromUri(uri))
-            C.TYPE_OTHER -> {
+
+            C.CONTENT_TYPE_OTHER -> {
                 Log.i(TAG, "Player: URI: $uri")
                 val factory: DataSource.Factory =
                     if (uri.scheme != null && uri.scheme?.startsWith("http") == true) {
@@ -325,12 +335,13 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
                 ProgressiveMediaSource.Factory(factory).createMediaSource(MediaItem.fromUri(uri))
             }
+
             else -> {
                 throw IllegalStateException("Unsupported type: $type")
             }
         }
         player?.pause()
-        player?.prepare(source)
+        player?.setMediaSource(source)
     }
 
     fun play() {
@@ -338,13 +349,15 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             player?.play()
         }
     }
-    fun adsPlaying(){
+
+    fun adsPlaying() {
         val notification = buildNotification(PlaybackStateCompat.STATE_PLAYING, true)
         notification?.let {
             notificationManager?.notify(NOW_PLAYING_NOTIFICATION, it)
             shouldStartService(it)
         }
     }
+
     fun sendCommand(type: String) {
         val extra = Bundle()
         extra.putString("type", type)
@@ -501,11 +514,9 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                 Log.i(TAG, "onTracksChanged: ")
             }
 
-            override fun onLoadingChanged(isLoading: Boolean) {
-                Log.i(TAG, "onLoadingChanged: isLoading: $isLoading")
-            }
 
-            override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
+
+            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, @Player.PlayWhenReadyChangeReason playbackState: Int) {
                 Log.i(
                     TAG,
                     "onPlayerStateChanged: playWhenReady: $playWhenReady playbackState: $playbackState currentPlaybackState: ${player?.playbackState}"
@@ -530,9 +541,11 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                             ExoPlayer.STATE_IDLE -> { // 1
                                 //
                             }
+
                             ExoPlayer.STATE_BUFFERING -> { // 2
                                 //
                             }
+
                             ExoPlayer.STATE_READY -> { // 3
                                 val status =
                                     if (playWhenReady) PlayerState.PLAYING else PlayerState.PAUSED
@@ -553,6 +566,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
                                 }
                             }
+
                             ExoPlayer.STATE_ENDED -> { // 4
                                 stopTrackingProgressAndPerformTask {
                                     //
@@ -576,19 +590,31 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                 Log.e(TAG, "onPLayerError: ${error.message}", error)
                 val bundle = Bundle()
                 bundle.putString("type", "error")
-                bundle.putString("error", if(error.cause.toString().contains("Permission denied")) "Permission denied" else error.message )
+                bundle.putString(
+                    "error",
+                    if (error.cause.toString()
+                            .contains("Permission denied")
+                    ) "Permission denied" else error.message
+                )
                 mediaSession?.setExtras(bundle)
             }
 
-            override fun onPositionDiscontinuity(reason: Int) {
+            override fun onPositionDiscontinuity(
+                oldPosition: Player.PositionInfo,
+                newPosition: Player.PositionInfo,
+                @Player.DiscontinuityReason reason: Int
+            ) {
+                super.onPositionDiscontinuity(oldPosition, newPosition, reason)
                 Log.i(TAG, "onPositionDiscontinuity: $reason")
-                if(reason == DISCONTINUITY_REASON_SEEK){
+                if (reason == DISCONTINUITY_REASON_SEEK) {
                     val bundle = Bundle()
                     bundle.putString("type", "seek-end")
                     mediaSession?.setExtras(bundle)
                 }
-
             }
+
+
+
 
             override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters) {
                 Log.i(TAG, "onPlaybackParametersChanged: $playbackParameters")
@@ -636,7 +662,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                     Intent(applicationContext, this@MediaService.javaClass)
                 )
                 startForeground(NOW_PLAYING_NOTIFICATION, notification)
-            }  catch (e: Exception) {
+            } catch (e: Exception) {
                 startForeground(NOW_PLAYING_NOTIFICATION, notification)
                 ContextCompat.startForegroundService(
                     applicationContext,
@@ -647,8 +673,9 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
         }
     }
-    fun stopService(){
-        if(isForegroundService){
+
+    fun stopService() {
+        if (isForegroundService) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 stopForeground(STOP_FOREGROUND_DETACH)
             } else {
@@ -659,6 +686,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             Log.i(TAG, "Stopping Service")
         }
     }
+
     private inner class MediaControllerCallback : MediaControllerCompat.Callback() {
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
             Log.d(
@@ -679,7 +707,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         @SuppressLint("WakelockTimeout")
         private fun updateNotification(state: PlaybackStateCompat) {
             val updatedState = state.state
-            if (mediaController?.metadata == null || mediaSession == null) {
+            if (mediaSession == null) {
                 return
             }
 
@@ -708,6 +736,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                         shouldStartService(notification)
                     }
                 }
+
                 else -> {
                     if (isForegroundService) {
                         // If playback has ended, also stop the service.

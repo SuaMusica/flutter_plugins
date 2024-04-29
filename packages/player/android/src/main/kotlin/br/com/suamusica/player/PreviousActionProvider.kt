@@ -3,7 +3,7 @@ package br.com.suamusica.player
 import android.os.Bundle
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
-import com.google.android.exoplayer2.Player
+import androidx.media3.common.Player
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 
 class PreviousActionProvider :
