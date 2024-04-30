@@ -31,7 +31,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     var sentOnComplete = false
     var ppID: String? = nil
     var isRegistered = false
-    var makeSetup = false
 
     @IBOutlet weak var videoView: UIView!
     @IBOutlet weak var companionView: UIView!
@@ -58,72 +57,10 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             name: UIApplication.didEnterBackgroundNotification,
             object: nil);
 
-        // NotificationCenter.default.removeObserver(
-        //     self,
-        //     name: UIApplication.willEnterForegroundNotification,
-        //     object: nil);
-        
-        // NotificationCenter.default.removeObserver(self)
-        // NotificationCenter.default.removeObserver(
-        //     self,
-        // applicationDidBecomeActive
-        //     name: UIApplication.didBecomeActiveNotification,
-        //     object: nil);
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        print("AD: viewDidLoad at \(Date()), isRegistered: \(isRegistered)")
-        
-        // call viewDidAppear if the view is already loaded
-        // if (makeSetup) {
-            // viewDidAppear(false)
-        // }
-
-        // NotificationCenter.default.addObserver(
-        //     self,
-        //     selector: #selector(willEnterForeground),
-        //     name: UIApplication.willEnterForegroundNotification,
-        //     object: nil
-        // )
-
-        // NotificationCenter.default.addObserver(self,
-        //     selector: #selector(didBecomeActive),
-        //     name: UIApplication.didBecomeActiveNotification,
-        //     object: nil
-        // NotificationCenter.default.addObserver(self,
-        //     selector: #selector(willEnterForeground),
-        //     name: UIApplication.willEnterForegroundNotification,
-        //     object: nil
-        // )
-
-    //         NotificationCenter.default.addObserver(self, selector: "doYourStuff", name: UIApplication.willEnterForegroundNotification, object: nil)
-
-    // }
-
-    //  func doYourStuff() {
-    //      // your code
-    //      print("doYourStuff")
-    //  }
-    NotificationCenter.default.addObserver(self, selector: #selector(willEnterForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
-
-}
-
-// my selector that was defined above
-
-    override func viewWillAppear(_ animated: Bool) {
-        print("view will appear at \(Date())")
-    }
-
-    // MARK: - Notification oberserver methods
-
-    @objc func didBecomeActive() {
-        print("did become active at \(Date())")
-    }
-
-    @objc func willEnterForeground() {
-        print("will enter foreground at \(Date())")
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -148,9 +85,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         self.contentUrl = contentUrl
         self.screen = screen
         self.args = args
-        makeSetup = true
-        
-        // loadViewIfNeeded()
     }
     
     func setupAudioSession() {
@@ -292,7 +226,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         settings.enableBackgroundPlayback = true
         adsLoader = IMAAdsLoader(settings: settings)
         adsLoader?.delegate = self
-        print("AD: AdsLoader setup, companionView: \(String(describing: companionView))")
         if (companionView != nil) {
             setUpCompanions()
         }
@@ -322,8 +255,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
                 avPlayerVideoDisplay: IMAAVPlayerVideoDisplay(avPlayer: contentPlayer!),
                 pictureInPictureProxy: pictureInPictureProxy!,
                 userContext: nil)
-
-            print("AD: Requesting ads, request: \(request)")
 
             request.vastLoadTimeout = 30000
 
@@ -674,7 +605,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     }
     
     func play() {
-        print("Playing ads? \(self.playing) 1")
         if (!self.playing) {
             adsManager?.resume()
         }
@@ -687,7 +617,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     }
 
     func dispose() {
-        makeSetup = false
         isRegistered = false
         self.adsManager?.destroy()
         self.adsManager = nil
