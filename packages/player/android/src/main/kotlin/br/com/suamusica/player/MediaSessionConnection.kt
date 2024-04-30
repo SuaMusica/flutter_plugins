@@ -50,7 +50,6 @@ class MediaSessionConnection(
         bundle.putString("url", media.url)
         bundle.putString("coverUrl", media.coverUrl)
         bundle.putString("bigCoverUrl", media.bigCoverUrl)
-        Log.i("NotificationBuilder", "load prepare: ${media.bigCoverUrl}")
 
         PlayerSingleton.lastFavorite = media.isFavorite ?: false
         if (media.isFavorite != null) {

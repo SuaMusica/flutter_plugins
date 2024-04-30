@@ -100,8 +100,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         @OptIn(DelicateCoroutinesApi::class)
         fun getArts(context: Context, artUri: String?, callback: (Bitmap?) -> Unit) {
             GlobalScope.launch(Dispatchers.IO) {
-                Log.i("NotificationBuilder", " artUri: $artUri")
-
+                Log.i("getArts", " artUri: $artUri")
                 val glider = Glide.with(context)
                     .applyDefaultRequestOptions(glideOptions)
                     .asBitmap()
@@ -121,7 +120,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                     bitmap = try {
                         futureTarget.get()
                     } catch (e: Exception) {
-                        Log.i("NotificationBuilder", "ART EXCP: $e")
+                        Log.i("getArts", "ART EXCP: $e")
                         if (file.exists()) {
                             BitmapFactory.decodeFile(file.absolutePath)
                         } else {
@@ -408,8 +407,6 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
     fun setFavorite(favorite: Boolean?) {
         media?.let {
-            Log.i("NotificationBuilder", "media setFavorite: ${it.bigCoverUrl}")
-
             this.media = Media(it.name, it.author, it.url, it.coverUrl, it.bigCoverUrl, favorite)
             sendNotification(this.media!!, null)
         }

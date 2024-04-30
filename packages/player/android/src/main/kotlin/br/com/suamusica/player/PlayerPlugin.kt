@@ -103,7 +103,6 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin,ActivityAware {
                 val bigCoverUrl = call.argument<String>(BIG_COVER_URL_ARGUMENT)
                 val position = call.argument<Int>(POSITION_ARGUMENT)
                 val isFavorite: Boolean? = call.argument<Boolean>(IS_FAVORITE_ARGUMENT)
-                Log.i("NotificationBuilder", "LOAD_METHOD : ${bigCoverUrl}")
 
                 PlayerSingleton.mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl,bigCoverUrl, isFavorite))
                 position?.let {
@@ -120,7 +119,6 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin,ActivityAware {
                 val isPlaying: Boolean? = call.argument<Boolean>(IS_PLAYING_ARGUMENT)
                 val isFavorite: Boolean? = call.argument<Boolean>(IS_FAVORITE_ARGUMENT)
                 val bigCoverUrl = call.argument<String>(BIG_COVER_URL_ARGUMENT)
-                Log.i("NotificationBuilder", "SEND_NOTIFICATION : ${bigCoverUrl}")
 
                 PlayerSingleton.mediaSessionConnection?.sendNotification(name, author, url, coverUrl, isPlaying, bigCoverUrl, isFavorite)
             }
@@ -133,7 +131,6 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin,ActivityAware {
                 val position = call.argument<Int>(POSITION_ARGUMENT)
                 val loadOnly = call.argument<Boolean>(LOAD_ONLY)!!
                 val isFavorite: Boolean? = call.argument<Boolean>(IS_FAVORITE_ARGUMENT)
-                Log.i("NotificationBuilder", "PLAY_METHOD : ${bigCoverUrl}")
 
                 PlayerSingleton.mediaSessionConnection?.prepare(cookie!!, Media(name, author, url, coverUrl, bigCoverUrl, isFavorite))
                 Log.d(TAG, "before prepare: cookie: $cookie")

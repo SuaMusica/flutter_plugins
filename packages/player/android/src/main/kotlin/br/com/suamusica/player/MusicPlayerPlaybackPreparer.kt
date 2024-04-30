@@ -44,7 +44,6 @@ class MusicPlayerPlaybackPreparer(
                         val url = it.getString("url")!!
                         val coverUrl = it.getString("coverUrl")!!
                         val bigCoverUrl = it.getString("bigCoverUrl")
-                        Log.i("NotificationBuilder", "load : ${bigCoverUrl}")
 
                         var isFavorite:Boolean? = null;
                         if(it.containsKey(PlayerPlugin.IS_FAVORITE_ARGUMENT)){
