@@ -7,9 +7,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.media.MediaMetadata
-import android.net.Uri
 import android.os.Build
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
@@ -19,12 +17,9 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
-import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.request.FutureTarget
 import com.bumptech.glide.request.RequestOptions
 import kotlinx.coroutines.*
-import java.io.File
 import java.util.*
 
 const val NOW_PLAYING_CHANNEL: String = "br.com.suamusica.media.NOW_PLAYING"
@@ -86,50 +81,7 @@ class NotificationBuilder(private val context: Context) {
     )
     private val stopPendingIntent =
         MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_STOP)
-    private var oldArtBitmap: Bitmap? = null
-    private var oldArtUri: String = ""
 
-    companion object {
-        private val glideOptions = RequestOptions()
-            .fallback(R.drawable.default_art)
-            .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
-            .timeout(5000)
-
-        private const val NOTIFICATION_LARGE_ICON_SIZE = 144 // px
-        private const val LOCAL_COVER_PNG = "../app_flutter/covers/0.png" // px
-
-        fun getArt(context: Context, artUri: String?): Bitmap? {
-            val glider = Glide.with(context)
-                .applyDefaultRequestOptions(glideOptions)
-                .asBitmap()
-            val file = File(context.filesDir, LOCAL_COVER_PNG)
-            var bitmap: Bitmap? = null
-            val futureTarget: FutureTarget<Bitmap>? = when {
-                !artUri.isNullOrBlank() ->
-                    glider.load(artUri)
-                        .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
-
-                file.exists() -> glider
-                    .load(Uri.fromFile(file))
-                    .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
-
-                else -> null
-            }
-
-            if (futureTarget != null) {
-                bitmap = try {
-                    futureTarget.get()
-                } catch (e: Exception) {
-                    if (file.exists()) {
-                        BitmapFactory.decodeFile(file.absolutePath)
-                    } else {
-                        null
-                    }
-                }
-            }
-            return bitmap
-        }
-    }
 
     fun buildNotification(
         mediaSession: MediaSessionCompat,
@@ -137,7 +89,8 @@ class NotificationBuilder(private val context: Context) {
         onGoing: Boolean,
         isPlayingExternal: Boolean?,
         isFavorite: Boolean?,
-        mediaDuration: Long?
+        mediaDuration: Long?,
+        art: Bitmap?
     ): Notification {
         if (shouldCreateNowPlayingChannel()) {
             createNowPlayingChannel()
@@ -191,15 +144,6 @@ class NotificationBuilder(private val context: Context) {
             .setShowActionsInCompactView(*actions.toIntArray())
             .setShowCancelButton(true)
             .setMediaSession(mediaSession.sessionToken)
-        val artUri = media?.coverUrl
-        val art: Bitmap?
-        if (artUri == oldArtUri && this.oldArtBitmap != null) {
-            art = oldArtBitmap
-        } else {
-            art = getArt(context, artUri)
-            oldArtUri = artUri ?: ""
-            oldArtBitmap = art
-        }
 
         if (shouldUseMetadata && currentDuration != duration) {
             mediaSession.setMetadata(
