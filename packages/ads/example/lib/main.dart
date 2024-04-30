@@ -34,7 +34,7 @@ class _MyAppState extends State<MyApp> {
     controller = preRollNotifier.controller;
 
     _streamController.stream.listen((event) {
-      print('teste event: $event');
+      debugPrint('event: $event');
     });
   }
 
@@ -64,8 +64,7 @@ class _MyAppState extends State<MyApp> {
                   isScrollControlled: true,
                   useRootNavigator: true,
                   builder: (context) {
-                    // return SMAdsBottomSheet(controller: controller);
-                    return SizedBox.shrink();
+                    return SMAdsBottomSheet(controller: controller);
                   },
                 );
               },
@@ -169,7 +168,7 @@ class _MyAppState extends State<MyApp> {
             StreamBuilder<bool>(
                 stream: _streamController.stream,
                 builder: (context, snapshot) {
-                  print('teste snapshot: ${snapshot.data}');
+                  debugPrint('teste snapshot: ${snapshot.data}');
                   return snapshot.hasData && snapshot.data!
                       ? PreRollUI(
                           controller: controller,
@@ -256,7 +255,6 @@ void preRollListener(PreRollEvent event, Map<String, dynamic> args) {
       // preRollNotifier.setIsAudioAd(args['ad.contentType'].contains('audio'));
       break;
     case PreRollEvent.COMPLETED:
-    // preRollNotifier.value = false;
     // controller.dispose();
     default:
   }

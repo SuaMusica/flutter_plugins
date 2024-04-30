@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:smads/smads.dart';
 import 'package:smads_example/main.dart';
 import 'package:smads_example/widgets/widgets.dart';
@@ -13,6 +14,8 @@ class SMAdsBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final preRollNotifier = context.read<PreRollNotifier>();
+
     return PopScope(
       onPopInvoked: (onPop) {
         controller.play();
@@ -29,14 +32,20 @@ class SMAdsBottomSheet extends StatelessWidget {
                     icon: Icons.video_call_rounded,
                     title: 'Load video',
                     onTap: () {
-                      // loadAds(videoTarget);
+                      loadAds(
+                        preRollNotifier: preRollNotifier,
+                        target: audioTarget,
+                      );
                     },
                   ),
                   SMAdsTile(
                     icon: Icons.audiotrack_rounded,
                     title: 'Load audio',
                     onTap: () {
-                      // loadAds(audioTarget);
+                      loadAds(
+                        preRollNotifier: preRollNotifier,
+                        target: audioTarget,
+                      );
                     },
                   ),
                   SMAdsTile(
