@@ -98,6 +98,24 @@ class _MyAppState extends State<MyApp> {
               },
             ),
             SMAdsTile(
+              icon: Icons.audiotrack_rounded,
+              title: 'Load audio with delay for 5 seconds pure',
+              onTap: () {
+                debugPrint('[TESTE] 5 before');
+
+                Future.delayed(
+                  Duration(seconds: 5),
+                  () {
+                    preRollNotifier.setShouldShow(true);
+                    controller.load(audioTarget);
+                    Future.delayed(Duration(milliseconds: 1), () {
+                      controller.play();
+                    });
+                  },
+                );
+              },
+            ),
+            SMAdsTile(
               icon: Icons.video_call_rounded,
               title: 'Load video',
               onTap: () {
