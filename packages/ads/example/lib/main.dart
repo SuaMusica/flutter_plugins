@@ -5,6 +5,9 @@ import 'package:provider/provider.dart';
 import 'package:smads/smads.dart';
 import 'package:smads_example/widgets/widgets.dart';
 
+late PreRollController controller;
+late PreRollNotifier preRollNotifier;
+
 void main() => runApp(
       ChangeNotifierProvider(
         create: (context) => PreRollNotifier(),
@@ -22,9 +25,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  late PreRollNotifier preRollNotifier;
-  late PreRollController controller;
-
   StreamController<bool> _streamController = StreamController<bool>.broadcast();
 
   @override
@@ -50,10 +50,21 @@ class _MyAppState extends State<MyApp> {
       appBar: AppBar(
         title: const Text('Plugin example app'),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.play_arrow_rounded),
+            onPressed: controller.play,
+          ),
+          IconButton(
+            icon: Icon(Icons.pause_rounded),
+            onPressed: controller.pause,
+          ),
+        ],
       ),
       body: Center(
         child: ListView(
           children: [
+            PreRollUI(controller: controller),
             SMAdsTile(
               icon: Icons.align_vertical_bottom_rounded,
               title: 'Call bottom sheet',
@@ -95,6 +106,28 @@ class _MyAppState extends State<MyApp> {
                     controller.play();
                   });
                 });
+              },
+            ),
+            SMAdsTile(
+              icon: Icons.video_call_rounded,
+              title: 'Load video only (for android)',
+              onTap: () {
+                controller.load(videoTarget);
+              },
+            ),
+            SMAdsTile(
+              icon: Icons.video_call_rounded,
+              title: 'Show video preloaded',
+              onTap: () {
+                preRollNotifier.setShouldShow(true);
+              },
+            ),
+            SMAdsTile(
+              icon: Icons.video_call_rounded,
+              title: 'Show video preloaded, dispose, load',
+              onTap: () {
+                preRollNotifier.setShouldShow(true);
+                loadAndroid();
               },
             ),
             SMAdsTile(
@@ -165,16 +198,17 @@ class _MyAppState extends State<MyApp> {
               ),
             ),
             Divider(),
-            StreamBuilder<bool>(
-                stream: _streamController.stream,
-                builder: (context, snapshot) {
-                  debugPrint('teste snapshot: ${snapshot.data}');
-                  return snapshot.hasData && snapshot.data!
-                      ? PreRollUI(
-                          controller: controller,
-                        )
-                      : SizedBox.shrink();
-                }),
+            // for update screen in background
+            // StreamBuilder<bool>(
+            //     stream: _streamController.stream,
+            //     builder: (context, snapshot) {
+            //       debugPrint('teste snapshot: ${snapshot.data}');
+            //       return snapshot.hasData && snapshot.data!
+            //           ? PreRollUI(
+            //               controller: controller,
+            //             )
+            //           : SizedBox.shrink();
+            //     }),
           ],
         ),
       ),
@@ -243,19 +277,33 @@ const audioTarget = {
   "__CONTENT__": "https://assets.suamusica.com.br/video/virgula.mp3",
 };
 
+void loadAndroid() {
+  controller.dispose();
+  controller.load(videoTarget);
+  Future.delayed(Duration(seconds: 3), () => controller.play());
+}
+
+void endAndroid() {
+  preRollNotifier.setShouldShow(false);
+  loadAndroid();
+}
+
 void preRollListener(PreRollEvent event, Map<String, dynamic> args) {
-  debugPrint('[PREROLL]: Event: $event, args: $args');
+  if (event != PreRollEvent.AD_PROGRESS) {
+    debugPrint('[PREROLL]: Event: $event, args: $args');
+  }
 
   switch (event) {
     case PreRollEvent.LOADED:
       // preRollNotifier.value = true;
       // isAudioAd.value = args['ad.contentType'].contains('audio');
 
-      // preRollNotifier.setShouldShow(true);
+      preRollNotifier.setShouldShow(true);
       // preRollNotifier.setIsAudioAd(args['ad.contentType'].contains('audio'));
       break;
+    case PreRollEvent.ALL_ADS_COMPLETED:
     case PreRollEvent.COMPLETED:
-    // controller.dispose();
+      endAndroid();
     default:
   }
 }

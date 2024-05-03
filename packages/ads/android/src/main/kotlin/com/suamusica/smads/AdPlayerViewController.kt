@@ -35,8 +35,11 @@ class AdPlayerViewController(
     private var companionAdSlot: LinearLayout? = null
     private var progressBar: ProgressBar? = null
     private val ignorePausedEvent = AtomicBoolean(true)
+    // check if is playing or not
+    private val isPlaying = AtomicBoolean(false)
+
     fun load(input: LoadMethodInput, adPlayerView: AdPlayerView) {
-        Timber.d("load(input=%s)", input)
+        Timber.d("[PREROLL] (Android) load(input=%s)", input)
         dispose()
         this.adPlayerView = adPlayerView
         this.view = adPlayerView.binding.view
@@ -50,31 +53,40 @@ class AdPlayerViewController(
     }
 
     fun play() {
-        Timber.d("play()")
+        Timber.d("[PREROLL] (Android) play()")
+        // if (isPlaying.get()) {
+        //     return
+        // }
+
         ignorePausedEvent.set(false)
         adPlayerManager?.play()
     }
 
     fun skipAd(){
-        Timber.d("skipAd()")
+        Timber.d("[PREROLL] (Android) skipAd()")
         adPlayerManager?.skipAd()
 
     }
 
     fun pause() {
-        Timber.d("pause()")
+        Timber.d("[PREROLL] (Android) pause()")
+        // if (!isPlaying.get()) {
+        //     return
+        // }
+
         adPlayerManager?.pause()
     }
 
     fun dispose() {
-        Timber.d("dispose()")
+        Timber.d("[PREROLL] (Android) dispose()")
+        isPlaying.set(false)
         compositeDisposable.clear()
         adPlayerManager?.release()
         isCompleted.set(false)
     }
 
     private fun configureAdPlayerEventObservers() {
-        Timber.d("configureAdPlayerEventObservers")
+        Timber.d("[PREROLL] (Android) configureAdPlayerEventObservers")
         adPlayerManager?.let { adPlayerManager ->
             adPlayerManager.adEventDispatcher
                 .observeOn(AndroidSchedulers.mainThread())
@@ -116,29 +128,29 @@ class AdPlayerViewController(
                     return
                 }
             }
-            else -> Timber.d("Unregistered: %s", adEvent.type)
+            else -> Timber.d("[PREROLL] (Android) Unregistered: %s", adEvent.type)
         }
 
-        Timber.d("onAdEvent(%s)", adEvent.type)
+        Timber.d("[PREROLL] (Android) onAdEvent(%s)", adEvent.type)
         if(adEvent.type == AdEvent.AdEventType.LOADED){
-            Timber.d("onAdEvent(%s)", adEvent)
+            Timber.d("[PREROLL] (Android) onAdEvent(%s)", adEvent)
         }
 
         val duration = adPlayerManager?.adsDuration()?.toDouble()?.let { ceil(it).toLong() } ?: 0L
         val position = adPlayerManager?.adsCurrentPosition()?.toDouble()?.let { ceil(it).toLong() } ?: 0L
-        Timber.d("onAdEvent(duration=%s, position=%s)", duration, position)
+        Timber.d("[PREROLL] (Android) onAdEvent(duration=%s, position=%s)", duration, position)
         callback.onAddEvent(AdEventOutput.fromAdEvent(adEvent, duration, position))
     }
 
     private fun logIgnoredEvent(adEvent: AdEvent) {
-        Timber.d("Event(%s) ignored", adEvent.type)
+        Timber.d("[PREROLL] (Android) Event(%s) ignored", adEvent.type)
     }
 
     private fun onAdError(adErrorEvent: AdErrorEvent) {
-        Timber.d("onAdError($adErrorEvent)")
-        Timber.d("adErrorEvent.error.errorCode(${adErrorEvent.error.errorCode})")
-        Timber.d("adErrorEvent.error.errorType(${adErrorEvent.error.errorType})")
-        Timber.d("adErrorEvent.error.errorCodeNumber: %s", adErrorEvent.error.errorCodeNumber)
+        Timber.d("[PREROLL] (Android) onAdError($adErrorEvent)")
+        Timber.d("[PREROLL] (Android) adErrorEvent.error.errorCode(${adErrorEvent.error.errorCode})")
+        Timber.d("[PREROLL] (Android) adErrorEvent.error.errorType(${adErrorEvent.error.errorType})")
+        Timber.d("[PREROLL] (Android) adErrorEvent.error.errorCodeNumber: %s", adErrorEvent.error.errorCodeNumber)
         Timber.e(adErrorEvent.error.cause, "adErrorEvent.error.cause")
         onComplete()
 
@@ -155,14 +167,14 @@ class AdPlayerViewController(
     }
 
     private fun showContent() {
-        Timber.d("showContent")
+        Timber.d("[PREROLL] (Android) showContent")
         if (adPlayerManager?.isAudioAd == true) {
-            Timber.d("adPlayerManager?.isAudioAd: true")
+            Timber.d("[PREROLL] (Android) adPlayerManager?.isAudioAd: true")
             this.view?.hide()
             videoAdContainer?.hide()
             companionAdSlot?.show()
         } else {
-            Timber.d("adPlayerManager?.isAudioAd: false")
+            Timber.d("[PREROLL] (Android) adPlayerManager?.isAudioAd: false")
             view?.show()
             videoAdContainer?.show()
             companionAdSlot?.hide()
@@ -170,7 +182,7 @@ class AdPlayerViewController(
     }
 
     private fun onComplete() {
-        Timber.d("onComplete()")
+        Timber.d("[PREROLL] (Android) onComplete()")
         if (isCompleted.getAndSet(true)) return
         callback.onComplete()
     }
