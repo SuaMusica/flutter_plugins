@@ -15,7 +15,7 @@ class SmadsCallback(private val channel: MethodChannel,
         onAddEvent(adEventOutput.toResult())
     }
 
-    fun onAddEvent(output: Map<String, String>) {
+    fun onAddEvent(output: Map<String, Any?>) {
         handler.post { channel.invokeMethod(ON_AD_EVENT_METHOD, output) }
     }
 
