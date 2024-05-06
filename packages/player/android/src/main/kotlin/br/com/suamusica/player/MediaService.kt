@@ -24,7 +24,6 @@ import androidx.annotation.OptIn
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.media.session.MediaButtonReceiver
-import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
@@ -34,6 +33,8 @@ import androidx.media3.common.Player.DISCONTINUITY_REASON_SEEK
 import androidx.media3.common.Timeline
 import androidx.media3.common.Tracks
 import androidx.media3.common.AudioAttributes
+import androidx.media3.common.MediaMetadata
+import androidx.media3.common.MediaMetadata.PICTURE_TYPE_FRONT_COVER
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.util.Util
 import androidx.media3.datasource.DataSource
@@ -42,30 +43,30 @@ import androidx.media3.datasource.FileDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.media3.session.CommandButton
 import androidx.media3.session.MediaController
 import androidx.media3.session.MediaSession
+import androidx.media3.session.MediaSessionService
+import androidx.media3.session.SessionCommand
+import com.google.common.collect.ImmutableList
+import com.google.common.util.concurrent.ListenableFuture
 import java.io.File
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-class MediaService : androidx.media.MediaBrowserServiceCompat() {
+@UnstableApi class MediaService : MediaSessionService() {
     private val TAG = "MediaService"
     private val userAgent =
         "SuaMusica/player (Linux; Android ${Build.VERSION.SDK_INT}; ${Build.BRAND}/${Build.MODEL})"
     private var packageValidator: PackageValidator? = null
-
-    private var mediaSession: MediaSessionCompat? = null
-
-
     private var media: Media? = null
-
     private var notificationBuilder: NotificationBuilder? = null
     private var notificationManager: NotificationManagerCompat? = null
     private var isForegroundService = false
     private var wifiLock: WifiManager.WifiLock? = null
     private var wakeLock: PowerManager.WakeLock? = null
-    private var session: MediaSession? = null
-    private var mediaController: MediaController? = null
+    private var mediaSession: MediaSession? = null
+    private var mediaController:  ListenableFuture<MediaController>? = null
     private val uAmpAudioAttributes = AudioAttributes.Builder()
         .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
         .setUsage(C.USAGE_MEDIA)
@@ -87,14 +88,16 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         PREVIOUS
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d(TAG, "onStartCommand")
-        return Service.START_STICKY
+//    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+//        Log.d(TAG, "onStartCommand")
+//        return Service.START_STICKY
+//
+//    }
 
-    }
 
     override fun onCreate() {
         super.onCreate()
+        Log.d(TAG, "onCreate")
         packageValidator = PackageValidator(applicationContext, R.xml.allowed_media_browser_callers)
         notificationBuilder = NotificationBuilder(this)
         notificationManager = NotificationManagerCompat.from(this)
@@ -108,21 +111,25 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         wifiLock?.setReferenceCounted(false)
         wakeLock?.setReferenceCounted(false)
 
-        val sessionActivityPendingIntent =
-            this.packageManager?.getLaunchIntentForPackage(this.packageName)?.let { sessionIntent ->
-                PendingIntent.getActivity(this, 0, sessionIntent, PendingIntent.FLAG_IMMUTABLE)
-            }
+//        val sessionActivityPendingIntent =
+//            this.packageManager?.getLaunchIntentForPackage(this.packageName)?.let { sessionIntent ->
+//                PendingIntent.getActivity(this, 0, sessionIntent, PendingIntent.FLAG_IMMUTABLE)
+//            }
 
-        val mediaButtonReceiver = ComponentName(this, MediaButtonReceiver::class.java)
-        mediaSession = mediaSession?.let { it }
-            ?: MediaSessionCompat(this, TAG, mediaButtonReceiver, null)
-                .apply {
-                    setSessionActivity(sessionActivityPendingIntent)
-                    isActive = true
-                }
+//        val mediaButtonReceiver = ComponentName(this, MediaButtonReceiver::class.java)
+//        mediaSession = mediaSession?.let { it }
+//            ?: MediaSessionCompat(this, TAG, mediaButtonReceiver, null)
+//                .apply {
+//                    setSessionActivity(sessionActivityPendingIntent)
+//                    isActive = true
+//                }
 
-        mediaSession?.setFlags(MediaSessionCompat.FLAG_HANDLES_QUEUE_COMMANDS)
-
+        val favoriteButton = CommandButton.Builder()
+            .setDisplayName("Save to favorites")
+            .setIconResId(R.drawable.ic_favorite_notification_player)
+            .setSessionCommand(SessionCommand("Favoritar", Bundle()))
+            .build()
+        Log.d(TAG, "player1")
         player = ExoPlayer.Builder(this).build().apply {
             setAudioAttributes(uAmpAudioAttributes, true)
             addListener(playerEventListener())
@@ -130,22 +137,20 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             setHandleAudioBecomingNoisy(true)
 
         }
+        Log.d(TAG, "player1 ${player == null}")
 
         player?.let {
-            session = MediaSession.Builder(this, it).build()
-//            mediaController = MediaController.Builder(this, session!!.token).build()
+            mediaSession = MediaSession.Builder(this, it)
+                .setCustomLayout(ImmutableList.of(favoriteButton))
+                .setCallback(MediaButtonEventHandler(this)).build()
         }
+//        mediaSession?.setFlags(MediaSessionCompat.FLAG_HANDLES_QUEUE_COMMANDS)
 
-//        mediaSession?.let { mediaSession ->
-//            val sessionToken = mediaSession.sessionToken
-//            // we must connect the service to the media session
-//            this.sessionToken = sessionToken
-//
 //            val mediaControllerCallback = MediaControllerCallback()
-//
-//            mediaController = MediaControllerCompat(this, sessionToken).also { mediaController ->
-//                mediaController.registerCallback(mediaControllerCallback)
 
+//             val mediaControllerCompat = MediaController(this, it.token).also { mediaController ->
+//                mediaController.registerCallback(mediaControllerCallback)
+//
 //                mediaSessionConnector = MediaSessionConnector(mediaSession).also { connector ->
 //                    connector.setPlayer(player)
 //                    connector.setPlaybackPreparer(MusicPlayerPlaybackPreparer(this))
@@ -174,8 +179,8 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 //                        )
 //                }
 //            }
-//        }
-    }
+        }
+//    }
 
     override fun onTaskRemoved(rootIntent: Intent) {
         Log.d(TAG, "onTaskRemoved")
@@ -192,6 +197,10 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         stopService()
     }
 
+    override fun onGetSession(
+        controllerInfo: MediaSession.ControllerInfo
+    ): MediaSession? = mediaSession
+
     override fun onDestroy() {
         removeNotification()
         Log.d(TAG, "onDestroy")
@@ -202,12 +211,13 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         stopSelf()
 
         mediaSession?.run {
-            isActive = false
+            player.release()
             release()
-            Log.d("MusicService", "onDestroy(isActive: $isActive)")
+            mediaSession = null
         }
 
         releasePossibleLeaks()
+
         super.onDestroy()
 
     }
@@ -239,28 +249,28 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         }
     }
 
-    override fun onGetRoot(
-        clientPackageName: String,
-        clientUid: Int,
-        rootHints: Bundle?
-    ): BrowserRoot? {
-        val isKnowCaller = packageValidator?.isKnownCaller(clientPackageName, clientUid) ?: false
+//    override fun onGetRoot(
+//        clientPackageName: String,
+//        clientUid: Int,
+//        rootHints: Bundle?
+//    ): BrowserRoot? {
+//        val isKnowCaller = packageValidator?.isKnownCaller(clientPackageName, clientUid) ?: false
+//
+//        return if (isKnowCaller) {
+//            BrowserRoot(BROWSABLE_ROOT, null)
+//        } else {
+//            BrowserRoot(EMPTY_ROOT, null)
+//        }
+//    }
 
-        return if (isKnowCaller) {
-            BrowserRoot(BROWSABLE_ROOT, null)
-        } else {
-            BrowserRoot(EMPTY_ROOT, null)
-        }
-    }
+//    override fun onLoadChildren(
+//        parentId: String,
+//        result: Result<MutableList<MediaBrowserCompat.MediaItem>>
+//    ) {
+//        result.sendResult(mutableListOf())
+//    }
 
-    override fun onLoadChildren(
-        parentId: String,
-        result: Result<MutableList<MediaBrowserCompat.MediaItem>>
-    ) {
-        result.sendResult(mutableListOf())
-    }
-
-    @OptIn(UnstableApi::class)  fun prepare(cookie: String, media: Media) {
+     fun prepare(cookie: String, media: Media) {
         this.media = media
 
         val dataSourceFactory = DefaultHttpDataSource.Factory()
@@ -271,20 +281,22 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         dataSourceFactory.setDefaultRequestProperties(mapOf("Cookie" to cookie))
 
         // Metadata Build
-        val metadataBuilder = MediaMetadataCompat.Builder()
-        val art = NotificationBuilder.getArt(this, media.coverUrl)
+        val metadataBuilder = MediaMetadata.Builder()
+//        val art = NotificationBuilder.getArtByte(this, media.coverUrl)
         metadataBuilder.apply {
-            album = media.author
-            albumArt = art
-            title = media.name
-            displayTitle = media.name
-            putString(MediaMetadataCompat.METADATA_KEY_ARTIST, media.author)
-            putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, media.name)
-            putBitmap(MediaMetadataCompat.METADATA_KEY_ART, art)
-            putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON, art)
+            setAlbumTitle(media.name)
+            setArtist(media.author)
+//            setArtworkData(art,PICTURE_TYPE_FRONT_COVER)
+            setArtist(media.author)
+            setTitle(media.name)
+            setDisplayTitle(media.name)
+//            putString(MediaMetadataCompat.METADATA_KEY_ARTIST, media.author)
+//            putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, media.name)
+//            putBitmap(MediaMetadataCompat.METADATA_KEY_ART, art)
+//            putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON, art)
         }
         val metadata = metadataBuilder.build()
-        mediaSession?.setMetadata(metadata)
+//        mediaSession?.setMetadata(metadata)
 //        mediaSessionConnector?.setMediaMetadataProvider {
 //            return@setMediaMetadataProvider metadata
 //        }
@@ -313,16 +325,19 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 //        }
         val url = media.url
         Log.i(TAG, "Player: URL: $url")
-
         val uri = if (url.startsWith("/")) Uri.fromFile(File(url)) else Uri.parse(url)
-
+        val mediaItem =  MediaItem.Builder()
+            .setUri(uri)
+            .setMediaMetadata( metadata)
+            .build()
         @C.ContentType val type = Util.inferContentType(uri)
         Log.i(TAG, "Player: Type: $type HLS: ${C.CONTENT_TYPE_HLS}")
         val source = when (type) {
+
             C.CONTENT_TYPE_HLS -> HlsMediaSource.Factory(dataSourceFactory)
-                .setPlaylistParserFactory(SMHlsPlaylistParserFactory())
+//                .setPlaylistParserFactory(SMHlsPlaylistParserFactory())
                 .setAllowChunklessPreparation(true)
-                .createMediaSource(MediaItem.fromUri(uri))
+                .createMediaSource(mediaItem)
 
             C.CONTENT_TYPE_OTHER -> {
                 Log.i(TAG, "Player: URI: $uri")
@@ -341,7 +356,9 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             }
         }
         player?.pause()
-        player?.setMediaSource(source)
+//        player?.setMediaSource(source)
+        player?.prepare(source)
+        player?.play()
     }
 
     fun play() {
@@ -361,7 +378,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
     fun sendCommand(type: String) {
         val extra = Bundle()
         extra.putString("type", type)
-        mediaSession?.setExtras(extra)
+        mediaSession?.setSessionExtras(extra)
 
     }
 
@@ -452,7 +469,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             extra.putString("type", "position")
             extra.putLong("position", position)
             extra.putLong("duration", duration)
-            mediaSession?.setExtras(extra)
+            mediaSession?.setSessionExtras(extra)
         }
     }
 
@@ -596,7 +613,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                             .contains("Permission denied")
                     ) "Permission denied" else error.message
                 )
-                mediaSession?.setExtras(bundle)
+                mediaSession?.setSessionExtras(bundle)
             }
 
             override fun onPositionDiscontinuity(
@@ -609,7 +626,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                 if (reason == DISCONTINUITY_REASON_SEEK) {
                     val bundle = Bundle()
                     bundle.putString("type", "seek-end")
-                    mediaSession?.setExtras(bundle)
+                    mediaSession?.setSessionExtras(bundle)
                 }
             }
 

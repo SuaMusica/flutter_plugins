@@ -17,8 +17,11 @@ import android.support.v4.media.session.PlaybackStateCompat.*
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
-import androidx.media.app.NotificationCompat.MediaStyle
+
 import androidx.media.session.MediaButtonReceiver
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.session.MediaSession
+import androidx.media3.session.MediaStyleNotificationHelper
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.FutureTarget
@@ -31,7 +34,7 @@ const val NOW_PLAYING_CHANNEL: String = "br.com.suamusica.media.NOW_PLAYING"
 const val NOW_PLAYING_NOTIFICATION: Int = 0xb339
 const val FAVORITE: String = "favorite"
 
-/**
+@UnstableApi /**
  * Helper class to encapsulate code for building notifications.
  */
 class NotificationBuilder(private val context: Context) {
@@ -128,11 +131,14 @@ class NotificationBuilder(private val context: Context) {
                 }
             }
             return bitmap
+        } fun getArtByte(context: Context, artUri: String?): ByteArray {
+            val file = File(context.filesDir, LOCAL_COVER_PNG)
+            return file.readBytes()
         }
     }
 
     fun buildNotification(
-        mediaSession: MediaSessionCompat,
+        mediaSession: MediaSession,
         media: Media?,
         onGoing: Boolean,
         isPlayingExternal: Boolean?,
@@ -142,7 +148,7 @@ class NotificationBuilder(private val context: Context) {
         if (shouldCreateNowPlayingChannel()) {
             createNowPlayingChannel()
         }
-        val playbackState = mediaSession.controller.playbackState
+//        val playbackState = mediaSession.controller.playbackState
         val builder = NotificationCompat.Builder(context, NOW_PLAYING_CHANNEL)
         val actions = if (isFavorite == null) mutableListOf(0, 1, 2) else mutableListOf(
             0,
@@ -150,8 +156,8 @@ class NotificationBuilder(private val context: Context) {
             3
         ) // favorite,play/pause,next
         val duration = mediaDuration ?: 0L
-        val currentDuration =
-            mediaSession.controller.metadata.getLong(MediaMetadata.METADATA_KEY_DURATION)
+//        val currentDuration =
+//            mediaSession.controller.metadata.getLong(MediaMetadata.METADATA_KEY_DURATION)
         val shouldUseMetadata = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
 
         isFavorite?.let {
@@ -168,15 +174,15 @@ class NotificationBuilder(private val context: Context) {
                 }
             }
 
-            playbackState.isPlaying -> {
-                Log.i("NotificationBuilder", "Player is playing... onGoing: $onGoing")
-                builder.addAction(pauseAction)
-            }
-
-            playbackState.isPlayEnabled -> {
-                Log.i("NotificationBuilder", "Player is NOT playing... onGoing: $onGoing")
-                builder.addAction(playAction)
-            }
+//            playbackState.isPlaying -> {
+//                Log.i("NotificationBuilder", "Player is playing... onGoing: $onGoing")
+//                builder.addAction(pauseAction)
+//            }
+//
+//            playbackState.isPlayEnabled -> {
+//                Log.i("NotificationBuilder", "Player is NOT playing... onGoing: $onGoing")
+//                builder.addAction(playAction)
+//            }
 
             else -> {
                 Log.i("NotificationBuilder", "ELSE")
@@ -186,11 +192,11 @@ class NotificationBuilder(private val context: Context) {
 
         builder.addAction(skipToNextAction)
 
-        val mediaStyle = MediaStyle()
-            .setCancelButtonIntent(stopPendingIntent)
-            .setShowActionsInCompactView(*actions.toIntArray())
-            .setShowCancelButton(true)
-            .setMediaSession(mediaSession.sessionToken)
+//        val mediaStyle = MediaStyleNotificationHelper.MediaStyle
+//            .setCancelButtonIntent(stopPendingIntent)
+//            .setShowActionsInCompactView(*actions.toIntArray())
+//            .setShowCancelButton(true)
+//            .setMediaSession(mediaSession.token)
         val artUri = media?.coverUrl
         val art: Bitmap?
         if (artUri == oldArtUri && this.oldArtBitmap != null) {
@@ -201,18 +207,18 @@ class NotificationBuilder(private val context: Context) {
             oldArtBitmap = art
         }
 
-        if (shouldUseMetadata && currentDuration != duration) {
-            mediaSession.setMetadata(
-                MediaMetadataCompat.Builder()
-                    .putString(MediaMetadata.METADATA_KEY_TITLE, media?.name ?: "Propaganda")
-                    .putString(MediaMetadata.METADATA_KEY_ARTIST, media?.author ?: "")
-                    .putBitmap(
-                        MediaMetadata.METADATA_KEY_ALBUM_ART, art
-                    )
-                    .putLong(MediaMetadata.METADATA_KEY_DURATION, duration) // 4
-                    .build()
-            )
-        }
+//        if (shouldUseMetadata && currentDuration != duration) {
+//            mediaSession.setMetadata(
+//                MediaMetadataCompat.Builder()
+//                    .putString(MediaMetadata.METADATA_KEY_TITLE, media?.name ?: "Propaganda")
+//                    .putString(MediaMetadata.METADATA_KEY_ARTIST, media?.author ?: "")
+//                    .putBitmap(
+//                        MediaMetadata.METADATA_KEY_ALBUM_ART, art
+//                    )
+//                    .putLong(MediaMetadata.METADATA_KEY_DURATION, duration) // 4
+//                    .build()
+//            )
+//        }
 
 
         val notifyIntent = Intent("SUA_MUSICA_FLUTTER_NOTIFICATION_CLICK").apply {
@@ -227,9 +233,9 @@ class NotificationBuilder(private val context: Context) {
         )
         val notification = builder.apply {
             setContentIntent(notifyPendingIntent)
-            setStyle(mediaStyle)
             setCategory(NotificationCompat.CATEGORY_PROGRESS)
             setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            setStyle(MediaStyleNotificationHelper.MediaStyle(mediaSession).setShowActionsInCompactView(*actions.toIntArray()).setShowCancelButton(true))
             setShowWhen(false)
             setColorized(true)
             setOnlyAlertOnce(false)

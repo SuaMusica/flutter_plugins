@@ -6,6 +6,6 @@ import android.content.Intent
 
 class MediaControlBroadcastReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
-        MediaButtonEventHandler().onMediaButtonEventHandler(intent)
+//        MediaButtonEventHandler().onMediaButtonEventHandler(intent)
     }
 }

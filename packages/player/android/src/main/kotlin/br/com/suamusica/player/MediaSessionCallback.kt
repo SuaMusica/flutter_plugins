@@ -13,6 +13,7 @@ class MediaSessionCallback(): Callback() {
         return super.onMediaButtonEvent(mediaButtonEvent)
     }
 
+
     override fun onSkipToPrevious() {
         Log.i("Player", "onSkipToPrevious()")
         super.onSkipToPrevious()
