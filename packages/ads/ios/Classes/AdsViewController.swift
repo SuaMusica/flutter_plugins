@@ -375,23 +375,15 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             print("AD: Got a LOADED event")
             let contentType = event.ad?.contentType ?? "video"
             print("AD: contentType: \(contentType), isVideo: \(isVideo), sentence: \(contentType.hasPrefix("audio"))")
-            if (contentType.hasPrefix("audio")) {
-                UIView.animate(withDuration: 0.4) {
-                    self.companionView.backgroundColor = UIColor.clear
-                }
 
-                isVideo = false
-                videoView.isHidden = true
-                companionView.isHidden = false
-            } else {
-                UIView.animate(withDuration: 0.4) {
-                    self.videoView.backgroundColor = UIColor.clear
-                }
-
-                isVideo = true
-                videoView.isHidden = false
-                companionView.isHidden = true
+            let isAudio = contentType.hasPrefix("audio")
+            UIView.animate(withDuration: 0.4) {
+                let targetView = isAudio ? self.companionView : self.videoView
+                targetView?.backgroundColor = UIColor.clear
             }
+            isVideo = !isAudio
+            videoView.isHidden = isAudio
+            companionView.isHidden = !isAudio
 
             adsManager.start()
         case IMAAdEventType.AD_BREAK_STARTED:
