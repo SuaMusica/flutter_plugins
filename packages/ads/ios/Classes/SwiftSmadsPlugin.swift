@@ -40,16 +40,19 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                 registrar.addMethodCallDelegate(instance, channel: SwiftSmadsPlugin.channel!)
             }
 
-            registrarAds = registrar
-            adsViewController = AdsViewController.instantiateFromNib()
-            
-            let viewFactory = FLNativeViewFactory(
-                messenger: SwiftSmadsPlugin.registrarAds!.messenger(),
-                controller: adsViewController!
-            )
+            if (registrarAds == nil) {
+                registrarAds = registrar
+                adsViewController = AdsViewController.instantiateFromNib()
 
-             SwiftSmadsPlugin.registrarAds!.register(viewFactory, withId: "suamusica/pre_roll_view")
+                if (SwiftSmadsPlugin.registrarAds != nil) {
+                    let viewFactory = FLNativeViewFactory(
+                        messenger: SwiftSmadsPlugin.registrarAds!.messenger(),
+                        controller: adsViewController!
+                    )
 
+                    SwiftSmadsPlugin.registrarAds!.register(viewFactory, withId: "suamusica/pre_roll_view")
+                }
+            }
             verifyNetworkAccess()
         }
     }
