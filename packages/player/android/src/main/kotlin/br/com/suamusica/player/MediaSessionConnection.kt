@@ -49,6 +49,8 @@ class MediaSessionConnection(
         bundle.putString("author", media.author)
         bundle.putString("url", media.url)
         bundle.putString("coverUrl", media.coverUrl)
+        bundle.putString("bigCoverUrl", media.bigCoverUrl)
+
         PlayerSingleton.lastFavorite = media.isFavorite ?: false
         if (media.isFavorite != null) {
             bundle.putBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT, media.isFavorite)
@@ -92,12 +94,13 @@ class MediaSessionConnection(
         sendCommand("release", null)
     }
 
-    fun sendNotification(name: String, author: String, url: String, coverUrl: String, isPlaying: Boolean?, isFavorite: Boolean?) {
+    fun sendNotification(name: String, author: String, url: String, coverUrl: String, isPlaying: Boolean?, bigCoverUrl: String?, isFavorite: Boolean?) {
         val bundle = Bundle()
         bundle.putString("name", name)
         bundle.putString("author", author)
         bundle.putString("url", url)
         bundle.putString("coverUrl", coverUrl)
+        bundle.putString("bigCoverUrl", bigCoverUrl)
         if (isPlaying != null) {
             bundle.putBoolean(PlayerPlugin.IS_PLAYING_ARGUMENT, isPlaying)
         }

@@ -3,8 +3,6 @@ package br.com.suamusica.player
 import android.net.Uri
 import android.os.Bundle
 import android.os.ResultReceiver
-import android.support.v4.media.session.MediaControllerCompat
-import android.support.v4.media.session.MediaSessionCompat
 import android.util.Log
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
@@ -45,11 +43,13 @@ class MusicPlayerPlaybackPreparer(
                         val author = it.getString("author")!!
                         val url = it.getString("url")!!
                         val coverUrl = it.getString("coverUrl")!!
+                        val bigCoverUrl = it.getString("bigCoverUrl")
+
                         var isFavorite:Boolean? = null;
                         if(it.containsKey(PlayerPlugin.IS_FAVORITE_ARGUMENT)){
                             isFavorite = it.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT)
                         }
-                        mediaService.prepare(cookie, Media(name, author, url, coverUrl, isFavorite))
+                        mediaService.prepare(cookie, Media(name, author, url, coverUrl, bigCoverUrl,isFavorite))
                         return@let true
                     } ?: false
                 }
@@ -91,6 +91,7 @@ class MusicPlayerPlaybackPreparer(
                         val author = it.getString("author")!!
                         val url = it.getString("url")!!
                         val coverUrl = it.getString("coverUrl")!!
+                        val bigCoverUrl = it.getString("bigCoverUrl")
                         var isPlaying:Boolean? = null;
                         var isFavorite:Boolean? = null;
                         if(it.containsKey(PlayerPlugin.IS_PLAYING_ARGUMENT)){
@@ -99,7 +100,7 @@ class MusicPlayerPlaybackPreparer(
                         if(it.containsKey(PlayerPlugin.IS_FAVORITE_ARGUMENT)){
                             isFavorite = it.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT)
                         }
-                        mediaService.sendNotification(Media(name, author, url, coverUrl, isFavorite),isPlaying)
+                        mediaService.sendNotification(Media(name, author, url, coverUrl, bigCoverUrl, isFavorite),isPlaying)
                         return true
                     } ?: false
                 }
