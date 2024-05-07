@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -31,6 +33,9 @@ class PreRoll extends StatelessWidget {
         'height': 480,
       },
     };
+
+    debugPrint('[PREROLL] Building PreRoll');
+
     return Container(
       constraints: BoxConstraints(
         maxHeight: maxHeight ?? MediaQuery.of(context).size.height,
@@ -89,6 +94,9 @@ class PreRoll extends StatelessWidget {
   }
 
   void _onPlatformViewCreated(int id) {
-    controller?.play();
+    debugPrint('Platform view created withs id: $id');
+    if (Platform.isAndroid) {
+      controller?.play();
+    }
   }
 }

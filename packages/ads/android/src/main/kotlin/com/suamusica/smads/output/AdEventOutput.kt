@@ -13,13 +13,13 @@ data class AdEventOutput(
         val creativeAdID: String = EMPTY_STRING,
         val creativeID: String = EMPTY_STRING,
         val dealID: String = EMPTY_STRING,
-        val duration: String = EMPTY_STRING,
-        val position: String = EMPTY_STRING,
+        val duration: Int = 0,
+        val position: Int = 0,
         val skippable: String = EMPTY_STRING,
         val skipTime: String = EMPTY_STRING
 ) {
 
-    fun toResult(): Map<String, String> {
+    fun toResult(): Map<String, Any?> {
         return mapOf(
                 TYPE_KEY to (type.suggestedName ?: type.name),
                 ID_KEY to id,
@@ -68,7 +68,7 @@ data class AdEventOutput(
             )
         }
 
-        fun fromAdEvent(adEvent: AdEvent, duration: Long = 0, position: Long = 0): AdEventOutput {
+        fun fromAdEvent(adEvent: AdEvent, duration: Int = 0, position: Int = 0): AdEventOutput {
             val ad = adEvent.ad
             val type = AdEventTypeOutput.getBy(adEvent.type)
             return ad?.let {
@@ -83,8 +83,8 @@ data class AdEventOutput(
                         creativeAdID = it.creativeAdId,
                         creativeID = it.creativeId,
                         dealID = it.dealId,
-                        duration =  it.duration.coerceAtLeast(duration.toDouble()).toLong().toString(),
-                        position = position.toString(),
+                        duration = duration,
+                        position = position,
                         skippable = it.isSkippable.toString(),
                         skipTime = it.skipTimeOffset.toString()
                 )

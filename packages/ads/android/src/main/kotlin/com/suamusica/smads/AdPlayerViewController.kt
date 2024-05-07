@@ -123,8 +123,9 @@ class AdPlayerViewController(
         if(adEvent.type == AdEvent.AdEventType.LOADED){
             Timber.d("onAdEvent(%s)", adEvent)
         }
-        val duration = adPlayerManager?.adsDuration()?.toDouble()?.let { ceil(it).toLong() } ?: 0L
-        val position = adPlayerManager?.adsCurrentPosition()?.toDouble()?.let { ceil(it).toLong() } ?: 0L
+
+        val duration = adPlayerManager?.adsDuration()?.toInt()?.let { ceil(it.toDouble()).toInt() } ?: 0
+        val position = adPlayerManager?.adsCurrentPosition()?.toInt()?.let { ceil(it.toDouble()).toInt() } ?: 0
         Timber.d("onAdEvent(duration=%s, position=%s)", duration, position)
         callback.onAddEvent(AdEventOutput.fromAdEvent(adEvent, duration, position))
     }

@@ -361,8 +361,6 @@
 						<key>type</key>
 						<string>Apple Development</string>
 					</dict>
-					<key>name</key>
-					<string>PureLayout.framework</string>
 					<key>team</key>
 					<dict>
 						<key>id</key>

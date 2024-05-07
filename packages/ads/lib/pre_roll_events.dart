@@ -35,6 +35,8 @@ extension ParseToPreRollEvent on String {
         return PreRollEvent.ALL_ADS_COMPLETED;
       case "CLICKED":
         return PreRollEvent.CLICKED;
+      // iOS sends "COMPLETE" instead of "COMPLETED"
+      case "COMPLETE":
       case "COMPLETED":
         return PreRollEvent.COMPLETED;
       case "CUEPOINTS_CHANGED":
@@ -51,8 +53,12 @@ extension ParseToPreRollEvent on String {
         return PreRollEvent.AD_BREAK_READY;
       case "MIDPOINT":
         return PreRollEvent.MIDPOINT;
+      // iOS sends "PAUSE" instead of "PAUSED"
+      case "PAUSE":
       case "PAUSED":
         return PreRollEvent.PAUSED;
+      // iOS sends "RESUME" instead of "RESUMED"
+      case "RESUME":
       case "RESUMED":
         return PreRollEvent.RESUMED;
       case "SKIPPABLE_STATE_CHANGED":
@@ -89,7 +95,7 @@ extension ParseToPreRollEvent on String {
   }
 }
 
-extension ParseToString on PreRollEvent {
+extension PreRollEventX on PreRollEvent {
   String toShortString() {
     switch (this) {
       case PreRollEvent.ALL_ADS_COMPLETED:
