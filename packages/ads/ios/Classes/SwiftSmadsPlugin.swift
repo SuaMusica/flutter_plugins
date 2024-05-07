@@ -32,7 +32,6 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
     }
 
     public static func register(with registrar: FlutterPluginRegistrar) {
-        print("Registering plugin at registrar: \(registrar), datetime: \(Date()), SwiftSmadsPlugin.channel: \(String(describing: SwiftSmadsPlugin.channel))")
         SwiftSmadsPlugin.synced(self) {
             if SwiftSmadsPlugin.channel == nil {
                 SwiftSmadsPlugin.channel = FlutterMethodChannel(name: "suamusica/pre_roll", binaryMessenger: registrar.messenger())
@@ -136,48 +135,5 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
         objc_sync_enter(lock)
         closure()
         objc_sync_exit(lock)
-    }
-}
-
-class FLNativeViewFactory: NSObject, FlutterPlatformViewFactory {
-    private var messenger: FlutterBinaryMessenger
-    private var controller: AdsViewController
-    
-    init(messenger: FlutterBinaryMessenger, controller:AdsViewController) {
-        self.messenger = messenger
-        self.controller = controller
-        super.init()
-    }
-    
-    func create(
-        withFrame frame: CGRect,
-        viewIdentifier viewId: Int64,
-        arguments args: Any?
-    ) -> FlutterPlatformView {
-        return FLNativeView(
-            frame: frame,
-            viewIdentifier: viewId,
-            arguments: args,
-            binaryMessenger: messenger,
-            controller: controller)
-    }
-}
-
-class FLNativeView: NSObject, FlutterPlatformView {
-    private var controller: AdsViewController
-
-    init(
-        frame: CGRect,
-        viewIdentifier viewId: Int64,
-        arguments args: Any?,
-        binaryMessenger messenger: FlutterBinaryMessenger?,
-        controller:AdsViewController
-    ) {
-        self.controller = controller
-        super.init()
-    }
-
-    func view() -> UIView {
-        return controller.view
     }
 }

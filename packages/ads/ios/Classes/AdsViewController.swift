@@ -75,6 +75,15 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
 
         requestAds()
 
+        if (self.videoView.frame.width > self.view.frame.width) {
+            self.videoView.frame = CGRect(
+                x: 0,
+                y: 0,
+                width: self.view.frame.width,
+                height: self.view.frame.width/1.333333333
+            )
+        }
+
         isRegistered = true
     }
     
