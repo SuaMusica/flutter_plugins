@@ -44,11 +44,11 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
             adsViewController = AdsViewController.instantiateFromNib()
             
             let viewFactory = FLNativeViewFactory(
-                messenger: SwiftSmadsPlugin.registrarAds?.messenger(),
+                messenger: SwiftSmadsPlugin.registrarAds!.messenger(),
                 controller: adsViewController!
             )
 
-             SwiftSmadsPlugin.registrarAds?.register(viewFactory, withId: "suamusica/pre_roll_view")
+             SwiftSmadsPlugin.registrarAds!.register(viewFactory, withId: "suamusica/pre_roll_view")
 
             verifyNetworkAccess()
         }
