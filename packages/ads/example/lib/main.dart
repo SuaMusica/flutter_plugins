@@ -313,3 +313,12 @@ class PreRollNotifier extends ChangeNotifier {
     }
   }
 }
+
+// android
+// [PREROLL]: Event: PreRollEvent.ERROR, args: {type: ERROR, error.code: VAST_LOAD_TIMEOUT, error.message: Ad request reached a timeout. Caused by: 8}
+
+// ios 
+// flutter: [PREROLL]: Event: PreRollEvent.LOADED, args: {ad.title: External - Single Inline Linear Skippable, ad.contentType: video/mp4, ad.creativeID: 138382063765, ad.dealID: , ad.system: GDFP, ad.description: External - Single Inline Linear Skippable ad, ad.id: 5926628810, ad.advertiserName: , type: LOADED, ad.creativeAdID: }
+// flutter: [PREROLL]: Event: PreRollEvent.ERROR, args: {type: ERROR, error.code: VAST_MEDIA_LOAD_TIMEOUT, error.message: VAST media file loading reached a timeout of 8 seconds.}
+// flutter: [PREROLL]: Event: PreRollEvent.PAUSED, args: {type: PAUSE, ad.title: External - Single Inline Linear Skippable, ad.advertiserName: , ad.dealID: , ad.id: 5926628810, ad.creativeAdID: , ad.system: GDFP, ad.description: External - Single Inline Linear Skippable ad, ad.contentType: video/mp4, ad.creativeID: 138382063765}
+// flutter: [PREROLL]: Event: PreRollEvent.ALL_ADS_COMPLETED, args: {ad.creativeID: 138382063765, ad.creativeAdID: , ad.description: External - Single Inline Linear Skippable ad, ad.contentType: video/mp4, ad.system: GDFP, ad.advertiserName: , type: ALL_ADS_COMPLETED, ad.title: External - Single Inline Linear Skippable, ad.dealID: , ad.id: 5926628810}
