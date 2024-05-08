@@ -265,7 +265,8 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
                 pictureInPictureProxy: pictureInPictureProxy!,
                 userContext: nil)
 
-            request.vastLoadTimeout = 30000
+            /// `vastLoadTimeout` - `milliseconds`
+            request.vastLoadTimeout = 8000
 
             adsLoader?.requestAds(with: request)
         } else {
@@ -292,7 +293,9 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         
         // Create ads rendering settings and tell the SDK to use the in-app browser.
         let adsRenderingSettings = IMAAdsRenderingSettings()
-        adsRenderingSettings.loadVideoTimeout = 300
+
+        /// `loadVideoTimeout` - `seconds`
+        adsRenderingSettings.loadVideoTimeout = 8
 
         // Commenting this line to open the click in safari Until Apple fixes the Bug!
 //        adsRenderingSettings.webOpenerPresentingController = self
