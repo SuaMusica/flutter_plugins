@@ -183,16 +183,17 @@ class _MyAppState extends State<MyApp> {
               ),
             ),
             Divider(),
-            StreamBuilder<bool>(
-                stream: _streamController.stream,
-                builder: (context, snapshot) {
-                  debugPrint('teste snapshot: ${snapshot.data}');
-                  return snapshot.hasData && snapshot.data!
-                      ? PreRollUI(
-                          controller: controller,
-                        )
-                      : SizedBox.shrink();
-                }),
+            // StreamBuilder<bool>(
+            //     stream: _streamController.stream,
+            //     builder: (context, snapshot) {
+            //       debugPrint('teste snapshot: ${snapshot.data}');
+            //       return snapshot.hasData && snapshot.data!
+            //           ? PreRollUI(
+            //               controller: controller,
+            //             )
+            //           : SizedBox.shrink();
+            //     }),
+            PreRollUI(controller: controller),
           ],
         ),
       ),
@@ -245,7 +246,8 @@ const videoTarget = {
   "ppid": "6d83fd8be4872555440fab67103896c8bee7b064b1b3ab0260f503c8dfc76e39",
   "__URL__":
       // "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480%7C400x300%7C730x400&iu=/7090806/Suamusica.com.br-ROA-Preroll&impl=s&gdfp_req=1&env=instream&output=vast&unviewed_position_start=1&description_url=http%3A%2F%2Fwww.suamusica.com.br%2F&correlator=&tfcd=0&npa=0&ad_type=video_audio&vad_type=linear&ciu_szs=300x250&cust_params=teste%3D1",
-      "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=",
+      //  "https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/single_ad_samples&ciu_szs=300x250&impl=s&gdfp_req=1&env=vp&output=vast&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ct%3Dlinear&correlator=",
+      "https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/single_preroll_skippable&sz=640x480&ciu_szs=300x250%2C728x90&gdfp_req=1&output=vast&unviewed_position_start=1&env=vp&impl=s&correlator=",
   "__CONTENT__": "https://assets.suamusica.com.br/video/virgula.mp3",
 };
 
@@ -311,3 +313,12 @@ class PreRollNotifier extends ChangeNotifier {
     }
   }
 }
+
+// android
+// [PREROLL]: Event: PreRollEvent.ERROR, args: {type: ERROR, error.code: VAST_LOAD_TIMEOUT, error.message: Ad request reached a timeout. Caused by: 8}
+
+// ios 
+// flutter: [PREROLL]: Event: PreRollEvent.LOADED, args: {ad.title: External - Single Inline Linear Skippable, ad.contentType: video/mp4, ad.creativeID: 138382063765, ad.dealID: , ad.system: GDFP, ad.description: External - Single Inline Linear Skippable ad, ad.id: 5926628810, ad.advertiserName: , type: LOADED, ad.creativeAdID: }
+// flutter: [PREROLL]: Event: PreRollEvent.ERROR, args: {type: ERROR, error.code: VAST_MEDIA_LOAD_TIMEOUT, error.message: VAST media file loading reached a timeout of 8 seconds.}
+// flutter: [PREROLL]: Event: PreRollEvent.PAUSED, args: {type: PAUSE, ad.title: External - Single Inline Linear Skippable, ad.advertiserName: , ad.dealID: , ad.id: 5926628810, ad.creativeAdID: , ad.system: GDFP, ad.description: External - Single Inline Linear Skippable ad, ad.contentType: video/mp4, ad.creativeID: 138382063765}
+// flutter: [PREROLL]: Event: PreRollEvent.ALL_ADS_COMPLETED, args: {ad.creativeID: 138382063765, ad.creativeAdID: , ad.description: External - Single Inline Linear Skippable ad, ad.contentType: video/mp4, ad.system: GDFP, ad.advertiserName: , type: ALL_ADS_COMPLETED, ad.title: External - Single Inline Linear Skippable, ad.dealID: , ad.id: 5926628810}
