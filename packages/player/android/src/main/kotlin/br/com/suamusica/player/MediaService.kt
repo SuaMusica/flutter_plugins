@@ -1,10 +1,9 @@
 package br.com.suamusica.player
 
+//import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
 import android.annotation.SuppressLint
 import android.app.Notification
-import android.app.PendingIntent
 import android.app.Service
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -15,42 +14,35 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.PowerManager
-import android.support.v4.media.MediaBrowserCompat
-import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
-import androidx.annotation.OptIn
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import androidx.media.session.MediaButtonReceiver
+import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.Player.DISCONTINUITY_REASON_SEEK
 import androidx.media3.common.Timeline
 import androidx.media3.common.Tracks
-import androidx.media3.common.AudioAttributes
-import androidx.media3.common.MediaMetadata
-import androidx.media3.common.MediaMetadata.PICTURE_TYPE_FRONT_COVER
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.util.Util
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.FileDataSource
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.session.CommandButton
 import androidx.media3.session.MediaController
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionCommand
-//import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.FutureTarget
@@ -189,25 +181,35 @@ class MediaService : MediaSessionService() {
 
         player?.let {
             mediaSession = MediaSession.Builder(this, it)
-//                .setCustomLayout(
-//                    ImmutableList.of(
+                .setCustomLayout(
+                    ImmutableList.of(
 //                        CommandButton.Builder()
-//                            .setDisplayName("Save to favorites")
-//                            .setIconResId(R.drawable.ic_favorite_notification_player)
-//                            .setSessionCommand(SessionCommand("Favoritar", Bundle()))
+//                            .setDisplayName("Empty")
+//                            .setIconResId(R.drawable.ic_play_notification_player)
+//                            .setSessionCommand(SessionCommand("NEXT", Bundle()))
 //                            .build(),
+
+                        CommandButton.Builder()
+                            .setDisplayName("Save to favorites")
+                            .setIconResId(R.drawable.ic_favorite_notification_player)
+                            .setSessionCommand(SessionCommand("Favoritar", Bundle()))
+                            .build(),
+
 //                        CommandButton.Builder()
 //                            .setDisplayName("PREVIOUS")
-//                            .setIconResId(R.drawable.ic_prev_notification_player)
-//                            .setSessionCommand(SessionCommand("NEXT", Bundle()))
+//                            .setIconResId(androidx.media3.ui.R.drawable.exo_icon_pause)
+//                            .setPlayerCommand(Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
 //                            .build(),
-//                        CommandButton.Builder()
-//                            .setDisplayName("NEXT")
-//                            .setIconResId(R.drawable.ic_next_notification_player)
-//                            .setSessionCommand(SessionCommand("NEXT", Bundle()))
-//                            .build()
-//                    )
-//                )
+
+                        CommandButton.Builder()
+                            .setDisplayName("NEXT")
+                            .setIconResId(R.drawable.ic_next_notification_player)
+                            .setSessionCommand(SessionCommand("NEXT", Bundle()))
+                            .build(),
+
+
+                    )
+                )
                 .setCallback(MediaButtonEventHandler(this)).build()
         }
 

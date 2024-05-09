@@ -115,43 +115,43 @@ class NotificationBuilder(private val context: Context) {
             mediaSession.player.currentPosition
         val shouldUseMetadata = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
 
-        isFavorite?.let {
-            builder.addAction(if (it) unFavoriteAction else favoriteAction)
-        }
-
-        builder.addAction(skipToPreviousAction)
-        when {
-            isPlayingExternal != null -> {
-                if (isPlayingExternal) {
-                    builder.addAction(pauseAction)
-                } else {
-                    builder.addAction(playAction)
-                }
-            }
-
-            //TODO: adicionar a variavel correta antes era um getter
-            mediaSession.player.isPlaying -> {
-                Log.i("NotificationBuilder", "Player is playing... onGoing: $onGoing")
-                builder.addAction(pauseAction)
-            }
-
-            //TODO: adicionar a variavel correta antes era um getter
-            mediaSession.player.isPlaying -> {
-                Log.i("NotificationBuilder", "Player is NOT playing... onGoing: $onGoing")
-                builder.addAction(playAction)
-            }
-
-            else -> {
-                Log.i("NotificationBuilder", "ELSE")
-                builder.addAction(playAction)
-            }
-        }
-
-        builder.addAction(skipToNextAction)
+//        isFavorite?.let {
+//            builder.addAction(if (it) unFavoriteAction else favoriteAction)
+//        }
+//
+//        builder.addAction(skipToPreviousAction)
+//        when {
+//            isPlayingExternal != null -> {
+//                if (isPlayingExternal) {
+//                    builder.addAction(pauseAction)
+//                } else {
+//                    builder.addAction(playAction)
+//                }
+//            }
+//
+//            //TODO: adicionar a variavel correta antes era um getter
+//            mediaSession.player.isPlaying -> {
+//                Log.i("NotificationBuilder", "Player is playing... onGoing: $onGoing")
+//                builder.addAction(pauseAction)
+//            }
+//
+//            //TODO: adicionar a variavel correta antes era um getter
+//            mediaSession.player.isPlaying -> {
+//                Log.i("NotificationBuilder", "Player is NOT playing... onGoing: $onGoing")
+//                builder.addAction(playAction)
+//            }
+//
+//            else -> {
+//                Log.i("NotificationBuilder", "ELSE")
+//                builder.addAction(playAction)
+//            }
+//        }
+//
+//        builder.addAction(skipToNextAction)
 
         val mediaStyle = MediaStyleNotificationHelper.MediaStyle(mediaSession)
             .setCancelButtonIntent(stopPendingIntent)
-            .setShowActionsInCompactView(*actions.toIntArray())
+//            .setShowActionsInCompactView(*actions.toIntArray())
             .setShowCancelButton(true)
 
 //        if (shouldUseMetadata && currentDuration != duration) {

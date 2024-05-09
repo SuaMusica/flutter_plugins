@@ -6,6 +6,10 @@ import android.util.Log
 import android.view.KeyEvent
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.Player.COMMAND_SEEK_TO_NEXT
+import androidx.media3.common.Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM
+import androidx.media3.common.Player.COMMAND_SEEK_TO_PREVIOUS
+import androidx.media3.common.Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionCommand
@@ -31,8 +35,15 @@ class MediaButtonEventHandler(
             .add(SessionCommand("play", Bundle.EMPTY))
             .add(SessionCommand("send_notification", session.token.extras))
             .build()
+        val playerCommands =
+            MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS.buildUpon()
+                .remove(COMMAND_SEEK_TO_PREVIOUS)
+                .remove(COMMAND_SEEK_TO_NEXT)
+                .build()
+
         return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
             .setAvailableSessionCommands(sessionCommands)
+            .setAvailablePlayerCommands(playerCommands)
             .build()
     }
 
