@@ -9,6 +9,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.media.MediaMetadata
 import android.os.Build
+import android.os.Bundle
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat.*
@@ -17,8 +18,14 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.session.CommandButton
+import androidx.media3.session.MediaSession
+import androidx.media3.session.MediaStyleNotificationHelper
+import androidx.media3.session.SessionCommand
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
+import com.google.common.collect.ImmutableList
 import kotlinx.coroutines.*
 import java.util.*
 
@@ -26,7 +33,7 @@ const val NOW_PLAYING_CHANNEL: String = "br.com.suamusica.media.NOW_PLAYING"
 const val NOW_PLAYING_NOTIFICATION: Int = 0xb339
 const val FAVORITE: String = "favorite"
 
-/**
+@UnstableApi /**
  * Helper class to encapsulate code for building notifications.
  */
 class NotificationBuilder(private val context: Context) {
@@ -84,7 +91,7 @@ class NotificationBuilder(private val context: Context) {
 
 
     fun buildNotification(
-        mediaSession: MediaSessionCompat,
+        mediaSession: MediaSession,
         media: Media?,
         onGoing: Boolean,
         isPlayingExternal: Boolean?,
@@ -95,7 +102,8 @@ class NotificationBuilder(private val context: Context) {
         if (shouldCreateNowPlayingChannel()) {
             createNowPlayingChannel()
         }
-        val playbackState = mediaSession.controller.playbackState
+        Log.i("NotificationBuilder", "buildNotification")
+        val playbackState = mediaSession.player.duration
         val builder = NotificationCompat.Builder(context, NOW_PLAYING_CHANNEL)
         val actions = if (isFavorite == null) mutableListOf(0, 1, 2) else mutableListOf(
             0,
@@ -104,7 +112,7 @@ class NotificationBuilder(private val context: Context) {
         ) // favorite,play/pause,next
         val duration = mediaDuration ?: 0L
         val currentDuration =
-            mediaSession.controller.metadata.getLong(MediaMetadata.METADATA_KEY_DURATION)
+            mediaSession.player.currentPosition
         val shouldUseMetadata = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
 
         isFavorite?.let {
@@ -121,12 +129,14 @@ class NotificationBuilder(private val context: Context) {
                 }
             }
 
-            playbackState.isPlaying -> {
+            //TODO: adicionar a variavel correta antes era um getter
+            mediaSession.player.isPlaying -> {
                 Log.i("NotificationBuilder", "Player is playing... onGoing: $onGoing")
                 builder.addAction(pauseAction)
             }
 
-            playbackState.isPlayEnabled -> {
+            //TODO: adicionar a variavel correta antes era um getter
+            mediaSession.player.isPlaying -> {
                 Log.i("NotificationBuilder", "Player is NOT playing... onGoing: $onGoing")
                 builder.addAction(playAction)
             }
@@ -139,24 +149,23 @@ class NotificationBuilder(private val context: Context) {
 
         builder.addAction(skipToNextAction)
 
-        val mediaStyle = MediaStyle()
+        val mediaStyle = MediaStyleNotificationHelper.MediaStyle(mediaSession)
             .setCancelButtonIntent(stopPendingIntent)
             .setShowActionsInCompactView(*actions.toIntArray())
             .setShowCancelButton(true)
-            .setMediaSession(mediaSession.sessionToken)
 
-        if (shouldUseMetadata && currentDuration != duration) {
-            mediaSession.setMetadata(
-                MediaMetadataCompat.Builder()
-                    .putString(MediaMetadata.METADATA_KEY_TITLE, media?.name ?: "Propaganda")
-                    .putString(MediaMetadata.METADATA_KEY_ARTIST, media?.author ?: "")
-                    .putBitmap(
-                        MediaMetadata.METADATA_KEY_ALBUM_ART, art
-                    )
-                    .putLong(MediaMetadata.METADATA_KEY_DURATION, duration) // 4
-                    .build()
-            )
-        }
+//        if (shouldUseMetadata && currentDuration != duration) {
+//            mediaSession.setMetadata(
+//                MediaMetadataCompat.Builder()
+//                    .putString(MediaMetadata.METADATA_KEY_TITLE, media?.name ?: "Propaganda")
+//                    .putString(MediaMetadata.METADATA_KEY_ARTIST, media?.author ?: "")
+//                    .putBitmap(
+//                        MediaMetadata.METADATA_KEY_ALBUM_ART, art
+//                    )
+//                    .putLong(MediaMetadata.METADATA_KEY_DURATION, duration) // 4
+//                    .build()
+//            )
+//        }
 
 
         val notifyIntent = Intent("SUA_MUSICA_FLUTTER_NOTIFICATION_CLICK").apply {
