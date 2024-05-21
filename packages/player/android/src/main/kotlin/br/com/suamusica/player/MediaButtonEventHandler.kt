@@ -6,14 +6,17 @@ import android.util.Log
 import android.view.KeyEvent
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.Player.COMMAND_PLAY_PAUSE
 import androidx.media3.common.Player.COMMAND_SEEK_TO_NEXT
 import androidx.media3.common.Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM
 import androidx.media3.common.Player.COMMAND_SEEK_TO_PREVIOUS
 import androidx.media3.common.Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.session.CommandButton
 import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
+import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 
@@ -27,24 +30,64 @@ class MediaButtonEventHandler(
     ): MediaSession.ConnectionResult {
         Log.d("Player", "onConnect")
         val sessionCommands = MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
-            .add(SessionCommand("NEXT", Bundle.EMPTY))
+            .add(SessionCommand("next", Bundle.EMPTY))
             .add(SessionCommand("seek", session.token.extras))
-            .add(SessionCommand("PREVIOUS", Bundle.EMPTY))
-            .add(SessionCommand("Favoritar", Bundle.EMPTY))
+            .add(SessionCommand("previous", Bundle.EMPTY))
+            .add(SessionCommand("pause", Bundle.EMPTY))
+            .add(SessionCommand("favoritar", Bundle()))
             .add(SessionCommand("prepare", session.token.extras))
             .add(SessionCommand("play", Bundle.EMPTY))
+            .add(SessionCommand("remove_notification", Bundle.EMPTY))
             .add(SessionCommand("send_notification", session.token.extras))
+            .remove(SessionCommand("previous", Bundle.EMPTY))
             .build()
-        val playerCommands =
-            MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS.buildUpon()
-                .remove(COMMAND_SEEK_TO_PREVIOUS)
-                .remove(COMMAND_SEEK_TO_NEXT)
-                .build()
+
+//        val playerCommands =
+//            MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS.buildUpon()
+//                .remove(COMMAND_SEEK_TO_NEXT)
+//                .remove(COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
+//                .remove(COMMAND_SEEK_TO_PREVIOUS)
+//                .remove(COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
+//                .build()
 
         return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
             .setAvailableSessionCommands(sessionCommands)
-            .setAvailablePlayerCommands(playerCommands)
+//            .setAvailablePlayerCommands(playerCommands)
             .build()
+    }
+
+//    override fun onPostConnect(session: MediaSession, controller: MediaSession.ControllerInfo) {
+//        super.onPostConnect(session, controller)
+//        if (notificationPlayerCustomCommandButtons.isNotEmpty()) {
+//            /* Setting custom player command buttons to mediaLibrarySession for player notification. */
+//            mediaLibrarySession.setCustomLayout(notificationPlayerCustomCommandButtons)
+//        }
+//    }
+
+    override fun onPlaybackResumption(
+        mediaSession: MediaSession,
+        controller: MediaSession.ControllerInfo
+    ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+        Log.d("Player", "TESTE1 onPlaybackResumption")
+        return super.onPlaybackResumption(mediaSession, controller)
+    }
+
+
+    override fun onSetMediaItems(
+        mediaSession: MediaSession,
+        controller: MediaSession.ControllerInfo,
+        mediaItems: MutableList<MediaItem>,
+        startIndex: Int,
+        startPositionMs: Long
+    ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+        Log.d("Player", "TESTE1 onSetMediaItems")
+        return super.onSetMediaItems(
+            mediaSession,
+            controller,
+            mediaItems,
+            startIndex,
+            startPositionMs
+        )
     }
 
     override fun onAddMediaItems(
@@ -52,9 +95,10 @@ class MediaButtonEventHandler(
         controller: MediaSession.ControllerInfo,
         mediaItems: MutableList<MediaItem>
     ): ListenableFuture<MutableList<MediaItem>> {
-        Log.d("Player", "onAddMediaItems")
+        Log.d("Player", "TESTE1 onAddMediaItems")
         return super.onAddMediaItems(mediaSession, controller, mediaItems)
     }
+
 
     override fun onCustomCommand(
         session: MediaSession,
@@ -62,8 +106,8 @@ class MediaButtonEventHandler(
         customCommand: SessionCommand,
         args: Bundle
     ): ListenableFuture<SessionResult> {
+        Log.d("Player", "TESTE1 CUSTOM_COMMAND: ${customCommand.customAction} | $args")
         if (customCommand.customAction == "send_notification") {
-            Log.d("Player", "send_notification2")
             args.let {
                 val name = it.getString(PlayerPlugin.NAME_ARGUMENT)!!
                 val author = it.getString(PlayerPlugin.AUTHOR_ARGUMENT)!!
@@ -72,6 +116,7 @@ class MediaButtonEventHandler(
                 val isPlaying = it.getBoolean(PlayerPlugin.IS_PLAYING_ARGUMENT)
                 val isFavorite = it.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT)
                 val bigCoverUrl = it.getString(PlayerPlugin.BIG_COVER_URL_ARGUMENT)
+                buildNotification(session, isFavorite, mediaService)
                 mediaService.sendNotification(
                     Media(
                         name,
@@ -88,30 +133,37 @@ class MediaButtonEventHandler(
         if (customCommand.customAction == "play") {
             mediaService.play()
         }
-        if (customCommand.customAction == "NEXT") {
+        if (customCommand.customAction == "pause") {
+            mediaService.pause()
+        }
+//        if (customCommand.customAction == "remove_notification") {
+//            mediaService.removeNotification()
+//        }
+        if (customCommand.customAction == "next") {
             PlayerSingleton.next()
         }
         if (customCommand.customAction == "seek") {
             mediaService.seek(args.getLong("position"), args.getBoolean("playWhenReady"))
         }
-        if (customCommand.customAction == "Favoritar") {
-            // Do custom logic here
-//        saveToFavorites(session.player.currentMediaItem)
-            PlayerSingleton.favorite(
-                session.player.currentMediaItem?.mediaMetadata?.extras?.getBoolean(
-                    FAVORITE,
-                    false
-                ) ?: false
+        if (customCommand.customAction == "favoritar") {
+            Log.d(
+                "Player",
+                "TESTE1 Favoritar: ${args.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT)} | ${session.player.mediaMetadata.extras}"
             )
-
-//            mediaService.setFavorite(it.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT))
-
+            val shouldFavorite =
+                session.player.mediaMetadata.extras?.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT)
+                    ?: false
+            PlayerSingleton.favorite(!shouldFavorite)
+            session.player.mediaMetadata.extras?.putBoolean(
+                PlayerPlugin.IS_FAVORITE_ARGUMENT,
+                !shouldFavorite
+            )
+            buildNotification(session, !shouldFavorite, mediaService)
             return Futures.immediateFuture(
                 SessionResult(SessionResult.RESULT_SUCCESS)
             )
         }
         if (customCommand.customAction == "prepare") {
-            Log.d("Player", "prepare2")
             args.let {
                 val cookie = it.getString("cookie")!!
                 val name = it.getString("name")!!
@@ -123,6 +175,11 @@ class MediaButtonEventHandler(
                 if (it.containsKey(PlayerPlugin.IS_FAVORITE_ARGUMENT)) {
                     isFavorite = it.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT)
                 }
+                Log.d(
+                    "Player",
+                    "TESTE1 bigCoverUrl: $bigCoverUrl"
+                )
+                buildNotification(session, isFavorite ?: false, mediaService)
                 mediaService.prepare(
                     cookie,
                     Media(name, author, url, coverUrl, bigCoverUrl, isFavorite)
@@ -193,4 +250,43 @@ class MediaButtonEventHandler(
         }
 
     }
+
+
+}
+
+@UnstableApi
+fun buildNotification(session: MediaSession, shouldFavorite: Boolean, mediaService: MediaService) {
+//    val extras = Bundle()
+//    extras.putInt(PlayerPlugin.IS_FAVORITE_ARGUMENT, session.player.mediaMetadata.extras)
+
+    mediaService.mediaSession?.setCustomLayout(
+        ImmutableList.of(
+            CommandButton.Builder()
+                .setDisplayName("Save to favorites")
+                .setIconResId(
+                    if (shouldFavorite) {
+                        R.drawable.ic_unfavorite_notification_player
+                    } else {
+                        R.drawable.ic_favorite_notification_player
+                    }
+                )
+                .setSessionCommand(
+                    SessionCommand(
+                        "favoritar",
+                        session.player.mediaMetadata.extras ?: Bundle.EMPTY
+                    )
+                )
+                .build(),
+            CommandButton.Builder()
+                .setDisplayName("previous")
+                .setIconResId(androidx.media3.session.R.drawable.media3_notification_seek_to_previous)
+                .setSessionCommand(SessionCommand("previous", Bundle.EMPTY))
+                .build(),
+            CommandButton.Builder()
+                .setDisplayName("NEXT")
+                .setIconResId(androidx.media3.session.R.drawable.media3_notification_seek_to_next)
+                .setSessionCommand(SessionCommand("next", Bundle.EMPTY))
+                .build(),
+        )
+    )
 }

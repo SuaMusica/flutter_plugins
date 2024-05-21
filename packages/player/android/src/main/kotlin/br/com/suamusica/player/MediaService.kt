@@ -25,6 +25,7 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.MediaMetadata.PICTURE_TYPE_FRONT_COVER
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
@@ -37,12 +38,14 @@ import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.FileDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.session.CommandButton
 import androidx.media3.session.MediaController
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionCommand
+import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.FutureTarget
@@ -57,6 +60,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import androidx.media3.session.DefaultMediaNotificationProvider
 
 @UnstableApi
 class MediaService : MediaSessionService() {
@@ -65,12 +69,10 @@ class MediaService : MediaSessionService() {
         "SuaMusica/player (Linux; Android ${Build.VERSION.SDK_INT}; ${Build.BRAND}/${Build.MODEL})"
     private var packageValidator: PackageValidator? = null
     private var media: Media? = null
-    private var notificationBuilder: NotificationBuilder? = null
-    private var notificationManager: NotificationManagerCompat? = null
     private var isForegroundService = false
     private var wifiLock: WifiManager.WifiLock? = null
     private var wakeLock: PowerManager.WakeLock? = null
-    private var mediaSession: MediaSession? = null
+    var mediaSession: MediaSession? = null
     private var mediaController: ListenableFuture<MediaController>? = null
 
     private val uAmpAudioAttributes = AudioAttributes.Builder()
@@ -143,8 +145,6 @@ class MediaService : MediaSessionService() {
     override fun onCreate() {
         super.onCreate()
         packageValidator = PackageValidator(applicationContext, R.xml.allowed_media_browser_callers)
-        notificationBuilder = NotificationBuilder(this)
-        notificationManager = NotificationManagerCompat.from(this)
         wifiLock = (applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager)
             .createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "suamusica:wifiLock")
         wakeLock = (applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager)
@@ -175,43 +175,57 @@ class MediaService : MediaSessionService() {
             addListener(playerEventListener())
             // setWakeMode(C.WAKE_MODE_NETWORK)
             setHandleAudioBecomingNoisy(true)
+
         }
 
+        val extras = Bundle()
+        extras.putInt("TESTE1", 1)
+
+        val actions = ImmutableList.of(
+            CommandButton.Builder()
+                .setDisplayName("Save to favorites")
+                .setIconResId(R.drawable.ic_favorite_notification_player)
+                .setSessionCommand(SessionCommand("favoritar", Bundle()))
+                .build(),
+            CommandButton.Builder()
+                .setDisplayName("previous")
+                .setIconResId(androidx.media3.session.R.drawable.media3_notification_seek_to_previous)
+                .setSessionCommand(SessionCommand("previous", Bundle.EMPTY))
+                .build(),
+            CommandButton.Builder()
+                .setDisplayName("NEXT")
+                .setIconResId(androidx.media3.session.R.drawable.media3_notification_seek_to_next)
+                .setSessionCommand(SessionCommand("next", Bundle.EMPTY))
+                .build(),
+        )
 
 
         player?.let {
             mediaSession = MediaSession.Builder(this, it)
                 .setCustomLayout(
-                    ImmutableList.of(
-//                        CommandButton.Builder()
-//                            .setDisplayName("Empty")
-//                            .setIconResId(R.drawable.ic_play_notification_player)
-//                            .setSessionCommand(SessionCommand("NEXT", Bundle()))
-//                            .build(),
-
-                        CommandButton.Builder()
-                            .setDisplayName("Save to favorites")
-                            .setIconResId(R.drawable.ic_favorite_notification_player)
-                            .setSessionCommand(SessionCommand("Favoritar", Bundle()))
-                            .build(),
-
-//                        CommandButton.Builder()
-//                            .setDisplayName("PREVIOUS")
-//                            .setIconResId(androidx.media3.ui.R.drawable.exo_icon_pause)
-//                            .setPlayerCommand(Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
-//                            .build(),
-
-                        CommandButton.Builder()
-                            .setDisplayName("NEXT")
-                            .setIconResId(R.drawable.ic_next_notification_player)
-                            .setSessionCommand(SessionCommand("NEXT", Bundle()))
-                            .build(),
-
-
-                    )
+                    actions
                 )
                 .setCallback(MediaButtonEventHandler(this)).build()
         }
+
+//        setMediaNotificationProvider(
+//            DefaultMediaNotificationProvider(this, , NOW_PLAYING_NOTIFICATION,NOW_PLAYING_CHANNEL )
+//                .apply {
+//                    setSmallIcon(R.drawable.small_icon)
+//                }
+//        )
+
+        val notification = DefaultMediaNotificationProvider(this, { NOW_PLAYING_NOTIFICATION }, NOW_PLAYING_CHANNEL, 123)
+            .apply {
+                setSmallIcon(R.drawable.ic_notification)
+                addSession(mediaSession!!)
+
+            }
+
+        setMediaNotificationProvider(
+            notification
+        )
+
 
 //        mediaSession?.let { mediaSession ->
 //            val sessionToken = mediaSession.sessionToken
@@ -274,7 +288,6 @@ class MediaService : MediaSessionService() {
     }
 
     override fun onDestroy() {
-        removeNotification()
         Log.d(TAG, "onDestroy")
 //        mediaController?.unregisterCallback(mediaControllerCallback)
         releaseLock()
@@ -295,8 +308,6 @@ class MediaService : MediaSessionService() {
 
     private fun releasePossibleLeaks() {
         player?.release()
-        notificationManager = null
-        notificationBuilder = null
         packageValidator = null
         mediaSession = null
         mediaController = null
@@ -364,13 +375,16 @@ class MediaService : MediaSessionService() {
 //            putBitmap(MediaMetadataCompat.METADATA_KEY_ART, art)
 //            putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON, art)
 //        }
+        val bundle = Bundle()
+        bundle.putBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT, media.isFavorite ?: false)
         metadataBuilder.apply {
             setAlbumTitle(media.name)
             setArtist(media.author)
-//            setArtworkData(art,PICTURE_TYPE_FRONT_COVER)
+            setArtworkData(art,PICTURE_TYPE_FRONT_COVER)
             setArtist(media.author)
             setTitle(media.name)
             setDisplayTitle(media.name)
+            setExtras(bundle)
 //            putString(MediaMetadataCompat.METADATA_KEY_ARTIST, media.author)
 //            putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, media.name)
 //            putBitmap(MediaMetadataCompat.METADATA_KEY_ART, art)
@@ -404,458 +418,458 @@ class MediaService : MediaSessionService() {
 //            mediaSessionConnector?.setQueueNavigator(timelineQueueNavigator)
         }
         val metadata = metadataBuilder.build()
-            val url = media.url
-            Log.i(TAG, "Player: URL: $url")
+        val url = media.url
+        Log.i(TAG, "Player: URL: $url")
 
-            val uri = if (url.startsWith("/")) Uri.fromFile(File(url)) else Uri.parse(url)
-            val mediaItem = MediaItem.Builder()
-                .setUri(uri)
-                .setMediaMetadata(metadata)
-                .build()
-            @C.ContentType val type = Util.inferContentType(uri)
-            Log.i(TAG, "Player: Type: $type HLS: ${C.TYPE_HLS}")
-            val source = when (type) {
-//                C.CONTENT_TYPE_HLS -> HlsMediaSource.Factory(dataSourceFactory)
-//                    .setPlaylistParserFactory(SMHlsPlaylistParserFactory())
-//                    .setAllowChunklessPreparation(true)
-//                    .createMediaSource(MediaItem.fromUri(uri))
+        val uri = if (url.startsWith("/")) Uri.fromFile(File(url)) else Uri.parse(url)
+        val mediaItem = MediaItem.Builder()
+            .setUri(uri)
+            .setMediaMetadata(metadata)
+            .build()
+        @C.ContentType val type = Util.inferContentType(uri)
+        Log.i(TAG, "Player: Type: $type HLS: ${C.CONTENT_TYPE_HLS}")
+        val source = when (type) {
+                C.CONTENT_TYPE_HLS -> HlsMediaSource.Factory(dataSourceFactory)
+                    .setPlaylistParserFactory(SMHlsPlaylistParserFactory())
+                    .setAllowChunklessPreparation(true)
+                    .createMediaSource(mediaItem)
 
-                C.CONTENT_TYPE_OTHER -> {
-                    Log.i(TAG, "Player: URI: $uri")
-                    val factory: DataSource.Factory =
-                        if (uri.scheme != null && uri.scheme?.startsWith("http") == true) {
-                            dataSourceFactory
-                        } else {
-                            FileDataSource.Factory()
-                        }
+            C.CONTENT_TYPE_OTHER -> {
+                Log.i(TAG, "Player: URI: $uri")
+                val factory: DataSource.Factory =
+                    if (uri.scheme != null && uri.scheme?.startsWith("http") == true) {
+                        dataSourceFactory
+                    } else {
+                        FileDataSource.Factory()
+                    }
 
-                    ProgressiveMediaSource.Factory(factory)
-                        .createMediaSource(MediaItem.fromUri(uri))
-                }
-
-                else -> {
-                    throw IllegalStateException("Unsupported type: $type")
-                }
+                ProgressiveMediaSource.Factory(factory)
+                    .createMediaSource(mediaItem)
             }
-            player?.pause()
-            player?.prepare(source)
-        }
 
+            else -> {
+                throw IllegalStateException("Unsupported type: $type")
+            }
+        }
+        player?.pause()
+        player?.prepare(source)
+    }
+
+    //    }
+    fun play() {
+        performAndEnableTracking {
+            player?.play()
+        }
+    }
+
+    fun adsPlaying() {
+        getArts(applicationContext, null) { bitmap ->
+            this.media = Media("Propaganda", "", "", "", null, null)
+//            val notification =
+//                buildNotification(PlaybackStateCompat.STATE_PLAYING, true, bitmap)
+//            notification?.let {
+//                notificationManager?.notify(NOW_PLAYING_NOTIFICATION, it)
+//                shouldStartService(it)
+//            }
+        }
+    }
+
+    fun sendCommand(type: String) {
+        val extra = Bundle()
+        extra.putString("type", type)
+        mediaSession?.setSessionExtras(extra)
+    }
+
+    fun setFavorite(favorite: Boolean?) {
+        media?.let {
+            this.media =
+                Media(it.name, it.author, it.url, it.coverUrl, it.bigCoverUrl, favorite)
+            sendNotification(this.media!!, null)
+        }
+    }
+
+    fun sendNotification(media: Media, isPlayingExternal: Boolean?) {
+        getArts(applicationContext, media.bigCoverUrl ?: media.coverUrl) { bitmap ->
+            mediaSession?.let {
+                val onGoing: Boolean = if (isPlayingExternal == null) {
+                    val state = player?.playbackState ?: PlaybackStateCompat.STATE_NONE
+                    state == PlaybackStateCompat.STATE_PLAYING || state == PlaybackStateCompat.STATE_BUFFERING
+                } else {
+                    isPlayingExternal
+                }
+                this.media = media
+//                val notification = notificationBuilder?.buildNotification(
+//                    it,
+//                    media,
+//                    onGoing,
+//                    isPlayingExternal,
+//                    media.isFavorite,
+//                    player?.duration, bitmap
+//                )
+//                notification?.let {
+//                    notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
+//                }
+            }
+        }
+    }
+
+//    fun removeNotification() {
+//        removeNowPlayingNotification();
 //    }
-        fun play() {
-            performAndEnableTracking {
+
+    fun seek(position: Long, playWhenReady: Boolean) {
+        player?.seekTo(position)
+        player?.playWhenReady = playWhenReady
+    }
+
+    fun pause() {
+        performAndDisableTracking {
+            player?.pause()
+        }
+    }
+
+    fun stop() {
+        performAndDisableTracking {
+            player?.stop()
+        }
+    }
+
+    fun togglePlayPause() {
+        performAndDisableTracking {
+            if (player?.isPlaying == true) {
+                player?.pause()
+            } else {
                 player?.play()
             }
         }
+    }
 
-        fun adsPlaying() {
-            getArts(applicationContext, null) { bitmap ->
-                this.media = Media("Propaganda", "", "", "", null, null)
-                val notification =
-                    buildNotification(PlaybackStateCompat.STATE_PLAYING, true, bitmap)
-                notification?.let {
-                    notificationManager?.notify(NOW_PLAYING_NOTIFICATION, it)
-                    shouldStartService(it)
-                }
-            }
+    fun release() {
+        performAndDisableTracking {
+            player?.stop()
         }
+    }
 
-        fun sendCommand(type: String) {
+//    private fun removeNowPlayingNotification() {
+//        Log.d(TAG, "removeNowPlayingNotification")
+//        Thread(Runnable {
+//            notificationManager?.cancel(NOW_PLAYING_NOTIFICATION)
+//        }).start()
+//
+//    }
+
+
+    private fun notifyPositionChange() {
+        var position = player?.currentPosition ?: 0L
+        val duration = player?.duration ?: 0L
+        position = if (position > duration) duration else position
+
+        if (duration > 0) {
             val extra = Bundle()
-            extra.putString("type", type)
+            extra.putString("type", "position")
+            extra.putLong("position", position)
+            extra.putLong("duration", duration)
             mediaSession?.setSessionExtras(extra)
         }
+    }
 
-        fun setFavorite(favorite: Boolean?) {
-            media?.let {
-                this.media =
-                    Media(it.name, it.author, it.url, it.coverUrl, it.bigCoverUrl, favorite)
-                sendNotification(this.media!!, null)
-            }
+    private fun startTrackingProgress() {
+        if (progressTracker != null) {
+            return
         }
+        this.progressTracker = ProgressTracker(Handler())
+    }
 
-        fun sendNotification(media: Media, isPlayingExternal: Boolean?) {
-            getArts(applicationContext, media.bigCoverUrl ?: media.coverUrl) { bitmap ->
-                mediaSession?.let {
-                    val onGoing: Boolean = if (isPlayingExternal == null) {
-                        val state = player?.playbackState ?: PlaybackStateCompat.STATE_NONE
-                        state == PlaybackStateCompat.STATE_PLAYING || state == PlaybackStateCompat.STATE_BUFFERING
-                    } else {
-                        isPlayingExternal
-                    }
-                    this.media = media
-                    val notification = notificationBuilder?.buildNotification(
-                        it,
-                        media,
-                        onGoing,
-                        isPlayingExternal,
-                        media.isFavorite,
-                        player?.duration, bitmap
-                    )
-                    notification?.let {
-                        notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
-                    }
-                }
-            }
-        }
+    private fun stopTrackingProgress() {
+        progressTracker?.stopTracking()
+        progressTracker = null
+    }
 
-        fun removeNotification() {
-            removeNowPlayingNotification();
-        }
-
-        fun seek(position: Long, playWhenReady: Boolean) {
-            player?.seekTo(position)
-            player?.playWhenReady = playWhenReady
-        }
-
-        fun pause() {
-            performAndDisableTracking {
-                player?.pause()
-            }
-        }
-
-        fun stop() {
-            performAndDisableTracking {
-                player?.stop()
-            }
-        }
-
-        fun togglePlayPause() {
-            performAndDisableTracking {
-                if (player?.isPlaying == true) {
-                    player?.pause()
-                } else {
-                    player?.play()
-                }
-            }
-        }
-
-        fun release() {
-            performAndDisableTracking {
-                player?.stop()
-            }
-        }
-
-        private fun removeNowPlayingNotification() {
-            Log.d(TAG, "removeNowPlayingNotification")
-            Thread(Runnable {
-                notificationManager?.cancel(NOW_PLAYING_NOTIFICATION)
-            }).start()
-
-        }
-
-
-        private fun notifyPositionChange() {
-            var position = player?.currentPosition ?: 0L
-            val duration = player?.duration ?: 0L
-            position = if (position > duration) duration else position
-
-            if (duration > 0) {
-                val extra = Bundle()
-                extra.putString("type", "position")
-                extra.putLong("position", position)
-                extra.putLong("duration", duration)
-                mediaSession?.setSessionExtras(extra)
-            }
-        }
-
-        private fun startTrackingProgress() {
-            if (progressTracker != null) {
-                return
-            }
-            this.progressTracker = ProgressTracker(Handler())
-        }
-
-        private fun stopTrackingProgress() {
-            progressTracker?.stopTracking()
-            progressTracker = null
-        }
-
-        private fun stopTrackingProgressAndPerformTask(callable: () -> Unit) {
-            if (progressTracker != null) {
-                progressTracker!!.stopTracking(callable)
-            } else {
-                callable()
-            }
-            progressTracker = null
-        }
-
-        private fun performAndEnableTracking(callable: () -> Unit) {
+    private fun stopTrackingProgressAndPerformTask(callable: () -> Unit) {
+        if (progressTracker != null) {
+            progressTracker!!.stopTracking(callable)
+        } else {
             callable()
-            startTrackingProgress()
         }
+        progressTracker = null
+    }
 
-        private fun performAndDisableTracking(callable: () -> Unit) {
-            callable()
-            stopTrackingProgress()
-        }
+    private fun performAndEnableTracking(callable: () -> Unit) {
+        callable()
+        startTrackingProgress()
+    }
 
-        private fun buildNotification(
-            updatedState: Int,
-            onGoing: Boolean,
-            art: Bitmap?
-        ): Notification? {
-            return if (updatedState != PlaybackStateCompat.STATE_NONE) {
-                mediaSession?.let {
-                    notificationBuilder?.buildNotification(
-                        it,
-                        media,
-                        onGoing,
-                        null,
-                        media?.isFavorite,
-                        player?.duration,
-                        art
-                    )
-                }
-            } else {
-                null
+    private fun performAndDisableTracking(callable: () -> Unit) {
+        callable()
+        stopTrackingProgress()
+    }
+
+//    fun buildNotification(
+//        updatedState: Int,
+//        onGoing: Boolean,
+//        art: Bitmap?
+//    ): Notification? {
+//        return if (updatedState != PlaybackStateCompat.STATE_NONE) {
+//            mediaSession?.let {
+//                notificationBuilder?.buildNotification(
+//                    it,
+//                    media,
+//                    onGoing,
+//                    null,
+//                    media?.isFavorite,
+//                    player?.duration,
+//                    art
+//                )
+//            }
+//        } else {
+//            null
+//        }
+//    }
+
+    private fun playerEventListener(): Player.Listener {
+        return object : Player.Listener {
+            override fun onTimelineChanged(timeline: Timeline, reason: Int) {
+                Log.i(TAG, "onTimelineChanged: timeline: $timeline reason: $reason")
             }
-        }
 
-        private fun playerEventListener(): Player.Listener {
-            return object : Player.Listener {
-                override fun onTimelineChanged(timeline: Timeline, reason: Int) {
-                    Log.i(TAG, "onTimelineChanged: timeline: $timeline reason: $reason")
-                }
+            override fun onTracksChanged(tracks: Tracks) {
+                Log.i(TAG, "onTracksChanged: ")
+            }
 
-                override fun onTracksChanged(tracks: Tracks) {
-                    Log.i(TAG, "onTracksChanged: ")
-                }
+            override fun onLoadingChanged(isLoading: Boolean) {
+                Log.i(TAG, "onLoadingChanged: isLoading: $isLoading")
+            }
 
-                override fun onLoadingChanged(isLoading: Boolean) {
-                    Log.i(TAG, "onLoadingChanged: isLoading: $isLoading")
-                }
-
-                override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
-                    Log.i(
-                        TAG,
-                        "onPlayerStateChanged: playWhenReady: $playWhenReady playbackState: $playbackState currentPlaybackState: ${player?.playbackState}"
-                    )
-                    if (playWhenReady) {
-                        val duration = player?.duration ?: 0L
-                        acquireLock(
-                            if (duration > 1L) duration + TimeUnit.MINUTES.toMillis(2) else TimeUnit.MINUTES.toMillis(
-                                3
-                            )
+            override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
+                Log.i(
+                    TAG,
+                    "onPlayerStateChanged: playWhenReady: $playWhenReady playbackState: $playbackState currentPlaybackState: ${player?.playbackState}"
+                )
+                if (playWhenReady) {
+                    val duration = player?.duration ?: 0L
+                    acquireLock(
+                        if (duration > 1L) duration + TimeUnit.MINUTES.toMillis(2) else TimeUnit.MINUTES.toMillis(
+                            3
                         )
-                    } else
-                        releaseLock()
+                    )
+                } else
+                    releaseLock()
 
-                    if (playWhenReady && playbackState == ExoPlayer.STATE_READY) {
+                if (playWhenReady && playbackState == ExoPlayer.STATE_READY) {
+                    //
+                } else {
+                    if (player?.playerError != null) {
                         //
                     } else {
-                        if (player?.playerError != null) {
-                            //
-                        } else {
-                            when (playbackState) {
-                                ExoPlayer.STATE_IDLE -> { // 1
-                                    //
-                                }
+                        when (playbackState) {
+                            ExoPlayer.STATE_IDLE -> { // 1
+                                //
+                            }
 
-                                ExoPlayer.STATE_BUFFERING -> { // 2
-                                    //
-                                }
+                            ExoPlayer.STATE_BUFFERING -> { // 2
+                                //
+                            }
 
-                                ExoPlayer.STATE_READY -> { // 3
-                                    val status =
-                                        if (playWhenReady) PlayerState.PLAYING else PlayerState.PAUSED
-                                    if (previousState == -1) {
-                                        // when we define that the track shall not "playWhenReady"
-                                        // no position info is sent
-                                        // therefore, we need to "emulate" the first position notification
-                                        // by sending it directly
-                                        notifyPositionChange()
-                                    } else {
-                                        if (status == PlayerState.PAUSED) {
-                                            stopTrackingProgressAndPerformTask {
-                                                //
-                                            }
-                                        } else {
+                            ExoPlayer.STATE_READY -> { // 3
+                                val status =
+                                    if (playWhenReady) PlayerState.PLAYING else PlayerState.PAUSED
+                                if (previousState == -1) {
+                                    // when we define that the track shall not "playWhenReady"
+                                    // no position info is sent
+                                    // therefore, we need to "emulate" the first position notification
+                                    // by sending it directly
+                                    notifyPositionChange()
+                                } else {
+                                    if (status == PlayerState.PAUSED) {
+                                        stopTrackingProgressAndPerformTask {
                                             //
                                         }
-
-                                    }
-                                }
-
-                                ExoPlayer.STATE_ENDED -> { // 4
-                                    stopTrackingProgressAndPerformTask {
+                                    } else {
                                         //
                                     }
+
+                                }
+                            }
+
+                            ExoPlayer.STATE_ENDED -> { // 4
+                                stopTrackingProgressAndPerformTask {
+                                    //
                                 }
                             }
                         }
                     }
-                    previousState = playbackState
                 }
+                previousState = playbackState
+            }
 
-                override fun onRepeatModeChanged(repeatMode: Int) {
-                    Log.i(TAG, "onRepeatModeChanged: $repeatMode")
-                }
+            override fun onRepeatModeChanged(repeatMode: Int) {
+                Log.i(TAG, "onRepeatModeChanged: $repeatMode")
+            }
 
-                override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
-                    Log.i(TAG, "onShuffleModeEnabledChanged: $shuffleModeEnabled")
-                }
+            override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
+                Log.i(TAG, "onShuffleModeEnabledChanged: $shuffleModeEnabled")
+            }
 
-                override fun onPlayerError(error: PlaybackException) {
-                    Log.e(TAG, "onPLayerError: ${error.message}", error)
+            override fun onPlayerError(error: PlaybackException) {
+                Log.e(TAG, "onPLayerError: ${error.message}", error)
+                val bundle = Bundle()
+                bundle.putString("type", "error")
+                bundle.putString(
+                    "error",
+                    if (error.cause.toString()
+                            .contains("Permission denied")
+                    ) "Permission denied" else error.message
+                )
+                mediaSession?.setSessionExtras(bundle)
+            }
+
+            override fun onPositionDiscontinuity(reason: Int) {
+                Log.i(TAG, "onPositionDiscontinuity: $reason")
+                if (reason == DISCONTINUITY_REASON_SEEK) {
                     val bundle = Bundle()
-                    bundle.putString("type", "error")
-                    bundle.putString(
-                        "error",
-                        if (error.cause.toString()
-                                .contains("Permission denied")
-                        ) "Permission denied" else error.message
-                    )
+                    bundle.putString("type", "seek-end")
                     mediaSession?.setSessionExtras(bundle)
                 }
 
-                override fun onPositionDiscontinuity(reason: Int) {
-                    Log.i(TAG, "onPositionDiscontinuity: $reason")
-                    if (reason == DISCONTINUITY_REASON_SEEK) {
-                        val bundle = Bundle()
-                        bundle.putString("type", "seek-end")
-                        mediaSession?.setSessionExtras(bundle)
-                    }
+            }
 
+            override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters) {
+                Log.i(TAG, "onPlaybackParametersChanged: $playbackParameters")
+            }
+
+        }
+    }
+
+    private inner class ProgressTracker(val handler: Handler) : Runnable {
+        private val shutdownRequest = AtomicBoolean(false)
+        private var shutdownTask: (() -> Unit)? = null
+
+        init {
+            handler.post(this)
+        }
+
+        override fun run() {
+            notifyPositionChange()
+
+            if (!shutdownRequest.get()) {
+                handler.postDelayed(this, 800 /* ms */)
+            } else {
+                shutdownTask?.let {
+                    it()
                 }
-
-                override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters) {
-                    Log.i(TAG, "onPlaybackParametersChanged: $playbackParameters")
-                }
-
             }
         }
 
-        private inner class ProgressTracker(val handler: Handler) : Runnable {
-            private val shutdownRequest = AtomicBoolean(false)
-            private var shutdownTask: (() -> Unit)? = null
-
-            init {
-                handler.post(this)
-            }
-
-            override fun run() {
-                notifyPositionChange()
-
-                if (!shutdownRequest.get()) {
-                    handler.postDelayed(this, 800 /* ms */)
-                } else {
-                    shutdownTask?.let {
-                        it()
-                    }
-                }
-            }
-
-            fun stopTracking() {
-                shutdownRequest.set(true)
-            }
-
-            fun stopTracking(callable: () -> Unit) {
-                shutdownTask = callable
-                stopTracking()
-            }
+        fun stopTracking() {
+            shutdownRequest.set(true)
         }
 
-        fun shouldStartService(notification: Notification) {
-            if (!isForegroundService) {
-                Log.i(TAG, "Starting Service")
-                try {
-                    ContextCompat.startForegroundService(
-                        applicationContext,
-                        Intent(applicationContext, this@MediaService.javaClass)
-                    )
-                    startForeground(NOW_PLAYING_NOTIFICATION, notification)
-                } catch (e: Exception) {
-                    startForeground(NOW_PLAYING_NOTIFICATION, notification)
-                    ContextCompat.startForegroundService(
-                        applicationContext,
-                        Intent(applicationContext, this@MediaService.javaClass)
-                    )
-                }
-                isForegroundService = true
-
-            }
+        fun stopTracking(callable: () -> Unit) {
+            shutdownTask = callable
+            stopTracking()
         }
+    }
 
-        fun stopService() {
-            if (isForegroundService) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    stopForeground(STOP_FOREGROUND_DETACH)
-                } else {
-                    stopForeground(false)
-                }
-                isForegroundService = false
-                stopSelf()
-                Log.i(TAG, "Stopping Service")
-            }
-        }
-
-        private inner class MediaControllerCallback : MediaControllerCompat.Callback() {
-            override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
-                Log.d(
-                    TAG,
-                    "onMetadataChanged: title: ${metadata?.title} duration: ${metadata?.duration}"
+    fun shouldStartService(notification: Notification) {
+        if (!isForegroundService) {
+            Log.i(TAG, "Starting Service")
+            try {
+                ContextCompat.startForegroundService(
+                    applicationContext,
+                    Intent(applicationContext, this@MediaService.javaClass)
+                )
+                startForeground(NOW_PLAYING_NOTIFICATION, notification)
+            } catch (e: Exception) {
+                startForeground(NOW_PLAYING_NOTIFICATION, notification)
+                ContextCompat.startForegroundService(
+                    applicationContext,
+                    Intent(applicationContext, this@MediaService.javaClass)
                 )
             }
+            isForegroundService = true
 
-            override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
-                Log.d(TAG, "onPlaybackStateChanged state: $state")
-                updateNotification(state!!)
+        }
+    }
+
+    fun stopService() {
+        if (isForegroundService) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                stopForeground(STOP_FOREGROUND_DETACH)
+            } else {
+                stopForeground(false)
             }
+            isForegroundService = false
+            stopSelf()
+            Log.i(TAG, "Stopping Service")
+        }
+    }
 
-            override fun onQueueChanged(queue: MutableList<MediaSessionCompat.QueueItem>?) {
-                Log.d(TAG, "onQueueChanged queue: $queue")
+    private inner class MediaControllerCallback : MediaControllerCompat.Callback() {
+        override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
+            Log.d(
+                TAG,
+                "onMetadataChanged: title: ${metadata?.title} duration: ${metadata?.duration}"
+            )
+        }
+
+        override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
+            Log.d(TAG, "onPlaybackStateChanged1 state: $state")
+            updateNotification(state!!)
+        }
+
+        override fun onQueueChanged(queue: MutableList<MediaSessionCompat.QueueItem>?) {
+            Log.d(TAG, "onQueueChanged queue: $queue")
+        }
+
+        @SuppressLint("WakelockTimeout")
+        private fun updateNotification(state: PlaybackStateCompat) {
+            if (mediaSession == null) {
+                return
             }
+            getArts(applicationContext, media?.bigCoverUrl ?: media?.coverUrl) { bitmap ->
+                val updatedState = state.state
+                val onGoing =
+                    updatedState == PlaybackStateCompat.STATE_PLAYING || updatedState == PlaybackStateCompat.STATE_BUFFERING
+                // Skip building a notification when state is "none".
+//                val notification = if (updatedState != PlaybackStateCompat.STATE_NONE) {
+//                    buildNotification(updatedState, onGoing, bitmap)
+//                } else {
+//                    null
+//                }
+                Log.d(TAG, "!!! updateNotification state: $updatedState $onGoing")
 
-            @SuppressLint("WakelockTimeout")
-            private fun updateNotification(state: PlaybackStateCompat) {
-                if (mediaSession == null) {
-                    return
-                }
-                getArts(applicationContext, media?.bigCoverUrl ?: media?.coverUrl) { bitmap ->
-                    val updatedState = state.state
-                    val onGoing =
-                        updatedState == PlaybackStateCompat.STATE_PLAYING || updatedState == PlaybackStateCompat.STATE_BUFFERING
-                    // Skip building a notification when state is "none".
-                    val notification = if (updatedState != PlaybackStateCompat.STATE_NONE) {
-                        buildNotification(updatedState, onGoing, bitmap)
-                    } else {
-                        null
+                when (updatedState) {
+                    PlaybackStateCompat.STATE_BUFFERING,
+                    PlaybackStateCompat.STATE_PLAYING -> {
+                        Log.i(TAG, "updateNotification: STATE_BUFFERING or STATE_PLAYING")
+                        /**
+                         * This may look strange, but the documentation for [Service.startForeground]
+                         * notes that "calling this method does *not* put the service in the started
+                         * state itself, even though the name sounds like it."
+                         */
+//                        if (notification != null) {
+//                            notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
+//                            shouldStartService(notification)
+//                        }
                     }
-                    Log.d(TAG, "!!! updateNotification state: $updatedState $onGoing")
 
-                    when (updatedState) {
-                        PlaybackStateCompat.STATE_BUFFERING,
-                        PlaybackStateCompat.STATE_PLAYING -> {
-                            Log.i(TAG, "updateNotification: STATE_BUFFERING or STATE_PLAYING")
-                            /**
-                             * This may look strange, but the documentation for [Service.startForeground]
-                             * notes that "calling this method does *not* put the service in the started
-                             * state itself, even though the name sounds like it."
-                             */
-                            if (notification != null) {
-                                notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
-                                shouldStartService(notification)
+                    else -> {
+                        if (isForegroundService) {
+                            // If playback has ended, also stop the service.
+                            if (updatedState == PlaybackStateCompat.STATE_NONE && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                                stopService()
                             }
-                        }
-
-                        else -> {
-                            if (isForegroundService) {
-                                // If playback has ended, also stop the service.
-                                if (updatedState == PlaybackStateCompat.STATE_NONE && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                                    stopService()
-                                }
-                                if (notification != null) {
-                                    notificationManager?.notify(
-                                        NOW_PLAYING_NOTIFICATION,
-                                        notification
-                                    )
-                                } else
-                                    removeNowPlayingNotification()
-                            }
+//                            if (notification != null) {
+//                                notificationManager?.notify(
+//                                    NOW_PLAYING_NOTIFICATION,
+//                                    notification
+//                                )
+//                            } else
+//                                removeNowPlayingNotification()
                         }
                     }
                 }
             }
         }
     }
+}

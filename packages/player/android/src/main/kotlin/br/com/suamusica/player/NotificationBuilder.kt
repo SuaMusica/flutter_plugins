@@ -33,10 +33,11 @@ const val NOW_PLAYING_CHANNEL: String = "br.com.suamusica.media.NOW_PLAYING"
 const val NOW_PLAYING_NOTIFICATION: Int = 0xb339
 const val FAVORITE: String = "favorite"
 
-@UnstableApi /**
+@UnstableApi
+/**
  * Helper class to encapsulate code for building notifications.
  */
-class NotificationBuilder(private val context: Context) {
+class NotificationBuilder(private val context: Context)  implements MediaNotification.Provider {
     private val platformNotificationManager: NotificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -59,7 +60,8 @@ class NotificationBuilder(private val context: Context) {
     private val favoriteAction = NotificationCompat.Action(
         R.drawable.ic_favorite_notification_player,
         context.getString(R.string.notification_favorite),
-        PendingIntent.getBroadcast(context,
+        PendingIntent.getBroadcast(
+            context,
             UUID.randomUUID().hashCode(),
             Intent(context, MediaControlBroadcastReceiver::class.java).apply {
                 putExtra(FAVORITE, true)
@@ -102,17 +104,17 @@ class NotificationBuilder(private val context: Context) {
         if (shouldCreateNowPlayingChannel()) {
             createNowPlayingChannel()
         }
-        Log.i("NotificationBuilder", "buildNotification")
-        val playbackState = mediaSession.player.duration
+        Log.i("NotificationBuilder", "TESTE1 buildNotification")
+//        val playbackState = mediaSession.player.duration
         val builder = NotificationCompat.Builder(context, NOW_PLAYING_CHANNEL)
-        val actions = if (isFavorite == null) mutableListOf(0, 1, 2) else mutableListOf(
-            0,
-            2,
-            3
-        ) // favorite,play/pause,next
-        val duration = mediaDuration ?: 0L
-        val currentDuration =
-            mediaSession.player.currentPosition
+//        val actions = if (isFavorite == null) mutableListOf(0, 1, 2) else mutableListOf(
+//            0,
+//            2,
+//            3
+//        ) // favorite,play/pause,next
+//        val duration = mediaDuration ?: 0L
+//        val currentDuration =
+//            mediaSession.player.currentPosition
         val shouldUseMetadata = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
 
 //        isFavorite?.let {
@@ -237,5 +239,3 @@ class NotificationBuilder(private val context: Context) {
 
         platformNotificationManager.createNotificationChannel(notificationChannel)
     }
-}
-

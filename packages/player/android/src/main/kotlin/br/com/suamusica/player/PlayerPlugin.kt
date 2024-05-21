@@ -94,6 +94,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin,ActivityAware {
         val cookie = call.argument<String>("cookie")
         PlayerSingleton.externalPlayback = call.argument<Boolean>("externalplayback")
         Log.d(TAG, "method: ${call.method} cookie: $cookie externalPlayback: ${PlayerSingleton.externalPlayback}")
+        Log.d(TAG, "TESTE1 method: ${call.method} | ${call.argument<Boolean>(IS_FAVORITE_ARGUMENT)}")
         when (call.method) {
             LOAD_METHOD -> {
                 val name = call.argument<String>(NAME_ARGUMENT)!!
