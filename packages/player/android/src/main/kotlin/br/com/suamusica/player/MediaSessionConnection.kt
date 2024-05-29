@@ -51,7 +51,7 @@ class MediaSessionConnection(
         bundle.putString("coverUrl", media.coverUrl)
         bundle.putString("bigCoverUrl", media.bigCoverUrl)
 
-        PlayerSingleton.lastFavorite = media.isFavorite ?: false
+//        PlayerSingleton.lastFavorite = media.isFavorite ?: false
         if (media.isFavorite != null) {
             bundle.putBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT, media.isFavorite)
         }
@@ -104,7 +104,7 @@ class MediaSessionConnection(
         if (isPlaying != null) {
             bundle.putBoolean(PlayerPlugin.IS_PLAYING_ARGUMENT, isPlaying)
         }
-        PlayerSingleton.lastFavorite = isFavorite ?: false
+//        PlayerSingleton.lastFavorite = isFavorite ?: false
         if (isFavorite != null) {
             bundle.putBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT, isFavorite)
         }
@@ -165,7 +165,7 @@ class MediaSessionConnection(
                     var lastState = PlaybackStateCompat.STATE_NONE - 1
                     override fun onPlaybackStateChanged(state: PlaybackStateCompat) {
                         if (lastState != state.state) {
-                            Log.i(TAG, "onPlaybackStateChanged: $state")
+                            Log.i(TAG, "onPlaybackStateChanged2: $state")
                             lastState = state.state
                             playerChangeNotifier.notifyStateChange(state.state)
                         }
