@@ -20,6 +20,7 @@ import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.CommandButton
+import androidx.media3.session.MediaNotification
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaStyleNotificationHelper
 import androidx.media3.session.SessionCommand
@@ -33,11 +34,29 @@ const val NOW_PLAYING_CHANNEL: String = "br.com.suamusica.media.NOW_PLAYING"
 const val NOW_PLAYING_NOTIFICATION: Int = 0xb339
 const val FAVORITE: String = "favorite"
 
-@UnstableApi
 /**
  * Helper class to encapsulate code for building notifications.
  */
-class NotificationBuilder(private val context: Context)  implements MediaNotification.Provider {
+@UnstableApi
+class NotificationBuilder(private val context: Context) {
+
+    val actions = ImmutableList.of(
+        CommandButton.Builder()
+            .setDisplayName("Save to favorites")
+            .setIconResId(R.drawable.ic_favorite_notification_player)
+            .setSessionCommand(SessionCommand("favoritar", Bundle()))
+            .build(),
+        CommandButton.Builder()
+            .setDisplayName("previous")
+            .setIconResId(androidx.media3.session.R.drawable.media3_notification_seek_to_previous)
+            .setSessionCommand(SessionCommand("previous", Bundle.EMPTY))
+            .build(),
+        CommandButton.Builder()
+            .setDisplayName("NEXT")
+            .setIconResId(androidx.media3.session.R.drawable.media3_notification_seek_to_next)
+            .setSessionCommand(SessionCommand("next", Bundle.EMPTY))
+            .build(),
+    )
     private val platformNotificationManager: NotificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -92,6 +111,8 @@ class NotificationBuilder(private val context: Context)  implements MediaNotific
         MediaButtonReceiver.buildMediaButtonPendingIntent(context, ACTION_STOP)
 
 
+
+
     fun buildNotification(
         mediaSession: MediaSession,
         media: Media?,
@@ -101,62 +122,62 @@ class NotificationBuilder(private val context: Context)  implements MediaNotific
         mediaDuration: Long?,
         art: Bitmap?
     ): Notification {
-        if (shouldCreateNowPlayingChannel()) {
-            createNowPlayingChannel()
-        }
+//        if (shouldCreateNowPlayingChannel()) {
+//            createNowPlayingChannel()
+//        }
         Log.i("NotificationBuilder", "TESTE1 buildNotification")
 //        val playbackState = mediaSession.player.duration
         val builder = NotificationCompat.Builder(context, NOW_PLAYING_CHANNEL)
-//        val actions = if (isFavorite == null) mutableListOf(0, 1, 2) else mutableListOf(
-//            0,
-//            2,
-//            3
-//        ) // favorite,play/pause,next
-//        val duration = mediaDuration ?: 0L
-//        val currentDuration =
-//            mediaSession.player.currentPosition
+        val actions = if (isFavorite == null) mutableListOf(0, 1, 2) else mutableListOf(
+            0,
+            2,
+            3
+        ) // favorite,play/pause,next
+        val duration = mediaDuration ?: 0L
+        val currentDuration =
+            mediaSession.player.currentPosition
         val shouldUseMetadata = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
 
-//        isFavorite?.let {
-//            builder.addAction(if (it) unFavoriteAction else favoriteAction)
-//        }
-//
-//        builder.addAction(skipToPreviousAction)
-//        when {
-//            isPlayingExternal != null -> {
-//                if (isPlayingExternal) {
-//                    builder.addAction(pauseAction)
-//                } else {
-//                    builder.addAction(playAction)
-//                }
-//            }
-//
-//            //TODO: adicionar a variavel correta antes era um getter
-//            mediaSession.player.isPlaying -> {
-//                Log.i("NotificationBuilder", "Player is playing... onGoing: $onGoing")
-//                builder.addAction(pauseAction)
-//            }
-//
-//            //TODO: adicionar a variavel correta antes era um getter
-//            mediaSession.player.isPlaying -> {
-//                Log.i("NotificationBuilder", "Player is NOT playing... onGoing: $onGoing")
-//                builder.addAction(playAction)
-//            }
-//
-//            else -> {
-//                Log.i("NotificationBuilder", "ELSE")
-//                builder.addAction(playAction)
-//            }
-//        }
-//
-//        builder.addAction(skipToNextAction)
+        isFavorite?.let {
+            builder.addAction(if (it) unFavoriteAction else favoriteAction)
+        }
+
+        builder.addAction(skipToPreviousAction)
+
+        when {
+            isPlayingExternal != null -> {
+                if (isPlayingExternal) {
+                    builder.addAction(pauseAction)
+                } else {
+                    builder.addAction(playAction)
+                }
+            }
+
+            //TODO: adicionar a variavel correta antes era um getter
+            mediaSession.player.isPlaying -> {
+                Log.i("NotificationBuilder", "Player is playing... onGoing: $onGoing")
+                builder.addAction(pauseAction)
+            }
+
+            //TODO: adicionar a variavel correta antes era um getter
+            mediaSession.player.isPlaying -> {
+                Log.i("NotificationBuilder", "Player is NOT playing... onGoing: $onGoing")
+                builder.addAction(playAction)
+            }
+
+            else -> {
+                Log.i("NotificationBuilder", "ELSE")
+                builder.addAction(playAction)
+            }
+        }
+
+        builder.addAction(skipToNextAction)
 
         val mediaStyle = MediaStyleNotificationHelper.MediaStyle(mediaSession)
             .setCancelButtonIntent(stopPendingIntent)
-//            .setShowActionsInCompactView(*actions.toIntArray())
+            .setShowActionsInCompactView(*actions.toIntArray())
             .setShowCancelButton(true)
-
-//        if (shouldUseMetadata && currentDuration != duration) {
+        if (shouldUseMetadata && currentDuration != duration) {
 //            mediaSession.setMetadata(
 //                MediaMetadataCompat.Builder()
 //                    .putString(MediaMetadata.METADATA_KEY_TITLE, media?.name ?: "Propaganda")
@@ -167,7 +188,7 @@ class NotificationBuilder(private val context: Context)  implements MediaNotific
 //                    .putLong(MediaMetadata.METADATA_KEY_DURATION, duration) // 4
 //                    .build()
 //            )
-//        }
+        }
 
 
         val notifyIntent = Intent("SUA_MUSICA_FLUTTER_NOTIFICATION_CLICK").apply {
@@ -202,7 +223,6 @@ class NotificationBuilder(private val context: Context)  implements MediaNotific
                 setContentTitle(media?.name ?: "Propaganda")
                 setContentText(media?.author ?: "")
             }
-
         }.build()
 
         if (onGoing) {
@@ -239,3 +259,5 @@ class NotificationBuilder(private val context: Context)  implements MediaNotific
 
         platformNotificationManager.createNotificationChannel(notificationChannel)
     }
+}
+

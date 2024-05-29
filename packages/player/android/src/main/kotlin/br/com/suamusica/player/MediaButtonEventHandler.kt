@@ -1,10 +1,12 @@
 package br.com.suamusica.player
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.common.Player.COMMAND_PLAY_PAUSE
 import androidx.media3.common.Player.COMMAND_SEEK_TO_NEXT
@@ -19,6 +21,7 @@ import androidx.media3.session.SessionResult
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import java.io.File
 
 @UnstableApi
 class MediaButtonEventHandler(
@@ -39,6 +42,7 @@ class MediaButtonEventHandler(
             .add(SessionCommand("play", Bundle.EMPTY))
             .add(SessionCommand("remove_notification", Bundle.EMPTY))
             .add(SessionCommand("send_notification", session.token.extras))
+            .add(SessionCommand("ads_playing", Bundle.EMPTY))
             .remove(SessionCommand("previous", Bundle.EMPTY))
             .build()
 
@@ -107,6 +111,11 @@ class MediaButtonEventHandler(
         args: Bundle
     ): ListenableFuture<SessionResult> {
         Log.d("Player", "TESTE1 CUSTOM_COMMAND: ${customCommand.customAction} | $args")
+
+        if (customCommand.customAction == "ads_playing") {
+            Log.d("Player", "TESTE1 CUSTOM_COMMAND: ads_playing")
+        }
+
         if (customCommand.customAction == "send_notification") {
             args.let {
                 val name = it.getString(PlayerPlugin.NAME_ARGUMENT)!!
@@ -116,7 +125,7 @@ class MediaButtonEventHandler(
                 val isPlaying = it.getBoolean(PlayerPlugin.IS_PLAYING_ARGUMENT)
                 val isFavorite = it.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT)
                 val bigCoverUrl = it.getString(PlayerPlugin.BIG_COVER_URL_ARGUMENT)
-                buildNotification(session, isFavorite, mediaService)
+                buildSetCustomLayout(session, isFavorite, mediaService)
                 mediaService.sendNotification(
                     Media(
                         name,
@@ -136,9 +145,19 @@ class MediaButtonEventHandler(
         if (customCommand.customAction == "pause") {
             mediaService.pause()
         }
-//        if (customCommand.customAction == "remove_notification") {
-//            mediaService.removeNotification()
-//        }
+        if (customCommand.customAction == "remove_notification") {
+           val metadataBuilder = MediaMetadata.Builder()
+            metadataBuilder.apply {
+                setArtist("Propaganda")
+                setTitle("Propaganda")
+                setDisplayTitle("Propaganda")
+            }
+            val url = ""
+            val uri = if (url.startsWith("/")) Uri.fromFile(File(url)) else Uri.parse(url)
+            val a = MediaItem.Builder().setMediaMetadata(metadataBuilder.build()).setUri(uri).build()
+
+            session.player.replaceMediaItem(0,a)
+        }
         if (customCommand.customAction == "next") {
             PlayerSingleton.next()
         }
@@ -158,7 +177,7 @@ class MediaButtonEventHandler(
                 PlayerPlugin.IS_FAVORITE_ARGUMENT,
                 !shouldFavorite
             )
-            buildNotification(session, !shouldFavorite, mediaService)
+            buildSetCustomLayout(session, !shouldFavorite, mediaService)
             return Futures.immediateFuture(
                 SessionResult(SessionResult.RESULT_SUCCESS)
             )
@@ -179,7 +198,7 @@ class MediaButtonEventHandler(
                     "Player",
                     "TESTE1 bigCoverUrl: $bigCoverUrl"
                 )
-                buildNotification(session, isFavorite ?: false, mediaService)
+                buildSetCustomLayout(session, isFavorite ?: false, mediaService)
                 mediaService.prepare(
                     cookie,
                     Media(name, author, url, coverUrl, bigCoverUrl, isFavorite)
@@ -255,7 +274,11 @@ class MediaButtonEventHandler(
 }
 
 @UnstableApi
-fun buildNotification(session: MediaSession, shouldFavorite: Boolean, mediaService: MediaService) {
+fun buildSetCustomLayout(
+    session: MediaSession,
+    shouldFavorite: Boolean,
+    mediaService: MediaService
+) {
 //    val extras = Bundle()
 //    extras.putInt(PlayerPlugin.IS_FAVORITE_ARGUMENT, session.player.mediaMetadata.extras)
 
