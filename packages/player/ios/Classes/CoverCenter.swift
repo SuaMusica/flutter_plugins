@@ -39,6 +39,7 @@ extension String {
     
     @objc public func saveDefaultCover(path: String) {
         let fileName = getCoverPath(albumId: "0", url: path)
+
         if !FileManager.default.fileExists(atPath: fileName) {
             do {
                 try FileManager.default.copyItem(atPath: path, toPath: fileName)
@@ -101,6 +102,7 @@ extension String {
     
     private func getCoverFromCache(albumId: String, url: String) -> NSData? {
         let coverPath = getCoverPath(albumId: albumId, url: url)
+        print("Player: Cover: Getting cover from cache: \(coverPath)")
         do {
             let data = try NSData.init(contentsOfFile: coverPath, options: NSData.ReadingOptions.mappedRead)
             print("Player: Cover: Got cover from cache!")
@@ -112,19 +114,27 @@ extension String {
     }
     
     private func getCoverFromWeb(url: String) -> NSData? {
+        let timeout = 8.0
         if let url = URL(string: url) {
-            let semaphore = DispatchSemaphore(value: 0)
+            let semaphore: DispatchSemaphore = DispatchSemaphore(value: 0)
             var data: NSData? = nil
             let task = URLSession.shared.dataTask(with: url) { (taskData, response, error) in
                 if let error = error {
                     print("Player: Cover: Failed to retrieve cover from web: \(error.localizedDescription)")
-                } else {
-                    data = NSData(data: taskData!)
+                } else if let taskData = taskData {
+                    data = NSData(data: taskData)
                 }
                 semaphore.signal()
             }
             task.resume()
-            semaphore.wait()
+
+            let waitResult = semaphore.wait(timeout: DispatchTime.now() + timeout)
+
+            if waitResult == .timedOut {
+                print("Player: Cover: Request timed out.")
+                return nil
+            }
+            
             return data
         } else {
             print("Player: Cover: Invalid URL: (\(url))")
@@ -145,7 +155,7 @@ extension String {
     private func getCoverPath(albumId: String, url: String) -> String {
         let paths = NSSearchPathForDirectoriesInDomains(FileManager.SearchPathDirectory.applicationSupportDirectory, FileManager.SearchPathDomainMask.userDomainMask, true)
 
-        if (paths.isEmpty || paths[0].isEmpty) {
+        if (paths.isEmpty || paths[0].isEmpty || url.isEmpty) {
             return uiImageToAssetString()
         }
 
@@ -153,13 +163,17 @@ extension String {
 
         if !FileManager.default.fileExists(atPath: documentDirectory) {
             do {
+                print("Player: Cover: Creating directory: \(documentDirectory)")
                 try FileManager.default.createDirectory(atPath: documentDirectory, withIntermediateDirectories: true, attributes: nil)
+                print("Player: Cover: Directory created: \(documentDirectory)")
             } catch {
                 print("Player: Cover: Failed to create directory \(error.localizedDescription)");
                 return uiImageToAssetString()
             }
         }
+
         var fileExt = self.fileExt(url: url)
+
         if (fileExt.hasPrefix(".webp") || url.contains("filters:format(webp)")) {
             fileExt = ".webp"
         }
@@ -169,6 +183,11 @@ extension String {
     
     private func fileExt(url: String) -> String {
         let index = url.lastIndex(of: ".")
+        print("URL received: \(url), Index: \(index)")
+        if (index == nil) {
+            return ""
+        }
+
         let fileExt = url.suffix(from: index!)
         return "\(fileExt)"
     }
