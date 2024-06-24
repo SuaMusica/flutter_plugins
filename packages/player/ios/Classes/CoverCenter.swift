@@ -122,13 +122,20 @@ extension String {
             let task = URLSession.shared.dataTask(with: url) { (taskData, response, error) in
                 if let error = error {
                     print("Player: Cover: Failed to retrieve cover from web: \(error.localizedDescription)")
-                } else {
-                    data = NSData(data: taskData!)
+                } else if let taskData = taskData {
+                    data = NSData(data: taskData)
                 }
                 semaphore.signal()
             }
             task.resume()
-            semaphore.wait(timeout: DispatchTime.now() + timeout)
+
+            let waitResult = semaphore.wait(timeout: DispatchTime.now() + timeout)
+
+            if waitResult == .timedOut {
+                print("Player: Cover: Request timed out.")
+                return nil
+            }
+            
             return data
         } else {
             print("Player: Cover: Invalid URL: (\(url))")
