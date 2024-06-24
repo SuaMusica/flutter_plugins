@@ -138,10 +138,8 @@ PlaylistItem *currentItem = nil;
 
 +(void) saveDefaultCover:(NSObject<FlutterPluginRegistrar>*)registrar {
     NSString *defaultCoverAssetKey = [registrar lookupKeyForAsset:@"assets/cd_cover.png"];
-    printf("Default cover asset key: %s\n", [defaultCoverAssetKey UTF8String]);
     NSString *defaultCoverPath = [[NSBundle mainBundle] pathForResource:defaultCoverAssetKey ofType:nil];
     [[CoverCenter shared] saveDefaultCoverWithPath:defaultCoverPath];
-    printf("Default cover saved: %s\n", [defaultCoverPath UTF8String]);
 }
 
 - (id)init {

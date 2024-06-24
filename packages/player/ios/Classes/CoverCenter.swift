@@ -38,7 +38,6 @@ extension String {
     }
     
     @objc public func saveDefaultCover(path: String) {
-        print("Player: Cover: Saving default cover from path: \(path)")
         let fileName = getCoverPath(albumId: "0", url: path)
 
         if !FileManager.default.fileExists(atPath: fileName) {
@@ -156,14 +155,11 @@ extension String {
     private func getCoverPath(albumId: String, url: String) -> String {
         let paths = NSSearchPathForDirectoriesInDomains(FileManager.SearchPathDirectory.applicationSupportDirectory, FileManager.SearchPathDomainMask.userDomainMask, true)
 
-        if (paths.isEmpty || paths[0].isEmpty) {
+        if (paths.isEmpty || paths[0].isEmpty || url.isEmpty) {
             return uiImageToAssetString()
         }
 
         let documentDirectory = "\(paths[0])/covers"
-
-        print("Player: Cover: Document directory: \(documentDirectory)")
-        print("Player: Cover: URL: \(url), exists: \(FileManager.default.fileExists(atPath: documentDirectory))")
 
         if !FileManager.default.fileExists(atPath: documentDirectory) {
             do {
@@ -176,14 +172,7 @@ extension String {
             }
         }
 
-        print("Player: Cover: Document directory: url: \(url), albumId: \(albumId), documentDirectory: \(documentDirectory), url is empty: \(url.isEmpty)")
-
-        if (url.isEmpty) {
-            return uiImageToAssetString()
-        }
-
         var fileExt = self.fileExt(url: url)
-        print("Player: Cover: File extension: \(fileExt), isEmpty: \(fileExt.isEmpty)")
 
         if (fileExt.hasPrefix(".webp") || url.contains("filters:format(webp)")) {
             fileExt = ".webp"
@@ -200,13 +189,10 @@ extension String {
         }
 
         let fileExt = url.suffix(from: index!)
-        print("File extension: \(fileExt)")
         return "\(fileExt)"
     }
 
     private func uiImageToAssetString() -> String {
-        let testAllBundleList = Bundle.allBundles
-        print("Player: Cover: All bundles: \(testAllBundleList)")
         let image = UIImage(named: "sm_cd_cover", in: Bundle(for: type(of: self)), compatibleWith: nil)
         guard let data = image?.pngData() else {
             return ""
