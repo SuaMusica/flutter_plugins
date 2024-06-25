@@ -91,6 +91,10 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
     private val BROWSABLE_ROOT = "/"
     private val EMPTY_ROOT = "@empty@"
+
+    private val isSamsung = Build.MANUFACTURER.equals("samsung", ignoreCase = true)
+    private val isHyperOS = !getProperty("ro.mi.os.version.name").isNullOrBlank()
+
     companion object {
         private val glideOptions = RequestOptions()
             .fallback(R.drawable.default_art)
@@ -194,8 +198,6 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                     connector.setPlayer(player)
                     connector.setPlaybackPreparer(MusicPlayerPlaybackPreparer(this))
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        val isSamsung = Build.MANUFACTURER.equals("samsung", ignoreCase = true)
-                        val isHyperOS = !getProperty("ro.mi.os.version.name").isNullOrBlank()
                         if (isSamsung || isHyperOS) {
                             connector.setCustomActionProviders(
                                 FavoriteModeActionProvider(applicationContext),
