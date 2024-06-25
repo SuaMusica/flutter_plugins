@@ -795,7 +795,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         }
     }
 
-    // Private function to get the property value from build.prop.
+    // to get the property value from build.prop.
     private fun getProperty(property: String): String? {
         return try {
             Runtime.getRuntime().exec("getprop $property").inputStream.use { input ->
