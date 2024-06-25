@@ -54,6 +54,9 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -191,7 +194,9 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                     connector.setPlayer(player)
                     connector.setPlaybackPreparer(MusicPlayerPlaybackPreparer(this))
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        if (Build.MANUFACTURER.equals("samsung", ignoreCase = true)) {
+                        val isSamsung = Build.MANUFACTURER.equals("samsung", ignoreCase = true)
+                        val isHyperOS = !getProperty("ro.mi.os.version.name").isNullOrBlank()
+                        if (isSamsung || isHyperOS) {
                             connector.setCustomActionProviders(
                                 FavoriteModeActionProvider(applicationContext),
                                 NextActionProvider(),
@@ -787,6 +792,18 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                     }
                 }
             }
+        }
+    }
+
+    // Private function to get the property value from build.prop.
+    private fun getProperty(property: String): String? {
+        return try {
+            Runtime.getRuntime().exec("getprop $property").inputStream.use { input ->
+                BufferedReader(InputStreamReader(input), 1024).readLine()
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+            null
         }
     }
 }
