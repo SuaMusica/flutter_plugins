@@ -101,7 +101,7 @@ class Media {
           isSpot == other.isSpot;
 
   @override
-  int get hashCode => [
+  int get hashCode => Object.hashAll([
         id,
         name,
         albumId,
@@ -116,7 +116,7 @@ class Media {
         playlistId,
         isSpot,
         isFavorite,
-      ].hashCode;
+      ];
 
   Media copyWith({
     int? id,
