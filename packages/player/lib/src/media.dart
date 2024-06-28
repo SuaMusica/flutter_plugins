@@ -116,7 +116,7 @@ class Media {
         playlistId,
         isSpot,
         isFavorite,
-      ];
+      ]);
 
   Media copyWith({
     int? id,
