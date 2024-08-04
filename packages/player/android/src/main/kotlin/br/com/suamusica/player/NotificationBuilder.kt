@@ -40,23 +40,6 @@ const val FAVORITE: String = "favorite"
 @UnstableApi
 class NotificationBuilder(private val context: Context) {
 
-    val actions = ImmutableList.of(
-        CommandButton.Builder()
-            .setDisplayName("Save to favorites")
-            .setIconResId(R.drawable.ic_favorite_notification_player)
-            .setSessionCommand(SessionCommand("favoritar", Bundle()))
-            .build(),
-        CommandButton.Builder()
-            .setDisplayName("previous")
-            .setIconResId(androidx.media3.session.R.drawable.media3_notification_seek_to_previous)
-            .setSessionCommand(SessionCommand("previous", Bundle.EMPTY))
-            .build(),
-        CommandButton.Builder()
-            .setDisplayName("NEXT")
-            .setIconResId(androidx.media3.session.R.drawable.media3_notification_seek_to_next)
-            .setSessionCommand(SessionCommand("next", Bundle.EMPTY))
-            .build(),
-    )
     private val platformNotificationManager: NotificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
