@@ -145,7 +145,10 @@ class NotificationBuilder(private val context: Context) {
             .setShowCancelButton(true)
             .setMediaSession(mediaSession.sessionToken)
 
-        if (shouldUseMetadata && currentDuration != duration) {
+        /// when isAds is true, the metadata should be updated to show the correct value
+        val isAds = media?.name?.contains("Propaganda") ?: false
+
+        if (shouldUseMetadata && (isAds || currentDuration != duration)) {
             mediaSession.setMetadata(
                 MediaMetadataCompat.Builder()
                     .putString(MediaMetadata.METADATA_KEY_TITLE, media?.name ?: "Propaganda")
