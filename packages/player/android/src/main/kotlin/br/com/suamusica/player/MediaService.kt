@@ -434,14 +434,15 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         }
         val metadata1 = metadataBuilder2.build()
 
-        browseTree = BrowseTree(applicationContext, mutableListOf(metadata,metadata1))
+        browseTree = BrowseTree(applicationContext, mutableListOf(metadata))
 
-        mediaSession?.setQueue(
-            listOf(
-                QueueItem(metadata.description, 0),
-                QueueItem(metadata1.description, 1)
-            )
-        )
+//        mediaSession?.setQueue(
+//            listOf(
+//                QueueItem(metadata.description, 0),
+//                QueueItem(metadata1.description, 1)
+//            )
+//        )
+        mediaSession?.setMetadata(metadata)
         mediaSessionConnector?.setMediaMetadataProvider {
             return@setMediaMetadataProvider metadata
         }
@@ -475,9 +476,9 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         val source2 = baseMediaSource(a.url, dataSourceFactory)
         Log.i(TAG, "Player: URL2: ${source2.mediaItem.mediaMetadata.title}")
         player?.pause()
-        player?.addMediaSource(source)
-        player?.addMediaSource(source2)
-        player?.prepare()
+//        player?.addMediaSource(source)
+//        player?.addMediaSource(source2)
+        player?.prepare(source)
     }
 
     private fun baseMediaSource(
