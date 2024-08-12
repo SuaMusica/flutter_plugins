@@ -11,6 +11,9 @@
     <application
         android:label="suamusica_player_example"
         android:icon="@mipmap/ic_launcher">
+         <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"

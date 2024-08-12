@@ -20,11 +20,13 @@ import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.MediaSessionCompat.QueueItem
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.media.session.MediaButtonReceiver
+import androidx.media.utils.MediaConstants
 import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -42,6 +44,7 @@ import com.google.android.exoplayer2.Tracks
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.ext.mediasession.TimelineQueueNavigator
+import com.google.android.exoplayer2.source.BaseMediaSource
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.source.hls.HlsMediaSource
 import com.google.android.exoplayer2.upstream.DataSource
@@ -53,10 +56,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 import java.io.BufferedReader
-import java.io.InputStreamReader
+import java.io.File
 import java.io.IOException
+import java.io.InputStreamReader
+import java.util.ArrayList
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -65,13 +69,12 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
     private val userAgent =
         "SuaMusica/player (Linux; Android ${Build.VERSION.SDK_INT}; ${Build.BRAND}/${Build.MODEL})"
     private var packageValidator: PackageValidator? = null
-
+    private var bitmapAuto: Bitmap? = null
     private var mediaSession: MediaSessionCompat? = null
     private var mediaController: MediaControllerCompat? = null
     private var mediaSessionConnector: MediaSessionConnector? = null
-
+    private var browseTree: BrowseTree? = null
     private var media: Media? = null
-
     private var notificationBuilder: NotificationBuilder? = null
     private var notificationManager: NotificationManagerCompat? = null
     private var isForegroundService = false
@@ -293,11 +296,20 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         rootHints: Bundle?
     ): BrowserRoot? {
         val isKnowCaller = packageValidator?.isKnownCaller(clientPackageName, clientUid) ?: false
-
+        Log.d(TAG, "onGetRoot: isKnowCaller: $isKnowCaller - $clientUid")
+        val extras = Bundle()
+        extras.putInt(
+            MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_BROWSABLE,
+            MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM
+        )
+        extras.putInt(
+            MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_PLAYABLE,
+            MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_LIST_ITEM
+        )
         return if (isKnowCaller) {
-            BrowserRoot(BROWSABLE_ROOT, null)
+            BrowserRoot(BROWSABLE_ROOT, extras)
         } else {
-            BrowserRoot(EMPTY_ROOT, null)
+            null
         }
     }
 
@@ -305,7 +317,60 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         parentId: String,
         result: Result<MutableList<MediaBrowserCompat.MediaItem>>
     ) {
-        result.sendResult(mutableListOf())
+        Log.d(TAG, "onLoadChildren: parentId: $parentId | result: $result")
+//        val mediaItems: MutableList<MediaBrowserCompat.MediaItem> = mutableListOf()
+//        if (parentId == BROWSABLE_ROOT) {
+//            mediaItems.add(0, createMediaItem(
+//                "songs",
+//                "Musicas Baixadas",
+//                Uri.parse(media?.coverUrl),
+//                MediaBrowserCompat.MediaItem.FLAG_BROWSABLE
+//            ))
+//        } else  {
+//            mediaItems.add(0, createMediaItem(
+//                "aaa1",
+//                "aaa",
+//                Uri.parse(media?.coverUrl),
+//                MediaBrowserCompat.MediaItem.FLAG_PLAYABLE
+//            ))
+//            mediaItems.add(1, createMediaItem(
+//                "bbb1",
+//                "bbb",
+//                Uri.parse(media?.coverUrl),
+//                MediaBrowserCompat.MediaItem.FLAG_PLAYABLE
+//            ))
+//
+//        }
+//        result.sendResult(
+//            mediaItems
+//        )
+        val children = browseTree?.get(parentId)?.map { item ->
+        Log.d(TAG, "onLoadChildren: item: $item - ${item.description}")
+            MediaBrowserCompat.MediaItem(item.description, item.flag)
+        }
+        result.sendResult(children as MutableList<MediaBrowserCompat.MediaItem>?)
+    }
+
+    private fun createMediaItem(
+        mediaId: String,
+        setTitle: String,
+        iconUri: Uri,
+        flag: Int,
+    ): MediaBrowserCompat.MediaItem {
+        val mediaDescriptionBuilder = MediaDescriptionCompat.Builder()
+        mediaDescriptionBuilder.setMediaId(mediaId)
+        mediaDescriptionBuilder.setTitle(setTitle)
+        mediaDescriptionBuilder.setSubtitle("Subtitle")
+        mediaDescriptionBuilder.setIconUri(iconUri)
+        val extras = Bundle()
+        extras.putString(
+            MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_GROUP_TITLE,
+            "Songs"
+        )
+        mediaDescriptionBuilder.setExtras(extras)
+        return MediaBrowserCompat.MediaItem(
+            mediaDescriptionBuilder.build(), flag
+        )
     }
 
     fun prepare(cookie: String, media: Media) {
@@ -322,17 +387,61 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         val metadataBuilder = MediaMetadataCompat.Builder()
         val art = null
         metadataBuilder.apply {
+            id = "Baixadas"
             album = media.author
             albumArt = art
             title = media.name
             displayTitle = media.name
+            albumArtUri = media.coverUrl
+            flag = MediaBrowserCompat.MediaItem.FLAG_PLAYABLE
+            trackNumber = 1
+            mediaUri = media.url
             putString(MediaMetadataCompat.METADATA_KEY_ARTIST, media.author)
             putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, media.name)
             putBitmap(MediaMetadataCompat.METADATA_KEY_ART, art)
             putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON, art)
+
         }
+
         val metadata = metadataBuilder.build()
-        mediaSession?.setMetadata(metadata)
+        val metadataBuilder2 = MediaMetadataCompat.Builder()
+
+
+        val a = Media(
+            "Track 1",
+            "Xand Avião",
+            "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
+            "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+            "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+            false,
+        )
+        metadataBuilder2.apply {
+            id = "Baixadas"
+            album = a.author
+            albumArt = art
+            title = a.name
+            displayTitle = a.name
+            albumArtUri = a.coverUrl
+            flag = MediaBrowserCompat.MediaItem.FLAG_PLAYABLE
+            trackNumber = 2
+            mediaUri = a.url
+            displayDescription = "Trackaaa"
+            putString(MediaMetadataCompat.METADATA_KEY_ARTIST, a.author)
+            putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, a.name)
+            putBitmap(MediaMetadataCompat.METADATA_KEY_ART, art)
+            putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON, art)
+
+        }
+        val metadata1 = metadataBuilder2.build()
+
+        browseTree = BrowseTree(applicationContext, mutableListOf(metadata,metadata1))
+
+        mediaSession?.setQueue(
+            listOf(
+                QueueItem(metadata.description, 0),
+                QueueItem(metadata1.description, 1)
+            )
+        )
         mediaSessionConnector?.setMediaMetadataProvider {
             return@setMediaMetadataProvider metadata
         }
@@ -362,6 +471,19 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         val url = media.url
         Log.i(TAG, "Player: URL: $url")
 
+        val source = baseMediaSource(url, dataSourceFactory)
+        val source2 = baseMediaSource(a.url, dataSourceFactory)
+        Log.i(TAG, "Player: URL2: ${source2.mediaItem.mediaMetadata.title}")
+        player?.pause()
+        player?.addMediaSource(source)
+        player?.addMediaSource(source2)
+        player?.prepare()
+    }
+
+    private fun baseMediaSource(
+        url: String,
+        dataSourceFactory: DefaultHttpDataSource.Factory
+    ): BaseMediaSource {
         val uri = if (url.startsWith("/")) Uri.fromFile(File(url)) else Uri.parse(url)
 
         @C.ContentType val type = Util.inferContentType(uri)
@@ -371,6 +493,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                 .setPlaylistParserFactory(SMHlsPlaylistParserFactory())
                 .setAllowChunklessPreparation(true)
                 .createMediaSource(MediaItem.fromUri(uri))
+
             C.TYPE_OTHER -> {
                 Log.i(TAG, "Player: URI: $uri")
                 val factory: DataSource.Factory =
@@ -382,12 +505,12 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
                 ProgressiveMediaSource.Factory(factory).createMediaSource(MediaItem.fromUri(uri))
             }
+
             else -> {
                 throw IllegalStateException("Unsupported type: $type")
             }
         }
-        player?.pause()
-        player?.prepare(source)
+        return source
     }
 
     fun play() {
@@ -395,9 +518,10 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             player?.play()
         }
     }
+
     fun adsPlaying() {
-        getArts(applicationContext,null) { bitmap ->
-            this.media = Media("Propaganda", "", "", "",null,null )
+        getArts(applicationContext, null) { bitmap ->
+            this.media = Media("Propaganda", "", "", "", null, null)
             val notification = buildNotification(PlaybackStateCompat.STATE_PLAYING, true, bitmap)
             notification?.let {
                 notificationManager?.notify(NOW_PLAYING_NOTIFICATION, it)
@@ -405,6 +529,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             }
         }
     }
+
     fun sendCommand(type: String) {
         val extra = Bundle()
         extra.putString("type", type)
@@ -421,6 +546,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
     fun sendNotification(media: Media, isPlayingExternal: Boolean?) {
         getArts(applicationContext, media.bigCoverUrl ?: media.coverUrl) { bitmap ->
+            bitmapAuto = bitmap
             mediaSession?.let {
                 val onGoing: Boolean = if (isPlayingExternal == null) {
                     val state = player?.playbackState ?: PlaybackStateCompat.STATE_NONE
@@ -443,6 +569,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             }
         }
     }
+
 
     fun removeNotification() {
         removeNowPlayingNotification();
@@ -596,9 +723,11 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                             ExoPlayer.STATE_IDLE -> { // 1
                                 //
                             }
+
                             ExoPlayer.STATE_BUFFERING -> { // 2
                                 //
                             }
+
                             ExoPlayer.STATE_READY -> { // 3
                                 val status =
                                     if (playWhenReady) PlayerState.PLAYING else PlayerState.PAUSED
@@ -619,6 +748,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
                                 }
                             }
+
                             ExoPlayer.STATE_ENDED -> { // 4
                                 stopTrackingProgressAndPerformTask {
                                     //
@@ -754,7 +884,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             if (mediaController?.metadata == null || mediaSession == null) {
                 return
             }
-            getArts(applicationContext,media?.bigCoverUrl ?: media?.coverUrl) { bitmap ->
+            getArts(applicationContext, media?.bigCoverUrl ?: media?.coverUrl) { bitmap ->
                 val updatedState = state.state
                 val onGoing =
                     updatedState == PlaybackStateCompat.STATE_PLAYING || updatedState == PlaybackStateCompat.STATE_BUFFERING
@@ -780,6 +910,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                             shouldStartService(notification)
                         }
                     }
+
                     else -> {
                         if (isForegroundService) {
                             // If playback has ended, also stop the service.
