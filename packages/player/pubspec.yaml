@@ -11,12 +11,12 @@ dependencies:
   flutter:
     sdk: flutter
   mutex: ^3.0.1
-  isar: 
+  isar:
     git:
       url: https://github.com/SuaMusica/isar/
       ref: fix/lStar310
-      path: packages/isar_flutter_libs
-  isar_flutter_libs: 
+      path: packages/isar
+  isar_flutter_libs:
     git:
       url: https://github.com/SuaMusica/isar/
       ref: fix/lStar310
@@ -29,11 +29,11 @@ dependencies:
 
 dev_dependencies:
   build_runner: ^2.2.1
-  isar_generator: 
+  isar_generator:
     git:
       url: https://github.com/SuaMusica/isar/
       ref: fix/lStar310
-      path: packages/isar_flutter_libs
+      path: packages/isar_generator
   flutter_test:
     sdk: flutter
 
