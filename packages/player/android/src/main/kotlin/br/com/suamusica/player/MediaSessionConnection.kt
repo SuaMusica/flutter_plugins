@@ -200,7 +200,7 @@ class MediaSessionConnection(
                     }
 
                     override fun onMetadataChanged(metadata: MediaMetadataCompat) {
-                        Log.i(TAG, "onMetadataChanged: $metadata duration: ${metadata.duration}")
+//                        Log.i(TAG, "onMetadataChanged: $metadata duration: ${metadata.duration}")
                     }
                 })
             }

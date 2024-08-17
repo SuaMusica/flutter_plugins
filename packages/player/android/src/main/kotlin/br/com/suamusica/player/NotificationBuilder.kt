@@ -105,9 +105,9 @@ class NotificationBuilder(private val context: Context) {
         mediaDuration: Long?,
         art: Bitmap?
     ): Notification {
-//        if (shouldCreateNowPlayingChannel()) {
-//            createNowPlayingChannel()
-//        }
+        if (shouldCreateNowPlayingChannel()) {
+            createNowPlayingChannel()
+        }
         Log.i("NotificationBuilder", "TESTE1 buildNotification")
 //        val playbackState = mediaSession.player.duration
         val builder = NotificationCompat.Builder(context, NOW_PLAYING_CHANNEL)

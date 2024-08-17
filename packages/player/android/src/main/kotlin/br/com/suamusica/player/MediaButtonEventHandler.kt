@@ -15,6 +15,7 @@ import androidx.media3.common.Player.COMMAND_SEEK_TO_PREVIOUS
 import androidx.media3.common.Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.CommandButton
+import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
@@ -26,39 +27,89 @@ import java.io.File
 @UnstableApi
 class MediaButtonEventHandler(
     private val mediaService: MediaService?,
-) : MediaSession.Callback {
+) : MediaLibraryService.MediaLibrarySession.Callback {
+
+    private val customLayoutCommandButtons: List<CommandButton> =
+        ImmutableList.of(
+            CommandButton.Builder()
+                .setDisplayName("Save to favorites")
+                .setIconResId(R.drawable.ic_favorite_notification_player)
+                .setSessionCommand(SessionCommand("favoritar", Bundle()))
+                .build(),
+            CommandButton.Builder()
+                .setDisplayName("play")
+                .setIconResId(R.drawable.ic_play_notification_player)
+                .setSessionCommand(SessionCommand("play", Bundle()))
+                .build(),
+            CommandButton.Builder()
+                .setDisplayName("previous")
+                .setIconResId(R.drawable.ic_prev_notification_player)
+                .setSessionCommand(SessionCommand("previous", Bundle.EMPTY))
+                .build(),
+            CommandButton.Builder()
+                .setDisplayName("next")
+                .setIconResId(R.drawable.ic_next_notification_player)
+                .setSessionCommand(SessionCommand("next", Bundle.EMPTY))
+                .build(),
+            )
+    private val mediaNotificationSessionCommands =
+        MediaSession.ConnectionResult.DEFAULT_SESSION_AND_LIBRARY_COMMANDS.buildUpon()
+            .also { builder ->
+                // Put all custom session commands in the list that may be used by the notification.
+                customLayoutCommandButtons.forEach { commandButton ->
+                    commandButton.sessionCommand?.let { builder.add(it) }
+                }
+            }
+            .build()
+
     override fun onConnect(
         session: MediaSession,
         controller: MediaSession.ControllerInfo
     ): MediaSession.ConnectionResult {
         Log.d("Player", "onConnect")
-        val sessionCommands = MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
-            .add(SessionCommand("next", Bundle.EMPTY))
-            .add(SessionCommand("seek", session.token.extras))
-            .add(SessionCommand("previous", Bundle.EMPTY))
-//            .add(SessionCommand("pause", Bundle.EMPTY))
-            .add(SessionCommand("favoritar", Bundle()))
-            .add(SessionCommand("prepare", session.token.extras))
-//            .add(SessionCommand("play", Bundle.EMPTY))
-            .add(SessionCommand("remove_notification", Bundle.EMPTY))
-            .add(SessionCommand("send_notification", session.token.extras))
-            .add(SessionCommand("ads_playing", Bundle.EMPTY))
-            .add(SessionCommand("onTogglePlayPause", Bundle.EMPTY))
-            .build()
+        val sessionCommands =
+            MediaSession.ConnectionResult.DEFAULT_SESSION_AND_LIBRARY_COMMANDS.buildUpon()
+                .add(SessionCommand("next", Bundle.EMPTY))
+                .add(SessionCommand("seek", session.token.extras))
+                .add(SessionCommand("previous", Bundle.EMPTY))
+                .add(SessionCommand("pause", Bundle.EMPTY))
+                .add(SessionCommand("favoritar", Bundle()))
+                .add(SessionCommand("prepare", session.token.extras))
+                .add(SessionCommand("play", Bundle.EMPTY))
+                .add(SessionCommand("remove_notification", Bundle.EMPTY))
+                .add(SessionCommand("send_notification", session.token.extras))
+                .add(SessionCommand("ads_playing", Bundle.EMPTY))
+                .add(SessionCommand("onTogglePlayPause", Bundle.EMPTY))
+                .build()
 
         val playerCommands =
             MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS.buildUpon()
+                .add(COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
+                .add(COMMAND_SEEK_TO_PREVIOUS)
+                .add(COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
+                .add(COMMAND_PLAY_PAUSE)
+                .add(COMMAND_SEEK_TO_NEXT)
+                .build()
 //                .remove(COMMAND_SEEK_TO_NEXT)
 //                .remove(COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
 //                .remove(COMMAND_SEEK_TO_PREVIOUS)
 //                .remove(COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
-                .removeAll()
-                .build()
+//                .removeAll()
+//                .build()
 
-        return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
-            .setAvailableSessionCommands(sessionCommands)
-            .setAvailablePlayerCommands(playerCommands)
-            .build()
+//        return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+//            .setAvailableSessionCommands(sessionCommands)
+//            .setAvailablePlayerCommands(playerCommands)
+//            .build()
+
+
+            // Select the button to display.
+//                val customLayout = customLayoutCommandButtons[if (session.player.shuffleModeEnabled) 1 else 0]
+            return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+                .setAvailableSessionCommands(sessionCommands)
+                .setCustomLayout(customLayoutCommandButtons)
+                .setAvailablePlayerCommands(playerCommands)
+                .build()
     }
 
 //    override fun onPostConnect(session: MediaSession, controller: MediaSession.ControllerInfo) {
@@ -153,6 +204,12 @@ class MediaButtonEventHandler(
         if (customCommand.customAction == "play") {
             mediaService?.play()
         }
+        if (customCommand.customAction == "previous") {
+            PlayerSingleton.previous()
+        }
+        if (customCommand.customAction == "next") {
+            PlayerSingleton.next()
+        }
         if (customCommand.customAction == "pause") {
             mediaService?.pause()
         }
@@ -168,6 +225,7 @@ class MediaButtonEventHandler(
             val uri = if (url.startsWith("/")) Uri.fromFile(File(url)) else Uri.parse(url)
             val a =
                 MediaItem.Builder().setMediaMetadata(metadataBuilder.build()).setUri(uri).build()
+
             session.player.replaceMediaItem(0, a)
 
 //            session.player.removeMediaItem(0)
@@ -295,12 +353,12 @@ fun buildSetCustomLayout(
                 .build(),
             CommandButton.Builder()
                 .setDisplayName("previous")
-                .setIconResId(androidx.media3.session.R.drawable.media3_notification_seek_to_previous)
+                .setIconResId(R.drawable.ic_prev_notification_player)
                 .setSessionCommand(SessionCommand("previous", Bundle.EMPTY))
                 .build(),
             CommandButton.Builder()
                 .setDisplayName("NEXT")
-                .setIconResId(androidx.media3.session.R.drawable.media3_notification_seek_to_next)
+                .setIconResId(R.drawable.ic_next_notification_player)
                 .setSessionCommand(SessionCommand("next", Bundle.EMPTY))
                 .build(),
         )
