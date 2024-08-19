@@ -190,28 +190,27 @@ class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySes
             DataSourceBitmapLoader(applicationContext)
         player?.let {
             mediaSession = MediaSession.Builder(this, it)
-                .setCustomLayout(
-                    ImmutableList.of(
-                        CommandButton.Builder()
-                            .setDisplayName("Save to favorites")
-                            .setIconResId(R.drawable.ic_favorite_notification_player)
-                            .setSessionCommand(SessionCommand("favoritar", Bundle()))
-
-                            .build(),
-                        CommandButton.Builder()
-                            .setDisplayName("previous")
-                            .setIconResId(R.drawable.ic_prev_notification_player)
-                            .setSessionCommand(SessionCommand("previous", Bundle.EMPTY))
-                            .build(),
-                        CommandButton.Builder()
-                            .setDisplayName("next")
-                            .setIconResId(R.drawable.ic_next_notification_player)
-                            .setSessionCommand(SessionCommand("next", Bundle.EMPTY))
-                            .build(),
-
-                    ),
-                )
-                .setShowPlayButtonIfPlaybackIsSuppressed(true)
+//                .setCustomLayout(
+//                    ImmutableList.of(
+//                        CommandButton.Builder()
+//                            .setDisplayName("Save to favorites")
+//                            .setIconResId(R.drawable.ic_favorite_notification_player)
+//                            .setSessionCommand(SessionCommand("favoritar", Bundle()))
+//
+//                            .build(),
+//                        CommandButton.Builder()
+//                            .setDisplayName("previous")
+//                            .setIconResId(R.drawable.ic_prev_notification_player)
+//                            .setSessionCommand(SessionCommand("previous", Bundle.EMPTY))
+//                            .build(),
+//                        CommandButton.Builder()
+//                            .setDisplayName("next")
+//                            .setIconResId(R.drawable.ic_next_notification_player)
+//                            .setSessionCommand(SessionCommand("next", Bundle.EMPTY))
+//                            .build(),
+//
+//                    ),
+//                )
                 .setBitmapLoader(CacheBitmapLoader(dataSourceBitmapLoader))
                 .setCallback(MediaButtonEventHandler(this))
                 .build()
@@ -502,6 +501,7 @@ class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySes
         player?.pause()
         player?.prepare(source)
         player?.play()
+        Log.d("Player", "sendNotification")
     }
 
     //    }
@@ -513,16 +513,26 @@ class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySes
 
     fun adsPlaying() {
         Log.i(TAG, "TESTE2 - adsPlaying")
-//        getArts(applicationContext, null) { bitmap ->
-//            this.media = Media("Propaganda", "", "", "", null, null)
-//            val notification =
-//                buildNotification(PlaybackStateCompat.STATE_PLAYING, true, bitmap)
-//            notification?.let {
-//                notificationManager?.notify(NOW_PLAYING_NOTIFICATION, it)
-//                shouldStartService(it)
-//            }
-//        }
-    }
+        getArts(applicationContext, null) { bitmap ->
+            this.media = Media("Propaganda", "", "", "", null, null)
+            val metadataBuilder = MediaMetadata.Builder()
+            metadataBuilder.apply {
+                setArtist("Propaganda")
+                setTitle("Propaganda")
+                setDisplayTitle("Propaganda")
+            }
+            val url =
+                player?.mediaMetadata?.extras?.getString(PlayerPlugin.URL_ARGUMENT) ?: ""
+            val uri = if (url.startsWith("/")) Uri.fromFile(File(url)) else Uri.parse(url)
+            val adsMedia =
+                MediaItem.Builder().setMediaMetadata(metadataBuilder.build()).setUri(uri).build()
+
+            player?.replaceMediaItem(0, adsMedia)
+//            shouldStartService(it)
+            }
+        }
+
+
 
     fun setFavorite(favorite: Boolean?) {
         media?.let {
@@ -542,31 +552,7 @@ class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySes
                 }
                 this.media = media
 
-                val actions = ImmutableList.of(
-                    if (media.isFavorite == true) {
-                        CommandButton.Builder()
-                            .setDisplayName("Save to favorites")
-                            .setIconResId(R.drawable.ic_unfavorite_notification_player)
-                            .setSessionCommand(SessionCommand("favoritar", Bundle()))
-                            .build()
-                    } else {
-                        CommandButton.Builder()
-                            .setDisplayName("Save to favorites")
-                            .setIconResId(R.drawable.ic_favorite_notification_player)
-                            .setSessionCommand(SessionCommand("favoritar", Bundle()))
-                            .build()
-                    },
-                    CommandButton.Builder()
-                        .setDisplayName("previous")
-                        .setIconResId(R.drawable.ic_prev_notification_player)
-                        .setSessionCommand(SessionCommand("previous", Bundle.EMPTY))
-                        .build(),
-                    CommandButton.Builder()
-                        .setDisplayName("next")
-                        .setIconResId(R.drawable.ic_next_notification_player)
-                        .setSessionCommand(SessionCommand("next", Bundle.EMPTY))
-                        .build(),
-                )
+
 //                val notification = notificationBuilder?.buildNotification(
 //                    it,
 //                    media,
@@ -672,28 +658,6 @@ class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySes
         callable()
         stopTrackingProgress()
     }
-
-//    fun buildNotification(
-//        updatedState: Int,
-//        onGoing: Boolean,
-//        art: Bitmap?
-//    ): Notification? {
-//        return if (updatedState != PlaybackStateCompat.STATE_NONE) {
-//            mediaSession?.let {
-//                notificationBuilder?.buildNotification(
-//                    it,
-//                    media,
-//                    onGoing,
-//                    null,
-//                    media?.isFavorite,
-//                    player?.duration,
-//                    art
-//                )
-//            }
-//        } else {
-//            null
-//        }
-//    }
 
     private fun playerEventListener(): Player.Listener {
         return object : Player.Listener {
@@ -838,24 +802,24 @@ class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySes
         }
     }
 
-    fun shouldStartService(notification: Notification) {
-        if (!isForegroundService) {
-            Log.i(TAG, "Starting Service")
-            try {
-                ContextCompat.startForegroundService(
-                    applicationContext, Intent(applicationContext, this@MediaService.javaClass)
-                )
-                startForeground(NOW_PLAYING_NOTIFICATION, notification)
-            } catch (e: Exception) {
-                startForeground(NOW_PLAYING_NOTIFICATION, notification)
-                ContextCompat.startForegroundService(
-                    applicationContext, Intent(applicationContext, this@MediaService.javaClass)
-                )
-            }
-            isForegroundService = true
-
-        }
-    }
+//    fun shouldStartService() {
+//        if (!isForegroundService) {
+//            Log.i(TAG, "Starting Service")
+//            try {
+//                ContextCompat.startForegroundService(
+//                    applicationContext, Intent(applicationContext, this@MediaService.javaClass)
+//                )
+//                startForeground(NOW_PLAYING_NOTIFICATION, notification)
+//            } catch (e: Exception) {
+//                startForeground(NOW_PLAYING_NOTIFICATION, notification)
+//                ContextCompat.startForegroundService(
+//                    applicationContext, Intent(applicationContext, this@MediaService.javaClass)
+//                )
+//            }
+//            isForegroundService = true
+//
+//        }
+//    }
 
     fun stopService() {
         if (isForegroundService) {

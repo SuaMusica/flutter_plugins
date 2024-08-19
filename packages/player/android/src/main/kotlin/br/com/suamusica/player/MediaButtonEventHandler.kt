@@ -2,6 +2,7 @@ package br.com.suamusica.player
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
@@ -28,39 +29,43 @@ import java.io.File
 class MediaButtonEventHandler(
     private val mediaService: MediaService?,
 ) : MediaLibraryService.MediaLibrarySession.Callback {
+    enum class NotificationPlayerCustomCommandButton(
+        val customAction: String,
+        val commandButton: CommandButton,
+    ) {
+        PREVIOUS(
 
-    private val customLayoutCommandButtons: List<CommandButton> =
-        ImmutableList.of(
+            "previous",
+            CommandButton.Builder()
+                .setDisplayName("previous")
+                .setIconResId(androidx.media3.session.R.drawable.media3_notification_seek_to_previous)
+                .setSessionCommand(SessionCommand("previous", Bundle.EMPTY))
+                .build(),
+        ),
+        NEXT(
+
+            "next",
+            CommandButton.Builder()
+                .setDisplayName("next")
+                .setIconResId(androidx.media3.session.R.drawable.media3_notification_seek_to_next)
+                .setSessionCommand(SessionCommand("next", Bundle.EMPTY))
+                .build(),
+        ),
+
+        FAVORITE(
+
+            "favoritar",
             CommandButton.Builder()
                 .setDisplayName("Save to favorites")
                 .setIconResId(R.drawable.ic_favorite_notification_player)
                 .setSessionCommand(SessionCommand("favoritar", Bundle()))
-                .build(),
-            CommandButton.Builder()
-                .setDisplayName("play")
-                .setIconResId(R.drawable.ic_play_notification_player)
-                .setSessionCommand(SessionCommand("play", Bundle()))
-                .build(),
-            CommandButton.Builder()
-                .setDisplayName("previous")
-                .setIconResId(R.drawable.ic_prev_notification_player)
-                .setSessionCommand(SessionCommand("previous", Bundle.EMPTY))
-                .build(),
-            CommandButton.Builder()
-                .setDisplayName("next")
-                .setIconResId(R.drawable.ic_next_notification_player)
-                .setSessionCommand(SessionCommand("next", Bundle.EMPTY))
-                .build(),
-            )
-    private val mediaNotificationSessionCommands =
-        MediaSession.ConnectionResult.DEFAULT_SESSION_AND_LIBRARY_COMMANDS.buildUpon()
-            .also { builder ->
-                // Put all custom session commands in the list that may be used by the notification.
-                customLayoutCommandButtons.forEach { commandButton ->
-                    commandButton.sessionCommand?.let { builder.add(it) }
-                }
-            }
-            .build()
+                .build()
+        ),
+    }
+
+    private val notificationPlayerCustomCommandButtons =
+        NotificationPlayerCustomCommandButton.entries.map { command -> command.commandButton }
+
 
     override fun onConnect(
         session: MediaSession,
@@ -68,7 +73,7 @@ class MediaButtonEventHandler(
     ): MediaSession.ConnectionResult {
         Log.d("Player", "onConnect")
         val sessionCommands =
-            MediaSession.ConnectionResult.DEFAULT_SESSION_AND_LIBRARY_COMMANDS.buildUpon()
+            MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
                 .add(SessionCommand("next", Bundle.EMPTY))
                 .add(SessionCommand("seek", session.token.extras))
                 .add(SessionCommand("previous", Bundle.EMPTY))
@@ -84,77 +89,29 @@ class MediaButtonEventHandler(
 
         val playerCommands =
             MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS.buildUpon()
-                .add(COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
-                .add(COMMAND_SEEK_TO_PREVIOUS)
-                .add(COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
-                .add(COMMAND_PLAY_PAUSE)
-                .add(COMMAND_SEEK_TO_NEXT)
+                .remove(COMMAND_SEEK_TO_PREVIOUS)
+                .remove(COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
+                .remove(COMMAND_SEEK_TO_NEXT)
+                .remove(COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
+//                .remove(COMMAND_PLAY_PAUSE)
                 .build()
-//                .remove(COMMAND_SEEK_TO_NEXT)
-//                .remove(COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
-//                .remove(COMMAND_SEEK_TO_PREVIOUS)
-//                .remove(COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
-//                .removeAll()
-//                .build()
 
-//        return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
-//            .setAvailableSessionCommands(sessionCommands)
-//            .setAvailablePlayerCommands(playerCommands)
-//            .build()
-
-
-            // Select the button to display.
-//                val customLayout = customLayoutCommandButtons[if (session.player.shuffleModeEnabled) 1 else 0]
-            return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
-                .setAvailableSessionCommands(sessionCommands)
-                .setCustomLayout(customLayoutCommandButtons)
-                .setAvailablePlayerCommands(playerCommands)
-                .build()
+        return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+            .setAvailableSessionCommands(sessionCommands)
+            .setAvailablePlayerCommands(playerCommands)
+            .build()
     }
 
-//    override fun onPostConnect(session: MediaSession, controller: MediaSession.ControllerInfo) {
-//        super.onPostConnect(session, controller)
-//        if (notificationPlayerCustomCommandButtons.isNotEmpty()) {
-//            /* Setting custom player command buttons to mediaLibrarySession for player notification. */
-//            mediaLibrarySession.setCustomLayout(notificationPlayerCustomCommandButtons)
-//        }
-//    }
 
-//    override fun onPlaybackResumption(
-//        mediaSession: MediaSession,
-//        controller: MediaSession.ControllerInfo
-//    ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
-//        Log.d("Player", "TESTE1 onPlaybackResumption")
-//        return super.onPlaybackResumption(mediaSession, controller)
-//    }
+    override fun onPostConnect(session: MediaSession, controller: MediaSession.ControllerInfo) {
+        super.onPostConnect(session, controller)
+        if (notificationPlayerCustomCommandButtons.isNotEmpty()) {
+            /* Setting custom player command buttons to mediaLibrarySession for player notification. */
+            session.setCustomLayout(notificationPlayerCustomCommandButtons)
+        }
+        Log.d("Player", "onPostConnect")
 
-
-//    override fun onSetMediaItems(
-//        mediaSession: MediaSession,
-//        controller: MediaSession.ControllerInfo,
-//        mediaItems: MutableList<MediaItem>,
-//        startIndex: Int,
-//        startPositionMs: Long
-//    ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
-//        Log.d("Player", "TESTE1 onSetMediaItems")
-//        return super.onSetMediaItems(
-//            mediaSession,
-//            controller,
-//            mediaItems,
-//            startIndex,
-//            startPositionMs
-//        )
-//    }
-
-//    override fun onAddMediaItems(
-//        mediaSession: MediaSession,
-//        controller: MediaSession.ControllerInfo,
-//        mediaItems: MutableList<MediaItem>
-//    ): ListenableFuture<MutableList<MediaItem>> {
-//        Log.d("Player", "TESTE1 onAddMediaItems")
-//        return super.onAddMediaItems(mediaSession, controller, mediaItems)
-//    }
-
+    }
 
     override fun onCustomCommand(
         session: MediaSession,
@@ -172,6 +129,9 @@ class MediaButtonEventHandler(
 
         if (customCommand.customAction == "ads_playing") {
             mediaService?.adsPlaying()
+        }
+        if (customCommand.customAction == "seek") {
+            mediaService?.seek(args.getLong("position"), args.getBoolean("playWhenReady"))
         }
 
         if (customCommand.customAction == "onTogglePlayPause") {
@@ -202,6 +162,8 @@ class MediaButtonEventHandler(
             }
         }
         if (customCommand.customAction == "play") {
+            Log.d("Player", "TESTE1 CUSTOM_COMMAND:  mediaService?.play()")
+            session.setCustomLayout(notificationPlayerCustomCommandButtons)
             mediaService?.play()
         }
         if (customCommand.customAction == "previous") {
@@ -214,21 +176,7 @@ class MediaButtonEventHandler(
             mediaService?.pause()
         }
         if (customCommand.customAction == "remove_notification") {
-            val metadataBuilder = MediaMetadata.Builder()
-            metadataBuilder.apply {
-                setArtist("Propaganda")
-                setTitle("Propaganda")
-                setDisplayTitle("Propaganda")
-            }
-            val url =
-                session.player.mediaMetadata.extras?.getString(PlayerPlugin.URL_ARGUMENT) ?: ""
-            val uri = if (url.startsWith("/")) Uri.fromFile(File(url)) else Uri.parse(url)
-            val a =
-                MediaItem.Builder().setMediaMetadata(metadataBuilder.build()).setUri(uri).build()
-
-            session.player.replaceMediaItem(0, a)
-
-//            session.player.removeMediaItem(0)
+//            mediaService.removeNotification();
         }
 
 
@@ -279,12 +227,21 @@ class MediaButtonEventHandler(
         }
 
         if (Intent.ACTION_MEDIA_BUTTON == intent.action) {
-            val ke = intent.getParcelableExtra<KeyEvent>(Intent.EXTRA_KEY_EVENT)
-            Log.d("Player", "Key: $ke")
-
-            if (ke!!.action == KeyEvent.ACTION_UP) {
+            @Suppress("DEPRECATION") val ke =
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
+                } else {
+                    intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
+                }
+            if (ke == null) {
                 return
             }
+
+            if (ke.action == KeyEvent.ACTION_UP) {
+                return
+            }
+
+            Log.d("Player", "Key: $ke")
 
             when (ke.keyCode) {
                 KeyEvent.KEYCODE_MEDIA_PLAY -> {
@@ -317,10 +274,9 @@ class MediaButtonEventHandler(
         } else if (intent.hasExtra(FAVORITE)) {
             PlayerSingleton.favorite(intent.getBooleanExtra(FAVORITE, false))
         }
+        return
 
     }
-
-
 }
 
 
