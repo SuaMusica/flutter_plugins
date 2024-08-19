@@ -1,7 +1,7 @@
 package br.com.suamusica.player
 
 import android.annotation.SuppressLint
-import android.app.Notification
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -19,7 +19,7 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
-import androidx.core.content.ContextCompat
+import androidx.core.app.NotificationCompat
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -28,7 +28,6 @@ import androidx.media3.common.MediaMetadata.PICTURE_TYPE_FRONT_COVER
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
-import androidx.media3.common.Player.Commands
 import androidx.media3.common.Player.DISCONTINUITY_REASON_SEEK
 import androidx.media3.common.Timeline
 import androidx.media3.common.Tracks
@@ -48,6 +47,7 @@ import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaController
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaNotification
+import androidx.media3.session.MediaNotification.ActionFactory
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionCommand
@@ -190,99 +190,79 @@ class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySes
             DataSourceBitmapLoader(applicationContext)
         player?.let {
             mediaSession = MediaSession.Builder(this, it)
-//                .setCustomLayout(
-//                    ImmutableList.of(
-//                        CommandButton.Builder()
-//                            .setDisplayName("Save to favorites")
-//                            .setIconResId(R.drawable.ic_favorite_notification_player)
-//                            .setSessionCommand(SessionCommand("favoritar", Bundle()))
-//
-//                            .build(),
-//                        CommandButton.Builder()
-//                            .setDisplayName("previous")
-//                            .setIconResId(R.drawable.ic_prev_notification_player)
-//                            .setSessionCommand(SessionCommand("previous", Bundle.EMPTY))
-//                            .build(),
-//                        CommandButton.Builder()
-//                            .setDisplayName("next")
-//                            .setIconResId(R.drawable.ic_next_notification_player)
-//                            .setSessionCommand(SessionCommand("next", Bundle.EMPTY))
-//                            .build(),
-//
-//                    ),
-//                )
                 .setBitmapLoader(CacheBitmapLoader(dataSourceBitmapLoader))
                 .setCallback(MediaButtonEventHandler(this))
                 .build()
 
+            this@MediaService.setMediaNotificationProvider(object : MediaNotification.Provider {
+                override fun createNotification(
+                    mediaSession: MediaSession,
+                    customLayout: ImmutableList<CommandButton>,
+                    actionFactory: ActionFactory,
+                    onNotificationChangedCallback: MediaNotification.Provider.Callback
+                ): MediaNotification {
+                    val media3NotificationManual =
+                        DefaultMediaNotificationProvider(applicationContext)
+                    val media3NotificationManualNot = media3NotificationManual.createNotification(
+                        mediaSession,
+                        ImmutableList.of(
+                            CommandButton.Builder()
+                                .setDisplayName("Save to favorites")
+                                .setIconResId(R.drawable.ic_favorite_notification_player)
+                                .setSessionCommand(SessionCommand("favoritar", Bundle()))
+                                .setEnabled(true)
+                                .build(),
+                            CommandButton.Builder()
+                                .setDisplayName("next")
+                                .setIconResId(R.drawable.ic_next_notification_player)
+                                .setSessionCommand(SessionCommand("next", Bundle.EMPTY))
+                                .setEnabled(true)
+                                .build(),
+                            ),
+                        actionFactory,
+                        onNotificationChangedCallback,
+                    )
+                    return media3NotificationManualNot
+                }
 
-//            this@MediaService.setMediaNotificationProvider(object : MediaNotification.Provider {
-//                override fun createNotification(
-//                    mediaSession: MediaSession,
-//                    customLayout: ImmutableList<CommandButton>,
-//                    actionFactory: MediaNotification.ActionFactory,
-//                    onNotificationChangedCallback: MediaNotification.Provider.Callback
-//                ): MediaNotification {
-//
-//                    val media3NotificationManual =
-//                        DefaultMediaNotificationProvider(applicationContext)
-//                    val media3NotificationManualNot = media3NotificationManual.createNotification(
-//                        mediaSession,
-//                        customLayout,
-//                        actionFactory,
-//                        onNotificationChangedCallback,
-//                    )
-//                    val oldNotification = notificationBuilder.buildNotification(
-//                        mediaSession,
-//                        media,
-//                        onGoing = true,
-//                        isPlayingExternal = false,
-//                        isFavorite = false,
-//                        mediaDuration = mediaSession.player.duration,
-//                        art = null
-//                    )
-////                    return MediaNotification(NOW_PLAYING_NOTIFICATION, buildNotification())
-//                    return media3NotificationManualNot
-//                }
-//
-//
-//                override fun handleCustomCommand(
-//                    session: MediaSession, action: String, extras: Bundle
-//                ): Boolean {
-//                    Log.d(TAG, "TESTE1 - handleCustomCommand3 $action")
-//                    if (action == "play") {
-//                        PlayerSingleton.play()
-//                    }
-//                    if (action == "pause") {
-//                        PlayerSingleton.pause()
-//                    }
-//                    if (action == "previous") {
-//                        PlayerSingleton.previous()
-//                    }
-//                    if (action == "next") {
-//                        PlayerSingleton.next()
-//                    }
-//                    if (action == "seek") {
-//                        seek(extras.getLong("position"), extras.getBoolean("playWhenReady"))
-//                    }
-//                    if (action == "favoritar") {
-//                        Log.d(
-//                            "Player",
-//                            "TESTE1 Favoritar: ${extras.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT)} | ${session.player.mediaMetadata.extras}"
-//                        )
-//                        val shouldFavorite =
-//                            session.player.mediaMetadata.extras?.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT)
-//                                ?: false
-//                        PlayerSingleton.favorite(!shouldFavorite)
-//                        session.player.mediaMetadata.extras?.putBoolean(
-//                            PlayerPlugin.IS_FAVORITE_ARGUMENT,
-//                            !shouldFavorite
-//                        )
-//                        buildSetCustomLayout(session, !shouldFavorite, this@MediaService)
-//                    }
-//                    return true
-//                }
-//            })
+
+                override fun handleCustomCommand(
+                    session: MediaSession, action: String, extras: Bundle
+                ): Boolean {
+                    Log.d(TAG, "TESTE1 - handleCustomCommand3 $action")
+                    if (action == "play") {
+                        PlayerSingleton.play()
+                    }
+                    if (action == "pause") {
+                        PlayerSingleton.pause()
+                    }
+                    if (action == "previous") {
+                        PlayerSingleton.previous()
+                    }
+                    if (action == "next") {
+                        PlayerSingleton.next()
+                    }
+                    if (action == "seek") {
+                        seek(extras.getLong("position"), extras.getBoolean("playWhenReady"))
+                    }
+                    if (action == "favoritar") {
+                        Log.d(
+                            "Player",
+                            "TESTE1 Favoritar: ${extras.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT)} | ${session.player.mediaMetadata.extras}"
+                        )
+                        val shouldFavorite =
+                            session.player.mediaMetadata.extras?.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT)
+                                ?: false
+                        PlayerSingleton.favorite(!shouldFavorite)
+                        session.player.mediaMetadata.extras?.putBoolean(
+                            PlayerPlugin.IS_FAVORITE_ARGUMENT,
+                            !shouldFavorite
+                        )
+                        buildSetCustomLayout(session, !shouldFavorite, this@MediaService)
+                    }
+                    return true
+                }
+            })
         }
 
 
@@ -462,8 +442,6 @@ class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySes
             setAlbumTitle(media.name)
             setArtist(media.author)
             setArtworkData(stream.toByteArray(), PICTURE_TYPE_FRONT_COVER)
-//            setArtworkUri(Uri.parse(media.bigCoverUrl))
-
             setArtist(media.author)
             setTitle(media.name)
             setDisplayTitle(media.name)

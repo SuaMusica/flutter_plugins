@@ -106,7 +106,6 @@ class MediaButtonEventHandler(
     override fun onPostConnect(session: MediaSession, controller: MediaSession.ControllerInfo) {
         super.onPostConnect(session, controller)
         if (notificationPlayerCustomCommandButtons.isNotEmpty()) {
-            /* Setting custom player command buttons to mediaLibrarySession for player notification. */
             session.setCustomLayout(notificationPlayerCustomCommandButtons)
         }
         Log.d("Player", "onPostConnect")
@@ -120,12 +119,6 @@ class MediaButtonEventHandler(
         args: Bundle
     ): ListenableFuture<SessionResult> {
         Log.d("Player", "TESTE1 CUSTOM_COMMAND: ${customCommand.customAction} | $args")
-//        if (session.player.mediaMetadata.title == "Propaganda") {
-//            buildSetCustomLayout(session, false, mediaService)
-//            return Futures.immediateFuture(
-//                SessionResult(SessionResult.RESULT_SUCCESS)
-//            )
-//        }
 
         if (customCommand.customAction == "ads_playing") {
             mediaService?.adsPlaying()
