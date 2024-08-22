@@ -1,15 +1,10 @@
 package br.com.suamusica.player
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
-import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
-import androidx.media3.common.Player
-import androidx.media3.common.Player.COMMAND_PLAY_PAUSE
 import androidx.media3.common.Player.COMMAND_SEEK_TO_NEXT
 import androidx.media3.common.Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM
 import androidx.media3.common.Player.COMMAND_SEEK_TO_PREVIOUS
@@ -18,55 +13,19 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.CommandButton
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
+import androidx.media3.session.R.drawable
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
-import java.io.File
 
 @UnstableApi
 class MediaButtonEventHandler(
     private val mediaService: MediaService?,
 ) : MediaLibraryService.MediaLibrarySession.Callback {
-    enum class NotificationPlayerCustomCommandButton(
-        val customAction: String,
-        val commandButton: CommandButton,
-    ) {
-        PREVIOUS(
-
-            "previous",
-            CommandButton.Builder()
-                .setDisplayName("previous")
-                .setIconResId(androidx.media3.session.R.drawable.media3_notification_seek_to_previous)
-                .setSessionCommand(SessionCommand("previous", Bundle.EMPTY))
-                .build(),
-        ),
-        NEXT(
-
-            "next",
-            CommandButton.Builder()
-                .setDisplayName("next")
-                .setIconResId(androidx.media3.session.R.drawable.media3_notification_seek_to_next)
-                .setSessionCommand(SessionCommand("next", Bundle.EMPTY))
-                .build(),
-        ),
-
-        FAVORITE(
-
-            "favoritar",
-            CommandButton.Builder()
-                .setDisplayName("Save to favorites")
-                .setIconResId(R.drawable.ic_favorite_notification_player)
-                .setSessionCommand(SessionCommand("favoritar", Bundle()))
-                .build()
-        ),
-    }
-
-    private val notificationPlayerCustomCommandButtons =
-        NotificationPlayerCustomCommandButton.entries.map { command -> command.commandButton }
-
-
+    private val BROWSABLE_ROOT = "/"
+    private val EMPTY_ROOT = "@empty@"
     override fun onConnect(
         session: MediaSession,
         controller: MediaSession.ControllerInfo
@@ -78,7 +37,8 @@ class MediaButtonEventHandler(
                 .add(SessionCommand("seek", session.token.extras))
                 .add(SessionCommand("previous", Bundle.EMPTY))
                 .add(SessionCommand("pause", Bundle.EMPTY))
-                .add(SessionCommand("favoritar", Bundle()))
+                .add(SessionCommand("favoritar", Bundle.EMPTY))
+                .add(SessionCommand("desfavoritar", Bundle.EMPTY))
                 .add(SessionCommand("prepare", session.token.extras))
                 .add(SessionCommand("play", Bundle.EMPTY))
                 .add(SessionCommand("remove_notification", Bundle.EMPTY))
@@ -93,7 +53,6 @@ class MediaButtonEventHandler(
                 .remove(COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
                 .remove(COMMAND_SEEK_TO_NEXT)
                 .remove(COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
-//                .remove(COMMAND_PLAY_PAUSE)
                 .build()
 
         return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
@@ -102,14 +61,9 @@ class MediaButtonEventHandler(
             .build()
     }
 
-
     override fun onPostConnect(session: MediaSession, controller: MediaSession.ControllerInfo) {
         super.onPostConnect(session, controller)
-        if (notificationPlayerCustomCommandButtons.isNotEmpty()) {
-            session.setCustomLayout(notificationPlayerCustomCommandButtons)
-        }
         Log.d("Player", "onPostConnect")
-
     }
 
     override fun onCustomCommand(
@@ -119,10 +73,12 @@ class MediaButtonEventHandler(
         args: Bundle
     ): ListenableFuture<SessionResult> {
         Log.d("Player", "TESTE1 CUSTOM_COMMAND: ${customCommand.customAction} | $args")
-
-        if (customCommand.customAction == "ads_playing") {
-            mediaService?.adsPlaying()
+        if (customCommand.customAction == "favoritar" || customCommand.customAction == "desfavoritar") {
+            val isFavorite = customCommand.customAction == "favoritar"
+            buildIcons(isFavorite)
+            PlayerSingleton.favorite(isFavorite)
         }
+
         if (customCommand.customAction == "seek") {
             mediaService?.seek(args.getLong("position"), args.getBoolean("playWhenReady"))
         }
@@ -133,30 +89,12 @@ class MediaButtonEventHandler(
 
         if (customCommand.customAction == "send_notification") {
             args.let {
-                val name = it.getString(PlayerPlugin.NAME_ARGUMENT)!!
-                val author = it.getString(PlayerPlugin.AUTHOR_ARGUMENT)!!
-                val url = it.getString(PlayerPlugin.URL_ARGUMENT)!!
-                val coverUrl = it.getString(PlayerPlugin.COVER_URL_ARGUMENT)!!
-                val isPlaying = it.getBoolean(PlayerPlugin.IS_PLAYING_ARGUMENT)
                 val isFavorite = it.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT)
-                val bigCoverUrl = it.getString(PlayerPlugin.BIG_COVER_URL_ARGUMENT)
-//                buildSetCustomLayout(session, isFavorite, mediaService)
-                mediaService?.sendNotification(
-                    Media(
-                        name,
-                        author,
-                        url,
-                        coverUrl,
-                        bigCoverUrl,
-                        isFavorite,
-                    ),
-                    isPlaying,
-                )
+                buildIcons(isFavorite)
+
             }
         }
         if (customCommand.customAction == "play") {
-            Log.d("Player", "TESTE1 CUSTOM_COMMAND:  mediaService?.play()")
-            session.setCustomLayout(notificationPlayerCustomCommandButtons)
             mediaService?.play()
         }
         if (customCommand.customAction == "previous") {
@@ -168,10 +106,9 @@ class MediaButtonEventHandler(
         if (customCommand.customAction == "pause") {
             mediaService?.pause()
         }
-        if (customCommand.customAction == "remove_notification") {
-//            mediaService.removeNotification();
+        if (customCommand.customAction == "remove_notification" || customCommand.customAction == "ads_playing" ) {
+            mediaService?.removeNotification();
         }
-
 
         if (customCommand.customAction == "prepare") {
             args.let {
@@ -185,11 +122,6 @@ class MediaButtonEventHandler(
                 if (it.containsKey(PlayerPlugin.IS_FAVORITE_ARGUMENT)) {
                     isFavorite = it.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT)
                 }
-                Log.d(
-                    "Player",
-                    "TESTE1 bigCoverUrl: $bigCoverUrl"
-                )
-//                buildSetCustomLayout(session, isFavorite ?: false, mediaService)
                 mediaService?.prepare(
                     cookie,
                     Media(name, author, url, coverUrl, bigCoverUrl, isFavorite)
@@ -198,6 +130,41 @@ class MediaButtonEventHandler(
         }
         return Futures.immediateFuture(
             SessionResult(SessionResult.RESULT_SUCCESS)
+        )
+    }
+
+    private fun buildIcons(isFavorite: Boolean): Unit? {
+        val list = ImmutableList.of(
+            CommandButton.Builder()
+                .setDisplayName("Save to favorites")
+                .setIconResId(if (isFavorite) drawable.media3_icon_heart_filled else drawable.media3_icon_heart_unfilled)
+                .setSessionCommand(
+                    SessionCommand(
+                        if (isFavorite) "desfavoritar" else "favoritar",
+                        Bundle()
+                    )
+                )
+                .setEnabled(true)
+                .build(),
+            CommandButton.Builder()
+                .setDisplayName("next")
+                .setIconResId(drawable.media3_icon_next)
+                .setSessionCommand(SessionCommand("next", Bundle.EMPTY))
+                .setEnabled(true)
+                .build(),
+        )
+        return mediaService?.mediaSession?.setCustomLayout(
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                list.plus(
+                    CommandButton.Builder()
+                        .setDisplayName("previous")
+                        .setIconResId(drawable.media3_icon_previous)
+                        .setSessionCommand(SessionCommand("previous", Bundle.EMPTY))
+                        .build()
+                )
+            } else{
+                list
+            }
         )
     }
 
@@ -264,52 +231,10 @@ class MediaButtonEventHandler(
                     PlayerSingleton.stop()
                 }
             }
-        } else if (intent.hasExtra(FAVORITE)) {
-            PlayerSingleton.favorite(intent.getBooleanExtra(FAVORITE, false))
+        } else if (intent.hasExtra(PlayerPlugin.FAVORITE)) {
+            PlayerSingleton.favorite(intent.getBooleanExtra(PlayerPlugin.FAVORITE, false))
         }
         return
-
     }
 }
 
-
-@UnstableApi
-fun buildSetCustomLayout(
-    session: MediaSession,
-    shouldFavorite: Boolean,
-    mediaService: MediaService,
-) {
-
-    mediaService.mediaSession?.setCustomLayout(
-        session.mediaNotificationControllerInfo!!,
-        ImmutableList.of(
-
-            CommandButton.Builder()
-                .setDisplayName("Save to favorites")
-                .setIconResId(
-                    if (shouldFavorite) {
-                        R.drawable.ic_unfavorite_notification_player
-                    } else {
-                        R.drawable.ic_favorite_notification_player
-                    }
-                )
-                .setSessionCommand(
-                    SessionCommand(
-                        "favoritar",
-                        session.player.mediaMetadata.extras ?: Bundle.EMPTY
-                    )
-                )
-                .build(),
-            CommandButton.Builder()
-                .setDisplayName("previous")
-                .setIconResId(R.drawable.ic_prev_notification_player)
-                .setSessionCommand(SessionCommand("previous", Bundle.EMPTY))
-                .build(),
-            CommandButton.Builder()
-                .setDisplayName("NEXT")
-                .setIconResId(R.drawable.ic_next_notification_player)
-                .setSessionCommand(SessionCommand("next", Bundle.EMPTY))
-                .build(),
-        )
-    )
-}

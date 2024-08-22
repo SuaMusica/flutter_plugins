@@ -1,25 +1,23 @@
 package br.com.suamusica.player
 
 import android.annotation.SuppressLint
-import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Color
 import android.net.Uri
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.PowerManager
+import android.service.media.MediaBrowserService
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
-import androidx.core.app.NotificationCompat
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -31,7 +29,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.Player.DISCONTINUITY_REASON_SEEK
 import androidx.media3.common.Timeline
 import androidx.media3.common.Tracks
-import androidx.media3.common.util.NotificationUtil
+import androidx.media3.common.util.BitmapLoader
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.util.Util
 import androidx.media3.datasource.DataSource
@@ -57,8 +55,10 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.FutureTarget
 import com.bumptech.glide.request.RequestOptions
-import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.ListeningExecutorService
+import com.google.common.util.concurrent.MoreExecutors
+import com.google.common.util.concurrent.SettableFuture
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -66,11 +66,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 @UnstableApi
-class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySession.Callback {
+class MediaService : MediaSessionService() {
     private val TAG = "MediaService"
     private val userAgent =
         "SuaMusica/player (Linux; Android ${Build.VERSION.SDK_INT}; ${Build.BRAND}/${Build.MODEL})"
@@ -92,12 +93,7 @@ class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySes
 
     private var previousState: Int = -1
 
-    private val BROWSABLE_ROOT = "/"
-    private val EMPTY_ROOT = "@empty@"
-    private lateinit var notificationBuilder: NotificationBuilder
     private lateinit var dataSourceBitmapLoader: DataSourceBitmapLoader
-    private lateinit var defaultMediaNotificationProvider: DefaultMediaNotificationProvider
-    private lateinit var actionFactory: MediaNotification.ActionFactory
 
     companion object {
         private val glideOptions = RequestOptions().fallback(R.drawable.default_art)
@@ -106,13 +102,13 @@ class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySes
         private const val NOTIFICATION_LARGE_ICON_SIZE = 500 // px
         private const val LOCAL_COVER_PNG = "../app_flutter/covers/0.png" // px
 
-        @kotlin.OptIn(DelicateCoroutinesApi::class)
-        fun getArts(context: Context, artUri: String?, callback: (Bitmap?) -> Unit) {
+        @OptIn(DelicateCoroutinesApi::class)
+        fun getArts(context: Context, artUri: String?, callback: (Bitmap) -> Unit) {
             GlobalScope.launch(Dispatchers.IO) {
                 Log.i("getArts", " artUri: $artUri")
                 val glider = Glide.with(context).applyDefaultRequestOptions(glideOptions).asBitmap()
                 val file = File(context.filesDir, LOCAL_COVER_PNG)
-                var bitmap: Bitmap? = null
+                lateinit var bitmap: Bitmap
                 val futureTarget: FutureTarget<Bitmap>? = when {
                     !artUri.isNullOrBlank() -> glider.load(artUri)
                         .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
@@ -131,7 +127,7 @@ class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySes
                         if (file.exists()) {
                             BitmapFactory.decodeFile(file.absolutePath)
                         } else {
-                            null
+                            BitmapFactory.decodeResource(context.resources, R.drawable.default_art)
                         }
                     }
                 }
@@ -142,14 +138,12 @@ class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySes
         }
     }
 
-
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "onStartCommand")
         super.onStartCommand(intent, flags, startId)
         return Service.START_STICKY
 
     }
-
 
     override fun onCreate() {
         super.onCreate()
@@ -166,25 +160,12 @@ class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySes
         wifiLock?.setReferenceCounted(false)
         wakeLock?.setReferenceCounted(false)
 
-//        val sessionActivityPendingIntent =
-//            this.packageManager?.getLaunchIntentForPackage(this.packageName)?.let { sessionIntent ->
-//                PendingIntent.getActivity(this, 0, sessionIntent, PendingIntent.FLAG_IMMUTABLE)
-//            }
-//        val mediaButtonReceiver = ComponentName(this, MediaButtonReceiver::class.java)
-//        mediaSession = mediaSession?.let { it }
-//            ?: MediaSessionCompat(this, TAG, mediaButtonReceiver, null)
-//                .apply {
-//                    setSessionActivity(sessionActivityPendingIntent)
-//                    isActive = true
-//                }
-//        mediaSession?.setFlags(MediaSessionCompat.FLAG_HANDLES_QUEUE_COMMANDS)
         player = ExoPlayer.Builder(this).build().apply {
             setAudioAttributes(uAmpAudioAttributes, true)
             addListener(playerEventListener())
             // setWakeMode(C.WAKE_MODE_NETWORK)
             setHandleAudioBecomingNoisy(true)
         }
-        notificationBuilder = NotificationBuilder(applicationContext)
 
         dataSourceBitmapLoader =
             DataSourceBitmapLoader(applicationContext)
@@ -193,150 +174,14 @@ class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySes
                 .setBitmapLoader(CacheBitmapLoader(dataSourceBitmapLoader))
                 .setCallback(MediaButtonEventHandler(this))
                 .build()
-
-            this@MediaService.setMediaNotificationProvider(object : MediaNotification.Provider {
-                override fun createNotification(
-                    mediaSession: MediaSession,
-                    customLayout: ImmutableList<CommandButton>,
-                    actionFactory: ActionFactory,
-                    onNotificationChangedCallback: MediaNotification.Provider.Callback
-                ): MediaNotification {
-                    val media3NotificationManual =
-                        DefaultMediaNotificationProvider(applicationContext)
-                    val media3NotificationManualNot = media3NotificationManual.createNotification(
-                        mediaSession,
-                        ImmutableList.of(
-                            CommandButton.Builder()
-                                .setDisplayName("Save to favorites")
-                                .setIconResId(R.drawable.ic_favorite_notification_player)
-                                .setSessionCommand(SessionCommand("favoritar", Bundle()))
-                                .setEnabled(true)
-                                .build(),
-                            CommandButton.Builder()
-                                .setDisplayName("next")
-                                .setIconResId(R.drawable.ic_next_notification_player)
-                                .setSessionCommand(SessionCommand("next", Bundle.EMPTY))
-                                .setEnabled(true)
-                                .build(),
-                            ),
-                        actionFactory,
-                        onNotificationChangedCallback,
-                    )
-                    return media3NotificationManualNot
-                }
-
-
-                override fun handleCustomCommand(
-                    session: MediaSession, action: String, extras: Bundle
-                ): Boolean {
-                    Log.d(TAG, "TESTE1 - handleCustomCommand3 $action")
-                    if (action == "play") {
-                        PlayerSingleton.play()
-                    }
-                    if (action == "pause") {
-                        PlayerSingleton.pause()
-                    }
-                    if (action == "previous") {
-                        PlayerSingleton.previous()
-                    }
-                    if (action == "next") {
-                        PlayerSingleton.next()
-                    }
-                    if (action == "seek") {
-                        seek(extras.getLong("position"), extras.getBoolean("playWhenReady"))
-                    }
-                    if (action == "favoritar") {
-                        Log.d(
-                            "Player",
-                            "TESTE1 Favoritar: ${extras.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT)} | ${session.player.mediaMetadata.extras}"
-                        )
-                        val shouldFavorite =
-                            session.player.mediaMetadata.extras?.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT)
-                                ?: false
-                        PlayerSingleton.favorite(!shouldFavorite)
-                        session.player.mediaMetadata.extras?.putBoolean(
-                            PlayerPlugin.IS_FAVORITE_ARGUMENT,
-                            !shouldFavorite
-                        )
-                        buildSetCustomLayout(session, !shouldFavorite, this@MediaService)
-                    }
-                    return true
-                }
-            })
         }
-
-
-//        mediaSession?.let { mediaSession ->
-//            val sessionToken = mediaSession.sessionToken
-//            // we must connect the service to the media session
-//            this.sessionToken = sessionToken
-//
-//            val mediaControllerCallback = MediaControllerCallback()
-//
-//            mediaController = MediaControllerCompat(this, sessionToken).also { mediaController ->
-//                mediaController.registerCallback(mediaControllerCallback)
-//
-//                mediaSessionConnector = MediaSessionConnector(mediaSession).also { connector ->
-//                    connector.setPlayer(player)
-//                    connector.setPlaybackPreparer(MusicPlayerPlaybackPreparer(this))
-//                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-//                        if (Build.MANUFACTURER.equals("samsung", ignoreCase = true)) {
-//                            connector.setCustomActionProviders(
-//                                FavoriteModeActionProvider(applicationContext),
-//                                NextActionProvider(),
-//                                PreviousActionProvider(),
-//                            )
-//                        } else {
-//                            connector.setCustomActionProviders(
-//                                FavoriteModeActionProvider(applicationContext),
-//                                PreviousActionProvider(),
-//                                NextActionProvider(),
-//                            )
-//                        }
-//                    }
-//                    connector.setMediaButtonEventHandler(MediaButtonEventHandler())
-//                    connector.setEnabledPlaybackActions(
-//                        PlaybackStateCompat.ACTION_PLAY
-//                                or PlaybackStateCompat.ACTION_PAUSE
-//                                or PlaybackStateCompat.ACTION_REWIND
-//                                or PlaybackStateCompat.ACTION_FAST_FORWARD
-//                                or PlaybackStateCompat.ACTION_SEEK_TO
-//                    )
-//                }
-//            }
-//        }
     }
 
     override fun onGetSession(
         controllerInfo: MediaSession.ControllerInfo
     ): MediaSession? = mediaSession
 
-
-    @OptIn(UnstableApi::class)
-    private fun buildNotification() {
-        val notificationManager =
-            PlayerNotificationManager.Builder(applicationContext, 111, NOW_PLAYING_CHANNEL)
-                .setChannelImportance(NotificationUtil.IMPORTANCE_HIGH)
-                .setSmallIconResourceId(R.drawable.ic_notification)
-                .setPauseActionIconResourceId(R.drawable.ic_pause_notification_player)
-                .setPlayActionIconResourceId(R.drawable.ic_play_notification_player)
-                .setChannelDescriptionResourceId(R.string.app_name)
-                .setChannelNameResourceId(R.string.app_name)
-                .build()
-
-        notificationManager.apply {
-            this.setUseRewindAction(false)
-            this.setUseFastForwardAction(false)
-            this.setUsePreviousAction(false)
-            this.setUseNextAction(false)
-            this.setUsePlayPauseActions(true)
-            this.setUseFastForwardActionInCompactView(true)
-            this.setPlayer(player)
-            this.setColor(Color.RED)
-            this.setColorized(true)
-        }
-    }
-    override fun onTaskRemoved(rootIntent: Intent) {
+    override fun onTaskRemoved(rootIntent: Intent?) {
         Log.d(TAG, "onTaskRemoved")
         super.onTaskRemoved(rootIntent)
 
@@ -355,7 +200,7 @@ class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySes
         Log.d(TAG, "onDestroy")
 //        mediaController?.unregisterCallback(mediaControllerCallback)
         releaseLock()
-//        mediaSessionConnector?.setPlayer(null)
+        removeNotification()
         player?.release()
         stopSelf()
 
@@ -375,7 +220,6 @@ class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySes
         packageValidator = null
         mediaSession = null
         mediaController = null
-//        mediaSessionConnector = null
         wifiLock = null
         wakeLock = null
 
@@ -395,27 +239,6 @@ class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySes
         }
     }
 
-//    override fun onGetRoot(
-//        clientPackageName: String,
-//        clientUid: Int,
-//        rootHints: Bundle?
-//    ): BrowserRoot? {
-//        val isKnowCaller = packageValidator?.isKnownCaller(clientPackageName, clientUid) ?: false
-//
-//        return if (isKnowCaller) {
-//            BrowserRoot(BROWSABLE_ROOT, null)
-//        } else {
-//            BrowserRoot(EMPTY_ROOT, null)
-//        }
-//    }
-//
-//    override fun onLoadChildren(
-//        parentId: String,
-//        result: Result<MutableList<MediaBrowserCompat.MediaItem>>
-//    ) {
-//        result.sendResult(mutableListOf())
-//    }
-
     fun prepare(cookie: String, media: Media) {
         this.media = media
         val dataSourceFactory = DefaultHttpDataSource.Factory()
@@ -425,29 +248,7 @@ class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySes
         dataSourceFactory.setAllowCrossProtocolRedirects(true)
         dataSourceFactory.setDefaultRequestProperties(mapOf("Cookie" to cookie))
         // Metadata Build
-        val metadataBuilder = MediaMetadata.Builder()
-        val bundle = Bundle()
-        bundle.putBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT, media.isFavorite ?: false)
-        bundle.putString(PlayerPlugin.URL_ARGUMENT, media.url ?: "")
-        val art = try {
-            dataSourceBitmapLoader.loadBitmap(Uri.parse(media.bigCoverUrl!!))
-                .get(5000, TimeUnit.MILLISECONDS)
-        } catch (e: Exception) {
-            Log.d("Player", "TESTE1 catch")
-            BitmapFactory.decodeResource(resources, R.drawable.default_art)
-        }
-        val stream = ByteArrayOutputStream()
-        art.compress(Bitmap.CompressFormat.PNG, 95, stream)
-        metadataBuilder.apply {
-            setAlbumTitle(media.name)
-            setArtist(media.author)
-            setArtworkData(stream.toByteArray(), PICTURE_TYPE_FRONT_COVER)
-            setArtist(media.author)
-            setTitle(media.name)
-            setDisplayTitle(media.name)
-            setExtras(bundle)
-        }
-        val metadata = metadataBuilder.build()
+        val metadata = buildMetaData(media)
         val url = media.url
         Log.i(TAG, "Player: URL: $url")
 
@@ -478,8 +279,42 @@ class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySes
         }
         player?.pause()
         player?.prepare(source)
-        player?.play()
-        Log.d("Player", "sendNotification")
+    }
+
+    private fun buildMetaData(media: Media): MediaMetadata {
+        val metadataBuilder = MediaMetadata.Builder()
+
+        if (media.isFavorite != null) {
+            mediaSession?.sessionExtras?.putBoolean(
+                PlayerPlugin.IS_FAVORITE_ARGUMENT,
+                media.isFavorite
+            )
+        }
+        val stream = ByteArrayOutputStream()
+
+        val art = try {
+            dataSourceBitmapLoader.loadBitmap(Uri.parse(media.bigCoverUrl!!))
+                .get(5000, TimeUnit.MILLISECONDS)
+        } catch (e: Exception) {
+            Log.d("Player", "TESTE1 catch")
+            var bitmapFallback: Bitmap? = null
+            getArts(applicationContext, media.bigCoverUrl) { bitmap ->
+                bitmapFallback = bitmap
+            }
+            bitmapFallback
+        }
+
+        art?.compress(Bitmap.CompressFormat.PNG, 95, stream)
+        metadataBuilder.apply {
+            setAlbumTitle(media.name)
+            setArtist(media.author)
+            setArtworkData(stream.toByteArray(), PICTURE_TYPE_FRONT_COVER)
+            setArtist(media.author)
+            setTitle(media.name)
+            setDisplayTitle(media.name)
+        }
+        val metadata = metadataBuilder.build()
+        return metadata
     }
 
     //    }
@@ -489,66 +324,9 @@ class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySes
         }
     }
 
-    fun adsPlaying() {
-        Log.i(TAG, "TESTE2 - adsPlaying")
-        getArts(applicationContext, null) { bitmap ->
-            this.media = Media("Propaganda", "", "", "", null, null)
-            val metadataBuilder = MediaMetadata.Builder()
-            metadataBuilder.apply {
-                setArtist("Propaganda")
-                setTitle("Propaganda")
-                setDisplayTitle("Propaganda")
-            }
-            val url =
-                player?.mediaMetadata?.extras?.getString(PlayerPlugin.URL_ARGUMENT) ?: ""
-            val uri = if (url.startsWith("/")) Uri.fromFile(File(url)) else Uri.parse(url)
-            val adsMedia =
-                MediaItem.Builder().setMediaMetadata(metadataBuilder.build()).setUri(uri).build()
-
-            player?.replaceMediaItem(0, adsMedia)
-//            shouldStartService(it)
-            }
-        }
-
-
-
-    fun setFavorite(favorite: Boolean?) {
-        media?.let {
-            this.media = Media(it.name, it.author, it.url, it.coverUrl, it.bigCoverUrl, favorite)
-            sendNotification(this.media!!, null)
-        }
+    fun removeNotification() {
+        player?.removeMediaItem(0);
     }
-
-    fun sendNotification(media: Media, isPlayingExternal: Boolean?) {
-        getArts(applicationContext, media.bigCoverUrl ?: media.coverUrl) { bitmap ->
-            mediaSession?.let {
-                val onGoing: Boolean = if (isPlayingExternal == null) {
-                    val state = player?.playbackState ?: PlaybackStateCompat.STATE_NONE
-                    state == PlaybackStateCompat.STATE_PLAYING || state == PlaybackStateCompat.STATE_BUFFERING
-                } else {
-                    isPlayingExternal
-                }
-                this.media = media
-
-
-//                val notification = notificationBuilder?.buildNotification(
-//                    it,
-//                    media,
-//                    onGoing,
-//                    isPlayingExternal,
-//                    media.isFavorite,
-//                    player?.duration, bitmap
-//                )
-//                notification?.let {
-//                    notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
-//                }
-            }
-        }
-    }
-
-//    fun removeNotification() {
-//        removeNowPlayingNotification();
-//    }
 
     fun seek(position: Long, playWhenReady: Boolean) {
         player?.seekTo(position)
@@ -647,9 +425,24 @@ class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySes
                 Log.i(TAG, "onTracksChanged: ")
             }
 
-            override fun onLoadingChanged(isLoading: Boolean) {
-                Log.i(TAG, "onLoadingChanged: isLoading: $isLoading")
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                super.onPlaybackStateChanged(playbackState)
             }
+
+            override fun onPositionDiscontinuity(
+                oldPosition: Player.PositionInfo,
+                newPosition: Player.PositionInfo,
+                reason: Int
+            ) {
+//                super.onPositionDiscontinuity(oldPosition, newPosition, reason)
+                Log.i(TAG, "onPositionDiscontinuity: $reason")
+                if (reason == DISCONTINUITY_REASON_SEEK) {
+                    val bundle = Bundle()
+                    bundle.putString("type", "seek-end")
+                    mediaSession?.setSessionExtras(bundle)
+                }
+            }
+
 
             override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
                 Log.i(
@@ -733,20 +526,9 @@ class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySes
                 mediaSession?.setSessionExtras(bundle)
             }
 
-            override fun onPositionDiscontinuity(reason: Int) {
-                Log.i(TAG, "onPositionDiscontinuity: $reason")
-                if (reason == DISCONTINUITY_REASON_SEEK) {
-                    val bundle = Bundle()
-                    bundle.putString("type", "seek-end")
-                    mediaSession?.setSessionExtras(bundle)
-                }
-
-            }
-
             override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters) {
                 Log.i(TAG, "onPlaybackParametersChanged: $playbackParameters")
             }
-
         }
     }
 
@@ -799,7 +581,7 @@ class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySes
 //        }
 //    }
 
-    fun stopService() {
+    private fun stopService() {
         if (isForegroundService) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 stopForeground(STOP_FOREGROUND_DETACH)
@@ -821,62 +603,62 @@ class MediaService : MediaSessionService(),  MediaLibraryService.MediaLibrarySes
 
         override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
             Log.d(TAG, "onPlaybackStateChanged1 state: $state")
-            updateNotification(state!!)
+//            updateNotification(state!!)
         }
 
         override fun onQueueChanged(queue: MutableList<MediaSessionCompat.QueueItem>?) {
             Log.d(TAG, "onQueueChanged queue: $queue")
         }
 
-        @SuppressLint("WakelockTimeout")
-        private fun updateNotification(state: PlaybackStateCompat) {
-            Log.d(TAG, "TESTE1 updateNotification")
-            if (mediaSession == null) {
-                return
-            }
-            getArts(applicationContext, media?.bigCoverUrl ?: media?.coverUrl) { bitmap ->
-                val updatedState = state.state
-                val onGoing =
-                    updatedState == PlaybackStateCompat.STATE_PLAYING || updatedState == PlaybackStateCompat.STATE_BUFFERING
-                // Skip building a notification when state is "none".
-//                val notification = if (updatedState != PlaybackStateCompat.STATE_NONE) {
-//                    buildNotification(updatedState, onGoing, bitmap)
-//                } else {
-//                    null
-//                }
-                Log.d(TAG, "!!! updateNotification state: $updatedState $onGoing")
-
-                when (updatedState) {
-                    PlaybackStateCompat.STATE_BUFFERING, PlaybackStateCompat.STATE_PLAYING -> {
-                        Log.i(TAG, "updateNotification: STATE_BUFFERING or STATE_PLAYING")
-                        /**
-                         * This may look strange, but the documentation for [Service.startForeground]
-                         * notes that "calling this method does *not* put the service in the started
-                         * state itself, even though the name sounds like it."
-                         */
-//                        if (notification != null) {
-//                            notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
-//                            shouldStartService(notification)
+//        @SuppressLint("WakelockTimeout")
+//        private fun updateNotification(state: PlaybackStateCompat) {
+//            Log.d(TAG, "TESTE1 updateNotification")
+//            if (mediaSession == null) {
+//                return
+//            }
+//            getArts(applicationContext, media?.bigCoverUrl ?: media?.coverUrl) { bitmap ->
+//                val updatedState = state.state
+//                val onGoing =
+//                    updatedState == PlaybackStateCompat.STATE_PLAYING || updatedState == PlaybackStateCompat.STATE_BUFFERING
+//                // Skip building a notification when state is "none".
+////                val notification = if (updatedState != PlaybackStateCompat.STATE_NONE) {
+////                    buildNotification(updatedState, onGoing, bitmap)
+////                } else {
+////                    null
+////                }
+//                Log.d(TAG, "!!! updateNotification state: $updatedState $onGoing")
+//
+//                when (updatedState) {
+//                    PlaybackStateCompat.STATE_BUFFERING, PlaybackStateCompat.STATE_PLAYING -> {
+//                        Log.i(TAG, "updateNotification: STATE_BUFFERING or STATE_PLAYING")
+//                        /**
+//                         * This may look strange, but the documentation for [Service.startForeground]
+//                         * notes that "calling this method does *not* put the service in the started
+//                         * state itself, even though the name sounds like it."
+//                         */
+////                        if (notification != null) {
+////                            notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
+////                            shouldStartService(notification)
+////                        }
+//                    }
+//
+//                    else -> {
+//                        if (isForegroundService) {
+//                            // If playback has ended, also stop the service.
+//                            if (updatedState == PlaybackStateCompat.STATE_NONE && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+//                                stopService()
+//                            }
+////                            if (notification != null) {
+////                                notificationManager?.notify(
+////                                    NOW_PLAYING_NOTIFICATION,
+////                                    notification
+////                                )
+////                            } else
+////                                removeNowPlayingNotification()
 //                        }
-                    }
-
-                    else -> {
-                        if (isForegroundService) {
-                            // If playback has ended, also stop the service.
-                            if (updatedState == PlaybackStateCompat.STATE_NONE && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                                stopService()
-                            }
-//                            if (notification != null) {
-//                                notificationManager?.notify(
-//                                    NOW_PLAYING_NOTIFICATION,
-//                                    notification
-//                                )
-//                            } else
-//                                removeNowPlayingNotification()
-                        }
-                    }
-                }
-            }
-        }
+//                    }
+//                }
+//            }
+//        }
     }
 }

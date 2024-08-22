@@ -24,6 +24,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin,ActivityAware {
         const val LOAD_ONLY = "loadOnly"
         const val RELEASE_MODE_ARGUMENT = "releaseMode"
         private const val CHANNEL = "suamusica.com.br/player"
+        const val FAVORITE: String = "favorite"
 
         // Method names
         const val LOAD_METHOD = "load"
