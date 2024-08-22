@@ -1,6 +1,5 @@
 package br.com.suamusica.player
 
-import android.annotation.SuppressLint
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -12,7 +11,6 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.PowerManager
-import android.service.media.MediaBrowserService
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
@@ -29,7 +27,6 @@ import androidx.media3.common.Player
 import androidx.media3.common.Player.DISCONTINUITY_REASON_SEEK
 import androidx.media3.common.Timeline
 import androidx.media3.common.Tracks
-import androidx.media3.common.util.BitmapLoader
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.util.Util
 import androidx.media3.datasource.DataSource
@@ -40,25 +37,15 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.session.CacheBitmapLoader
-import androidx.media3.session.CommandButton
-import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaController
-import androidx.media3.session.MediaLibraryService
-import androidx.media3.session.MediaNotification
-import androidx.media3.session.MediaNotification.ActionFactory
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
-import androidx.media3.session.SessionCommand
-import androidx.media3.ui.PlayerNotificationManager
 import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.FutureTarget
 import com.bumptech.glide.request.RequestOptions
 import com.google.common.util.concurrent.ListenableFuture
-import com.google.common.util.concurrent.ListeningExecutorService
-import com.google.common.util.concurrent.MoreExecutors
-import com.google.common.util.concurrent.SettableFuture
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -66,7 +53,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -425,16 +411,11 @@ class MediaService : MediaSessionService() {
                 Log.i(TAG, "onTracksChanged: ")
             }
 
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                super.onPlaybackStateChanged(playbackState)
-            }
-
             override fun onPositionDiscontinuity(
                 oldPosition: Player.PositionInfo,
                 newPosition: Player.PositionInfo,
                 reason: Int
             ) {
-//                super.onPositionDiscontinuity(oldPosition, newPosition, reason)
                 Log.i(TAG, "onPositionDiscontinuity: $reason")
                 if (reason == DISCONTINUITY_REASON_SEEK) {
                     val bundle = Bundle()
@@ -443,64 +424,34 @@ class MediaService : MediaSessionService() {
                 }
             }
 
-
-            override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
-                Log.i(
-                    TAG,
-                    "onPlayerStateChanged: playWhenReady: $playWhenReady playbackState: $playbackState currentPlaybackState: ${player?.playbackState}"
-                )
-                if (playWhenReady) {
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                super.onIsPlayingChanged(isPlaying)
+                if (isPlaying) {
                     val duration = player?.duration ?: 0L
                     acquireLock(
                         if (duration > 1L) duration + TimeUnit.MINUTES.toMillis(2) else TimeUnit.MINUTES.toMillis(
                             3
                         )
                     )
-                } else releaseLock()
+                } else
+                    releaseLock()
+            }
 
-                if (playWhenReady && playbackState == ExoPlayer.STATE_READY) {
-                    //
-                } else {
-                    if (player?.playerError != null) {
-                        //
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                super.onPlaybackStateChanged(playbackState)
+                if (playbackState == Player.STATE_READY) {
+                    if (previousState == -1) {
+                        // when we define that the track shall not "playWhenReady"
+                        // no position info is sent
+                        // therefore, we need to "emulate" the first position notification
+                        // by sending it directly
+                        notifyPositionChange()
                     } else {
-                        when (playbackState) {
-                            ExoPlayer.STATE_IDLE -> { // 1
-                                //
-                            }
-
-                            ExoPlayer.STATE_BUFFERING -> { // 2
-                                //
-                            }
-
-                            ExoPlayer.STATE_READY -> { // 3
-                                val status =
-                                    if (playWhenReady) PlayerState.PLAYING else PlayerState.PAUSED
-                                if (previousState == -1) {
-                                    // when we define that the track shall not "playWhenReady"
-                                    // no position info is sent
-                                    // therefore, we need to "emulate" the first position notification
-                                    // by sending it directly
-                                    notifyPositionChange()
-                                } else {
-                                    if (status == PlayerState.PAUSED) {
-                                        stopTrackingProgressAndPerformTask {
-                                            //
-                                        }
-                                    } else {
-                                        //
-                                    }
-
-                                }
-                            }
-
-                            ExoPlayer.STATE_ENDED -> { // 4
-                                stopTrackingProgressAndPerformTask {
-                                    //
-                                }
-                            }
-                        }
+                        stopTrackingProgressAndPerformTask {}
                     }
+                }
+               else if(playbackState == Player.STATE_ENDED) {
+                    stopTrackingProgressAndPerformTask {}
                 }
                 previousState = playbackState
             }

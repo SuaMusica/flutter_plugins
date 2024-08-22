@@ -126,6 +126,7 @@ class MediaButtonEventHandler(
                     cookie,
                     Media(name, author, url, coverUrl, bigCoverUrl, isFavorite)
                 )
+                buildIcons(isFavorite ?: false)
             }
         }
         return Futures.immediateFuture(
