@@ -11,9 +11,6 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.PowerManager
-import android.support.v4.media.MediaMetadataCompat
-import android.support.v4.media.session.MediaControllerCompat
-import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.media3.common.AudioAttributes
@@ -183,17 +180,15 @@ class MediaService : MediaSessionService() {
     }
 
     override fun onDestroy() {
-        Log.d(TAG, "onDestroy")
-//        mediaController?.unregisterCallback(mediaControllerCallback)
-        releaseLock()
         removeNotification()
+        Log.d(TAG, "onDestroy")
+        releaseLock()
         player?.release()
         stopSelf()
 
         mediaSession?.run {
-            player.release()
-            release()
-            mediaSession = null
+            releaseAndPerformAndDisableTracking()
+            Log.d("MusicService", "onDestroy")
         }
 
         releasePossibleLeaks()
@@ -233,7 +228,6 @@ class MediaService : MediaSessionService() {
         dataSourceFactory.setUserAgent(userAgent)
         dataSourceFactory.setAllowCrossProtocolRedirects(true)
         dataSourceFactory.setDefaultRequestProperties(mapOf("Cookie" to cookie))
-        // Metadata Build
         val metadata = buildMetaData(media)
         val url = media.url
         Log.i(TAG, "Player: URL: $url")
@@ -341,7 +335,7 @@ class MediaService : MediaSessionService() {
         }
     }
 
-    fun release() {
+    fun releaseAndPerformAndDisableTracking() {
         performAndDisableTracking {
             player?.stop()
         }
@@ -513,25 +507,6 @@ class MediaService : MediaSessionService() {
         }
     }
 
-//    fun shouldStartService() {
-//        if (!isForegroundService) {
-//            Log.i(TAG, "Starting Service")
-//            try {
-//                ContextCompat.startForegroundService(
-//                    applicationContext, Intent(applicationContext, this@MediaService.javaClass)
-//                )
-//                startForeground(NOW_PLAYING_NOTIFICATION, notification)
-//            } catch (e: Exception) {
-//                startForeground(NOW_PLAYING_NOTIFICATION, notification)
-//                ContextCompat.startForegroundService(
-//                    applicationContext, Intent(applicationContext, this@MediaService.javaClass)
-//                )
-//            }
-//            isForegroundService = true
-//
-//        }
-//    }
-
     private fun stopService() {
         if (isForegroundService) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -543,73 +518,5 @@ class MediaService : MediaSessionService() {
             stopSelf()
             Log.i(TAG, "Stopping Service")
         }
-    }
-
-    private inner class MediaControllerCallback : MediaControllerCompat.Callback() {
-        override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
-//            Log.d(
-//                TAG, "onMetadataChanged: title: ${metadata?.title} duration: ${metadata?.duration}"
-//            )
-        }
-
-        override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
-            Log.d(TAG, "onPlaybackStateChanged1 state: $state")
-//            updateNotification(state!!)
-        }
-
-        override fun onQueueChanged(queue: MutableList<MediaSessionCompat.QueueItem>?) {
-            Log.d(TAG, "onQueueChanged queue: $queue")
-        }
-
-//        @SuppressLint("WakelockTimeout")
-//        private fun updateNotification(state: PlaybackStateCompat) {
-//            Log.d(TAG, "TESTE1 updateNotification")
-//            if (mediaSession == null) {
-//                return
-//            }
-//            getArts(applicationContext, media?.bigCoverUrl ?: media?.coverUrl) { bitmap ->
-//                val updatedState = state.state
-//                val onGoing =
-//                    updatedState == PlaybackStateCompat.STATE_PLAYING || updatedState == PlaybackStateCompat.STATE_BUFFERING
-//                // Skip building a notification when state is "none".
-////                val notification = if (updatedState != PlaybackStateCompat.STATE_NONE) {
-////                    buildNotification(updatedState, onGoing, bitmap)
-////                } else {
-////                    null
-////                }
-//                Log.d(TAG, "!!! updateNotification state: $updatedState $onGoing")
-//
-//                when (updatedState) {
-//                    PlaybackStateCompat.STATE_BUFFERING, PlaybackStateCompat.STATE_PLAYING -> {
-//                        Log.i(TAG, "updateNotification: STATE_BUFFERING or STATE_PLAYING")
-//                        /**
-//                         * This may look strange, but the documentation for [Service.startForeground]
-//                         * notes that "calling this method does *not* put the service in the started
-//                         * state itself, even though the name sounds like it."
-//                         */
-////                        if (notification != null) {
-////                            notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
-////                            shouldStartService(notification)
-////                        }
-//                    }
-//
-//                    else -> {
-//                        if (isForegroundService) {
-//                            // If playback has ended, also stop the service.
-//                            if (updatedState == PlaybackStateCompat.STATE_NONE && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-//                                stopService()
-//                            }
-////                            if (notification != null) {
-////                                notificationManager?.notify(
-////                                    NOW_PLAYING_NOTIFICATION,
-////                                    notification
-////                                )
-////                            } else
-////                                removeNowPlayingNotification()
-//                        }
-//                    }
-//                }
-//            }
-//        }
     }
 }

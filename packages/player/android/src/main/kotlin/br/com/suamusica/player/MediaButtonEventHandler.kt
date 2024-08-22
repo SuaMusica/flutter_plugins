@@ -72,7 +72,6 @@ class MediaButtonEventHandler(
         customCommand: SessionCommand,
         args: Bundle
     ): ListenableFuture<SessionResult> {
-        Log.d("Player", "TESTE1 CUSTOM_COMMAND: ${customCommand.customAction} | $args")
         if (customCommand.customAction == "favoritar" || customCommand.customAction == "desfavoritar") {
             val isFavorite = customCommand.customAction == "favoritar"
             buildIcons(isFavorite)
