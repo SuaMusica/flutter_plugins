@@ -76,49 +76,6 @@ class MediaService : MediaSessionService() {
     private lateinit var dataSourceBitmapLoader: DataSourceBitmapLoader
     private lateinit var mediaButtonEventHandler: MediaButtonEventHandler
 
-//    companion object {
-//        private val glideOptions = RequestOptions().fallback(R.drawable.default_art)
-//            .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).timeout(5000)
-//
-//        private const val NOTIFICATION_LARGE_ICON_SIZE = 500 // px
-//        private const val LOCAL_COVER_PNG = "../app_flutter/covers/0.png" // px
-
-//        @OptIn(DelicateCoroutinesApi::class)
-//        fun getArts(context: Context, artUri: String?, callback: (Bitmap) -> Unit) {
-//            GlobalScope.launch(Dispatchers.IO) {
-//                Log.i("getArts", " artUri: $artUri")
-//                val glider = Glide.with(context).applyDefaultRequestOptions(glideOptions).asBitmap()
-//                val file = File(context.filesDir, LOCAL_COVER_PNG)
-//                lateinit var bitmap: Bitmap
-//                val futureTarget: FutureTarget<Bitmap>? = when {
-//                    !artUri.isNullOrBlank() -> glider.load(artUri)
-//                        .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
-//
-//                    file.exists() -> glider.load(Uri.fromFile(file))
-//                        .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
-//
-//                    else -> null
-//                }
-//
-//                if (futureTarget != null) {
-//                    bitmap = try {
-//                        futureTarget.get()
-//                    } catch (e: Exception) {
-//                        Log.i("getArts", "ART EXCP: $e")
-//                        if (file.exists()) {
-//                            BitmapFactory.decodeFile(file.absolutePath)
-//                        } else {
-//                            BitmapFactory.decodeResource(context.resources, R.drawable.default_art)
-//                        }
-//                    }
-//                }
-//                withContext(Dispatchers.Main) {
-//                    callback(bitmap)
-//                }
-//            }
-//        }
-//    }
-
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "onStartCommand")
         super.onStartCommand(intent, flags, startId)
@@ -178,12 +135,12 @@ class MediaService : MediaSessionService() {
                             actionFactory,
                             onNotificationChangedCallback,
                         )
+
                     val notifyIntent = Intent("SUA_MUSICA_FLUTTER_NOTIFICATION_CLICK").apply {
                         addCategory(Intent.CATEGORY_DEFAULT)
                         flags =
                             Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                     }
-                    val NOW_PLAYING_CHANNEL: String = "br.com.suamusica.media.NOW_PLAYING"
                     val NOW_PLAYING_NOTIFICATION = 0xb339
                     val notifyPendingIntent = PendingIntent.getActivity(
                         applicationContext,
@@ -195,7 +152,6 @@ class MediaService : MediaSessionService() {
                         NOW_PLAYING_NOTIFICATION,
                         customMedia3Notification.notification.apply {
                             contentIntent = notifyPendingIntent
-//                            channelId = NOW_PLAYING_NOTIFICATION
                         })
                 }
 
