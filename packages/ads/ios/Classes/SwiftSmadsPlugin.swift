@@ -9,6 +9,9 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
     static let ScreenIsLocked = -2;
     static let UnlockedScreen = 1;
     static let LockedScreen = 0;
+    static var adsViewController: AdsViewController? = nil
+    static var registrarAds: FlutterPluginRegistrar? = nil
+
     fileprivate static func verifyNetworkAccess() {
         do {
             try Network.reachability = Reachability(hostname: "www.google.com")
@@ -31,11 +34,24 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
     public static func register(with registrar: FlutterPluginRegistrar) {
         SwiftSmadsPlugin.synced(self) {
             if SwiftSmadsPlugin.channel == nil {
-                SwiftSmadsPlugin.channel = FlutterMethodChannel(name: "smads", binaryMessenger: registrar.messenger())
+                SwiftSmadsPlugin.channel = FlutterMethodChannel(name: "suamusica/pre_roll", binaryMessenger: registrar.messenger())
                 let instance = SwiftSmadsPlugin(channel: SwiftSmadsPlugin.channel!)
                 registrar.addMethodCallDelegate(instance, channel: SwiftSmadsPlugin.channel!)
             }
 
+            if (registrarAds == nil) {
+                registrarAds = registrar
+                adsViewController = AdsViewController.instantiateFromNib()
+
+                if (SwiftSmadsPlugin.registrarAds != nil) {
+                    let viewFactory = FLNativeViewFactory(
+                        messenger: SwiftSmadsPlugin.registrarAds!.messenger(),
+                        controller: adsViewController!
+                    )
+
+                    SwiftSmadsPlugin.registrarAds!.register(viewFactory, withId: "suamusica/pre_roll_view")
+                }
+            }
             verifyNetworkAccess()
         }
     }
@@ -56,11 +72,12 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        print("Method call: \(call.method), arguments: \(call.arguments ?? "N/A"), result: \(String(describing: result))")
         switch call.method {
         case "load":
             DispatchQueue.main.async {
                 do {
-                    try ObjC.catchException {
+                    try ObjC.catchException { [self] in
                         let args = call.arguments as! [String: Any]
                         let adUrl = args["__URL__"] as! String
                         let contentUrl = args["__CONTENT__"] as! String
@@ -71,29 +88,23 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
                             SwiftSmadsPlugin.verifyNetworkAccess()
                         }
                         
-                        if (self.screen.status == .unlocked) {
-                            if (Network.reachability.isReachable) {
-                                let adsViewController:AdsViewController = AdsViewController.instantiateFromNib()
-                                adsViewController.setup(
-                                    channel: SwiftSmadsPlugin.channel,
-                                    adUrl: adUrl,
-                                    contentUrl: contentUrl,
-                                    screen: self.screen,
-                                    args: args)
-                                adsViewController.ppID = ppID
-                                adsViewController.modalPresentationStyle = .fullScreen
-                                let rootViewController = UIApplication.shared.keyWindow?.rootViewController
-                                rootViewController?.present(adsViewController, animated: false, completion: nil)
-                                result(1)
-                            } else {
-                                self.onError(code: SwiftSmadsPlugin.NoConnectivity)
-                                result(SwiftSmadsPlugin.NoConnectivity)
-                            }
+                        if (Network.reachability.isReachable) {
+                            print("AD: Screen is unlocked and ready to show ads | ppID: \(ppID ?? "N/A") | all args: \(args)")
+                            SwiftSmadsPlugin.adsViewController!.ppID = ppID
+
+                            SwiftSmadsPlugin.adsViewController!.setup(
+                                channel: SwiftSmadsPlugin.channel,
+                                adUrl: adUrl,
+                                contentUrl: contentUrl,
+                                screen: self.screen,
+                                args: args)
+
+                            result(1)
                         } else {
-                            self.onError(code: SwiftSmadsPlugin.ScreenIsLocked)
-                            result(SwiftSmadsPlugin.ScreenIsLocked)
+                            self.onError(code: SwiftSmadsPlugin.NoConnectivity)
+                            result(SwiftSmadsPlugin.NoConnectivity)
                         }
-                        
+
                     }
                 } catch {
                     result(0)
@@ -102,6 +113,19 @@ public class SwiftSmadsPlugin: NSObject, FlutterPlugin {
             }
         case "screen_status":
             result(self.screen.status == .unlocked ? SwiftSmadsPlugin.UnlockedScreen : SwiftSmadsPlugin.LockedScreen)
+        case "play":
+            SwiftSmadsPlugin.adsViewController!.play()
+            result(1)
+        case "pause":
+            SwiftSmadsPlugin.adsViewController!.pause()
+            result(1)
+        case "dispose":
+            SwiftSmadsPlugin.adsViewController!.dispose()
+            result(1)
+        case "skip":
+            SwiftSmadsPlugin.adsViewController!.skip()
+            result(1)
+
         default:
             result(FlutterError(code: "-1", message: "Operation not supported", details: nil))
         }
