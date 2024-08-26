@@ -1,5 +1,6 @@
 package br.com.suamusica.player
 
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -15,6 +16,7 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.MediaMetadata.PICTURE_TYPE_FRONT_COVER
@@ -34,20 +36,15 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.session.CacheBitmapLoader
+import androidx.media3.session.CommandButton
+import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaController
+import androidx.media3.session.MediaNotification
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.request.FutureTarget
-import com.bumptech.glide.request.RequestOptions
+import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.ListenableFuture
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -77,49 +74,50 @@ class MediaService : MediaSessionService() {
     private var previousState: Int = -1
 
     private lateinit var dataSourceBitmapLoader: DataSourceBitmapLoader
+    private lateinit var mediaButtonEventHandler: MediaButtonEventHandler
 
-    companion object {
-        private val glideOptions = RequestOptions().fallback(R.drawable.default_art)
-            .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).timeout(5000)
+//    companion object {
+//        private val glideOptions = RequestOptions().fallback(R.drawable.default_art)
+//            .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).timeout(5000)
+//
+//        private const val NOTIFICATION_LARGE_ICON_SIZE = 500 // px
+//        private const val LOCAL_COVER_PNG = "../app_flutter/covers/0.png" // px
 
-        private const val NOTIFICATION_LARGE_ICON_SIZE = 500 // px
-        private const val LOCAL_COVER_PNG = "../app_flutter/covers/0.png" // px
-
-        @OptIn(DelicateCoroutinesApi::class)
-        fun getArts(context: Context, artUri: String?, callback: (Bitmap) -> Unit) {
-            GlobalScope.launch(Dispatchers.IO) {
-                Log.i("getArts", " artUri: $artUri")
-                val glider = Glide.with(context).applyDefaultRequestOptions(glideOptions).asBitmap()
-                val file = File(context.filesDir, LOCAL_COVER_PNG)
-                lateinit var bitmap: Bitmap
-                val futureTarget: FutureTarget<Bitmap>? = when {
-                    !artUri.isNullOrBlank() -> glider.load(artUri)
-                        .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
-
-                    file.exists() -> glider.load(Uri.fromFile(file))
-                        .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
-
-                    else -> null
-                }
-
-                if (futureTarget != null) {
-                    bitmap = try {
-                        futureTarget.get()
-                    } catch (e: Exception) {
-                        Log.i("getArts", "ART EXCP: $e")
-                        if (file.exists()) {
-                            BitmapFactory.decodeFile(file.absolutePath)
-                        } else {
-                            BitmapFactory.decodeResource(context.resources, R.drawable.default_art)
-                        }
-                    }
-                }
-                withContext(Dispatchers.Main) {
-                    callback(bitmap)
-                }
-            }
-        }
-    }
+//        @OptIn(DelicateCoroutinesApi::class)
+//        fun getArts(context: Context, artUri: String?, callback: (Bitmap) -> Unit) {
+//            GlobalScope.launch(Dispatchers.IO) {
+//                Log.i("getArts", " artUri: $artUri")
+//                val glider = Glide.with(context).applyDefaultRequestOptions(glideOptions).asBitmap()
+//                val file = File(context.filesDir, LOCAL_COVER_PNG)
+//                lateinit var bitmap: Bitmap
+//                val futureTarget: FutureTarget<Bitmap>? = when {
+//                    !artUri.isNullOrBlank() -> glider.load(artUri)
+//                        .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
+//
+//                    file.exists() -> glider.load(Uri.fromFile(file))
+//                        .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
+//
+//                    else -> null
+//                }
+//
+//                if (futureTarget != null) {
+//                    bitmap = try {
+//                        futureTarget.get()
+//                    } catch (e: Exception) {
+//                        Log.i("getArts", "ART EXCP: $e")
+//                        if (file.exists()) {
+//                            BitmapFactory.decodeFile(file.absolutePath)
+//                        } else {
+//                            BitmapFactory.decodeResource(context.resources, R.drawable.default_art)
+//                        }
+//                    }
+//                }
+//                withContext(Dispatchers.Main) {
+//                    callback(bitmap)
+//                }
+//            }
+//        }
+//    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "onStartCommand")
@@ -130,6 +128,7 @@ class MediaService : MediaSessionService() {
 
     override fun onCreate() {
         super.onCreate()
+        mediaButtonEventHandler = MediaButtonEventHandler(this)
         packageValidator = PackageValidator(applicationContext, R.xml.allowed_media_browser_callers)
         wifiLock =
             (applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager).createWifiLock(
@@ -152,11 +151,63 @@ class MediaService : MediaSessionService() {
 
         dataSourceBitmapLoader =
             DataSourceBitmapLoader(applicationContext)
+        Log.d(TAG, "MEDIA3 - handleCustomCommand ${Build.VERSION_CODES.TIRAMISU}")
         player?.let {
             mediaSession = MediaSession.Builder(this, it)
                 .setBitmapLoader(CacheBitmapLoader(dataSourceBitmapLoader))
-                .setCallback(MediaButtonEventHandler(this))
+                .setCallback(mediaButtonEventHandler)
                 .build()
+
+            this@MediaService.setMediaNotificationProvider(object : MediaNotification.Provider {
+                override fun createNotification(
+                    mediaSession: MediaSession,
+                    customLayout: ImmutableList<CommandButton>,
+                    actionFactory: MediaNotification.ActionFactory,
+                    onNotificationChangedCallback: MediaNotification.Provider.Callback
+                ): MediaNotification {
+                    val defaultMediaNotificationProvider =
+                        DefaultMediaNotificationProvider(applicationContext)
+                            .apply {
+                                setSmallIcon(R.drawable.ic_notification)
+                            }
+
+                    val customMedia3Notification =
+                        defaultMediaNotificationProvider.createNotification(
+                            mediaSession,
+                            mediaSession.customLayout,
+                            actionFactory,
+                            onNotificationChangedCallback,
+                        )
+                    val notifyIntent = Intent("SUA_MUSICA_FLUTTER_NOTIFICATION_CLICK").apply {
+                        addCategory(Intent.CATEGORY_DEFAULT)
+                        flags =
+                            Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    }
+                    val NOW_PLAYING_CHANNEL: String = "br.com.suamusica.media.NOW_PLAYING"
+                    val NOW_PLAYING_NOTIFICATION = 0xb339
+                    val notifyPendingIntent = PendingIntent.getActivity(
+                        applicationContext,
+                        0,
+                        notifyIntent,
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT else PendingIntent.FLAG_UPDATE_CURRENT
+                    )
+                    return MediaNotification(
+                        NOW_PLAYING_NOTIFICATION,
+                        customMedia3Notification.notification.apply {
+                            contentIntent = notifyPendingIntent
+//                            channelId = NOW_PLAYING_NOTIFICATION
+                        })
+                }
+
+                override fun handleCustomCommand(
+                    session: MediaSession,
+                    action: String,
+                    extras: Bundle
+                ): Boolean {
+                    Log.d(TAG, "#MEDIA3# - handleCustomCommand $action")
+                    return false
+                }
+            })
         }
     }
 
@@ -276,12 +327,7 @@ class MediaService : MediaSessionService() {
             dataSourceBitmapLoader.loadBitmap(Uri.parse(media.bigCoverUrl!!))
                 .get(5000, TimeUnit.MILLISECONDS)
         } catch (e: Exception) {
-            Log.d("Player", "TESTE1 catch")
-            var bitmapFallback: Bitmap? = null
-            getArts(applicationContext, media.bigCoverUrl) { bitmap ->
-                bitmapFallback = bitmap
-            }
-            bitmapFallback
+            BitmapFactory.decodeResource(resources, R.drawable.default_art)
         }
 
         art?.compress(Bitmap.CompressFormat.PNG, 95, stream)
@@ -297,15 +343,18 @@ class MediaService : MediaSessionService() {
         return metadata
     }
 
-    //    }
     fun play() {
         performAndEnableTracking {
             player?.play()
         }
     }
-
+    
     fun removeNotification() {
-        player?.removeMediaItem(0);
+        object: ForwardingPlayer(player!!) {
+            override fun getDuration(): Long {
+                return C.TIME_UNSET
+            }
+        }
     }
 
     fun seek(position: Long, playWhenReady: Boolean) {
@@ -335,19 +384,11 @@ class MediaService : MediaSessionService() {
         }
     }
 
-    fun releaseAndPerformAndDisableTracking() {
+    private fun releaseAndPerformAndDisableTracking() {
         performAndDisableTracking {
             player?.stop()
         }
     }
-
-//    private fun removeNowPlayingNotification() {
-//        Log.d(TAG, "removeNowPlayingNotification")
-//        Thread(Runnable {
-//            notificationManager?.cancel(NOW_PLAYING_NOTIFICATION)
-//        }).start()
-//
-//    }
 
 
     private fun notifyPositionChange() {
@@ -443,8 +484,7 @@ class MediaService : MediaSessionService() {
                     } else {
                         stopTrackingProgressAndPerformTask {}
                     }
-                }
-               else if(playbackState == Player.STATE_ENDED) {
+                } else if (playbackState == Player.STATE_ENDED) {
                     stopTrackingProgressAndPerformTask {}
                 }
                 previousState = playbackState

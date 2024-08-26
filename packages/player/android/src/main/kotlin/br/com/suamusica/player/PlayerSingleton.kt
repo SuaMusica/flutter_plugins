@@ -48,6 +48,7 @@ object PlayerSingleton {
     }
 
     fun next() {
+        Log.d("Player", "#MEDIA3# - commandCenter NEXT")
         channel?.invokeMethod("commandCenter.onNext", emptyMap<String, String>())
     }
 

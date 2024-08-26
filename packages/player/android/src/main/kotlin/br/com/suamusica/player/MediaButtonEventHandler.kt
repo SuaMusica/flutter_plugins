@@ -5,12 +5,15 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import androidx.media3.common.Player.COMMAND_SEEK_TO_NEXT
 import androidx.media3.common.Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM
 import androidx.media3.common.Player.COMMAND_SEEK_TO_PREVIOUS
 import androidx.media3.common.Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.CommandButton
+import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
 import androidx.media3.session.R.drawable
@@ -32,20 +35,23 @@ class MediaButtonEventHandler(
     ): MediaSession.ConnectionResult {
         Log.d("Player", "onConnect")
         val sessionCommands =
-            MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
-                .add(SessionCommand("next", Bundle.EMPTY))
-                .add(SessionCommand("seek", session.token.extras))
-                .add(SessionCommand("previous", Bundle.EMPTY))
-                .add(SessionCommand("pause", Bundle.EMPTY))
-                .add(SessionCommand("favoritar", Bundle.EMPTY))
-                .add(SessionCommand("desfavoritar", Bundle.EMPTY))
-                .add(SessionCommand("prepare", session.token.extras))
-                .add(SessionCommand("play", Bundle.EMPTY))
-                .add(SessionCommand("remove_notification", Bundle.EMPTY))
-                .add(SessionCommand("send_notification", session.token.extras))
-                .add(SessionCommand("ads_playing", Bundle.EMPTY))
-                .add(SessionCommand("onTogglePlayPause", Bundle.EMPTY))
-                .build()
+            MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon().apply {
+                add(SessionCommand("notification_next", Bundle.EMPTY))
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    add(SessionCommand("notification_previous", Bundle.EMPTY))
+                }
+                add(SessionCommand("notification_favoritar", Bundle.EMPTY))
+                add(SessionCommand("notification_desfavoritar", Bundle.EMPTY))
+                add(SessionCommand("seek", session.token.extras))
+                add(SessionCommand("pause", Bundle.EMPTY))
+                add(SessionCommand("stop", Bundle.EMPTY))
+                add(SessionCommand("prepare", session.token.extras))
+                add(SessionCommand("play", Bundle.EMPTY))
+                add(SessionCommand("remove_notification", Bundle.EMPTY))
+                add(SessionCommand("send_notification", session.token.extras))
+                add(SessionCommand("ads_playing", Bundle.EMPTY))
+                add(SessionCommand("onTogglePlayPause", Bundle.EMPTY))
+            }.build()
 
         val playerCommands =
             MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS.buildUpon()
@@ -61,19 +67,15 @@ class MediaButtonEventHandler(
             .build()
     }
 
-    override fun onPostConnect(session: MediaSession, controller: MediaSession.ControllerInfo) {
-        super.onPostConnect(session, controller)
-        Log.d("Player", "onPostConnect")
-    }
-
     override fun onCustomCommand(
         session: MediaSession,
         controller: MediaSession.ControllerInfo,
         customCommand: SessionCommand,
         args: Bundle
     ): ListenableFuture<SessionResult> {
-        if (customCommand.customAction == "favoritar" || customCommand.customAction == "desfavoritar") {
-            val isFavorite = customCommand.customAction == "favoritar"
+        Log.d("Player", "#MEDIA3# - onCustomCommand ${customCommand.customAction}")
+        if (customCommand.customAction == "notification_favoritar" || customCommand.customAction == "notification_desfavoritar") {
+            val isFavorite = customCommand.customAction == "notification_favoritar"
             buildIcons(isFavorite)
             PlayerSingleton.favorite(isFavorite)
         }
@@ -86,6 +88,10 @@ class MediaButtonEventHandler(
             mediaService?.togglePlayPause()
         }
 
+        if (customCommand.customAction == "stop") {
+            mediaService?.stop()
+        }
+
         if (customCommand.customAction == "send_notification") {
             args.let {
                 val isFavorite = it.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT)
@@ -96,17 +102,17 @@ class MediaButtonEventHandler(
         if (customCommand.customAction == "play") {
             mediaService?.play()
         }
-        if (customCommand.customAction == "previous") {
+        if (customCommand.customAction == "notification_previous") {
             PlayerSingleton.previous()
         }
-        if (customCommand.customAction == "next") {
+        if (customCommand.customAction == "notification_next") {
             PlayerSingleton.next()
         }
         if (customCommand.customAction == "pause") {
             mediaService?.pause()
         }
-        if (customCommand.customAction == "remove_notification" || customCommand.customAction == "ads_playing" ) {
-            mediaService?.removeNotification();
+        if (customCommand.customAction == "ads_playing" || customCommand.customAction == "remove_notification")  {
+            mediaService?.removeNotification()
         }
 
         if (customCommand.customAction == "prepare") {
@@ -140,29 +146,29 @@ class MediaButtonEventHandler(
                 .setIconResId(if (isFavorite) drawable.media3_icon_heart_filled else drawable.media3_icon_heart_unfilled)
                 .setSessionCommand(
                     SessionCommand(
-                        if (isFavorite) "desfavoritar" else "favoritar",
+                        if (isFavorite) "notification_desfavoritar" else "notification_favoritar",
                         Bundle()
                     )
                 )
                 .setEnabled(true)
                 .build(),
             CommandButton.Builder()
-                .setDisplayName("next")
+                .setDisplayName("notification_next")
                 .setIconResId(drawable.media3_icon_next)
-                .setSessionCommand(SessionCommand("next", Bundle.EMPTY))
+                .setSessionCommand(SessionCommand("notification_next", Bundle.EMPTY))
                 .setEnabled(true)
                 .build(),
         )
         return mediaService?.mediaSession?.setCustomLayout(
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 list.plus(
                     CommandButton.Builder()
-                        .setDisplayName("previous")
+                        .setDisplayName("notification_previous")
                         .setIconResId(drawable.media3_icon_previous)
-                        .setSessionCommand(SessionCommand("previous", Bundle.EMPTY))
+                        .setSessionCommand(SessionCommand("notification_previous", Bundle.EMPTY))
                         .build()
                 )
-            } else{
+            } else {
                 list
             }
         )
@@ -202,7 +208,7 @@ class MediaButtonEventHandler(
             }
 
             Log.d("Player", "Key: $ke")
-
+            Log.d("Player", "#MEDIA3# - Key: $ke")
             when (ke.keyCode) {
                 KeyEvent.KEYCODE_MEDIA_PLAY -> {
                     PlayerSingleton.play()
