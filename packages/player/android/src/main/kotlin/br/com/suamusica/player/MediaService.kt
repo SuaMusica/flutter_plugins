@@ -1,5 +1,6 @@
 package br.com.suamusica.player
 
+import android.app.ActivityManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
@@ -16,7 +17,6 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
-import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.MediaMetadata.PICTURE_TYPE_FRONT_COVER
@@ -38,32 +38,37 @@ import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.session.CacheBitmapLoader
 import androidx.media3.session.CommandButton
 import androidx.media3.session.DefaultMediaNotificationProvider
+import androidx.media3.session.DefaultMediaNotificationProvider.DEFAULT_NOTIFICATION_ID
 import androidx.media3.session.MediaController
 import androidx.media3.session.MediaNotification
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionResult
 import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.ListenableFuture
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.io.IOException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+
+    const val NOW_PLAYING_CHANNEL: String = "br.com.suamusica.media.NOW_PLAYING"
+    const val NOW_PLAYING_NOTIFICATION: Int = 0xb339
 
 @UnstableApi
 class MediaService : MediaSessionService() {
     private val TAG = "MediaService"
     private val userAgent =
         "SuaMusica/player (Linux; Android ${Build.VERSION.SDK_INT}; ${Build.BRAND}/${Build.MODEL})"
-    private var packageValidator: PackageValidator? = null
+
+    //    private var packageValidator: PackageValidator? = null
     private var media: Media? = null
     private var isForegroundService = false
-    private var wifiLock: WifiManager.WifiLock? = null
-    private var wakeLock: PowerManager.WakeLock? = null
-    var mediaSession: MediaSession? = null
+
+    //    private var wifiLock: WifiManager.WifiLock? = null
+//    private var wakeLock: PowerManager.WakeLock? = null
+    lateinit var mediaSession: MediaSession
     private var mediaController: ListenableFuture<MediaController>? = null
 
     private val uAmpAudioAttributes =
@@ -78,60 +83,84 @@ class MediaService : MediaSessionService() {
 
     private lateinit var dataSourceBitmapLoader: DataSourceBitmapLoader
     private lateinit var mediaButtonEventHandler: MediaButtonEventHandler
+    private var customMedia3Notification: MediaNotification? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "onStartCommand")
         super.onStartCommand(intent, flags, startId)
         return Service.START_STICKY
+    }
 
+    private fun getPendingIntent(): PendingIntent {
+        val notifyIntent = Intent("SUA_MUSICA_FLUTTER_NOTIFICATION_CLICK").apply {
+            addCategory(Intent.CATEGORY_APP_MUSIC)
+            flags =
+                Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+
+        return PendingIntent.getActivity(
+            applicationContext,
+            0,
+            notifyIntent,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT else PendingIntent.FLAG_UPDATE_CURRENT
+        )
     }
 
     override fun onCreate() {
         super.onCreate()
         mediaButtonEventHandler = MediaButtonEventHandler(this)
-        packageValidator = PackageValidator(applicationContext, R.xml.allowed_media_browser_callers)
-        wifiLock =
-            (applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager).createWifiLock(
-                WifiManager.WIFI_MODE_FULL_HIGH_PERF, "suamusica:wifiLock"
-            )
-        wakeLock =
-            (applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager).newWakeLock(
-                PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ON_AFTER_RELEASE,
-                "suamusica:wakeLock"
-            )
-        wifiLock?.setReferenceCounted(false)
-        wakeLock?.setReferenceCounted(false)
+//        packageValidator = PackageValidator(applicationContext, R.xml.allowed_media_browser_callers)
+//        wifiLock =
+//            (applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager).createWifiLock(
+//                WifiManager.WIFI_MODE_FULL_HIGH_PERF, "suamusica:wifiLock"
+//            )
+//        wakeLock =
+//            (applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager).newWakeLock(
+//                PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ON_AFTER_RELEASE,
+//                "suamusica:wakeLock"
+//            )
+//        wifiLock?.setReferenceCounted(false)
+//        wakeLock?.setReferenceCounted(false)
 
         player = ExoPlayer.Builder(this).build().apply {
             setAudioAttributes(uAmpAudioAttributes, true)
             addListener(playerEventListener())
-            // setWakeMode(C.WAKE_MODE_NETWORK)
+            setWakeMode(C.WAKE_MODE_NETWORK)
             setHandleAudioBecomingNoisy(true)
         }
 
         dataSourceBitmapLoader =
             DataSourceBitmapLoader(applicationContext)
+
         Log.d(TAG, "MEDIA3 - handleCustomCommand ${Build.VERSION_CODES.TIRAMISU}")
         player?.let {
             mediaSession = MediaSession.Builder(this, it)
                 .setBitmapLoader(CacheBitmapLoader(dataSourceBitmapLoader))
                 .setCallback(mediaButtonEventHandler)
+                .setSessionActivity(getPendingIntent())
+                .setId("SM_NOW_PLAYING")
                 .build()
-
             this@MediaService.setMediaNotificationProvider(object : MediaNotification.Provider {
+
                 override fun createNotification(
                     mediaSession: MediaSession,
                     customLayout: ImmutableList<CommandButton>,
                     actionFactory: MediaNotification.ActionFactory,
                     onNotificationChangedCallback: MediaNotification.Provider.Callback
                 ): MediaNotification {
+                    Log.d(TAG, "#MEDIA3# - createNotification | ${mediaSession.id}")
                     val defaultMediaNotificationProvider =
-                        DefaultMediaNotificationProvider(applicationContext)
-                            .apply {
+                        DefaultMediaNotificationProvider(applicationContext,
+//                        DefaultMediaNotificationProvider(
+//                            applicationContext,
+//                            { R.string.notification_id },
+//                            NOW_PLAYING_CHANNEL,
+//                            R.string.notification_channel
+                        ).apply {
                                 setSmallIcon(R.drawable.ic_notification)
                             }
 
-                    val customMedia3Notification =
+                    customMedia3Notification =
                         defaultMediaNotificationProvider.createNotification(
                             mediaSession,
                             mediaSession.customLayout,
@@ -139,23 +168,10 @@ class MediaService : MediaSessionService() {
                             onNotificationChangedCallback,
                         )
 
-                    val notifyIntent = Intent("SUA_MUSICA_FLUTTER_NOTIFICATION_CLICK").apply {
-                        addCategory(Intent.CATEGORY_DEFAULT)
-                        flags =
-                            Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                    }
-                    val NOW_PLAYING_NOTIFICATION = 0xb339
-                    val notifyPendingIntent = PendingIntent.getActivity(
-                        applicationContext,
-                        0,
-                        notifyIntent,
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT else PendingIntent.FLAG_UPDATE_CURRENT
-                    )
                     return MediaNotification(
                         NOW_PLAYING_NOTIFICATION,
-                        customMedia3Notification.notification.apply {
-                            contentIntent = notifyPendingIntent
-                        })
+                        customMedia3Notification!!.notification
+                    )
                 }
 
                 override fun handleCustomCommand(
@@ -172,62 +188,87 @@ class MediaService : MediaSessionService() {
 
     override fun onGetSession(
         controllerInfo: MediaSession.ControllerInfo
-    ): MediaSession? = mediaSession
+    ): MediaSession = mediaSession
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        Log.d(TAG, "onTaskRemoved")
-        super.onTaskRemoved(rootIntent)
-
-        /**
-         * By stopping playback, the player will transition to [Player.STATE_IDLE]. This will
-         * cause a state change in the MediaSession, and (most importantly) call
-         * [MediaControllerCallback.onPlaybackStateChanged]. Because the playback state will
-         * be reported as [PlaybackStateCompat.STATE_NONE], the service will first remove
-         * itself as a foreground service, and will then call [stopSelf].
-         */
-        player?.stop()
-        stopService()
+//        val player = mediaSession?.player!!
+//        val a = !player.playWhenReady
+//                || player.mediaItemCount == 0
+//                || player.playbackState == Player.STATE_ENDED
+//        Log.d(TAG, "#MEDIA3# - onTaskRemoved $a")
+//        if (a) {
+//            // Stop the service if not playing, continue playing in the background
+//            // otherwise.
+//            stopSelf()
+//        }
+        isServiceRunning()
     }
 
     override fun onDestroy() {
-        removeNotification()
-        Log.d(TAG, "onDestroy")
-        releaseLock()
-        player?.release()
-        stopSelf()
-
         mediaSession?.run {
             releaseAndPerformAndDisableTracking()
-            Log.d("MusicService", "onDestroy")
+            player.release()
+            release()
+            mediaSession.release()
         }
-
+        releaseLock()
         releasePossibleLeaks()
+        stopSelf()
         super.onDestroy()
-
     }
 
     private fun releasePossibleLeaks() {
         player?.release()
-        packageValidator = null
-        mediaSession = null
+//        packageValidator = null
+        mediaSession.release()
         mediaController = null
-        wifiLock = null
-        wakeLock = null
-
+//        wifiLock = null
+//        wakeLock = null
     }
 
     private fun acquireLock(duration: Long) {
-        wifiLock?.acquire()
-        wakeLock?.acquire(duration)
+//        wifiLock?.acquire()
+//        wakeLock?.acquire(duration)
+    }
+
+
+    private fun isServiceRunning(): Boolean {
+        val manager = getSystemService(ACTIVITY_SERVICE) as ActivityManager
+        for (service in manager.getRunningServices(Int.MAX_VALUE)) {
+            if ("br.com.suamusica.player.MediaService" == service.service.className) {
+                return true
+            }
+        }
+        return false
+    }
+
+    fun shouldStartService() {
+//        Log.e(TAG, "#MEDIA3# shouldStartService $isForegroundService | ${customMedia3Notification == null}")
+//        val intent = Intent(applicationContext, this@MediaService.javaClass)
+//        if (!isForegroundService) {
+//            if (Build.VERSION.SDK_INT >= 26) {
+//                applicationContext.startForegroundService(intent)
+////                setForegroundServiceBehavior()
+////                startService(intent)
+//            } else {
+//                applicationContext.startService(intent)
+//            }
+//            if(customMedia3Notification!=null){
+//            startForeground(NOW_PLAYING_NOTIFICATION, customMedia3Notification!!.notification)
+//            }
+//            isForegroundService = true
+//        }
+        val a = isServiceRunning()
+        Log.e(TAG, "#MEDIA3# isServiceRunning $a")
     }
 
     private fun releaseLock() {
-        try {
-            if (wifiLock?.isHeld == true) wifiLock?.release()
-            if (wakeLock?.isHeld == true) wakeLock?.release()
-        } catch (e: Exception) {
-            Log.e("MusicService", e.message, e)
-        }
+//        try {
+//            if (wifiLock?.isHeld == true) wifiLock?.release()
+//            if (wakeLock?.isHeld == true) wakeLock?.release()
+//        } catch (e: Exception) {
+//            Log.e("MusicService", e.message, e)
+//        }
     }
 
     fun prepare(cookie: String, media: Media) {
@@ -268,14 +309,16 @@ class MediaService : MediaSessionService() {
             }
         }
         player?.pause()
-        player?.prepare(source)
+        player?.setMediaSource(source)
+//        player?.addMediaSource(source)
+        player?.prepare()
     }
 
     private fun buildMetaData(media: Media): MediaMetadata {
         val metadataBuilder = MediaMetadata.Builder()
 
         if (media.isFavorite != null) {
-            mediaSession?.sessionExtras?.putBoolean(
+            mediaSession.sessionExtras.putBoolean(
                 PlayerPlugin.IS_FAVORITE_ARGUMENT,
                 media.isFavorite
             )
@@ -307,13 +350,23 @@ class MediaService : MediaSessionService() {
             player?.play()
         }
     }
-    
+
+    //    fun adsPlaying() {
+//        val oldItem = player!!.currentMediaItem!!
+//        val newItem = oldItem
+//            .buildUpon().setMediaMetadata(
+//                oldItem.mediaMetadata.buildUpon()
+//                    .setTitle("Propaganda")
+//                    .setDescription("Propaganda")
+//                    .build()
+//            )
+//            .build()
+//        player!!.replaceMediaItem(0, newItem)
+//        player!!.prepare()
+//    }
     fun removeNotification() {
-        object: ForwardingPlayer(player!!) {
-            override fun getDuration(): Long {
-                return C.TIME_UNSET
-            }
-        }
+//         player?.stop()
+//        shouldStartService()
     }
 
     fun seek(position: Long, playWhenReady: Boolean) {
@@ -334,12 +387,10 @@ class MediaService : MediaSessionService() {
     }
 
     fun togglePlayPause() {
-        performAndDisableTracking {
-            if (player?.isPlaying == true) {
-                player?.pause()
-            } else {
-                player?.play()
-            }
+        if (player?.isPlaying == true) {
+            pause()
+        } else {
+            play()
         }
     }
 
@@ -421,30 +472,100 @@ class MediaService : MediaSessionService() {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 super.onIsPlayingChanged(isPlaying)
                 if (isPlaying) {
+                    shouldStartService()
+                }
+//                    shouldStartService()
+//                    val duration = player?.duration ?: 0L
+//                    acquireLock(
+//                        if (duration > 1L) duration + TimeUnit.MINUTES.toMillis(2) else TimeUnit.MINUTES.toMillis(
+//                            3
+//                        )
+//                    )
+//                } else {
+//                    stopService()
+//                    releaseLock()
+//                }
+            }
+
+            //
+//            override fun onPlaybackStateChanged(playbackState: Int) {
+//                super.onPlaybackStateChanged(playbackState)
+//                if (playbackState == Player.STATE_READY) {
+//                    if (previousState == -1) {
+//                        // when we define that the track shall not "playWhenReady"
+//                        // no position info is sent
+//                        // therefore, we need to "emulate" the first position notification
+//                        // by sending it directly
+//                        notifyPositionChange()
+//                    } else {
+//                        stopTrackingProgressAndPerformTask {}
+//                    }
+//                } else if (playbackState == Player.STATE_ENDED) {
+//                    stopTrackingProgressAndPerformTask {}
+//                }
+//                previousState = playbackState
+//            }
+            override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
+                isServiceRunning()
+                Log.i(
+                    TAG,
+                    "onPlayerStateChanged: playWhenReady: $playWhenReady playbackState: $playbackState currentPlaybackState: ${player?.playbackState} ServiceRunning: ${isServiceRunning()}"
+                )
+                if (playWhenReady) {
                     val duration = player?.duration ?: 0L
                     acquireLock(
                         if (duration > 1L) duration + TimeUnit.MINUTES.toMillis(2) else TimeUnit.MINUTES.toMillis(
                             3
                         )
                     )
-                } else
-                    releaseLock()
-            }
+                } else {
+//                    releaseLock()
+                }
 
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                super.onPlaybackStateChanged(playbackState)
-                if (playbackState == Player.STATE_READY) {
-                    if (previousState == -1) {
-                        // when we define that the track shall not "playWhenReady"
-                        // no position info is sent
-                        // therefore, we need to "emulate" the first position notification
-                        // by sending it directly
-                        notifyPositionChange()
+                if (playWhenReady && playbackState == ExoPlayer.STATE_READY) {
+                    //
+                } else {
+                    if (player?.playerError != null) {
+                        //
                     } else {
-                        stopTrackingProgressAndPerformTask {}
+                        when (playbackState) {
+                            ExoPlayer.STATE_IDLE -> { // 1
+                                //
+                            }
+
+
+                            ExoPlayer.STATE_BUFFERING -> { // 2
+                                //
+                            }
+
+                            ExoPlayer.STATE_READY -> { // 3
+                                val status =
+                                    if (playWhenReady) PlayerState.PLAYING else PlayerState.PAUSED
+                                if (previousState == -1) {
+                                    // when we define that the track shall not "playWhenReady"
+                                    // no position info is sent
+                                    // therefore, we need to "emulate" the first position notification
+                                    // by sending it directly
+                                    notifyPositionChange()
+                                } else {
+                                    if (status == PlayerState.PAUSED) {
+                                        stopTrackingProgressAndPerformTask {
+                                            //
+                                        }
+                                    } else {
+                                        //
+                                    }
+
+                                }
+                            }
+
+                            ExoPlayer.STATE_ENDED -> { // 4
+                                stopTrackingProgressAndPerformTask {
+                                    //
+                                }
+                            }
+                        }
                     }
-                } else if (playbackState == Player.STATE_ENDED) {
-                    stopTrackingProgressAndPerformTask {}
                 }
                 previousState = playbackState
             }

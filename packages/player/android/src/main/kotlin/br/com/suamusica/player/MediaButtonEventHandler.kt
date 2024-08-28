@@ -25,8 +25,8 @@ import com.google.common.util.concurrent.ListenableFuture
 
 @UnstableApi
 class MediaButtonEventHandler(
-    private val mediaService: MediaService?,
-) : MediaLibraryService.MediaLibrarySession.Callback {
+    private val mediaService: MediaService,
+) : MediaSession.Callback {
     private val BROWSABLE_ROOT = "/"
     private val EMPTY_ROOT = "@empty@"
     override fun onConnect(
@@ -81,15 +81,15 @@ class MediaButtonEventHandler(
         }
 
         if (customCommand.customAction == "seek") {
-            mediaService?.seek(args.getLong("position"), args.getBoolean("playWhenReady"))
+            mediaService.seek(args.getLong("position"), args.getBoolean("playWhenReady"))
         }
 
         if (customCommand.customAction == "onTogglePlayPause") {
-            mediaService?.togglePlayPause()
+            mediaService.togglePlayPause()
         }
 
         if (customCommand.customAction == "stop") {
-            mediaService?.stop()
+            mediaService.stop()
         }
 
         if (customCommand.customAction == "send_notification") {
@@ -100,7 +100,7 @@ class MediaButtonEventHandler(
             }
         }
         if (customCommand.customAction == "play") {
-            mediaService?.play()
+            mediaService.play()
         }
         if (customCommand.customAction == "notification_previous") {
             PlayerSingleton.previous()
@@ -109,10 +109,11 @@ class MediaButtonEventHandler(
             PlayerSingleton.next()
         }
         if (customCommand.customAction == "pause") {
-            mediaService?.pause()
+            mediaService.pause()
         }
         if (customCommand.customAction == "ads_playing" || customCommand.customAction == "remove_notification")  {
-            mediaService?.removeNotification()
+//            mediaService.adsPlaying()
+            mediaService.removeNotification()
         }
 
         if (customCommand.customAction == "prepare") {
@@ -127,7 +128,7 @@ class MediaButtonEventHandler(
                 if (it.containsKey(PlayerPlugin.IS_FAVORITE_ARGUMENT)) {
                     isFavorite = it.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT)
                 }
-                mediaService?.prepare(
+                mediaService.prepare(
                     cookie,
                     Media(name, author, url, coverUrl, bigCoverUrl, isFavorite)
                 )
@@ -159,7 +160,7 @@ class MediaButtonEventHandler(
                 .setEnabled(true)
                 .build(),
         )
-        return mediaService?.mediaSession?.setCustomLayout(
+        return mediaService.mediaSession.setCustomLayout(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 list.plus(
                     CommandButton.Builder()
@@ -220,7 +221,7 @@ class MediaButtonEventHandler(
 
                 KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
                     Log.d("Player", "Player: Key Code : PlayPause")
-                    mediaService?.togglePlayPause()
+                    mediaService.togglePlayPause()
                 }
 
                 KeyEvent.KEYCODE_MEDIA_NEXT -> {
