@@ -1,10 +1,7 @@
 package br.com.suamusica.player
 
-import android.annotation.SuppressLint
-import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -15,44 +12,40 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.PowerManager
-import android.support.v4.media.MediaBrowserCompat
-import android.support.v4.media.MediaDescriptionCompat
-import android.support.v4.media.MediaMetadataCompat
-import android.support.v4.media.session.MediaControllerCompat
-import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
-import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
-import androidx.media.session.MediaButtonReceiver
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
+import androidx.media3.common.ForwardingPlayer
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
+import androidx.media3.common.MediaMetadata.PICTURE_TYPE_FRONT_COVER
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.PlaybackParameters
+import androidx.media3.common.Player
+import androidx.media3.common.Player.DISCONTINUITY_REASON_SEEK
+import androidx.media3.common.Timeline
+import androidx.media3.common.Tracks
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.common.util.Util
+import androidx.media3.datasource.DataSource
+import androidx.media3.datasource.DataSourceBitmapLoader
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.FileDataSource
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.hls.HlsMediaSource
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.media3.session.CacheBitmapLoader
+import androidx.media3.session.CommandButton
+import androidx.media3.session.DefaultMediaNotificationProvider
+import androidx.media3.session.MediaController
+import androidx.media3.session.MediaNotification
+import androidx.media3.session.MediaSession
+import androidx.media3.session.MediaSessionService
 import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.request.FutureTarget
-import com.bumptech.glide.request.RequestOptions
-import com.google.android.exoplayer2.C
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.PlaybackException
-import com.google.android.exoplayer2.PlaybackParameters
-import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.Player.DISCONTINUITY_REASON_SEEK
-import com.google.android.exoplayer2.Timeline
-import com.google.android.exoplayer2.Tracks
-import com.google.android.exoplayer2.audio.AudioAttributes
-import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
-import com.google.android.exoplayer2.ext.mediasession.TimelineQueueNavigator
-import com.google.android.exoplayer2.source.ProgressiveMediaSource
-import com.google.android.exoplayer2.source.hls.HlsMediaSource
-import com.google.android.exoplayer2.upstream.DataSource
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
-import com.google.android.exoplayer2.upstream.FileDataSource
-import com.google.android.exoplayer2.util.Util
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import com.google.common.collect.ImmutableList
+import com.google.common.util.concurrent.ListenableFuture
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -60,28 +53,22 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-class MediaService : androidx.media.MediaBrowserServiceCompat() {
+@UnstableApi
+class MediaService : MediaSessionService() {
     private val TAG = "MediaService"
     private val userAgent =
         "SuaMusica/player (Linux; Android ${Build.VERSION.SDK_INT}; ${Build.BRAND}/${Build.MODEL})"
     private var packageValidator: PackageValidator? = null
-
-    private var mediaSession: MediaSessionCompat? = null
-    private var mediaController: MediaControllerCompat? = null
-    private var mediaSessionConnector: MediaSessionConnector? = null
-
     private var media: Media? = null
-
-    private var notificationBuilder: NotificationBuilder? = null
-    private var notificationManager: NotificationManagerCompat? = null
     private var isForegroundService = false
     private var wifiLock: WifiManager.WifiLock? = null
     private var wakeLock: PowerManager.WakeLock? = null
+    var mediaSession: MediaSession? = null
+    private var mediaController: ListenableFuture<MediaController>? = null
 
-    private val uAmpAudioAttributes = AudioAttributes.Builder()
-        .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
-        .setUsage(C.USAGE_MEDIA)
-        .build()
+    private val uAmpAudioAttributes =
+        AudioAttributes.Builder().setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).setUsage(C.USAGE_MEDIA)
+            .build()
 
     private var player: ExoPlayer? = null
 
@@ -89,94 +76,31 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
     private var previousState: Int = -1
 
-    private val BROWSABLE_ROOT = "/"
-    private val EMPTY_ROOT = "@empty@"
-
-    private val isSamsung = Build.MANUFACTURER.equals("samsung", ignoreCase = true)
-    private val isHyperOS = !getProperty("ro.mi.os.version.name").isNullOrBlank()
-
-    companion object {
-        private val glideOptions = RequestOptions()
-            .fallback(R.drawable.default_art)
-            .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
-            .timeout(5000)
-
-        private const val NOTIFICATION_LARGE_ICON_SIZE = 500 // px
-        private const val LOCAL_COVER_PNG = "../app_flutter/covers/0.png" // px
-
-        @OptIn(DelicateCoroutinesApi::class)
-        fun getArts(context: Context, artUri: String?, callback: (Bitmap?) -> Unit) {
-            GlobalScope.launch(Dispatchers.IO) {
-                Log.i("getArts", " artUri: $artUri")
-                val glider = Glide.with(context)
-                    .applyDefaultRequestOptions(glideOptions)
-                    .asBitmap()
-                val file = File(context.filesDir, LOCAL_COVER_PNG)
-                var bitmap: Bitmap? = null
-                val futureTarget: FutureTarget<Bitmap>? = when {
-                    !artUri.isNullOrBlank() -> glider.load(artUri)
-                        .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
-
-                    file.exists() -> glider.load(Uri.fromFile(file))
-                        .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
-
-                    else -> null
-                }
-
-                if (futureTarget != null) {
-                    bitmap = try {
-                        futureTarget.get()
-                    } catch (e: Exception) {
-                        Log.i("getArts", "ART EXCP: $e")
-                        if (file.exists()) {
-                            BitmapFactory.decodeFile(file.absolutePath)
-                        } else {
-                            null
-                        }
-                    }
-                }
-                withContext(Dispatchers.Main) {
-                    callback(bitmap)
-                }
-            }
-        }
-    }
+    private lateinit var dataSourceBitmapLoader: DataSourceBitmapLoader
+    private lateinit var mediaButtonEventHandler: MediaButtonEventHandler
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "onStartCommand")
+        super.onStartCommand(intent, flags, startId)
         return Service.START_STICKY
 
     }
 
     override fun onCreate() {
         super.onCreate()
+        mediaButtonEventHandler = MediaButtonEventHandler(this)
         packageValidator = PackageValidator(applicationContext, R.xml.allowed_media_browser_callers)
-        notificationBuilder = NotificationBuilder(this)
-        notificationManager = NotificationManagerCompat.from(this)
-        wifiLock = (applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager)
-            .createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "suamusica:wifiLock")
-        wakeLock = (applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager)
-            .newWakeLock(
+        wifiLock =
+            (applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager).createWifiLock(
+                WifiManager.WIFI_MODE_FULL_HIGH_PERF, "suamusica:wifiLock"
+            )
+        wakeLock =
+            (applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager).newWakeLock(
                 PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ON_AFTER_RELEASE,
                 "suamusica:wakeLock"
             )
         wifiLock?.setReferenceCounted(false)
         wakeLock?.setReferenceCounted(false)
-
-        val sessionActivityPendingIntent =
-            this.packageManager?.getLaunchIntentForPackage(this.packageName)?.let { sessionIntent ->
-                PendingIntent.getActivity(this, 0, sessionIntent, PendingIntent.FLAG_IMMUTABLE)
-            }
-
-        val mediaButtonReceiver = ComponentName(this, MediaButtonReceiver::class.java)
-        mediaSession = mediaSession?.let { it }
-            ?: MediaSessionCompat(this, TAG, mediaButtonReceiver, null)
-                .apply {
-                    setSessionActivity(sessionActivityPendingIntent)
-                    isActive = true
-                }
-
-        mediaSession?.setFlags(MediaSessionCompat.FLAG_HANDLES_QUEUE_COMMANDS)
 
         player = ExoPlayer.Builder(this).build().apply {
             setAudioAttributes(uAmpAudioAttributes, true)
@@ -184,48 +108,73 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             // setWakeMode(C.WAKE_MODE_NETWORK)
             setHandleAudioBecomingNoisy(true)
         }
-        mediaSession?.let { mediaSession ->
-            val sessionToken = mediaSession.sessionToken
-            // we must connect the service to the media session
-            this.sessionToken = sessionToken
 
-            val mediaControllerCallback = MediaControllerCallback()
+        dataSourceBitmapLoader =
+            DataSourceBitmapLoader(applicationContext)
+        Log.d(TAG, "MEDIA3 - handleCustomCommand ${Build.VERSION_CODES.TIRAMISU}")
+        player?.let {
+            mediaSession = MediaSession.Builder(this, it)
+                .setBitmapLoader(CacheBitmapLoader(dataSourceBitmapLoader))
+                .setCallback(mediaButtonEventHandler)
+                .build()
 
-            mediaController = MediaControllerCompat(this, sessionToken).also { mediaController ->
-                mediaController.registerCallback(mediaControllerCallback)
+            this@MediaService.setMediaNotificationProvider(object : MediaNotification.Provider {
+                override fun createNotification(
+                    mediaSession: MediaSession,
+                    customLayout: ImmutableList<CommandButton>,
+                    actionFactory: MediaNotification.ActionFactory,
+                    onNotificationChangedCallback: MediaNotification.Provider.Callback
+                ): MediaNotification {
+                    val defaultMediaNotificationProvider =
+                        DefaultMediaNotificationProvider(applicationContext)
+                            .apply {
+                                setSmallIcon(R.drawable.ic_notification)
+                            }
 
-                mediaSessionConnector = MediaSessionConnector(mediaSession).also { connector ->
-                    connector.setPlayer(player)
-                    connector.setPlaybackPreparer(MusicPlayerPlaybackPreparer(this))
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        if (isSamsung || isHyperOS) {
-                            connector.setCustomActionProviders(
-                                FavoriteModeActionProvider(applicationContext),
-                                NextActionProvider(),
-                                PreviousActionProvider(),
-                            )
-                        } else {
-                            connector.setCustomActionProviders(
-                                FavoriteModeActionProvider(applicationContext),
-                                PreviousActionProvider(),
-                                NextActionProvider(),
-                            )
-                        }
+                    val customMedia3Notification =
+                        defaultMediaNotificationProvider.createNotification(
+                            mediaSession,
+                            mediaSession.customLayout,
+                            actionFactory,
+                            onNotificationChangedCallback,
+                        )
+
+                    val notifyIntent = Intent("SUA_MUSICA_FLUTTER_NOTIFICATION_CLICK").apply {
+                        addCategory(Intent.CATEGORY_DEFAULT)
+                        flags =
+                            Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                     }
-                    connector.setMediaButtonEventHandler(MediaButtonEventHandler())
-                    connector.setEnabledPlaybackActions(
-                        PlaybackStateCompat.ACTION_PLAY
-                                or PlaybackStateCompat.ACTION_PAUSE
-                                or PlaybackStateCompat.ACTION_REWIND
-                                or PlaybackStateCompat.ACTION_FAST_FORWARD
-                                or PlaybackStateCompat.ACTION_SEEK_TO
+                    val NOW_PLAYING_NOTIFICATION = 0xb339
+                    val notifyPendingIntent = PendingIntent.getActivity(
+                        applicationContext,
+                        0,
+                        notifyIntent,
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT else PendingIntent.FLAG_UPDATE_CURRENT
                     )
+                    return MediaNotification(
+                        NOW_PLAYING_NOTIFICATION,
+                        customMedia3Notification.notification.apply {
+                            contentIntent = notifyPendingIntent
+                        })
                 }
-            }
+
+                override fun handleCustomCommand(
+                    session: MediaSession,
+                    action: String,
+                    extras: Bundle
+                ): Boolean {
+                    Log.d(TAG, "#MEDIA3# - handleCustomCommand $action")
+                    return false
+                }
+            })
         }
     }
 
-    override fun onTaskRemoved(rootIntent: Intent) {
+    override fun onGetSession(
+        controllerInfo: MediaSession.ControllerInfo
+    ): MediaSession? = mediaSession
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
         Log.d(TAG, "onTaskRemoved")
         super.onTaskRemoved(rootIntent)
 
@@ -243,16 +192,13 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
     override fun onDestroy() {
         removeNotification()
         Log.d(TAG, "onDestroy")
-//        mediaController?.unregisterCallback(mediaControllerCallback)
         releaseLock()
-        mediaSessionConnector?.setPlayer(null)
         player?.release()
         stopSelf()
 
         mediaSession?.run {
-            isActive = false
-            release()
-            Log.d("MusicService", "onDestroy(isActive: $isActive)")
+            releaseAndPerformAndDisableTracking()
+            Log.d("MusicService", "onDestroy")
         }
 
         releasePossibleLeaks()
@@ -262,12 +208,9 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
     private fun releasePossibleLeaks() {
         player?.release()
-        notificationManager = null
-        notificationBuilder = null
         packageValidator = null
         mediaSession = null
         mediaController = null
-        mediaSessionConnector = null
         wifiLock = null
         wakeLock = null
 
@@ -287,91 +230,28 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         }
     }
 
-    override fun onGetRoot(
-        clientPackageName: String,
-        clientUid: Int,
-        rootHints: Bundle?
-    ): BrowserRoot? {
-        val isKnowCaller = packageValidator?.isKnownCaller(clientPackageName, clientUid) ?: false
-
-        return if (isKnowCaller) {
-            BrowserRoot(BROWSABLE_ROOT, null)
-        } else {
-            BrowserRoot(EMPTY_ROOT, null)
-        }
-    }
-
-    override fun onLoadChildren(
-        parentId: String,
-        result: Result<MutableList<MediaBrowserCompat.MediaItem>>
-    ) {
-        result.sendResult(mutableListOf())
-    }
-
     fun prepare(cookie: String, media: Media) {
         this.media = media
-
         val dataSourceFactory = DefaultHttpDataSource.Factory()
         dataSourceFactory.setReadTimeoutMs(15 * 1000)
         dataSourceFactory.setConnectTimeoutMs(10 * 1000)
         dataSourceFactory.setUserAgent(userAgent)
         dataSourceFactory.setAllowCrossProtocolRedirects(true)
         dataSourceFactory.setDefaultRequestProperties(mapOf("Cookie" to cookie))
-
-        // Metadata Build
-        val metadataBuilder = MediaMetadataCompat.Builder()
-        val art = null
-        metadataBuilder.apply {
-            album = media.author
-            albumArt = art
-            title = media.name
-            displayTitle = media.name
-            putString(MediaMetadataCompat.METADATA_KEY_ARTIST, media.author)
-            putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, media.name)
-            putBitmap(MediaMetadataCompat.METADATA_KEY_ART, art)
-            putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON, art)
-        }
-        val metadata = metadataBuilder.build()
-        mediaSession?.setMetadata(metadata)
-        mediaSessionConnector?.setMediaMetadataProvider {
-            return@setMediaMetadataProvider metadata
-        }
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            val timelineQueueNavigator = object : TimelineQueueNavigator(mediaSession!!) {
-                override fun getSupportedQueueNavigatorActions(player: Player): Long {
-                    return PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
-                            PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
-                            PlaybackStateCompat.ACTION_SEEK_TO
-                }
-
-                override fun getMediaDescription(
-                    player: Player,
-                    windowIndex: Int
-                ): MediaDescriptionCompat {
-                    player.let {
-                        return MediaDescriptionCompat.Builder().apply {
-                            setTitle(media.author)
-                            setSubtitle(media.name)
-                            setIconUri(Uri.parse(media.coverUrl))
-                        }.build()
-                    }
-                }
-            }
-            mediaSessionConnector?.setQueueNavigator(timelineQueueNavigator)
-        }
+        val metadata = buildMetaData(media)
         val url = media.url
         Log.i(TAG, "Player: URL: $url")
 
         val uri = if (url.startsWith("/")) Uri.fromFile(File(url)) else Uri.parse(url)
-
+        val mediaItem = MediaItem.Builder().setUri(uri).setMediaMetadata(metadata).build()
         @C.ContentType val type = Util.inferContentType(uri)
-        Log.i(TAG, "Player: Type: $type HLS: ${C.TYPE_HLS}")
+        Log.i(TAG, "Player: Type: $type HLS: ${C.CONTENT_TYPE_HLS}")
         val source = when (type) {
-            C.TYPE_HLS -> HlsMediaSource.Factory(dataSourceFactory)
+            C.CONTENT_TYPE_HLS -> HlsMediaSource.Factory(dataSourceFactory)
                 .setPlaylistParserFactory(SMHlsPlaylistParserFactory())
-                .setAllowChunklessPreparation(true)
-                .createMediaSource(MediaItem.fromUri(uri))
-            C.TYPE_OTHER -> {
+                .setAllowChunklessPreparation(true).createMediaSource(mediaItem)
+
+            C.CONTENT_TYPE_OTHER -> {
                 Log.i(TAG, "Player: URI: $uri")
                 val factory: DataSource.Factory =
                     if (uri.scheme != null && uri.scheme?.startsWith("http") == true) {
@@ -380,8 +260,9 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                         FileDataSource.Factory()
                     }
 
-                ProgressiveMediaSource.Factory(factory).createMediaSource(MediaItem.fromUri(uri))
+                ProgressiveMediaSource.Factory(factory).createMediaSource(mediaItem)
             }
+
             else -> {
                 throw IllegalStateException("Unsupported type: $type")
             }
@@ -390,62 +271,49 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         player?.prepare(source)
     }
 
+    private fun buildMetaData(media: Media): MediaMetadata {
+        val metadataBuilder = MediaMetadata.Builder()
+
+        if (media.isFavorite != null) {
+            mediaSession?.sessionExtras?.putBoolean(
+                PlayerPlugin.IS_FAVORITE_ARGUMENT,
+                media.isFavorite
+            )
+        }
+        val stream = ByteArrayOutputStream()
+
+        val art = try {
+            dataSourceBitmapLoader.loadBitmap(Uri.parse(media.bigCoverUrl!!))
+                .get(5000, TimeUnit.MILLISECONDS)
+        } catch (e: Exception) {
+            BitmapFactory.decodeResource(resources, R.drawable.default_art)
+        }
+
+        art?.compress(Bitmap.CompressFormat.PNG, 95, stream)
+        metadataBuilder.apply {
+            setAlbumTitle(media.name)
+            setArtist(media.author)
+            setArtworkData(stream.toByteArray(), PICTURE_TYPE_FRONT_COVER)
+            setArtist(media.author)
+            setTitle(media.name)
+            setDisplayTitle(media.name)
+        }
+        val metadata = metadataBuilder.build()
+        return metadata
+    }
+
     fun play() {
         performAndEnableTracking {
             player?.play()
         }
     }
-    fun adsPlaying() {
-        getArts(applicationContext,null) { bitmap ->
-            this.media = Media("Propaganda", "", "", "",null,null )
-            val notification = buildNotification(PlaybackStateCompat.STATE_PLAYING, true, bitmap)
-            notification?.let {
-                notificationManager?.notify(NOW_PLAYING_NOTIFICATION, it)
-                shouldStartService(it)
-            }
-        }
-    }
-    fun sendCommand(type: String) {
-        val extra = Bundle()
-        extra.putString("type", type)
-        mediaSession?.setExtras(extra)
-
-    }
-
-    fun setFavorite(favorite: Boolean?) {
-        media?.let {
-            this.media = Media(it.name, it.author, it.url, it.coverUrl, it.bigCoverUrl, favorite)
-            sendNotification(this.media!!, null)
-        }
-    }
-
-    fun sendNotification(media: Media, isPlayingExternal: Boolean?) {
-        getArts(applicationContext, media.bigCoverUrl ?: media.coverUrl) { bitmap ->
-            mediaSession?.let {
-                val onGoing: Boolean = if (isPlayingExternal == null) {
-                    val state = player?.playbackState ?: PlaybackStateCompat.STATE_NONE
-                    state == PlaybackStateCompat.STATE_PLAYING || state == PlaybackStateCompat.STATE_BUFFERING
-                } else {
-                    isPlayingExternal
-                }
-                this.media = media
-                val notification = notificationBuilder?.buildNotification(
-                    it,
-                    media,
-                    onGoing,
-                    isPlayingExternal,
-                    media.isFavorite,
-                    player?.duration, bitmap
-                )
-                notification?.let {
-                    notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
-                }
-            }
-        }
-    }
-
+    
     fun removeNotification() {
-        removeNowPlayingNotification();
+        object: ForwardingPlayer(player!!) {
+            override fun getDuration(): Long {
+                return C.TIME_UNSET
+            }
+        }
     }
 
     fun seek(position: Long, playWhenReady: Boolean) {
@@ -475,18 +343,10 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         }
     }
 
-    fun release() {
+    private fun releaseAndPerformAndDisableTracking() {
         performAndDisableTracking {
             player?.stop()
         }
-    }
-
-    private fun removeNowPlayingNotification() {
-        Log.d(TAG, "removeNowPlayingNotification")
-        Thread(Runnable {
-            notificationManager?.cancel(NOW_PLAYING_NOTIFICATION)
-        }).start()
-
     }
 
 
@@ -500,7 +360,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             extra.putString("type", "position")
             extra.putLong("position", position)
             extra.putLong("duration", duration)
-            mediaSession?.setExtras(extra)
+            mediaSession?.setSessionExtras(extra)
         }
     }
 
@@ -535,28 +395,6 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         stopTrackingProgress()
     }
 
-    private fun buildNotification(
-        updatedState: Int,
-        onGoing: Boolean,
-        art: Bitmap?
-    ): Notification? {
-        return if (updatedState != PlaybackStateCompat.STATE_NONE) {
-            mediaSession?.let {
-                notificationBuilder?.buildNotification(
-                    it,
-                    media,
-                    onGoing,
-                    null,
-                    media?.isFavorite,
-                    player?.duration,
-                    art
-                )
-            }
-        } else {
-            null
-        }
-    }
-
     private fun playerEventListener(): Player.Listener {
         return object : Player.Listener {
             override fun onTimelineChanged(timeline: Timeline, reason: Int) {
@@ -567,16 +405,22 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                 Log.i(TAG, "onTracksChanged: ")
             }
 
-            override fun onLoadingChanged(isLoading: Boolean) {
-                Log.i(TAG, "onLoadingChanged: isLoading: $isLoading")
+            override fun onPositionDiscontinuity(
+                oldPosition: Player.PositionInfo,
+                newPosition: Player.PositionInfo,
+                reason: Int
+            ) {
+                Log.i(TAG, "onPositionDiscontinuity: $reason")
+                if (reason == DISCONTINUITY_REASON_SEEK) {
+                    val bundle = Bundle()
+                    bundle.putString("type", "seek-end")
+                    mediaSession?.setSessionExtras(bundle)
+                }
             }
 
-            override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
-                Log.i(
-                    TAG,
-                    "onPlayerStateChanged: playWhenReady: $playWhenReady playbackState: $playbackState currentPlaybackState: ${player?.playbackState}"
-                )
-                if (playWhenReady) {
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                super.onIsPlayingChanged(isPlaying)
+                if (isPlaying) {
                     val duration = player?.duration ?: 0L
                     acquireLock(
                         if (duration > 1L) duration + TimeUnit.MINUTES.toMillis(2) else TimeUnit.MINUTES.toMillis(
@@ -585,47 +429,22 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                     )
                 } else
                     releaseLock()
+            }
 
-                if (playWhenReady && playbackState == ExoPlayer.STATE_READY) {
-                    //
-                } else {
-                    if (player?.playerError != null) {
-                        //
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                super.onPlaybackStateChanged(playbackState)
+                if (playbackState == Player.STATE_READY) {
+                    if (previousState == -1) {
+                        // when we define that the track shall not "playWhenReady"
+                        // no position info is sent
+                        // therefore, we need to "emulate" the first position notification
+                        // by sending it directly
+                        notifyPositionChange()
                     } else {
-                        when (playbackState) {
-                            ExoPlayer.STATE_IDLE -> { // 1
-                                //
-                            }
-                            ExoPlayer.STATE_BUFFERING -> { // 2
-                                //
-                            }
-                            ExoPlayer.STATE_READY -> { // 3
-                                val status =
-                                    if (playWhenReady) PlayerState.PLAYING else PlayerState.PAUSED
-                                if (previousState == -1) {
-                                    // when we define that the track shall not "playWhenReady"
-                                    // no position info is sent
-                                    // therefore, we need to "emulate" the first position notification
-                                    // by sending it directly
-                                    notifyPositionChange()
-                                } else {
-                                    if (status == PlayerState.PAUSED) {
-                                        stopTrackingProgressAndPerformTask {
-                                            //
-                                        }
-                                    } else {
-                                        //
-                                    }
-
-                                }
-                            }
-                            ExoPlayer.STATE_ENDED -> { // 4
-                                stopTrackingProgressAndPerformTask {
-                                    //
-                                }
-                            }
-                        }
+                        stopTrackingProgressAndPerformTask {}
                     }
+                } else if (playbackState == Player.STATE_ENDED) {
+                    stopTrackingProgressAndPerformTask {}
                 }
                 previousState = playbackState
             }
@@ -648,23 +467,12 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                             .contains("Permission denied")
                     ) "Permission denied" else error.message
                 )
-                mediaSession?.setExtras(bundle)
-            }
-
-            override fun onPositionDiscontinuity(reason: Int) {
-                Log.i(TAG, "onPositionDiscontinuity: $reason")
-                if (reason == DISCONTINUITY_REASON_SEEK) {
-                    val bundle = Bundle()
-                    bundle.putString("type", "seek-end")
-                    mediaSession?.setExtras(bundle)
-                }
-
+                mediaSession?.setSessionExtras(bundle)
             }
 
             override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters) {
                 Log.i(TAG, "onPlaybackParametersChanged: $playbackParameters")
             }
-
         }
     }
 
@@ -698,28 +506,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         }
     }
 
-    fun shouldStartService(notification: Notification) {
-        if (!isForegroundService) {
-            Log.i(TAG, "Starting Service")
-            try {
-                ContextCompat.startForegroundService(
-                    applicationContext,
-                    Intent(applicationContext, this@MediaService.javaClass)
-                )
-                startForeground(NOW_PLAYING_NOTIFICATION, notification)
-            } catch (e: Exception) {
-                startForeground(NOW_PLAYING_NOTIFICATION, notification)
-                ContextCompat.startForegroundService(
-                    applicationContext,
-                    Intent(applicationContext, this@MediaService.javaClass)
-                )
-            }
-            isForegroundService = true
-
-        }
-    }
-
-    fun stopService() {
+    private fun stopService() {
         if (isForegroundService) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 stopForeground(STOP_FOREGROUND_DETACH)
@@ -729,83 +516,6 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             isForegroundService = false
             stopSelf()
             Log.i(TAG, "Stopping Service")
-        }
-    }
-
-    private inner class MediaControllerCallback : MediaControllerCompat.Callback() {
-        override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
-            Log.d(
-                TAG,
-                "onMetadataChanged: title: ${metadata?.title} duration: ${metadata?.duration}"
-            )
-        }
-
-        override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
-            Log.d(TAG, "onPlaybackStateChanged state: $state")
-            updateNotification(state!!)
-        }
-
-        override fun onQueueChanged(queue: MutableList<MediaSessionCompat.QueueItem>?) {
-            Log.d(TAG, "onQueueChanged queue: $queue")
-        }
-
-        @SuppressLint("WakelockTimeout")
-        private fun updateNotification(state: PlaybackStateCompat) {
-            if (mediaController?.metadata == null || mediaSession == null) {
-                return
-            }
-            getArts(applicationContext,media?.bigCoverUrl ?: media?.coverUrl) { bitmap ->
-                val updatedState = state.state
-                val onGoing =
-                    updatedState == PlaybackStateCompat.STATE_PLAYING || updatedState == PlaybackStateCompat.STATE_BUFFERING
-                // Skip building a notification when state is "none".
-                val notification = if (updatedState != PlaybackStateCompat.STATE_NONE) {
-                    buildNotification(updatedState, onGoing, bitmap)
-                } else {
-                    null
-                }
-                Log.d(TAG, "!!! updateNotification state: $updatedState $onGoing")
-
-                when (updatedState) {
-                    PlaybackStateCompat.STATE_BUFFERING,
-                    PlaybackStateCompat.STATE_PLAYING -> {
-                        Log.i(TAG, "updateNotification: STATE_BUFFERING or STATE_PLAYING")
-                        /**
-                         * This may look strange, but the documentation for [Service.startForeground]
-                         * notes that "calling this method does *not* put the service in the started
-                         * state itself, even though the name sounds like it."
-                         */
-                        if (notification != null) {
-                            notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
-                            shouldStartService(notification)
-                        }
-                    }
-                    else -> {
-                        if (isForegroundService) {
-                            // If playback has ended, also stop the service.
-                            if (updatedState == PlaybackStateCompat.STATE_NONE && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                                stopService()
-                            }
-                            if (notification != null) {
-                                notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
-                            } else
-                                removeNowPlayingNotification()
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // to get the property value from build.prop.
-    private fun getProperty(property: String): String? {
-        return try {
-            Runtime.getRuntime().exec("getprop $property").inputStream.use { input ->
-                BufferedReader(InputStreamReader(input), 1024).readLine()
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
-            null
         }
     }
 }

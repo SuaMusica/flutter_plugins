@@ -24,6 +24,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin,ActivityAware {
         const val LOAD_ONLY = "loadOnly"
         const val RELEASE_MODE_ARGUMENT = "releaseMode"
         private const val CHANNEL = "suamusica.com.br/player"
+        const val FAVORITE: String = "favorite"
 
         // Method names
         const val LOAD_METHOD = "load"
@@ -94,6 +95,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin,ActivityAware {
         val cookie = call.argument<String>("cookie")
         PlayerSingleton.externalPlayback = call.argument<Boolean>("externalplayback")
         Log.d(TAG, "method: ${call.method} cookie: $cookie externalPlayback: ${PlayerSingleton.externalPlayback}")
+        Log.d(TAG, "TESTE1 method: ${call.method} | ${call.argument<Boolean>(IS_FAVORITE_ARGUMENT)}")
         when (call.method) {
             LOAD_METHOD -> {
                 val name = call.argument<String>(NAME_ARGUMENT)!!
