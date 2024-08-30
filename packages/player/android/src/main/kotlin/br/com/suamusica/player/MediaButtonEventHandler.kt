@@ -25,6 +25,7 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.google.gson.GsonBuilder
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
@@ -127,14 +128,19 @@ class MediaButtonEventHandler(
             mediaService.removeNotification()
         }
         if (customCommand.customAction == "enqueue") {
-            val listType = object : TypeToken<List<Media>>() {}.type
-            val gson = Gson()
             val json = args.getString("json")
-            val yourClassList: List<Media> =
-                gson.fromJson(json, listType)
-            val userList: List<Media> = Json.decodeFromString(json!!)
+            // Log the received JSON
+            Log.d("Player", "First media Received JSON for enqueue: $json")
+            val gson = GsonBuilder().create()
+            val mediaListType = object : TypeToken<List<Media>>() {}.type
+            val mediaList: List<Media> = gson.fromJson(json, mediaListType)
 
-            mediaService.load(args.getString("cookie")!!,yourClassList,args.getBoolean("autoPlay"))
+            // Log the first item for debugging
+            if (mediaList.isNotEmpty()) {
+                Log.d("Player", "First media item: ${gson.toJson(mediaList.first())}")
+            }
+
+            mediaService.load(args.getString("cookie")!!, mediaList, args.getBoolean("autoPlay"))
         }
 //        if (customCommand.customAction == "prepare") {
 //            args.let {
