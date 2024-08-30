@@ -6,5 +6,6 @@ class Media(
     val url: String,
     val coverUrl: String,
     val bigCoverUrl: String?,
+    // val albumId:int?
     val isFavorite: Boolean?
 )

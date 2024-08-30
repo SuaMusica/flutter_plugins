@@ -37,6 +37,20 @@ class MethodChannelManager(private val channel: MethodChannel) {
         invokeMethod("commandCenter.onPrevious", args)
     }
 
+    fun sendCurrentQueue(
+        queue: List<Media>,
+//        currentMediaIndex: Int,
+        playerId: String,
+    ) {
+        val args = MethodChannelManagerArgsBuilder()
+            .event("CURRENT_QUEUE")
+            .playerId(playerId)
+            .queue(queue)
+//            .currentMediaIndex(currentMediaIndex)
+            .build()
+        invokeMethod("GET_INFO", args)
+    }
+
 
     private fun invokeMethod(method: String, args: Map<String, Any>) {
         channel.invokeMethod(method, args)

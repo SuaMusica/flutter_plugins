@@ -6,6 +6,7 @@ class Event {
     required this.type,
     required this.media,
     required this.queuePosition,
+    this.queue,
     this.error,
     this.errorType,
     this.position,
@@ -19,6 +20,7 @@ class Event {
   final int queuePosition;
   final Duration? position;
   final Duration? duration;
+  final List<Media>? queue;
 
   @override
   String toString() =>
@@ -38,5 +40,5 @@ class Event {
           duration == other.duration;
 
   @override
-  int get hashCode => [type, media, error, errorType].hashCode;
+  int get hashCode => [type, media, error, errorType, queue].hashCode;
 }

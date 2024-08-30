@@ -127,8 +127,8 @@ class _SMPlayerState extends State<SMPlayer> {
         playlistId: 0,
       );
 
-      player.enqueue(media1);
-      player.enqueue(media2);
+      player.enqueue(media: media1);
+      player.enqueue(media: media2);
 
       if (!mounted) return;
 

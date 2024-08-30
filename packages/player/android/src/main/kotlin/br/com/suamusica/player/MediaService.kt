@@ -34,6 +34,7 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.FileDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.hls.HlsMediaSource
+import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.session.CacheBitmapLoader
 import androidx.media3.session.CommandButton
@@ -53,8 +54,8 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-    const val NOW_PLAYING_CHANNEL: String = "br.com.suamusica.media.NOW_PLAYING"
-    const val NOW_PLAYING_NOTIFICATION: Int = 0xb339
+const val NOW_PLAYING_CHANNEL: String = "br.com.suamusica.media.NOW_PLAYING"
+const val NOW_PLAYING_NOTIFICATION: Int = 0xb339
 
 @UnstableApi
 class MediaService : MediaSessionService() {
@@ -62,12 +63,9 @@ class MediaService : MediaSessionService() {
     private val userAgent =
         "SuaMusica/player (Linux; Android ${Build.VERSION.SDK_INT}; ${Build.BRAND}/${Build.MODEL})"
 
-    //    private var packageValidator: PackageValidator? = null
     private var media: Media? = null
     private var isForegroundService = false
 
-    //    private var wifiLock: WifiManager.WifiLock? = null
-//    private var wakeLock: PowerManager.WakeLock? = null
     lateinit var mediaSession: MediaSession
     private var mediaController: ListenableFuture<MediaController>? = null
 
@@ -93,7 +91,7 @@ class MediaService : MediaSessionService() {
 
     private fun getPendingIntent(): PendingIntent {
         val notifyIntent = Intent("SUA_MUSICA_FLUTTER_NOTIFICATION_CLICK").apply {
-            addCategory(Intent.CATEGORY_APP_MUSIC)
+            addCategory(Intent.CATEGORY_DEFAULT)
             flags =
                 Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
@@ -109,18 +107,7 @@ class MediaService : MediaSessionService() {
     override fun onCreate() {
         super.onCreate()
         mediaButtonEventHandler = MediaButtonEventHandler(this)
-//        packageValidator = PackageValidator(applicationContext, R.xml.allowed_media_browser_callers)
-//        wifiLock =
-//            (applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager).createWifiLock(
-//                WifiManager.WIFI_MODE_FULL_HIGH_PERF, "suamusica:wifiLock"
-//            )
-//        wakeLock =
-//            (applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager).newWakeLock(
-//                PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ON_AFTER_RELEASE,
-//                "suamusica:wakeLock"
-//            )
-//        wifiLock?.setReferenceCounted(false)
-//        wakeLock?.setReferenceCounted(false)
+
 
         player = ExoPlayer.Builder(this).build().apply {
             setAudioAttributes(uAmpAudioAttributes, true)
@@ -138,7 +125,6 @@ class MediaService : MediaSessionService() {
                 .setBitmapLoader(CacheBitmapLoader(dataSourceBitmapLoader))
                 .setCallback(mediaButtonEventHandler)
                 .setSessionActivity(getPendingIntent())
-                .setId("SM_NOW_PLAYING")
                 .build()
             this@MediaService.setMediaNotificationProvider(object : MediaNotification.Provider {
 
@@ -150,15 +136,16 @@ class MediaService : MediaSessionService() {
                 ): MediaNotification {
                     Log.d(TAG, "#MEDIA3# - createNotification | ${mediaSession.id}")
                     val defaultMediaNotificationProvider =
-                        DefaultMediaNotificationProvider(applicationContext,
+                        DefaultMediaNotificationProvider(
+                            applicationContext,
 //                        DefaultMediaNotificationProvider(
 //                            applicationContext,
 //                            { R.string.notification_id },
 //                            NOW_PLAYING_CHANNEL,
 //                            R.string.notification_channel
                         ).apply {
-                                setSmallIcon(R.drawable.ic_notification)
-                            }
+                            setSmallIcon(R.drawable.ic_notification)
+                        }
 
                     customMedia3Notification =
                         defaultMediaNotificationProvider.createNotification(
@@ -191,27 +178,26 @@ class MediaService : MediaSessionService() {
     ): MediaSession = mediaSession
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-//        val player = mediaSession?.player!!
-//        val a = !player.playWhenReady
-//                || player.mediaItemCount == 0
-//                || player.playbackState == Player.STATE_ENDED
-//        Log.d(TAG, "#MEDIA3# - onTaskRemoved $a")
-//        if (a) {
-//            // Stop the service if not playing, continue playing in the background
-//            // otherwise.
-//            stopSelf()
-//        }
+        val player = mediaSession.player
+        val shouldStopService = !player.playWhenReady
+                || player.mediaItemCount == 0
+                || player.playbackState == Player.STATE_ENDED
+        Log.d(TAG, "#MEDIA3# - onTaskRemoved $shouldStopService")
+        if (shouldStopService) {
+            // Stop the service if not playing, continue playing in the background
+            // otherwise.
+            stopSelf()
+        }
         isServiceRunning()
     }
 
     override fun onDestroy() {
-        mediaSession?.run {
+        mediaSession.run {
             releaseAndPerformAndDisableTracking()
             player.release()
             release()
             mediaSession.release()
         }
-        releaseLock()
         releasePossibleLeaks()
         stopSelf()
         super.onDestroy()
@@ -219,18 +205,9 @@ class MediaService : MediaSessionService() {
 
     private fun releasePossibleLeaks() {
         player?.release()
-//        packageValidator = null
         mediaSession.release()
         mediaController = null
-//        wifiLock = null
-//        wakeLock = null
     }
-
-    private fun acquireLock(duration: Long) {
-//        wifiLock?.acquire()
-//        wakeLock?.acquire(duration)
-    }
-
 
     private fun isServiceRunning(): Boolean {
         val manager = getSystemService(ACTIVITY_SERVICE) as ActivityManager
@@ -242,36 +219,21 @@ class MediaService : MediaSessionService() {
         return false
     }
 
-    fun shouldStartService() {
-//        Log.e(TAG, "#MEDIA3# shouldStartService $isForegroundService | ${customMedia3Notification == null}")
-//        val intent = Intent(applicationContext, this@MediaService.javaClass)
-//        if (!isForegroundService) {
-//            if (Build.VERSION.SDK_INT >= 26) {
-//                applicationContext.startForegroundService(intent)
-////                setForegroundServiceBehavior()
-////                startService(intent)
-//            } else {
-//                applicationContext.startService(intent)
-//            }
-//            if(customMedia3Notification!=null){
-//            startForeground(NOW_PLAYING_NOTIFICATION, customMedia3Notification!!.notification)
-//            }
-//            isForegroundService = true
-//        }
-        val a = isServiceRunning()
-        Log.e(TAG, "#MEDIA3# isServiceRunning $a")
+    fun load(cookie: String, medias: List<Media>, autoPlay: Boolean) {
+        val sources = listOf<MediaSource>()
+//        player?.clearMediaItems()
+        medias.forEach {
+            val a = prepare(cookie, it)
+            player?.addMediaSource(a)
+        }
+        player?.prepare()
+        PlayerSingleton.playerChangeNotifier?.sendCurrentQueue(medias)
+        if (autoPlay) {
+            play()
+        }
     }
 
-    private fun releaseLock() {
-//        try {
-//            if (wifiLock?.isHeld == true) wifiLock?.release()
-//            if (wakeLock?.isHeld == true) wakeLock?.release()
-//        } catch (e: Exception) {
-//            Log.e("MusicService", e.message, e)
-//        }
-    }
-
-    fun prepare(cookie: String, media: Media) {
+    fun prepare(cookie: String, media: Media): MediaSource {
         this.media = media
         val dataSourceFactory = DefaultHttpDataSource.Factory()
         dataSourceFactory.setReadTimeoutMs(15 * 1000)
@@ -287,7 +249,7 @@ class MediaService : MediaSessionService() {
         val mediaItem = MediaItem.Builder().setUri(uri).setMediaMetadata(metadata).build()
         @C.ContentType val type = Util.inferContentType(uri)
         Log.i(TAG, "Player: Type: $type HLS: ${C.CONTENT_TYPE_HLS}")
-        val source = when (type) {
+        return when (type) {
             C.CONTENT_TYPE_HLS -> HlsMediaSource.Factory(dataSourceFactory)
                 .setPlaylistParserFactory(SMHlsPlaylistParserFactory())
                 .setAllowChunklessPreparation(true).createMediaSource(mediaItem)
@@ -308,10 +270,6 @@ class MediaService : MediaSessionService() {
                 throw IllegalStateException("Unsupported type: $type")
             }
         }
-        player?.pause()
-        player?.setMediaSource(source)
-//        player?.addMediaSource(source)
-        player?.prepare()
     }
 
     private fun buildMetaData(media: Media): MediaMetadata {
@@ -346,9 +304,11 @@ class MediaService : MediaSessionService() {
     }
 
     fun play() {
-        performAndEnableTracking {
-            player?.play()
-        }
+        player?.play()
+    }
+
+    fun playFromQueue(position: Int) {
+        player?.seekTo(position, 0)
     }
 
     //    fun adsPlaying() {
@@ -379,6 +339,20 @@ class MediaService : MediaSessionService() {
             player?.pause()
         }
     }
+
+//    fun returnCurrentQueue() {
+//        try {
+//            player?.let {
+//                PlayerSingleton.playerChangeNotifier?.sendCurrentQueue(
+//                    currentQueue(),
+//                    it.currentMediaItemIndex
+//                )
+//            }
+//        } catch (e: java.lang.Exception) {
+//            OnePlayerSingleton.log(TAG, "returnCurrentQueue Exception - $e")
+//            throw e
+//        }
+//    }
 
     fun stop() {
         performAndDisableTracking {
@@ -471,9 +445,9 @@ class MediaService : MediaSessionService() {
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 super.onIsPlayingChanged(isPlaying)
-                if (isPlaying) {
-                    shouldStartService()
-                }
+//                if (isPlaying) {
+//                    shouldStartService()
+//                }
 //                    shouldStartService()
 //                    val duration = player?.duration ?: 0L
 //                    acquireLock(
@@ -488,87 +462,87 @@ class MediaService : MediaSessionService() {
             }
 
             //
-//            override fun onPlaybackStateChanged(playbackState: Int) {
-//                super.onPlaybackStateChanged(playbackState)
-//                if (playbackState == Player.STATE_READY) {
-//                    if (previousState == -1) {
-//                        // when we define that the track shall not "playWhenReady"
-//                        // no position info is sent
-//                        // therefore, we need to "emulate" the first position notification
-//                        // by sending it directly
-//                        notifyPositionChange()
-//                    } else {
-//                        stopTrackingProgressAndPerformTask {}
-//                    }
-//                } else if (playbackState == Player.STATE_ENDED) {
-//                    stopTrackingProgressAndPerformTask {}
-//                }
-//                previousState = playbackState
-//            }
-            override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
-                isServiceRunning()
-                Log.i(
-                    TAG,
-                    "onPlayerStateChanged: playWhenReady: $playWhenReady playbackState: $playbackState currentPlaybackState: ${player?.playbackState} ServiceRunning: ${isServiceRunning()}"
-                )
-                if (playWhenReady) {
-                    val duration = player?.duration ?: 0L
-                    acquireLock(
-                        if (duration > 1L) duration + TimeUnit.MINUTES.toMillis(2) else TimeUnit.MINUTES.toMillis(
-                            3
-                        )
-                    )
-                } else {
-//                    releaseLock()
-                }
-
-                if (playWhenReady && playbackState == ExoPlayer.STATE_READY) {
-                    //
-                } else {
-                    if (player?.playerError != null) {
-                        //
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                super.onPlaybackStateChanged(playbackState)
+                if (playbackState == Player.STATE_READY) {
+                    if (previousState == -1) {
+                        // when we define that the track shall not "playWhenReady"
+                        // no position info is sent
+                        // therefore, we need to "emulate" the first position notification
+                        // by sending it directly
+                        notifyPositionChange()
                     } else {
-                        when (playbackState) {
-                            ExoPlayer.STATE_IDLE -> { // 1
-                                //
-                            }
-
-
-                            ExoPlayer.STATE_BUFFERING -> { // 2
-                                //
-                            }
-
-                            ExoPlayer.STATE_READY -> { // 3
-                                val status =
-                                    if (playWhenReady) PlayerState.PLAYING else PlayerState.PAUSED
-                                if (previousState == -1) {
-                                    // when we define that the track shall not "playWhenReady"
-                                    // no position info is sent
-                                    // therefore, we need to "emulate" the first position notification
-                                    // by sending it directly
-                                    notifyPositionChange()
-                                } else {
-                                    if (status == PlayerState.PAUSED) {
-                                        stopTrackingProgressAndPerformTask {
-                                            //
-                                        }
-                                    } else {
-                                        //
-                                    }
-
-                                }
-                            }
-
-                            ExoPlayer.STATE_ENDED -> { // 4
-                                stopTrackingProgressAndPerformTask {
-                                    //
-                                }
-                            }
-                        }
+                        stopTrackingProgressAndPerformTask {}
                     }
+                } else if (playbackState == Player.STATE_ENDED) {
+                    stopTrackingProgressAndPerformTask {}
                 }
                 previousState = playbackState
             }
+//            override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
+//                isServiceRunning()
+//                Log.i(
+//                    TAG,
+//                    "onPlayerStateChanged: playWhenReady: $playWhenReady playbackState: $playbackState currentPlaybackState: ${player?.playbackState} ServiceRunning: ${isServiceRunning()}"
+//                )
+//                if (playWhenReady) {
+//                    val duration = player?.duration ?: 0L
+////                    acquireLock(
+////                        if (duration > 1L) duration + TimeUnit.MINUTES.toMillis(2) else TimeUnit.MINUTES.toMillis(
+////                            3
+////                        )
+////                    )
+//                } else {
+////                    releaseLock()
+//                }
+//
+//                if (playWhenReady && playbackState == ExoPlayer.STATE_READY) {
+//                    //
+//                } else {
+//                    if (player?.playerError != null) {
+//                        //
+//                    } else {
+//                        when (playbackState) {
+//                            ExoPlayer.STATE_IDLE -> { // 1
+//                                //
+//                            }
+//
+//
+//                            ExoPlayer.STATE_BUFFERING -> { // 2
+//                                //
+//                            }
+//
+//                            ExoPlayer.STATE_READY -> { // 3
+//                                val status =
+//                                    if (playWhenReady) PlayerState.PLAYING else PlayerState.PAUSED
+//                                if (previousState == -1) {
+//                                    // when we define that the track shall not "playWhenReady"
+//                                    // no position info is sent
+//                                    // therefore, we need to "emulate" the first position notification
+//                                    // by sending it directly
+//                                    notifyPositionChange()
+//                                } else {
+//                                    if (status == PlayerState.PAUSED) {
+//                                        stopTrackingProgressAndPerformTask {
+//                                            //
+//                                        }
+//                                    } else {
+//                                        //
+//                                    }
+//
+//                                }
+//                            }
+//
+//                            ExoPlayer.STATE_ENDED -> { // 4
+//                                stopTrackingProgressAndPerformTask {
+//                                    //
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//                previousState = playbackState
+//            }
 
             override fun onRepeatModeChanged(repeatMode: Int) {
                 Log.i(TAG, "onRepeatModeChanged: $repeatMode")

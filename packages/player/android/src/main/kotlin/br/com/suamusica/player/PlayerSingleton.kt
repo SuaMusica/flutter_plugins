@@ -9,12 +9,14 @@ object PlayerSingleton {
     var mediaSessionConnection: MediaSessionConnection? = null
     var externalPlayback: Boolean? = false
     private const val TAG = "Player"
+    var playerChangeNotifier: PlayerChangeNotifier? = null
 
     fun setChannel(c: MethodChannel, context: Context) {
         channel = c
+        playerChangeNotifier =   PlayerChangeNotifier(MethodChannelManager(c))
         mediaSessionConnection = MediaSessionConnection(
             context,
-            PlayerChangeNotifier(MethodChannelManager(c))
+            playerChangeNotifier!!
         )
     }
 

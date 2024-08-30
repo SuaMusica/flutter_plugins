@@ -19,9 +19,12 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.R.drawable
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
+import br.com.suamusica.player.PlayerPlugin.Companion.POSITION_ARGUMENT
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
 @UnstableApi
 class MediaButtonEventHandler(
@@ -45,7 +48,10 @@ class MediaButtonEventHandler(
                 add(SessionCommand("seek", session.token.extras))
                 add(SessionCommand("pause", Bundle.EMPTY))
                 add(SessionCommand("stop", Bundle.EMPTY))
+                add(SessionCommand("next", Bundle.EMPTY))
+                add(SessionCommand("enqueue", session.token.extras))
                 add(SessionCommand("prepare", session.token.extras))
+                add(SessionCommand("playFromQueue", session.token.extras))
                 add(SessionCommand("play", Bundle.EMPTY))
                 add(SessionCommand("remove_notification", Bundle.EMPTY))
                 add(SessionCommand("send_notification", session.token.extras))
@@ -102,6 +108,9 @@ class MediaButtonEventHandler(
         if (customCommand.customAction == "play") {
             mediaService.play()
         }
+        if (customCommand.customAction == "playFromQueue") {
+            mediaService.playFromQueue(args.getInt(POSITION_ARGUMENT))
+        }
         if (customCommand.customAction == "notification_previous") {
             PlayerSingleton.previous()
         }
@@ -115,7 +124,12 @@ class MediaButtonEventHandler(
 //            mediaService.adsPlaying()
             mediaService.removeNotification()
         }
-
+        if (customCommand.customAction == "enqueue") {
+            val listType = object : TypeToken<ArrayList<Media?>?>() {}.type
+            val yourClassList: List<Media> =
+                Gson().fromJson(args.getString("json"), listType)
+            mediaService.load(args.getString("cookie")!!,yourClassList,args.getBoolean("autoPlay"))
+        }
         if (customCommand.customAction == "prepare") {
             args.let {
                 val cookie = it.getString("cookie")!!

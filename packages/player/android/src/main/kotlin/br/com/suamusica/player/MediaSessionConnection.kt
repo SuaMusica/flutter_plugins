@@ -12,8 +12,8 @@ import android.util.Log
 import java.lang.ref.WeakReference
 
 class MediaSessionConnection(
-        context: Context,
-        val playerChangeNotifier: PlayerChangeNotifier
+    context: Context,
+    val playerChangeNotifier: PlayerChangeNotifier
 ) {
     val TAG = "Player"
 
@@ -31,7 +31,8 @@ class MediaSessionConnection(
     var duration = 0L
 
     private val weakContext = WeakReference(context)
-    private val weakServiceComponent = WeakReference(ComponentName(context, MediaService::class.java))
+    private val weakServiceComponent =
+        WeakReference(ComponentName(context, MediaService::class.java))
 
     private val mediaBrowserConnectionCallback = MediaBrowserConnectionCallback(context)
     private var mediaBrowser: MediaBrowserCompat? = null
@@ -57,13 +58,34 @@ class MediaSessionConnection(
         sendCommand("prepare", bundle)
     }
 
-    fun play() {
-        sendCommand("play", null)
+    fun enqueue(cookie: String, medias: String, autoPlay:Boolean) {
+        val bundle = Bundle()
+        bundle.putString("cookie", cookie)
+        bundle.putString("json", medias)
+        bundle.putBoolean("autoPlay", autoPlay)
+        sendCommand("enqueue", bundle)
+    }
+
+    fun playFromQueue(index: Int) {
+        val bundle = Bundle()
+
+            bundle.putInt("index", index)
+
+        sendCommand("playFromQueue", bundle)
+    }
+
+    fun play(index: Int? = null) {
+        val bundle = Bundle()
+        if (index != null) {
+            bundle.putInt("index", index)
+        }
+        sendCommand("play", bundle)
     }
 
     fun togglePlayPause() {
         sendCommand("togglePlayPause", null)
     }
+
     fun adsPlaying() {
         sendCommand("ads_playing", null)
     }
@@ -71,8 +93,11 @@ class MediaSessionConnection(
     fun pause() {
         sendCommand("pause", null)
     }
+    fun next() {
+        sendCommand("next", null)
+    }
 
-    fun favorite(shouldFavorite:Boolean) {
+    fun favorite(shouldFavorite: Boolean) {
         val bundle = Bundle()
         bundle.putBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT, shouldFavorite)
         sendCommand(PlayerPlugin.FAVORITE, bundle)
@@ -93,7 +118,15 @@ class MediaSessionConnection(
         sendCommand("release", null)
     }
 
-    fun sendNotification(name: String, author: String, url: String, coverUrl: String, isPlaying: Boolean?, bigCoverUrl: String?, isFavorite: Boolean?) {
+    fun sendNotification(
+        name: String,
+        author: String,
+        url: String,
+        coverUrl: String,
+        isPlaying: Boolean?,
+        bigCoverUrl: String?,
+        isFavorite: Boolean?
+    ) {
         val bundle = Bundle()
         bundle.putString("name", name)
         bundle.putString("author", author)
@@ -110,7 +143,11 @@ class MediaSessionConnection(
         sendCommand("remove_notification", null)
     }
 
-    private fun sendCommand(command: String, bundle: Bundle? = null, callbackHandler: ResultReceiver? = null) {
+    private fun sendCommand(
+        command: String,
+        bundle: Bundle? = null,
+        callbackHandler: ResultReceiver? = null
+    ) {
         ensureMediaBrowser {
             ensureMediaController {
                 it.sendCommand(command, bundle, callbackHandler)
@@ -123,8 +160,10 @@ class MediaSessionConnection(
             if (mediaBrowser == null) {
                 val context = weakContext.get()
                 val serviceComponent = weakServiceComponent.get()
-                mediaBrowser = MediaBrowserCompat(context, serviceComponent,
-                        mediaBrowserConnectionCallback, null)
+                mediaBrowser = MediaBrowserCompat(
+                    context, serviceComponent,
+                    mediaBrowserConnectionCallback, null
+                )
             }
 
             mediaBrowser?.let {
@@ -137,7 +176,10 @@ class MediaSessionConnection(
             }
         } catch (e: Exception) {
             if (e.message?.contains("connect() called while neither disconnecting nor disconnected") == true)
-                Log.i("Player", "MediaBrowser is CONNECT_STATE_CONNECTING(2) or CONNECT_STATE_CONNECTED(3) or CONNECT_STATE_SUSPENDED(4)")
+                Log.i(
+                    "Player",
+                    "MediaBrowser is CONNECT_STATE_CONNECTING(2) or CONNECT_STATE_CONNECTED(3) or CONNECT_STATE_SUSPENDED(4)"
+                )
             else
                 Log.e("Player", "Failed", e)
         }
@@ -147,8 +189,8 @@ class MediaSessionConnection(
         mediaController?.let(callable)
     }
 
-    private inner class MediaBrowserConnectionCallback(private val context: Context)
-        : MediaBrowserCompat.ConnectionCallback() {
+    private inner class MediaBrowserConnectionCallback(private val context: Context) :
+        MediaBrowserCompat.ConnectionCallback() {
         override fun onConnected() {
             Log.i(TAG, "MediaBrowserConnectionCallback.onConnected : STARTED")
             mediaBrowser?.let { mediaBrowser ->
@@ -162,7 +204,7 @@ class MediaSessionConnection(
                         if (lastState != state.state) {
                             Log.i(TAG, "onPlaybackStateChanged2: $state")
                             lastState = state.state
-                            playerChangeNotifier.notifyStateChange(state.state)
+//                            playerChangeNotifier.notifyStateChange(state.state)
                         }
                     }
 
@@ -176,16 +218,23 @@ class MediaSessionConnection(
                                     this@MediaSessionConnection.duration = duration
                                     playerChangeNotifier.notifyPositionChange(position, duration)
                                 }
+
                                 "error" -> {
                                     val error = extras.getString("error")
-                                    playerChangeNotifier.notifyStateChange(PlaybackStateCompat.STATE_ERROR, error)
+                                    playerChangeNotifier.notifyStateChange(
+                                        PlaybackStateCompat.STATE_ERROR,
+                                        error
+                                    )
                                 }
+
                                 "seek-end" -> {
                                     playerChangeNotifier.notifySeekEnd()
                                 }
+
                                 "next" -> {
                                     playerChangeNotifier.notifyNext()
                                 }
+
                                 "previous" -> {
                                     playerChangeNotifier.notifyPrevious()
                                 }
