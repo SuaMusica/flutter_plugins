@@ -25,6 +25,8 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 
 @UnstableApi
 class MediaButtonEventHandler(
@@ -125,30 +127,34 @@ class MediaButtonEventHandler(
             mediaService.removeNotification()
         }
         if (customCommand.customAction == "enqueue") {
-            val listType = object : TypeToken<ArrayList<Media?>?>() {}.type
+            val listType = object : TypeToken<List<Media>>() {}.type
+            val gson = Gson()
+            val json = args.getString("json")
             val yourClassList: List<Media> =
-                Gson().fromJson(args.getString("json"), listType)
+                gson.fromJson(json, listType)
+            val userList: List<Media> = Json.decodeFromString(json!!)
+
             mediaService.load(args.getString("cookie")!!,yourClassList,args.getBoolean("autoPlay"))
         }
-        if (customCommand.customAction == "prepare") {
-            args.let {
-                val cookie = it.getString("cookie")!!
-                val name = it.getString("name")!!
-                val author = it.getString("author")!!
-                val url = it.getString("url")!!
-                val coverUrl = it.getString("coverUrl")!!
-                val bigCoverUrl = it.getString("bigCoverUrl")!!
-                var isFavorite: Boolean? = null;
-                if (it.containsKey(PlayerPlugin.IS_FAVORITE_ARGUMENT)) {
-                    isFavorite = it.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT)
-                }
-                mediaService.prepare(
-                    cookie,
-                    Media(name, author, url, coverUrl, bigCoverUrl, isFavorite)
-                )
-                buildIcons(isFavorite ?: false)
-            }
-        }
+//        if (customCommand.customAction == "prepare") {
+//            args.let {
+//                val cookie = it.getString("cookie")!!
+//                val name = it.getString("name")!!
+//                val author = it.getString("author")!!
+//                val url = it.getString("url")!!
+//                val coverUrl = it.getString("coverUrl")!!
+//                val bigCoverUrl = it.getString("bigCoverUrl")!!
+//                var isFavorite: Boolean? = null;
+//                if (it.containsKey(PlayerPlugin.IS_FAVORITE_ARGUMENT)) {
+//                    isFavorite = it.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT)
+//                }
+//                mediaService.prepare(
+//                    cookie,
+//                    Media(name, author, url, coverUrl, bigCoverUrl, isFavorite)
+//                )
+//                buildIcons(isFavorite ?: false)
+//            }
+//        }
         return Futures.immediateFuture(
             SessionResult(SessionResult.RESULT_SUCCESS)
         )

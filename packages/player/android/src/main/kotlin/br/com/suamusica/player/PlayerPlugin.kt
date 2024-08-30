@@ -163,8 +163,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
             "enqueue" -> {
                 val listMedia: List<Map<String, Any>> = call.arguments()!!
                 val arg = listMedia[0]
-                val list = listMedia.drop(1)
-                val json = Gson().toJson(list)
+                val json = Gson().toJson(listMedia.drop(1))
                 PlayerSingleton.mediaSessionConnection?.enqueue(arg["cookie"] as String, json, arg["autoPlay"] as Boolean)
             }
             PLAY_METHOD -> {

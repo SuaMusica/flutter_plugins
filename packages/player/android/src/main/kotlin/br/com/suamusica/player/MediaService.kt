@@ -297,6 +297,7 @@ class MediaService : MediaSessionService() {
             setArtworkData(stream.toByteArray(), PICTURE_TYPE_FRONT_COVER)
             setArtist(media.author)
             setTitle(media.name)
+//            setArtworkUri(Uri.parse(media.bigCoverUrl))
             setDisplayTitle(media.name)
         }
         val metadata = metadataBuilder.build()

@@ -1,11 +1,26 @@
 package br.com.suamusica.player
 
 class Media(
+    val id: Int,
     val name: String,
+    val ownerId: Int?,
+    val albumId: Int?,
+    val albumTitle: String?,
     val author: String,
     val url: String,
+    val isLocal: Boolean?,
+    val localPath : String?,
     val coverUrl: String,
-    val bigCoverUrl: String?,
-    // val albumId:int?
-    val isFavorite: Boolean?
+    val bigCoverUrl: String,
+    val isVerified: Boolean?,
+    val  shareUrl: String?,
+    val playlistId: Int?,
+    val isSpot: Boolean?,
+    val isFavorite: Boolean?,
+    val fallbackUrl: String?,
+    val indexInPlaylist: Int?,
+    val categoryId: Int?,
+    val playlistTitle: String?,
+    val playlistCoverUrl:String?,
+    val playlistOwnerId: Int?,
 )
