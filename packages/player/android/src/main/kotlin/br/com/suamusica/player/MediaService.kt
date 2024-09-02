@@ -64,7 +64,6 @@ class MediaService : MediaSessionService() {
     private val userAgent =
         "SuaMusica/player (Linux; Android ${Build.VERSION.SDK_INT}; ${Build.BRAND}/${Build.MODEL})"
 
-//    private var media: Media? = null
     private var isForegroundService = false
 
     lateinit var mediaSession: MediaSession
