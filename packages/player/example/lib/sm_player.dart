@@ -168,14 +168,14 @@ class _SMPlayerState extends State<SMPlayer> {
   void playOrPause() async {
     print("Player State: ${_player.state}");
 
-    if (_player.state == PlayerState.IDLE && _player.current != null) {
-      int result = await _player.play(_player.current!);
+    if (_player.state == PlayerState.IDLE && _player.currentMedia != null) {
+      int result = await _player.play(_player.currentMedia!);
       if (result == Player.Ok) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Audio is now playing!!!!')));
       }
     } else if (_player.state == PlayerState.BUFFERING &&
-        _player.current != null) {
+        _player.currentMedia != null) {
       int result = await _player.resume();
       if (result == Player.Ok) {
         ScaffoldMessenger.of(context)

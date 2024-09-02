@@ -39,13 +39,10 @@ import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.session.CacheBitmapLoader
 import androidx.media3.session.CommandButton
 import androidx.media3.session.DefaultMediaNotificationProvider
-import androidx.media3.session.DefaultMediaNotificationProvider.DEFAULT_NOTIFICATION_ID
 import androidx.media3.session.MediaController
 import androidx.media3.session.MediaNotification
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
-import androidx.media3.session.SessionCommand
-import androidx.media3.session.SessionResult
 import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.ListenableFuture
@@ -67,7 +64,7 @@ class MediaService : MediaSessionService() {
     private val userAgent =
         "SuaMusica/player (Linux; Android ${Build.VERSION.SDK_INT}; ${Build.BRAND}/${Build.MODEL})"
 
-    private var media: Media? = null
+//    private var media: Media? = null
     private var isForegroundService = false
 
     lateinit var mediaSession: MediaSession
@@ -222,6 +219,7 @@ class MediaService : MediaSessionService() {
             if (autoPlay) {
                 play()
             }
+            mediaButtonEventHandler.buildIcons(medias[0].isFavorite ?: false)
             // Use coroutine to prepare and add the remaining media sources
             CoroutineScope(Dispatchers.Main).launch {
                 for (i in 1 until medias.size) {
@@ -239,7 +237,7 @@ class MediaService : MediaSessionService() {
     }
 
     private fun prepare(cookie: String, media: Media): MediaSource {
-        this.media = media
+//        this.media = media
         val dataSourceFactory = DefaultHttpDataSource.Factory()
         dataSourceFactory.setReadTimeoutMs(15 * 1000)
         dataSourceFactory.setConnectTimeoutMs(10 * 1000)
@@ -280,13 +278,6 @@ class MediaService : MediaSessionService() {
 
     private fun buildMetaData(media: Media): MediaMetadata {
         val metadataBuilder = MediaMetadata.Builder()
-
-        if (media.isFavorite != null) {
-            mediaSession.sessionExtras.putBoolean(
-                PlayerPlugin.IS_FAVORITE_ARGUMENT,
-                media.isFavorite
-            )
-        }
         val stream = ByteArrayOutputStream()
 
         val art = artCache[media.bigCoverUrl] ?: try {
@@ -299,6 +290,8 @@ class MediaService : MediaSessionService() {
         }
 
         art?.compress(Bitmap.CompressFormat.PNG, 95, stream)
+        val bundle = Bundle()
+        bundle.putBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT, media.isFavorite?:false)
         metadataBuilder.apply {
             setAlbumTitle(media.name)
             setArtist(media.author)
@@ -306,6 +299,7 @@ class MediaService : MediaSessionService() {
             setArtist(media.author)
             setTitle(media.name)
             setDisplayTitle(media.name)
+            setExtras(bundle)
         }
         val metadata = metadataBuilder.build()
         return metadata
@@ -418,7 +412,7 @@ class MediaService : MediaSessionService() {
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 super.onIsPlayingChanged(isPlaying)
-                PlayerSingleton.playerChangeNotifier?.notifyStateChange(if(isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED)
+                PlayerSingleton.playerChangeNotifier?.notifyStateChange(if (isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED)
             }
 
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
@@ -426,6 +420,7 @@ class MediaService : MediaSessionService() {
                 PlayerSingleton.playerChangeNotifier?.currentMediaIndex(
                     player?.currentMediaItemIndex ?: 0
                 )
+                mediaButtonEventHandler.buildIcons(mediaItem?.mediaMetadata?.extras?.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT) ?: false)
             }
 
             override fun onPlaybackStateChanged(playbackState: Int) {

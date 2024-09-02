@@ -42,16 +42,16 @@ class MediaButtonEventHandler(
         Log.d("Player", "onConnect")
         val sessionCommands =
             MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon().apply {
-                add(SessionCommand("next", Bundle.EMPTY))
+                add(SessionCommand("notification_next", Bundle.EMPTY))
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    add(SessionCommand("previous", Bundle.EMPTY))
+                    add(SessionCommand("notification_previous", Bundle.EMPTY))
                 }
                 add(SessionCommand("notification_favoritar", Bundle.EMPTY))
                 add(SessionCommand("notification_desfavoritar", Bundle.EMPTY))
                 add(SessionCommand("seek", session.token.extras))
                 add(SessionCommand("pause", Bundle.EMPTY))
                 add(SessionCommand("stop", Bundle.EMPTY))
-                add(SessionCommand("next", Bundle.EMPTY))
+//                add(SessionCommand("next", Bundle.EMPTY))
                 add(SessionCommand("enqueue", session.token.extras))
                 add(SessionCommand("prepare", session.token.extras))
                 add(SessionCommand("playFromQueue", session.token.extras))
@@ -100,30 +100,22 @@ class MediaButtonEventHandler(
         if (customCommand.customAction == "stop") {
             mediaService.stop()
         }
-
-        if (customCommand.customAction == "send_notification") {
-            args.let {
-                val isFavorite = it.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT)
-                buildIcons(isFavorite)
-
-            }
-        }
         if (customCommand.customAction == "play") {
             mediaService.play()
         }
         if (customCommand.customAction == "playFromQueue") {
             mediaService.playFromQueue(args.getInt(POSITION_ARGUMENT))
         }
-        if (customCommand.customAction == "previous") {
+        if (customCommand.customAction == "notification_previous") {
             session.player.seekToPrevious()
         }
-        if (customCommand.customAction == "next") {
+        if (customCommand.customAction == "notification_next") {
             session.player.seekToNext()
         }
         if (customCommand.customAction == "pause") {
             mediaService.pause()
         }
-        if (customCommand.customAction == "ads_playing" || customCommand.customAction == "remove_notification")  {
+        if (customCommand.customAction == "ads_playing" || customCommand.customAction == "remove_notification") {
 //            mediaService.adsPlaying()
             mediaService.removeNotification()
         }
@@ -140,33 +132,19 @@ class MediaButtonEventHandler(
                 Log.d("Player", "First media item: ${gson.toJson(mediaList.first())}")
             }
 
-            mediaService.enqueue(args.getString("cookie")!!, mediaList, args.getBoolean("autoPlay"),args.getInt("startFromPos"))
+            mediaService.enqueue(
+                args.getString("cookie")!!,
+                mediaList,
+                args.getBoolean("autoPlay"),
+                args.getInt("startFromPos")
+            )
         }
-//        if (customCommand.customAction == "prepare") {
-//            args.let {
-//                val cookie = it.getString("cookie")!!
-//                val name = it.getString("name")!!
-//                val author = it.getString("author")!!
-//                val url = it.getString("url")!!
-//                val coverUrl = it.getString("coverUrl")!!
-//                val bigCoverUrl = it.getString("bigCoverUrl")!!
-//                var isFavorite: Boolean? = null;
-//                if (it.containsKey(PlayerPlugin.IS_FAVORITE_ARGUMENT)) {
-//                    isFavorite = it.getBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT)
-//                }
-//                mediaService.prepare(
-//                    cookie,
-//                    Media(name, author, url, coverUrl, bigCoverUrl, isFavorite)
-//                )
-//                buildIcons(isFavorite ?: false)
-//            }
-//        }
         return Futures.immediateFuture(
             SessionResult(SessionResult.RESULT_SUCCESS)
         )
     }
 
-    private fun buildIcons(isFavorite: Boolean): Unit? {
+    fun buildIcons(isFavorite: Boolean) {
         val list = ImmutableList.of(
             CommandButton.Builder()
                 .setDisplayName("Save to favorites")
@@ -180,9 +158,9 @@ class MediaButtonEventHandler(
                 .setEnabled(true)
                 .build(),
             CommandButton.Builder()
-                .setDisplayName("next")
+                .setDisplayName("notification_next")
                 .setIconResId(drawable.media3_icon_next)
-                .setSessionCommand(SessionCommand("next", Bundle.EMPTY))
+                .setSessionCommand(SessionCommand("notification_next", Bundle.EMPTY))
                 .setEnabled(true)
                 .build(),
         )
@@ -190,9 +168,9 @@ class MediaButtonEventHandler(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 list.plus(
                     CommandButton.Builder()
-                        .setDisplayName("previous")
+                        .setDisplayName("notification_previous")
                         .setIconResId(drawable.media3_icon_previous)
-                        .setSessionCommand(SessionCommand("previous", Bundle.EMPTY))
+                        .setSessionCommand(SessionCommand("notification_previous", Bundle.EMPTY))
                         .build()
                 )
             } else {
@@ -213,7 +191,7 @@ class MediaButtonEventHandler(
     }
 
     @UnstableApi
-    fun onMediaButtonEventHandler(intent: Intent?,session: MediaSession,) {
+    fun onMediaButtonEventHandler(intent: Intent?, session: MediaSession) {
 
         if (intent == null) {
             return

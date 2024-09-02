@@ -113,64 +113,23 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
             "method: ${call.method}"
         )
         when (call.method) {
-            LOAD_METHOD -> {
-//                val name = call.argument<String>(NAME_ARGUMENT)!!
-//                val author = call.argument<String>(AUTHOR_ARGUMENT)!!
-//                val url = call.argument<String>(URL_ARGUMENT)!!
-//                val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
-//                val bigCoverUrl = call.argument<String>(BIG_COVER_URL_ARGUMENT)
-//                val position = call.argument<Int>(POSITION_ARGUMENT)
-//                val isFavorite: Boolean? = call.argument<Boolean>(IS_FAVORITE_ARGUMENT)
-//
-//                PlayerSingleton.mediaSessionConnection?.prepare(
-//                    cookie!!,
-//                    Media(name, author, url, coverUrl, bigCoverUrl, isFavorite)
-//                )
-//                position?.let {
-//                    PlayerSingleton.mediaSessionConnection?.seek(it.toLong(), false)
-//                }
-//                PlayerSingleton.mediaSessionConnection?.sendNotification(
-//                    name,
-//                    author,
-//                    url,
-//                    coverUrl,
-//                    null,
-//                    bigCoverUrl,
-//                    isFavorite
-//                )
-//                Log.d(TAG, "method: ${call.method} name: $name author: $author")
-            }
-            SEND_NOTIFICATION -> {
-                val name = call.argument<String>(NAME_ARGUMENT)!!
-                val author = call.argument<String>(AUTHOR_ARGUMENT)!!
-                val url = call.argument<String>(URL_ARGUMENT)!!
-                val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
-                val isPlaying: Boolean? = call.argument<Boolean>(IS_PLAYING_ARGUMENT)
-                val isFavorite: Boolean? = call.argument<Boolean>(IS_FAVORITE_ARGUMENT)
-                val bigCoverUrl = call.argument<String>(BIG_COVER_URL_ARGUMENT)
-
-                PlayerSingleton.mediaSessionConnection?.sendNotification(
-                    name,
-                    author,
-                    url,
-                    coverUrl,
-                    isPlaying,
-                    bigCoverUrl,
-                    isFavorite
-                )
-            }
-
+            LOAD_METHOD -> {}
             "enqueue" -> {
                 val listMedia: List<Map<String, Any>> = call.arguments()!!
                 val arg = listMedia[0]
                 val json = Gson().toJson(listMedia.drop(1))
-                PlayerSingleton.mediaSessionConnection?.enqueue(arg["cookie"] as String, json, arg["autoPlay"] as Boolean)
+                PlayerSingleton.mediaSessionConnection?.enqueue(
+                    arg["cookie"] as String,
+                    json,
+                    arg["autoPlay"] as Boolean
+                )
             }
+
             PLAY_METHOD -> {
                 PlayerSingleton.mediaSessionConnection?.play()
             }
 
-            NEXT_METHOD ->{
+            NEXT_METHOD -> {
                 PlayerSingleton.mediaSessionConnection?.next()
             }
 
@@ -198,7 +157,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
 //                }
                 val position = call.argument<Int>(POSITION_ARGUMENT) ?: 0
                 PlayerSingleton.mediaSessionConnection?.playFromQueue(
-                        position
+                    position
                 )
             }
 
