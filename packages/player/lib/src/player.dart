@@ -200,51 +200,6 @@ class Player {
     return Ok;
   }
 
-  // Future<int> sendNotification({
-  //   bool? isPlaying,
-  //   bool? isFavorite,
-  //   Duration? position,
-  //   Duration? duration,
-  // }) async {
-  //   if (_queue.size > 0) {
-  //     if (currentMedia == null) {
-  //       _queue.move(0);
-  //     }
-  //     final media = currentMedia!;
-  //     final data = {
-  //       'albumId': media.albumId.toString(),
-  //       'albumTitle': media.albumTitle,
-  //       'name': media.name,
-  //       'author': media.author,
-  //       'url': media.url,
-  //       'coverUrl': media.coverUrl,
-  //       'bigCoverUrl': media.bigCoverUrl,
-  //       'loadOnly': false,
-  //       'isLocal': media.isLocal,
-  //     };
-
-  //     if (position != null) {
-  //       data['position'] = position.inMilliseconds;
-  //     }
-
-  //     if (duration != null) {
-  //       data['duration'] = duration.inMilliseconds;
-  //     }
-
-  //     if (isPlaying != null) {
-  //       data['isPlaying'] = isPlaying;
-  //     }
-  //     if (isFavorite != null) {
-  //       data['isFavorite'] = isFavorite;
-  //     }
-
-  //     await _invokeMethod('send_notification', data);
-  //     return Ok;
-  //   } else {
-  //     return Ok;
-  //   }
-  // }
-
   Future<int> disableNotificatonCommands() async {
     await _invokeMethod('disable_notification_commands');
     return Ok;
