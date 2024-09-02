@@ -14,7 +14,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.PowerManager
 import android.support.v4.media.session.PlaybackStateCompat
-import android.util.Log
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -26,6 +25,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.Player.DISCONTINUITY_REASON_SEEK
 import androidx.media3.common.Timeline
 import androidx.media3.common.Tracks
+import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.util.Util
 import androidx.media3.datasource.DataSource
@@ -49,6 +49,10 @@ import androidx.media3.session.SessionResult
 import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.ListenableFuture
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -83,8 +87,9 @@ class MediaService : MediaSessionService() {
     private lateinit var mediaButtonEventHandler: MediaButtonEventHandler
     private var customMedia3Notification: MediaNotification? = null
 
+    private val artCache = HashMap<String, Bitmap>()
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d(TAG, "onStartCommand")
         super.onStartCommand(intent, flags, startId)
         return Service.START_STICKY
     }
@@ -119,7 +124,6 @@ class MediaService : MediaSessionService() {
         dataSourceBitmapLoader =
             DataSourceBitmapLoader(applicationContext)
 
-        Log.d(TAG, "MEDIA3 - handleCustomCommand ${Build.VERSION_CODES.TIRAMISU}")
         player?.let {
             mediaSession = MediaSession.Builder(this, it)
                 .setBitmapLoader(CacheBitmapLoader(dataSourceBitmapLoader))
@@ -134,15 +138,9 @@ class MediaService : MediaSessionService() {
                     actionFactory: MediaNotification.ActionFactory,
                     onNotificationChangedCallback: MediaNotification.Provider.Callback
                 ): MediaNotification {
-                    Log.d(TAG, "#MEDIA3# - createNotification | ${mediaSession.id}")
                     val defaultMediaNotificationProvider =
                         DefaultMediaNotificationProvider(
                             applicationContext,
-//                        DefaultMediaNotificationProvider(
-//                            applicationContext,
-//                            { R.string.notification_id },
-//                            NOW_PLAYING_CHANNEL,
-//                            R.string.notification_channel
                         ).apply {
                             setSmallIcon(R.drawable.ic_notification)
                         }
@@ -166,7 +164,6 @@ class MediaService : MediaSessionService() {
                     action: String,
                     extras: Bundle
                 ): Boolean {
-                    Log.d(TAG, "#MEDIA3# - handleCustomCommand $action")
                     return false
                 }
             })
@@ -182,10 +179,7 @@ class MediaService : MediaSessionService() {
         val shouldStopService = !player.playWhenReady
                 || player.mediaItemCount == 0
                 || player.playbackState == Player.STATE_ENDED
-        Log.d(TAG, "#MEDIA3# - onTaskRemoved $shouldStopService")
         if (shouldStopService) {
-            // Stop the service if not playing, continue playing in the background
-            // otherwise.
             stopSelf()
         }
         isServiceRunning()
@@ -219,21 +213,32 @@ class MediaService : MediaSessionService() {
         return false
     }
 
-    fun load(cookie: String, medias: List<Media>, autoPlay: Boolean) {
-        val sources = listOf<MediaSource>()
-//        player?.clearMediaItems()
-        medias.forEach {
-            val a = prepare(cookie, it)
-            player?.addMediaSource(a)
-        }
-        player?.prepare()
-        PlayerSingleton.playerChangeNotifier?.sendCurrentQueue(medias)
-        if (autoPlay) {
-            play()
+    fun enqueue(cookie: String, medias: List<Media>, autoPlay: Boolean, startFromPos: Int) {
+        if (medias.isNotEmpty()) {
+            // Prepare the first media source outside the coroutine
+            val firstMediaSource = prepare(cookie, medias[0])
+            player?.setMediaSource(firstMediaSource)
+            player?.prepare()
+            if (autoPlay) {
+                play()
+            }
+            // Use coroutine to prepare and add the remaining media sources
+            CoroutineScope(Dispatchers.Main).launch {
+                for (i in 1 until medias.size) {
+                    val mediaSource = withContext(Dispatchers.IO) {
+                        Log.i(TAG, "CoroutineScope: enqueue: ${medias[i].name}")
+                        prepare(cookie, medias[i])
+                    }
+                    player?.addMediaSource(mediaSource)
+                }
+                player?.prepare()
+
+            }
+            PlayerSingleton.playerChangeNotifier?.sendCurrentQueue(medias)
         }
     }
 
-    fun prepare(cookie: String, media: Media): MediaSource {
+    private fun prepare(cookie: String, media: Media): MediaSource {
         this.media = media
         val dataSourceFactory = DefaultHttpDataSource.Factory()
         dataSourceFactory.setReadTimeoutMs(15 * 1000)
@@ -243,19 +248,20 @@ class MediaService : MediaSessionService() {
         dataSourceFactory.setDefaultRequestProperties(mapOf("Cookie" to cookie))
         val metadata = buildMetaData(media)
         val url = media.url
-        Log.i(TAG, "Player: URL: $url")
-
         val uri = if (url.startsWith("/")) Uri.fromFile(File(url)) else Uri.parse(url)
         val mediaItem = MediaItem.Builder().setUri(uri).setMediaMetadata(metadata).build()
         @C.ContentType val type = Util.inferContentType(uri)
-        Log.i(TAG, "Player: Type: $type HLS: ${C.CONTENT_TYPE_HLS}")
+
         return when (type) {
-            C.CONTENT_TYPE_HLS -> HlsMediaSource.Factory(dataSourceFactory)
-                .setPlaylistParserFactory(SMHlsPlaylistParserFactory())
-                .setAllowChunklessPreparation(true).createMediaSource(mediaItem)
+            C.CONTENT_TYPE_HLS -> {
+                HlsMediaSource.Factory(dataSourceFactory)
+                    .setPlaylistParserFactory(SMHlsPlaylistParserFactory())
+                    .setAllowChunklessPreparation(true)
+                    .createMediaSource(mediaItem)
+
+            }
 
             C.CONTENT_TYPE_OTHER -> {
-                Log.i(TAG, "Player: URI: $uri")
                 val factory: DataSource.Factory =
                     if (uri.scheme != null && uri.scheme?.startsWith("http") == true) {
                         dataSourceFactory
@@ -283,9 +289,11 @@ class MediaService : MediaSessionService() {
         }
         val stream = ByteArrayOutputStream()
 
-        val art = try {
-            dataSourceBitmapLoader.loadBitmap(Uri.parse(media.bigCoverUrl!!))
-                .get(5000, TimeUnit.MILLISECONDS)
+        val art = artCache[media.bigCoverUrl] ?: try {
+            dataSourceBitmapLoader.loadBitmap(Uri.parse(media.bigCoverUrl))
+                .get(5000, TimeUnit.MILLISECONDS).also {
+                    artCache[media.bigCoverUrl] = it
+                }
         } catch (e: Exception) {
             BitmapFactory.decodeResource(resources, R.drawable.default_art)
         }
@@ -297,7 +305,6 @@ class MediaService : MediaSessionService() {
             setArtworkData(stream.toByteArray(), PICTURE_TYPE_FRONT_COVER)
             setArtist(media.author)
             setTitle(media.name)
-//            setArtworkUri(Uri.parse(media.bigCoverUrl))
             setDisplayTitle(media.name)
         }
         val metadata = metadataBuilder.build()
@@ -305,29 +312,17 @@ class MediaService : MediaSessionService() {
     }
 
     fun play() {
-        player?.play()
+        performAndEnableTracking {
+            player?.play()
+        }
     }
 
     fun playFromQueue(position: Int) {
         player?.seekTo(position, 0)
+        PlayerSingleton.playerChangeNotifier?.currentMediaIndex(player?.currentMediaItemIndex ?: 0)
     }
 
-    //    fun adsPlaying() {
-//        val oldItem = player!!.currentMediaItem!!
-//        val newItem = oldItem
-//            .buildUpon().setMediaMetadata(
-//                oldItem.mediaMetadata.buildUpon()
-//                    .setTitle("Propaganda")
-//                    .setDescription("Propaganda")
-//                    .build()
-//            )
-//            .build()
-//        player!!.replaceMediaItem(0, newItem)
-//        player!!.prepare()
-//    }
     fun removeNotification() {
-//         player?.stop()
-//        shouldStartService()
     }
 
     fun seek(position: Long, playWhenReady: Boolean) {
@@ -340,20 +335,6 @@ class MediaService : MediaSessionService() {
             player?.pause()
         }
     }
-
-//    fun returnCurrentQueue() {
-//        try {
-//            player?.let {
-//                PlayerSingleton.playerChangeNotifier?.sendCurrentQueue(
-//                    currentQueue(),
-//                    it.currentMediaItemIndex
-//                )
-//            }
-//        } catch (e: java.lang.Exception) {
-//            OnePlayerSingleton.log(TAG, "returnCurrentQueue Exception - $e")
-//            throw e
-//        }
-//    }
 
     fun stop() {
         performAndDisableTracking {
@@ -386,7 +367,7 @@ class MediaService : MediaSessionService() {
             extra.putString("type", "position")
             extra.putLong("position", position)
             extra.putLong("duration", duration)
-            mediaSession?.setSessionExtras(extra)
+            mediaSession.setSessionExtras(extra)
         }
     }
 
@@ -423,54 +404,35 @@ class MediaService : MediaSessionService() {
 
     private fun playerEventListener(): Player.Listener {
         return object : Player.Listener {
-            override fun onTimelineChanged(timeline: Timeline, reason: Int) {
-                Log.i(TAG, "onTimelineChanged: timeline: $timeline reason: $reason")
-            }
-
-            override fun onTracksChanged(tracks: Tracks) {
-                Log.i(TAG, "onTracksChanged: ")
-            }
-
             override fun onPositionDiscontinuity(
                 oldPosition: Player.PositionInfo,
                 newPosition: Player.PositionInfo,
                 reason: Int
             ) {
-                Log.i(TAG, "onPositionDiscontinuity: $reason")
                 if (reason == DISCONTINUITY_REASON_SEEK) {
                     val bundle = Bundle()
                     bundle.putString("type", "seek-end")
-                    mediaSession?.setSessionExtras(bundle)
+                    mediaSession.setSessionExtras(bundle)
                 }
             }
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 super.onIsPlayingChanged(isPlaying)
-//                if (isPlaying) {
-//                    shouldStartService()
-//                }
-//                    shouldStartService()
-//                    val duration = player?.duration ?: 0L
-//                    acquireLock(
-//                        if (duration > 1L) duration + TimeUnit.MINUTES.toMillis(2) else TimeUnit.MINUTES.toMillis(
-//                            3
-//                        )
-//                    )
-//                } else {
-//                    stopService()
-//                    releaseLock()
-//                }
+                PlayerSingleton.playerChangeNotifier?.notifyStateChange(if(isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED)
             }
 
-            //
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                super.onMediaItemTransition(mediaItem, reason)
+                PlayerSingleton.playerChangeNotifier?.currentMediaIndex(
+                    player?.currentMediaItemIndex ?: 0
+                )
+            }
+
             override fun onPlaybackStateChanged(playbackState: Int) {
                 super.onPlaybackStateChanged(playbackState)
+                PlayerSingleton.playerChangeNotifier?.notifyStateChange(playbackState)
                 if (playbackState == Player.STATE_READY) {
                     if (previousState == -1) {
-                        // when we define that the track shall not "playWhenReady"
-                        // no position info is sent
-                        // therefore, we need to "emulate" the first position notification
-                        // by sending it directly
                         notifyPositionChange()
                     } else {
                         stopTrackingProgressAndPerformTask {}
@@ -480,81 +442,14 @@ class MediaService : MediaSessionService() {
                 }
                 previousState = playbackState
             }
-//            override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
-//                isServiceRunning()
-//                Log.i(
-//                    TAG,
-//                    "onPlayerStateChanged: playWhenReady: $playWhenReady playbackState: $playbackState currentPlaybackState: ${player?.playbackState} ServiceRunning: ${isServiceRunning()}"
-//                )
-//                if (playWhenReady) {
-//                    val duration = player?.duration ?: 0L
-////                    acquireLock(
-////                        if (duration > 1L) duration + TimeUnit.MINUTES.toMillis(2) else TimeUnit.MINUTES.toMillis(
-////                            3
-////                        )
-////                    )
-//                } else {
-////                    releaseLock()
-//                }
-//
-//                if (playWhenReady && playbackState == ExoPlayer.STATE_READY) {
-//                    //
-//                } else {
-//                    if (player?.playerError != null) {
-//                        //
-//                    } else {
-//                        when (playbackState) {
-//                            ExoPlayer.STATE_IDLE -> { // 1
-//                                //
-//                            }
-//
-//
-//                            ExoPlayer.STATE_BUFFERING -> { // 2
-//                                //
-//                            }
-//
-//                            ExoPlayer.STATE_READY -> { // 3
-//                                val status =
-//                                    if (playWhenReady) PlayerState.PLAYING else PlayerState.PAUSED
-//                                if (previousState == -1) {
-//                                    // when we define that the track shall not "playWhenReady"
-//                                    // no position info is sent
-//                                    // therefore, we need to "emulate" the first position notification
-//                                    // by sending it directly
-//                                    notifyPositionChange()
-//                                } else {
-//                                    if (status == PlayerState.PAUSED) {
-//                                        stopTrackingProgressAndPerformTask {
-//                                            //
-//                                        }
-//                                    } else {
-//                                        //
-//                                    }
-//
-//                                }
-//                            }
-//
-//                            ExoPlayer.STATE_ENDED -> { // 4
-//                                stopTrackingProgressAndPerformTask {
-//                                    //
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
-//                previousState = playbackState
-//            }
 
             override fun onRepeatModeChanged(repeatMode: Int) {
-                Log.i(TAG, "onRepeatModeChanged: $repeatMode")
             }
 
             override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
-                Log.i(TAG, "onShuffleModeEnabledChanged: $shuffleModeEnabled")
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                Log.e(TAG, "onPLayerError: ${error.message}", error)
                 val bundle = Bundle()
                 bundle.putString("type", "error")
                 bundle.putString(
@@ -563,11 +458,10 @@ class MediaService : MediaSessionService() {
                             .contains("Permission denied")
                     ) "Permission denied" else error.message
                 )
-                mediaSession?.setSessionExtras(bundle)
+                mediaSession.setSessionExtras(bundle)
             }
 
             override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters) {
-                Log.i(TAG, "onPlaybackParametersChanged: $playbackParameters")
             }
         }
     }
@@ -611,7 +505,6 @@ class MediaService : MediaSessionService() {
             }
             isForegroundService = false
             stopSelf()
-            Log.i(TAG, "Stopping Service")
         }
     }
 }

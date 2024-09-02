@@ -15,6 +15,11 @@ class MethodChannelManagerArgsBuilder {
     fun playerId(id: String): MethodChannelManagerArgsBuilder {
         args["playerId"] = id
         return this
+    }  
+
+    fun currentMediaIndex(index: Int): MethodChannelManagerArgsBuilder {
+        args["CURRENT_MEDIA_INDEX"] = index
+        return this
     }
 
     fun queue(queue: List<Media>): MethodChannelManagerArgsBuilder {

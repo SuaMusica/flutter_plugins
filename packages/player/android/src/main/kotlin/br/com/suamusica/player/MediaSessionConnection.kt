@@ -68,9 +68,7 @@ class MediaSessionConnection(
 
     fun playFromQueue(index: Int) {
         val bundle = Bundle()
-
-            bundle.putInt("index", index)
-
+        bundle.putInt("position", index)
         sendCommand("playFromQueue", bundle)
     }
 

@@ -42,9 +42,9 @@ class MediaButtonEventHandler(
         Log.d("Player", "onConnect")
         val sessionCommands =
             MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon().apply {
-                add(SessionCommand("notification_next", Bundle.EMPTY))
+                add(SessionCommand("next", Bundle.EMPTY))
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    add(SessionCommand("notification_previous", Bundle.EMPTY))
+                    add(SessionCommand("previous", Bundle.EMPTY))
                 }
                 add(SessionCommand("notification_favoritar", Bundle.EMPTY))
                 add(SessionCommand("notification_desfavoritar", Bundle.EMPTY))
@@ -114,11 +114,11 @@ class MediaButtonEventHandler(
         if (customCommand.customAction == "playFromQueue") {
             mediaService.playFromQueue(args.getInt(POSITION_ARGUMENT))
         }
-        if (customCommand.customAction == "notification_previous") {
-            PlayerSingleton.previous()
+        if (customCommand.customAction == "previous") {
+            session.player.seekToPrevious()
         }
-        if (customCommand.customAction == "notification_next") {
-            PlayerSingleton.next()
+        if (customCommand.customAction == "next") {
+            session.player.seekToNext()
         }
         if (customCommand.customAction == "pause") {
             mediaService.pause()
@@ -140,7 +140,7 @@ class MediaButtonEventHandler(
                 Log.d("Player", "First media item: ${gson.toJson(mediaList.first())}")
             }
 
-            mediaService.load(args.getString("cookie")!!, mediaList, args.getBoolean("autoPlay"))
+            mediaService.enqueue(args.getString("cookie")!!, mediaList, args.getBoolean("autoPlay"),args.getInt("startFromPos"))
         }
 //        if (customCommand.customAction == "prepare") {
 //            args.let {
@@ -180,9 +180,9 @@ class MediaButtonEventHandler(
                 .setEnabled(true)
                 .build(),
             CommandButton.Builder()
-                .setDisplayName("notification_next")
+                .setDisplayName("next")
                 .setIconResId(drawable.media3_icon_next)
-                .setSessionCommand(SessionCommand("notification_next", Bundle.EMPTY))
+                .setSessionCommand(SessionCommand("next", Bundle.EMPTY))
                 .setEnabled(true)
                 .build(),
         )
@@ -190,9 +190,9 @@ class MediaButtonEventHandler(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 list.plus(
                     CommandButton.Builder()
-                        .setDisplayName("notification_previous")
+                        .setDisplayName("previous")
                         .setIconResId(drawable.media3_icon_previous)
-                        .setSessionCommand(SessionCommand("notification_previous", Bundle.EMPTY))
+                        .setSessionCommand(SessionCommand("previous", Bundle.EMPTY))
                         .build()
                 )
             } else {
@@ -208,12 +208,12 @@ class MediaButtonEventHandler(
         controllerInfo: MediaSession.ControllerInfo,
         intent: Intent
     ): Boolean {
-        onMediaButtonEventHandler(intent)
+        onMediaButtonEventHandler(intent, session)
         return true
     }
 
     @UnstableApi
-    fun onMediaButtonEventHandler(intent: Intent?) {
+    fun onMediaButtonEventHandler(intent: Intent?,session: MediaSession,) {
 
         if (intent == null) {
             return
@@ -252,12 +252,12 @@ class MediaButtonEventHandler(
 
                 KeyEvent.KEYCODE_MEDIA_NEXT -> {
                     Log.d("Player", "Player: Key Code : Next")
-                    PlayerSingleton.next()
+                    session.player.seekToNext()
                 }
 
                 KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
                     Log.d("Player", "Player: Key Code : Previous")
-                    PlayerSingleton.previous()
+                    session.player.seekToPrevious()
                 }
 
                 KeyEvent.KEYCODE_MEDIA_STOP -> {

@@ -20,7 +20,7 @@ class Queue {
     _initialize();
   }
 
-  Future<void> _initialize() async {
+  FutureOr<List<QueueItem<Media>>> _initialize() async {
     if (!itemsReady) {
       try {
         final items = await previousItems;
@@ -29,10 +29,13 @@ class Queue {
         int i = 0;
         storage.addAll(items.map((e) => QueueItem(i++, i, e)));
       } catch (_) {
+        return storage;
       } finally {
         itemsReady = true;
+        return storage;
       }
     }
+    return storage;
   }
 
   var _index = 0;
@@ -85,37 +88,28 @@ class Queue {
     return previousPlaylistCurrentIndex?.currentIndex ?? 0;
   }
 
-  int get size => storage.length;
+  // play(Media media) {
+  //   if (storage.length > 0) {
+  //     storage.replaceRange(0, 1, [QueueItem(0, 0, media)]);
+  //   } else {
+  //     int pos = _nextPosition();
+  //     storage.add(QueueItem(pos, pos, media));
+  //   }
+  //   _save(medias: [media]);
+  //   setIndex = 0;
+  // }
 
-  Media? get top {
-    if (this.size > 0) {
-      return storage[0].item;
-    }
-    return null;
-  }
+  // void replaceCurrent(Media media) {
+  //   if (storage.isNotEmpty && index > -1 && index <= (storage.length - 1)) {
+  //     storage[index] = storage[index].copyWith(item: media);
+  //   }
+  // }
 
-  play(Media media) {
-    if (storage.length > 0) {
-      storage.replaceRange(0, 1, [QueueItem(0, 0, media)]);
-    } else {
-      int pos = _nextPosition();
-      storage.add(QueueItem(pos, pos, media));
-    }
-    _save(medias: [media]);
-    setIndex = 0;
-  }
-
-  void replaceCurrent(Media media) {
-    if (storage.isNotEmpty && index > -1 && index <= (storage.length - 1)) {
-      storage[index] = storage[index].copyWith(item: media);
-    }
-  }
-
-  add(Media media) async {
-    int pos = _nextPosition();
-    storage.add(QueueItem(pos, pos, media));
-    await _save(medias: [media]);
-  }
+  // add(Media media) async {
+  //   int pos = _nextPosition();
+  //   storage.add(QueueItem(pos, pos, media));
+  //   // await _save(medias: [media]);
+  // }
 
   List<QueueItem<Media>> _toQueueItems(List<Media> items, int i) {
     return items.map(
@@ -140,10 +134,10 @@ class Queue {
       storage.addAll(_toQueueItems(medias, i));
     }
 
-    await _save(medias: items, saveOnTop: saveOnTop);
+    await save(medias: items, saveOnTop: saveOnTop);
   }
 
-  Future<void> _save(
+  Future<void> save(
       {required List<Media> medias, bool saveOnTop = false}) async {
     final items = await previousItems;
     debugPrint(

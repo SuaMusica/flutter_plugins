@@ -41,6 +41,8 @@ class Player {
   bool initializeIsar;
   bool externalPlayback = false;
   bool get itemsReady => _queue.itemsReady;
+  DateTime? _lastPrevious;
+  static int _queuePosition = 0;
 
   CookiesForCustomPolicy? _cookies;
   PlayerState state = PlayerState.IDLE;
@@ -112,6 +114,10 @@ class Player {
     return Ok;
   }
 
+  static set setQueuePosition(int position) {
+    _queuePosition = position;
+  }
+
   Future<int> enqueueAll(
     List<Media> items, {
     bool shouldRemoveFirst = false,
@@ -144,7 +150,22 @@ class Player {
             ),
         )
         .then((result) => result ?? Future.value(Ok));
+    _queue.save(medias: items, saveOnTop: saveOnTop);
     return Ok;
+  }
+
+  List<String> organizeLists(
+    bool saveOnTop,
+    List<Media> items,
+    List<Media> medias,
+  ) {
+    final List<Media> topList = saveOnTop ? medias : items;
+    final List<Media> bottomList = saveOnTop ? items : medias;
+
+    return [
+      ...topList.toListStringCompressed,
+      ...bottomList.toListStringCompressed
+    ];
   }
 
   int removeByPosition(
@@ -154,7 +175,7 @@ class Player {
   }
 
   Future<int> removeAll() async {
-    _queue.removeAll();
+    newQueue.clear();
     await IsarService.instance.removeAllMusics();
     return Ok;
   }
@@ -186,10 +207,10 @@ class Player {
   //   Duration? duration,
   // }) async {
   //   if (_queue.size > 0) {
-  //     if (_queue.current == null) {
+  //     if (currentMedia == null) {
   //       _queue.move(0);
   //     }
-  //     final media = _queue.current!;
+  //     final media = currentMedia!;
   //     final data = {
   //       'albumId': media.albumId.toString(),
   //       'albumTitle': media.albumTitle,
@@ -235,41 +256,50 @@ class Player {
   }
 
   Future<Media> restartQueue() async {
-    final media = _queue.restart();
+    // final media = _queue.restart();
+    setQueuePosition = 0;
 
-    await this.load(media);
+    // await this.load(media);
 
-    return media;
+    return newQueue[queuePosition];
   }
 
   Future<int> reorder(int oldIndex, int newIndex,
       [bool isShuffle = false]) async {
-    _queue.reorder(oldIndex, newIndex, isShuffle);
+    // _queue.reorder(oldIndex, newIndex, isShuffle);
     return Ok;
   }
 
   Future<int> clear() async => removeAll();
 
-  Media? get current => _queue.current;
-  set current(Media? media) {
+  set setCurrentMedia(Media? media) {
     if (media != null) {
-      _queue.replaceCurrent(media);
+      newQueue.firstWhere(
+        (element) =>
+            element.id == media.id &&
+            element.indexInPlaylist == media.indexInPlaylist,
+      );
+      // _queue.replaceCurrent(media);
     }
   }
 
   static List<Media> newQueue = [];
+  static List<Media>? get safeNewQueue => newQueue.isNotEmpty ? newQueue : null;
+  static Media? get currentMediaStatic => safeNewQueue?[_queuePosition];
+  Media? get currentMedia => currentMediaStatic;
 
   List<Media> get items => newQueue;
-  int get queuePosition => _queue.index;
+  int get queuePosition => _queuePosition;
+  // int get queuePosition => queuePosition;
   int get previousPlaylistIndex => _queue.previousIndex;
   PreviousPlaylistPosition? get previousPlaylistPosition =>
       _queue.previousPosition;
 
-  int get size => _queue.size;
-  Media? get top => _queue.top;
+  int get size => newQueue.length;
+  Media? get top => safeNewQueue?.first;
 
   Future<int> load(Media media) async => _doPlay(
-      // _queue.current!,
+      // currentMedia!,
       // shouldLoadOnly: true,
       );
 
@@ -436,8 +466,7 @@ class Player {
   }
 
   Future<int> rewind() async {
-    var media = _queue.rewind();
-    return _rewind(media);
+    return _rewind(safeNewQueue?[queuePosition]);
   }
 
   Future<int> _rewind(Media? media) async {
@@ -449,11 +478,10 @@ class Player {
   }
 
   Future<int> forward() async {
-    var media = _queue.current;
-    if (media == null) {
+    if (currentMedia == null) {
       return NotOk;
     }
-    return _forward(media);
+    return _forward(currentMedia);
   }
 
   Future<int> _forward(Media? media) async {
@@ -466,29 +494,76 @@ class Player {
     return stop();
   }
 
+  Media? possiblePrevious() {
+    if (queuePosition >= 0) {
+      final now = DateTime.now();
+      if (_lastPrevious == null) {
+        return currentMedia;
+      } else {
+        final diff = now.difference(_lastPrevious!).inMilliseconds;
+        if (diff < 3000) {
+          var workIndex = queuePosition;
+          if (queuePosition > 0) {
+            --workIndex;
+          }
+          return safeNewQueue?[workIndex];
+        } else {
+          return currentMedia;
+        }
+      }
+    }
+    return currentMedia;
+  }
+
+  Media? possibleNext(RepeatMode repeatMode) {
+    Media? _next() {
+      if (newQueue.length == 0) {
+        return null;
+      } else if (newQueue.length > 0 && queuePosition < newQueue.length - 1) {
+        var media = newQueue[queuePosition + 1];
+        return media;
+      } else {
+        return null;
+      }
+    }
+
+    if (repeatMode == RepeatMode.NONE || repeatMode == RepeatMode.TRACK) {
+      return _next();
+    } else if (repeatMode == RepeatMode.QUEUE) {
+      if (newQueue.length - 1 == queuePosition) {
+        return safeNewQueue?[0];
+      } else {
+        return _next();
+      }
+    } else {
+      return null;
+    }
+  }
+
   Future<int?> previous() async {
-    Media? media = _queue.possiblePrevious();
+    Media? media = possiblePrevious();
     if (media == null) {
       return null;
     }
     final mediaUrl = (await localMediaValidator?.call(media)) ?? media.url;
-    final current = _queue.current;
-    var previous = _queue.previous();
-    if (previous == current) {
-      return _rewind(current);
-    } else {
-      _notifyChangeToPrevious(previous);
-      return _doPlay(
-          // previous,
-          // mediaUrl: mediaUrl,
-          );
-    }
+    //TODO: CRIAR NO NATIVO
+    // var previous = _queue.previous();
+    // if (previous == currentMedia) {
+    //   return _rewind(current);
+    // } else {
+    //   _notifyChangeToPrevious(previous);
+    //   return _doPlay(
+    //       // previous,
+    //       // mediaUrl: mediaUrl,
+    //       );
+    // }
   }
 
   Future<int?> next({
     bool shallNotify = true,
   }) async {
-    final media = _queue.possibleNext(repeatMode);
+    //TODO: CRIAR NO NATIVO
+    final media = possibleNext(repeatMode);
     if (media != null) {
       final mediaUrl = (await localMediaValidator?.call(media)) ?? media.url;
 
@@ -548,16 +623,16 @@ class Player {
       state = PlayerState.STOPPED;
       _notifyPlayerStatusChangeEvent(EventType.RELEASED);
     }
-    _queue.dispose();
+    // _queue.dispose();
     return result;
   }
 
   Future<void> shuffle() async {
-    _queue.shuffle();
+    // _queue.shuffle();
   }
 
   Future<void> unshuffle() async {
-    _queue.unshuffle();
+    // _queue.unshuffle();
   }
 
   Future<int> seek(Duration position) {
@@ -653,7 +728,6 @@ class Player {
               error,
             );
             break;
-
           case PlayerState.PAUSED:
             _notifyPlayerStateChangeEvent(
               player,
@@ -707,63 +781,63 @@ class Player {
       case 'commandCenter.onNext':
         _log("Player : Command Center : Got a next request");
         player.next();
-        if (player.current != null) {
+        if (currentMediaStatic != null) {
           _addUsingPlayer(
             player,
             Event(
               type: EventType.NEXT_NOTIFICATION,
-              media: player.current!,
-              queuePosition: player._queue.index,
+              media: currentMediaStatic!,
+              queuePosition: _queuePosition,
             ),
           );
         }
         break;
       case 'commandCenter.onPrevious':
         _log("Player : Command Center : Got a previous request");
-        if (player.current != null) {
+        if (currentMediaStatic != null) {
           _addUsingPlayer(
             player,
             Event(
               type: EventType.PREVIOUS_NOTIFICATION,
-              media: player.current!,
-              queuePosition: player._queue.index,
+              media: currentMediaStatic!,
+              queuePosition: _queuePosition,
             ),
           );
         }
         player.previous();
         break;
       case 'commandCenter.onPlay':
-        if (player.current != null) {
+        if (currentMediaStatic != null) {
           _addUsingPlayer(
             player,
             Event(
               type: EventType.PLAY_NOTIFICATION,
-              media: player.current!,
-              queuePosition: player._queue.index,
+              media: currentMediaStatic!,
+              queuePosition: _queuePosition,
             ),
           );
         }
         break;
       case 'commandCenter.onPause':
-        if (player.current != null) {
+        if (currentMediaStatic != null) {
           _addUsingPlayer(
             player,
             Event(
               type: EventType.PAUSED_NOTIFICATION,
-              media: player.current!,
-              queuePosition: player._queue.index,
+              media: currentMediaStatic!,
+              queuePosition: _queuePosition,
             ),
           );
         }
         break;
       case 'commandCenter.onTogglePlayPause':
-        if (player.current != null) {
+        if (currentMediaStatic != null) {
           _addUsingPlayer(
             player,
             Event(
               type: EventType.TOGGLE_PLAY_PAUSE,
-              media: player.current!,
-              queuePosition: player._queue.index,
+              media: currentMediaStatic!,
+              queuePosition: _queuePosition,
             ),
           );
         }
@@ -791,31 +865,34 @@ class Player {
         );
 
         break;
+      case 'SET_CURRENT_MEDIA_INDEX':
+        setQueuePosition = callArgs['CURRENT_MEDIA_INDEX'];
+        print('#QUEUE_KT PKG ${newQueue[_queuePosition].name}');
+        _addUsingPlayer(
+          player,
+          Event(
+            type: EventType.SET_CURRENT_MEDIA_INDEX,
+            queuePosition: _queuePosition,
+            media: newQueue[_queuePosition],
+          ),
+        );
+        break;
       case 'GET_INFO':
+        // if (callArgs.values.contains('QUEUE_ARGS')) {
         final queue = callArgs['QUEUE_ARGS'];
         final parsed = json.decode(queue) as List;
-        final a = parsed.map((json) => Media.fromJson(json)).toList();
+        final queueItems = parsed.map((json) => Media.fromJson(json)).toList();
         _addUsingPlayer(
           player,
           Event(
             type: EventType.UPDATE_QUEUE,
-            queue: a,
+            queue: queueItems,
             queuePosition: 0,
-            media: Media(
-              id: 0,
-              albumId: 0,
-              albumTitle: "0",
-              name: "0",
-              ownerId: 0,
-              author: "0",
-              url: "0",
-              isLocal: false,
-              coverUrl: "0",
-              bigCoverUrl: "0",
-            ),
+            media: queueItems[_queuePosition],
           ),
         );
-        newQueue.addAll(a);
+        // newQueue.clear();
+        newQueue.addAll(queueItems);
         break;
       default:
         _log('Unknown method ${call.method} ');
@@ -823,13 +900,13 @@ class Player {
   }
 
   _notifyChangeToNext(Media media) {
-    _add(
-        Event(type: EventType.NEXT, media: media, queuePosition: _queue.index));
+    _add(Event(
+        type: EventType.NEXT, media: media, queuePosition: queuePosition));
   }
 
   _notifyChangeToPrevious(Media media) {
     _add(Event(
-        type: EventType.PREVIOUS, media: media, queuePosition: _queue.index));
+        type: EventType.PREVIOUS, media: media, queuePosition: queuePosition));
   }
 
   _notifyRewind(Media media) async {
@@ -838,7 +915,7 @@ class Player {
     _add(Event(
       type: EventType.REWIND,
       media: media,
-      queuePosition: _queue.index,
+      queuePosition: queuePosition,
       position: Duration(milliseconds: positionInMilli),
       duration: Duration(milliseconds: durationInMilli),
     ));
@@ -851,33 +928,33 @@ class Player {
     _add(Event(
       type: EventType.FORWARD,
       media: media,
-      queuePosition: _queue.index,
+      queuePosition: queuePosition,
       position: Duration(milliseconds: positionInMilli),
       duration: Duration(milliseconds: durationInMilli),
     ));
   }
 
   _notifyPlayerStatusChangeEvent(EventType type) {
-    if (_queue.current != null) {
+    if (currentMedia != null) {
       _add(Event(
-          type: type, media: _queue.current!, queuePosition: _queue.index));
+          type: type, media: currentMedia!, queuePosition: queuePosition));
     }
   }
 
   _notifyBeforePlayEvent(Function(bool) operation) {
     _add(BeforePlayEvent(
-        media: _queue.current!,
-        queuePosition: _queue.index,
+        media: currentMedia!,
+        queuePosition: queuePosition,
         operation: operation));
   }
 
   static _notifyDurationChangeEvent(Player player, Duration newDuration) {
-    if (player._queue.current != null) {
+    if (currentMediaStatic != null) {
       _addUsingPlayer(
           player,
           DurationChangeEvent(
-              media: player._queue.current!,
-              queuePosition: player._queue.index,
+              media: currentMediaStatic!,
+              queuePosition: _queuePosition,
               duration: newDuration));
     }
   }
@@ -894,13 +971,13 @@ class Player {
         errorType: PlayerErrorType.INFORMATION,
       );
     }
-    if (player._queue.current != null) {
+    if (currentMediaStatic != null) {
       _addUsingPlayer(
         player,
         Event(
           type: eventType,
-          media: player._queue.current!,
-          queuePosition: player._queue.index,
+          media: currentMediaStatic!,
+          queuePosition: _queuePosition,
         ),
       );
     }
@@ -911,13 +988,13 @@ class Player {
     required String error,
     PlayerErrorType? errorType,
   }) {
-    if (player._queue.current != null) {
+    if (currentMediaStatic != null) {
       _addUsingPlayer(
         player,
         Event(
           type: EventType.ERROR_OCCURED,
-          media: player._queue.current!,
-          queuePosition: player._queue.index,
+          media: currentMediaStatic!,
+          queuePosition: _queuePosition,
           error: error,
           errorType: errorType ?? PlayerErrorType.UNDEFINED,
         ),
@@ -927,14 +1004,14 @@ class Player {
 
   static _notifyPositionChangeEvent(
       Player player, Duration newPosition, Duration newDuration) {
-    final media = player.current;
+    final media = currentMediaStatic;
     if (media != null) {
       final position = newPosition.inSeconds;
       _addUsingPlayer(
         player,
         PositionChangeEvent(
           media: media,
-          queuePosition: player.queuePosition,
+          queuePosition: _queuePosition,
           position: newPosition,
           duration: newDuration,
         ),

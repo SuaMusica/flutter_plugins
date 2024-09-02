@@ -197,7 +197,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
 //                    PlayerSingleton.mediaSessionConnection?.play()
 //                }
                 val position = call.argument<Int>(POSITION_ARGUMENT) ?: 0
-                PlayerSingleton.mediaSessionConnection?.play(
+                PlayerSingleton.mediaSessionConnection?.playFromQueue(
                         position
                 )
             }
