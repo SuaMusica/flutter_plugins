@@ -22,8 +22,22 @@ class MethodChannelManagerArgsBuilder {
         return this
     }
 
+    fun repeatMode(repeatMode: Int): MethodChannelManagerArgsBuilder {
+        args["REPEAT_MODE"] = repeatMode
+        return this
+    }
+
+    fun shuffleModeEnabled(shuffleModeEnabled: Boolean): MethodChannelManagerArgsBuilder {
+        args["SHUFFLE_MODE"] = shuffleModeEnabled
+        return this
+    }
+
     fun queue(queue: List<Media>): MethodChannelManagerArgsBuilder {
         args["QUEUE_ARGS"] = Gson().toJson(queue)
+        return this
+    }
+    fun idSum(idSum: Int): MethodChannelManagerArgsBuilder {
+        args["ID_SUM"] = idSum
         return this
     }
 }

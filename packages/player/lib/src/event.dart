@@ -1,5 +1,4 @@
-import 'package:smplayer/src/event_type.dart';
-import 'package:smplayer/src/media.dart';
+import 'package:smplayer/player.dart';
 
 class Event {
   Event({
@@ -11,16 +10,21 @@ class Event {
     this.errorType,
     this.position,
     this.duration,
+    this.idSum = 0,
+    this.repeatMode = RepeatMode.REPEAT_MODE_OFF,
+    this.shuffleEnabled = false,
   });
 
   final EventType type;
   final Media media;
   final String? error;
   final PlayerErrorType? errorType;
-  final int queuePosition;
+  final int queuePosition, idSum;
   final Duration? position;
   final Duration? duration;
   final List<Media>? queue;
+  final RepeatMode repeatMode;
+  final bool shuffleEnabled;
 
   @override
   String toString() =>
@@ -34,11 +38,13 @@ class Event {
           type == other.type &&
           media == other.media &&
           queuePosition == queuePosition &&
+          idSum == idSum &&
           error == other.error &&
           errorType == other.errorType &&
           position == other.position &&
+          queue == other.queue &&
           duration == other.duration;
 
   @override
-  int get hashCode => [type, media, error, errorType, queue].hashCode;
+  int get hashCode => [type, media, error, errorType, queue, idSum].hashCode;
 }

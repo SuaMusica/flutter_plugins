@@ -7,6 +7,7 @@ import android.util.Log
 import android.view.KeyEvent
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.Player.COMMAND_GET_TIMELINE
 import androidx.media3.common.Player.COMMAND_SEEK_TO_NEXT
 import androidx.media3.common.Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM
 import androidx.media3.common.Player.COMMAND_SEEK_TO_PREVIOUS
@@ -19,7 +20,18 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.R.drawable
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
+import br.com.suamusica.player.PlayerPlugin.Companion.DISABLE_REPEAT_MODE
+import br.com.suamusica.player.PlayerPlugin.Companion.ENQUEUE
+import br.com.suamusica.player.PlayerPlugin.Companion.ENQUEUE_ONE
+import br.com.suamusica.player.PlayerPlugin.Companion.INDEXES_TO_REMOVE
+import br.com.suamusica.player.PlayerPlugin.Companion.IS_FAVORITE_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.POSITION_ARGUMENT
+import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_ALL
+import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_IN
+import br.com.suamusica.player.PlayerPlugin.Companion.REORDER
+import br.com.suamusica.player.PlayerPlugin.Companion.REPEAT_MODE
+import br.com.suamusica.player.PlayerPlugin.Companion.TOGGLE_SHUFFLE
+import br.com.suamusica.player.PlayerPlugin.Companion.UPDATE_FAVORITE
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
@@ -51,8 +63,16 @@ class MediaButtonEventHandler(
                 add(SessionCommand("seek", session.token.extras))
                 add(SessionCommand("pause", Bundle.EMPTY))
                 add(SessionCommand("stop", Bundle.EMPTY))
-//                add(SessionCommand("next", Bundle.EMPTY))
-                add(SessionCommand("enqueue", session.token.extras))
+                add(SessionCommand("next", Bundle.EMPTY))
+                add(SessionCommand("previous", Bundle.EMPTY))
+                add(SessionCommand(UPDATE_FAVORITE, session.token.extras))
+                add(SessionCommand(TOGGLE_SHUFFLE, Bundle.EMPTY))
+                add(SessionCommand(REPEAT_MODE, Bundle.EMPTY))
+                add(SessionCommand(DISABLE_REPEAT_MODE, Bundle.EMPTY))
+                add(SessionCommand(ENQUEUE, session.token.extras))
+                add(SessionCommand(REMOVE_ALL, Bundle.EMPTY))
+                add(SessionCommand(REORDER, session.token.extras))
+                add(SessionCommand(REMOVE_IN, session.token.extras))
                 add(SessionCommand("prepare", session.token.extras))
                 add(SessionCommand("playFromQueue", session.token.extras))
                 add(SessionCommand("play", Bundle.EMPTY))
@@ -68,6 +88,7 @@ class MediaButtonEventHandler(
                 .remove(COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
                 .remove(COMMAND_SEEK_TO_NEXT)
                 .remove(COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
+                .add(COMMAND_GET_TIMELINE)
                 .build()
 
         return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
@@ -88,55 +109,77 @@ class MediaButtonEventHandler(
             buildIcons(isFavorite)
             PlayerSingleton.favorite(isFavorite)
         }
-
         if (customCommand.customAction == "seek") {
             mediaService.seek(args.getLong("position"), args.getBoolean("playWhenReady"))
         }
-
+        if (customCommand.customAction == REMOVE_ALL) {
+            mediaService.removeAll()
+        }
+        if (customCommand.customAction == REMOVE_IN) {
+            mediaService.removeIn(args.getIntegerArrayList(INDEXES_TO_REMOVE)?.toList() ?: emptyList())
+        }
+        if (customCommand.customAction == REORDER) {
+            val oldIndex = args.getInt("oldIndex")
+            val newIndex = args.getInt("newIndex")
+            mediaService.reorder(oldIndex, newIndex)
+        }
         if (customCommand.customAction == "onTogglePlayPause") {
             mediaService.togglePlayPause()
         }
-
+        if (customCommand.customAction == TOGGLE_SHUFFLE) {
+            mediaService.toggleShuffle()
+        }
+        if (customCommand.customAction == REPEAT_MODE) {
+            mediaService.repeatMode()
+        }
+        if (customCommand.customAction == DISABLE_REPEAT_MODE) {
+            mediaService.disableRepeatMode()
+        }
         if (customCommand.customAction == "stop") {
             mediaService.stop()
         }
         if (customCommand.customAction == "play") {
-            mediaService.play()
+            val shouldPrepare = args.getBoolean("shouldPrepare")
+            mediaService.play(shouldPrepare)
         }
         if (customCommand.customAction == "playFromQueue") {
             mediaService.playFromQueue(args.getInt(POSITION_ARGUMENT))
         }
-        if (customCommand.customAction == "notification_previous") {
+        if (customCommand.customAction == "notification_previous" || customCommand.customAction == "previous") {
             session.player.seekToPrevious()
         }
-        if (customCommand.customAction == "notification_next") {
+        if (customCommand.customAction == "notification_next" || customCommand.customAction == "next") {
             session.player.seekToNext()
         }
         if (customCommand.customAction == "pause") {
             mediaService.pause()
         }
+        if (customCommand.customAction == UPDATE_FAVORITE) {
+            buildIcons(args.getBoolean(IS_FAVORITE_ARGUMENT))
+        }
         if (customCommand.customAction == "ads_playing" || customCommand.customAction == "remove_notification") {
 //            mediaService.adsPlaying()
             mediaService.removeNotification()
         }
-        if (customCommand.customAction == "enqueue") {
+        if (customCommand.customAction == ENQUEUE || customCommand.customAction == ENQUEUE_ONE) {
             val json = args.getString("json")
             // Log the received JSON
             Log.d("Player", "First media Received JSON for enqueue: $json")
             val gson = GsonBuilder().create()
             val mediaListType = object : TypeToken<List<Media>>() {}.type
             val mediaList: List<Media> = gson.fromJson(json, mediaListType)
-
             // Log the first item for debugging
             if (mediaList.isNotEmpty()) {
                 Log.d("Player", "First media item: ${gson.toJson(mediaList.first())}")
             }
-
+            buildIcons(
+                session.player.mediaMetadata.extras?.getBoolean(IS_FAVORITE_ARGUMENT)
+                    ?: false
+            )
             mediaService.enqueue(
                 args.getString("cookie")!!,
                 mediaList,
                 args.getBoolean("autoPlay"),
-                args.getInt("startFromPos")
             )
         }
         return Futures.immediateFuture(
@@ -145,7 +188,7 @@ class MediaButtonEventHandler(
     }
 
     fun buildIcons(isFavorite: Boolean) {
-        val list = ImmutableList.of(
+        val baseList = mutableListOf(
             CommandButton.Builder()
                 .setDisplayName("Save to favorites")
                 .setIconResId(if (isFavorite) drawable.media3_icon_heart_filled else drawable.media3_icon_heart_unfilled)
@@ -156,27 +199,28 @@ class MediaButtonEventHandler(
                     )
                 )
                 .setEnabled(true)
-                .build(),
-            CommandButton.Builder()
-                .setDisplayName("notification_next")
-                .setIconResId(drawable.media3_icon_next)
-                .setSessionCommand(SessionCommand("notification_next", Bundle.EMPTY))
-                .setEnabled(true)
-                .build(),
+                .build()
         )
-        return mediaService.mediaSession.setCustomLayout(
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                list.plus(
-                    CommandButton.Builder()
-                        .setDisplayName("notification_previous")
-                        .setIconResId(drawable.media3_icon_previous)
-                        .setSessionCommand(SessionCommand("notification_previous", Bundle.EMPTY))
-                        .build()
-                )
-            } else {
-                list
-            }
-        )
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            baseList.add(
+                CommandButton.Builder()
+                    .setDisplayName("notification_next")
+                    .setIconResId(drawable.media3_icon_next)
+                    .setSessionCommand(SessionCommand("notification_next", Bundle.EMPTY))
+                    .setEnabled(true)
+                    .build()
+            )
+            baseList.add(
+                CommandButton.Builder()
+                    .setDisplayName("notification_previous")
+                    .setIconResId(drawable.media3_icon_previous)
+                    .setSessionCommand(SessionCommand("notification_previous", Bundle.EMPTY))
+                    .setEnabled(true)
+                    .build()
+            )
+        }
+        return mediaService.mediaSession.setCustomLayout(baseList)
     }
 
 

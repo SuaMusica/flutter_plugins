@@ -296,9 +296,10 @@ class Queue {
   }
 
   Media? possibleNext(RepeatMode repeatMode) {
-    if (repeatMode == RepeatMode.NONE || repeatMode == RepeatMode.TRACK) {
+    if (repeatMode == RepeatMode.REPEAT_MODE_OFF ||
+        repeatMode == RepeatMode.REPEAT_MODE_ONE) {
       return _next();
-    } else if (repeatMode == RepeatMode.QUEUE) {
+    } else if (repeatMode == RepeatMode.REPEAT_MODE_ALL) {
       if (storage.length - 1 == index) {
         return storage[0].item;
       } else {

@@ -9,6 +9,17 @@ import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
+import br.com.suamusica.player.PlayerPlugin.Companion.DISABLE_REPEAT_MODE
+import br.com.suamusica.player.PlayerPlugin.Companion.ENQUEUE
+import br.com.suamusica.player.PlayerPlugin.Companion.ENQUEUE_ONE
+import br.com.suamusica.player.PlayerPlugin.Companion.INDEXES_TO_REMOVE
+import br.com.suamusica.player.PlayerPlugin.Companion.IS_FAVORITE_ARGUMENT
+import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_ALL
+import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_IN
+import br.com.suamusica.player.PlayerPlugin.Companion.REORDER
+import br.com.suamusica.player.PlayerPlugin.Companion.REPEAT_MODE
+import br.com.suamusica.player.PlayerPlugin.Companion.TOGGLE_SHUFFLE
+import br.com.suamusica.player.PlayerPlugin.Companion.UPDATE_FAVORITE
 import java.lang.ref.WeakReference
 
 class MediaSessionConnection(
@@ -43,12 +54,12 @@ class MediaSessionConnection(
         }
     }
 
-    fun enqueue(cookie: String, medias: String, autoPlay:Boolean) {
+    fun enqueue(cookie: String, medias: String, autoPlay: Boolean) {
         val bundle = Bundle()
         bundle.putString("cookie", cookie)
         bundle.putString("json", medias)
         bundle.putBoolean("autoPlay", autoPlay)
-        sendCommand("enqueue", bundle)
+        sendCommand(ENQUEUE, bundle)
     }
 
     fun playFromQueue(index: Int) {
@@ -57,12 +68,17 @@ class MediaSessionConnection(
         sendCommand("playFromQueue", bundle)
     }
 
-    fun play(index: Int? = null) {
+    fun play(shouldPrepare: Boolean = false) {
         val bundle = Bundle()
-        if (index != null) {
-            bundle.putInt("index", index)
-        }
+        bundle.putBoolean("shouldPrepare", shouldPrepare)
         sendCommand("play", bundle)
+    }
+
+    fun reorder(oldIndex: Int, newIndex: Int) {
+        val bundle = Bundle()
+        bundle.putInt("oldIndex", oldIndex)
+        bundle.putInt("newIndex", newIndex)
+        sendCommand(REORDER, bundle)
     }
 
     fun togglePlayPause() {
@@ -76,8 +92,41 @@ class MediaSessionConnection(
     fun pause() {
         sendCommand("pause", null)
     }
+
+    fun updateFavorite(isFavorite: Boolean) {
+        val bundle = Bundle()
+        bundle.putBoolean(IS_FAVORITE_ARGUMENT, isFavorite)
+        sendCommand(UPDATE_FAVORITE, bundle)
+    }
+
+    fun removeAll() {
+        sendCommand(REMOVE_ALL, null)
+    }
+
+    fun removeIn(indexes: List<Int>) {
+        val bundle = Bundle()
+        bundle.putIntegerArrayList(INDEXES_TO_REMOVE, ArrayList(indexes))
+        sendCommand(REMOVE_IN, null)
+    }
+
     fun next() {
         sendCommand("next", null)
+    }
+
+    fun toggleShuffle() {
+        sendCommand(TOGGLE_SHUFFLE, null)
+    }
+
+    fun repeatMode() {
+        sendCommand(REPEAT_MODE, null)
+    }
+
+    fun disableRepeatMode() {
+        sendCommand(DISABLE_REPEAT_MODE, null)
+    }
+
+    fun previous() {
+        sendCommand("previous", null)
     }
 
     fun favorite(shouldFavorite: Boolean) {

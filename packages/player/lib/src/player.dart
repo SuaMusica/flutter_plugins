@@ -47,7 +47,7 @@ class Player {
   CookiesForCustomPolicy? _cookies;
   PlayerState state = PlayerState.IDLE;
   late Queue _queue;
-  RepeatMode repeatMode = RepeatMode.NONE;
+  RepeatMode repeatMode = RepeatMode.REPEAT_MODE_OFF;
   final mutex = Mutex();
 
   final String playerId;
@@ -124,19 +124,11 @@ class Player {
     bool saveOnTop = false,
     bool autoPlay = false,
   }) async {
-    // _queue.addAll(
-    //   items,
-    //   shouldRemoveFirst: shouldRemoveFirst,
-    //   saveOnTop: saveOnTop,
-    // );
-
-    //ENQUEUE NO PLAYER
-    // if(android)
     _cookies = await cookieSigner();
     String cookie = _cookies!.toHeaders();
     _channel
         .invokeMethod(
-          'enqueue',
+          items.length > 1 ? 'enqueue' : 'enqueue_one',
           items.toListJson
             ..insert(
               0,
@@ -150,6 +142,7 @@ class Player {
             ),
         )
         .then((result) => result ?? Future.value(Ok));
+    // _notifyBeforePlayEvent((_) => {}, media: items.first);
     _queue.save(medias: items, saveOnTop: saveOnTop);
     return Ok;
   }
@@ -168,15 +161,45 @@ class Player {
     ];
   }
 
-  int removeByPosition(
-      {required List<int> positionsToDelete, required bool isShuffle}) {
-    return _queue.removeByPosition(
-        positionsToDelete: positionsToDelete, isShuffle: isShuffle);
+  int removeByPosition({
+    required List<int> positionsToDelete,
+  }) {
+    _channel.invokeMethod('remove_in', {
+      'indexesToDelete': positionsToDelete,
+    });
+
+    return removeByIndexes(
+      positionsToDelete: positionsToDelete,
+    );
+  }
+
+  int removeByIndexes({
+    required List<int> positionsToDelete,
+  }) {
+    try {
+      int lastLength = newQueue.length;
+      for (var i = 0; i < positionsToDelete.length; ++i) {
+        final pos = positionsToDelete[i] - i;
+        if (pos < _queuePosition) {
+          _queuePosition = _queuePosition - 1;
+        }
+        newQueue.removeAt(pos);
+      }
+
+      // for (var j = 0; j < newQueue.length; ++j) {
+      //   newQueue[j].position = j;
+      // }
+
+      return lastLength - newQueue.length;
+    } catch (e) {
+      return 0;
+    }
   }
 
   Future<int> removeAll() async {
     newQueue.clear();
     await IsarService.instance.removeAllMusics();
+    _channel.invokeMethod('remove_all');
     return Ok;
   }
 
@@ -200,16 +223,6 @@ class Player {
     return Ok;
   }
 
-  Future<int> disableNotificatonCommands() async {
-    await _invokeMethod('disable_notification_commands');
-    return Ok;
-  }
-
-  Future<int> enableNotificatonCommands() async {
-    await _invokeMethod('enable_notification_commands');
-    return Ok;
-  }
-
   Future<Media> restartQueue() async {
     // final media = _queue.restart();
     setQueuePosition = 0;
@@ -222,7 +235,28 @@ class Player {
   Future<int> reorder(int oldIndex, int newIndex,
       [bool isShuffle = false]) async {
     // _queue.reorder(oldIndex, newIndex, isShuffle);
+    _reorder(oldIndex, newIndex);
+    _channel.invokeMethod('reorder', {
+      'oldIndex': oldIndex,
+      'newIndex': newIndex,
+    });
     return Ok;
+  }
+
+  void _reorder(int oldIndex, int newIndex) {
+    if (oldIndex < newIndex) {
+      for (int i = oldIndex; i < newIndex; i++) {
+        final temp = newQueue[i];
+        newQueue[i] = newQueue[i + 1];
+        newQueue[i + 1] = temp;
+      }
+    } else {
+      for (int i = oldIndex; i > newIndex; i--) {
+        final temp = newQueue[i];
+        newQueue[i] = newQueue[i - 1];
+        newQueue[i - 1] = temp;
+      }
+    }
   }
 
   Future<int> clear() async => removeAll();
@@ -253,21 +287,9 @@ class Player {
   int get size => newQueue.length;
   Media? get top => safeNewQueue?.first;
 
-  Future<int> load(Media media) async => _doPlay(
-      // currentMedia!,
-      // shouldLoadOnly: true,
-      );
-
-  Future<int> play(
-    Media media, {
-    double volume = 1.0,
-    Duration? position,
-    bool respectSilence = false,
-    bool stayAwake = false,
-  }) async {
-    // _queue.play(media);
+  Future<int> play({bool shouldPrepare = false}) async {
     _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
-    return _doPlay();
+    return _doPlay(shouldPrepare: shouldPrepare);
   }
 
   Future<int> playFromQueue(
@@ -279,133 +301,22 @@ class Player {
     bool shallNotify = false,
     bool loadOnly = false,
   }) async {
-    // Media? media = _queue.item(pos);
-    // if (media != null) {
-    //   final mediaUrl = (await localMediaValidator?.call(media)) ?? media.url;
     if (!loadOnly) {
       _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
     }
-    //   return _doPlay(
-    //     _queue.move(pos)!,
-    //     shallNotify: shallNotify,
-    //     mediaUrl: mediaUrl,
-    //     shouldLoadOnly: loadOnly,
-    //     position: position,
-    //   );
-    // } else {
-    //   return NotOk;
-    // }
     return _channel.invokeMethod(
         'playFromQueue', {'position': pos}).then((result) => result);
-    // _channel
-    // .invokeMethod(
-    //   'enqueue',
-    //   items.toListJson
-    //     ..insert(
-    //       0,
-    //       {
-    //         'playerId': playerId,
-    //         'cookie': cookie,
-    //         'shallSendEvents': _shallSendEvents,
-    //         'externalplayback': externalPlayback,
-    //       },
-    //     ),
-    // )
-    // .then((result) => result ?? Future.value(Ok));
   }
 
-  Future<int> _doPlay(
-      // Media media, {
-      // double? volume,
-      // Duration? position,
-      // bool? respectSilence,
-      // bool? stayAwake,
-      // bool? shallNotify,
-      // bool? shouldLoadOnly,
-      // String? mediaUrl,
-      // }
-      ) async {
-    // volume ??= 1.0;
-    // respectSilence ??= false;
-    // stayAwake ??= false;
-    // shallNotify ??= false;
-    // shouldLoadOnly ??= false;
-
-    // if (shallNotify) {
-    //   _notifyChangeToNext(media);
-    // }
-    // mediaUrl ??= (await localMediaValidator?.call(media)) ?? media.url;
-    // //If it is local, check if it exists before playing it.
-
-    // if (!mediaUrl.startsWith("http")) {
-    //   if (!File(mediaUrl).existsSync() && media.fallbackUrl != null) {
-    //     //Should we remove from DB??
-    //     mediaUrl = media.fallbackUrl;
-    //   }
-    // }
-
-    // // we need to update the value as it could have been
-    // // downloading and is not downloaded
-    // media.isLocal = !mediaUrl!.startsWith("http");
-    // media.url = mediaUrl;
-    // if (shouldLoadOnly) {
-    //   debugPrint("LOADING ONLY!");
-    //   return invokeLoad({
-    //     'albumId': media.albumId.toString(),
-    //     'albumTitle': media.albumTitle,
-    //     'name': media.name,
-    //     'author': media.author,
-    //     'url': mediaUrl,
-    //     'coverUrl': media.coverUrl,
-    //     'bigCoverUrl': media.bigCoverUrl,
-    //     'loadOnly': true,
-    //     'isLocal': media.isLocal,
-    //     'volume': volume,
-    //     'position': position?.inMilliseconds,
-    //     'respectSilence': respectSilence,
-    //     'stayAwake': stayAwake,
-    //     'isFavorite': media.isFavorite
-    //   });
-    // } else if (autoPlay) {
-    //   _notifyBeforePlayEvent((loadOnly) => {});
-
-    //   return invokePlay(media, {
-    //     'albumId': media.albumId.toString(),
-    //     'albumTitle': media.albumTitle,
-    //     'name': media.name,
-    //     'author': media.author,
-    //     'url': mediaUrl,
-    //     'coverUrl': media.coverUrl,
-    //     'bigCoverUrl': media.bigCoverUrl,
-    //     'loadOnly': false,
-    //     'isLocal': media.isLocal,
-    //     'volume': volume,
-    //     'position': position?.inMilliseconds,
-    //     'respectSilence': respectSilence,
-    //     'stayAwake': stayAwake,
-    //     'isFavorite': media.isFavorite
-    //   });
-    // } else {
-    //   _notifyBeforePlayEvent((loadOnly) {
-    //     invokePlay(media, {
-    //       'albumId': media.albumId.toString(),
-    //       'albumTitle': media.albumTitle,
-    //       'name': media.name,
-    //       'author': media.author,
-    //       'url': mediaUrl,
-    //       'coverUrl': media.coverUrl,
-    //       'bigCoverUrl': media.bigCoverUrl,
-    //       'loadOnly': loadOnly,
-    //       'isLocal': media.isLocal,
-    //       'volume': volume,
-    //       'position': position?.inMilliseconds,
-    //       'respectSilence': respectSilence,
-    //       'stayAwake': stayAwake,
-    //       'isFavorite': media.isFavorite
-    //     });
-    //   });
-    _channel.invokeMethod('play');
-
+  Future<int> _doPlay({
+    bool shouldPrepare = false,
+  }) async {
+    _notifyBeforePlayEvent(
+      (_) => _channel.invokeMethod(
+        'play',
+        {'shouldPrepare': shouldPrepare},
+      ),
+    );
     return Ok;
   }
 
@@ -453,6 +364,7 @@ class Player {
     if (queuePosition >= 0) {
       final now = DateTime.now();
       if (_lastPrevious == null) {
+        _lastPrevious = now;
         return currentMedia;
       } else {
         final diff = now.difference(_lastPrevious!).inMilliseconds;
@@ -470,6 +382,16 @@ class Player {
     return currentMedia;
   }
 
+  Future<int> toggleRepeatMode() async {
+    return _channel.invokeMethod('repeat_mode').then((result) => result);
+  }
+
+  Future<int> disableRepeatMode() async {
+    return _channel
+        .invokeMethod('disable_repeat_mode')
+        .then((result) => result);
+  }
+
   Media? possibleNext(RepeatMode repeatMode) {
     Media? _next() {
       if (newQueue.length == 0) {
@@ -482,9 +404,10 @@ class Player {
       }
     }
 
-    if (repeatMode == RepeatMode.NONE || repeatMode == RepeatMode.TRACK) {
+    if (repeatMode == RepeatMode.REPEAT_MODE_OFF ||
+        repeatMode == RepeatMode.REPEAT_MODE_ONE) {
       return _next();
-    } else if (repeatMode == RepeatMode.QUEUE) {
+    } else if (repeatMode == RepeatMode.REPEAT_MODE_ALL) {
       if (newQueue.length - 1 == queuePosition) {
         return safeNewQueue?[0];
       } else {
@@ -500,24 +423,13 @@ class Player {
     if (media == null) {
       return null;
     }
-    final mediaUrl = (await localMediaValidator?.call(media)) ?? media.url;
-    //TODO: CRIAR NO NATIVO
-    // var previous = _queue.previous();
-    // if (previous == currentMedia) {
-    //   return _rewind(current);
-    // } else {
-    //   _notifyChangeToPrevious(previous);
-    //   return _doPlay(
-    //       // previous,
-    //       // mediaUrl: mediaUrl,
-    //       );
-    // }
+    // final mediaUrl = (await localMediaValidator?.call(media)) ?? media.url;
+    _channel.invokeMethod('previous').then((result) => result);
   }
 
   Future<int?> next({
     bool shallNotify = true,
   }) async {
-    //TODO: CRIAR NO NATIVO
     final media = possibleNext(repeatMode);
     if (media != null) {
       final mediaUrl = (await localMediaValidator?.call(media)) ?? media.url;
@@ -536,6 +448,13 @@ class Player {
     String? mediaUrl,
   }) async {
     return _channel.invokeMethod('next').then((result) => result);
+  }
+
+  Future<int> updateFavorite({
+    required bool isFavorite,
+  }) async {
+    return _channel.invokeMethod(
+        'update_favorite', {'isFavorite': isFavorite}).then((result) => result);
   }
 
   Future<int> pause() async {
@@ -561,7 +480,7 @@ class Player {
 
   Future<int> resume() async {
     _notifyPlayerStatusChangeEvent(EventType.RESUME_REQUESTED);
-    final int result = await _invokeMethod('resume');
+    final int result = await _invokeMethod('play');
 
     if (result == Ok) {
       _notifyPlayerStatusChangeEvent(EventType.RESUMED);
@@ -584,10 +503,12 @@ class Player {
 
   Future<void> shuffle() async {
     // _queue.shuffle();
+    _channel.invokeMethod('toggle_shuffle');
   }
 
   Future<void> unshuffle() async {
     // _queue.unshuffle();
+    _channel.invokeMethod('toggle_shuffle');
   }
 
   Future<int> seek(Duration position) {
@@ -615,24 +536,25 @@ class Player {
     }
   }
 
-  static Future<void> _handleOnComplete(Player player) async {
-    player.state = PlayerState.COMPLETED;
-    _notifyPlayerStateChangeEvent(player, EventType.FINISHED_PLAYING, "");
-    switch (player.repeatMode) {
-      case RepeatMode.NONE:
-      case RepeatMode.QUEUE:
-        player._doNext(shallNotify: false);
-        break;
+  // static Future<void> _handleOnComplete(Player player) async {
+  //   player.state = PlayerState.COMPLETED;
+  //   _notifyPlayerStateChangeEvent(player, EventType.FINISHED_PLAYING, "");
+  //   switch (player.repeatMode) {
+  //     case RepeatMode.REPEAT_MODE_OFF:
+  //     case RepeatMode.REPEAT_MODE_ALL:
+  //       player._doNext(shallNotify: false);
+  //       break;
 
-      case RepeatMode.TRACK:
-        player.rewind();
-        break;
-    }
-  }
+  //     case RepeatMode.REPEAT_MODE_ONE:
+  //       player.rewind();
+  //       break;
+  //   }
+  // }
 
   static Future<void> _doHandlePlatformCall(MethodCall call) async {
     final Map<dynamic, dynamic> callArgs = call.arguments as Map;
     _log('_platformCallHandler call ${call.method} $callArgs');
+    _log('_platformCallHandler1 call ${call.method}');
     switch (call.method) {
       case 'audio.onDuration':
         final duration = callArgs['duration'];
@@ -648,9 +570,6 @@ class Player {
         Duration newDuration = Duration(milliseconds: duration);
         _notifyPositionChangeEvent(player, newPosition, newDuration);
         break;
-      case 'audio.onComplete':
-        _handleOnComplete(player);
-        break;
       case 'audio.onError':
         player.state = PlayerState.ERROR;
         final errorType = callArgs['errorType'] ?? 2;
@@ -664,8 +583,8 @@ class Player {
       case 'state.change':
         final state = callArgs['state'];
         String error = callArgs['error'] ?? "";
+        _log('state.change1 call ${PlayerState.values[state]}');
         player.state = PlayerState.values[state];
-
         switch (player.state) {
           case PlayerState.IDLE:
             break;
@@ -674,6 +593,16 @@ class Player {
               player,
               EventType.BUFFERING,
               error,
+            );
+            break;
+          case PlayerState.ITEM_TRANSITION:
+            _addUsingPlayer(
+              player,
+              BeforePlayEvent(
+                media: newQueue[_queuePosition],
+                queuePosition: _queuePosition,
+                operation: (bool _) {},
+              ),
             );
             break;
           case PlayerState.PLAYING:
@@ -716,7 +645,7 @@ class Player {
             break;
 
           case PlayerState.COMPLETED:
-            _handleOnComplete(player);
+            // _handleOnComplete(player);
             break;
 
           case PlayerState.ERROR:
@@ -832,36 +761,53 @@ class Player {
           ),
         );
         break;
+      case 'REPEAT_CHANGED':
+        final repeatMode = RepeatMode.values[callArgs['REPEAT_MODE']];
+        _addUsingPlayer(
+          player,
+          Event(
+            type: EventType.REPEAT_CHANGED,
+            queuePosition: _queuePosition,
+            media: newQueue[_queuePosition],
+            repeatMode: repeatMode,
+          ),
+        );
+        break;
+      case 'SHUFFLE_CHANGED':
+        final shuffleEnabled = callArgs['SHUFFLE_MODE'];
+        _addUsingPlayer(
+          player,
+          Event(
+            type: EventType.SHUFFLE_CHANGED,
+            queuePosition: _queuePosition,
+            media: newQueue[_queuePosition],
+            shuffleEnabled: shuffleEnabled,
+          ),
+        );
+        break;
       case 'GET_INFO':
         // if (callArgs.values.contains('QUEUE_ARGS')) {
         final queue = callArgs['QUEUE_ARGS'];
+        final idSum = callArgs['ID_SUM'];
         final parsed = json.decode(queue) as List;
         final queueItems = parsed.map((json) => Media.fromJson(json)).toList();
+        newQueue.clear();
+        newQueue.addAll(queueItems);
         _addUsingPlayer(
           player,
           Event(
             type: EventType.UPDATE_QUEUE,
             queue: queueItems,
             queuePosition: 0,
+            idSum: idSum,
             media: queueItems[_queuePosition],
           ),
         );
-        // newQueue.clear();
-        newQueue.addAll(queueItems);
+
         break;
       default:
         _log('Unknown method ${call.method} ');
     }
-  }
-
-  _notifyChangeToNext(Media media) {
-    _add(Event(
-        type: EventType.NEXT, media: media, queuePosition: queuePosition));
-  }
-
-  _notifyChangeToPrevious(Media media) {
-    _add(Event(
-        type: EventType.PREVIOUS, media: media, queuePosition: queuePosition));
   }
 
   _notifyRewind(Media media) async {
@@ -896,11 +842,14 @@ class Player {
     }
   }
 
-  _notifyBeforePlayEvent(Function(bool) operation) {
-    _add(BeforePlayEvent(
-        media: currentMedia!,
+  _notifyBeforePlayEvent(Function(bool) operation, {Media? media}) {
+    _add(
+      BeforePlayEvent(
+        media: media ?? currentMedia!,
         queuePosition: queuePosition,
-        operation: operation));
+        operation: operation,
+      ),
+    );
   }
 
   static _notifyDurationChangeEvent(Player player, Duration newDuration) {

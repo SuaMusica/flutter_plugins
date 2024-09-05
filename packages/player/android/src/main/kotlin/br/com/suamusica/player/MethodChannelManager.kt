@@ -36,16 +36,24 @@ class MethodChannelManager(private val channel: MethodChannel) {
             .build()
         invokeMethod("commandCenter.onPrevious", args)
     }
+    fun notifyItemTransition(playerId: String) {
+        val args = ArgsBuilder()
+            .playerId(playerId)
+            .state(PlayerState.ITEM_TRANSITION)
+            .build()
+        invokeMethod("state.change", args)
+    }
 
     fun sendCurrentQueue(
         queue: List<Media>,
-//        currentMediaIndex: Int,
+        idSum: Int,
         playerId: String,
     ) {
         val args = MethodChannelManagerArgsBuilder()
             .event("CURRENT_QUEUE")
             .playerId(playerId)
             .queue(queue)
+            .idSum(idSum)
             .build()
         invokeMethod("GET_INFO", args)
     }
@@ -57,11 +65,24 @@ class MethodChannelManager(private val channel: MethodChannel) {
 
     fun currentMediaIndex(playerId: String, currentMediaIndex: Int) {
         val args = MethodChannelManagerArgsBuilder()
-            .event("GET_INFO")
             .playerId(playerId)
             .currentMediaIndex(currentMediaIndex)
             .build()
         invokeMethod("SET_CURRENT_MEDIA_INDEX", args)
+    }
+    fun onRepeatChanged(playerId: String, repeatMode: Int) {
+        val args = MethodChannelManagerArgsBuilder()
+            .playerId(playerId)
+            .repeatMode(repeatMode)
+            .build()
+        invokeMethod("REPEAT_CHANGED", args)
+    }
+    fun onShuffleModeEnabled(playerId: String, shuffleModeEnabled: Boolean) {
+        val args = MethodChannelManagerArgsBuilder()
+            .playerId(playerId)
+            .shuffleModeEnabled(shuffleModeEnabled)
+            .build()
+        invokeMethod("SHUFFLE_CHANGED", args)
     }
 
 }

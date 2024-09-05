@@ -8,4 +8,5 @@ enum PlayerState {
   ERROR,
   SEEK_END,
   BUFFER_EMPTY,
+  ITEM_TRANSITION,
 }

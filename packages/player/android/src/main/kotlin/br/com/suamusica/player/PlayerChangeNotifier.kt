@@ -31,9 +31,13 @@ class PlayerChangeNotifier(private val channelManager: MethodChannelManager) {
         Log.i("Player", "Notifying Player Previous")
         channelManager.notifyPrevious("sua-musica-player")
     }
-    fun sendCurrentQueue(queue:List<Media>) {
+    fun notifyItemTransition() {
+        Log.i("Player", "notifyItemTransition")
+        channelManager.notifyItemTransition("sua-musica-player")
+    }
+    fun sendCurrentQueue(queue:List<Media>, idSum:Int) {
         Log.i("Player", "Notifying Player Previous")
-        channelManager.sendCurrentQueue(queue,"sua-musica-player")
+        channelManager.sendCurrentQueue(queue,idSum,"sua-musica-player")
     }
     fun currentMediaIndex(currentMediaIndex:Int) {
         Log.i("Player", "Notifying Player Previous")
@@ -42,6 +46,14 @@ class PlayerChangeNotifier(private val channelManager: MethodChannelManager) {
     fun notifyPositionChange(position: Long, duration: Long) {
         Log.i("Player", "Notifying Player Position change: position: $position duration: $duration")
         channelManager.notifyPositionChange("sua-musica-player", position, duration)
+    }
+    fun onRepeatChanged(repeatMode: Int) {
+        Log.i("Player", "Notifying Player onRepeatChanged: $repeatMode")
+        channelManager.onRepeatChanged("sua-musica-player", repeatMode)
+    }
+    fun onShuffleModeEnabled(shuffleModeEnabled: Boolean) {
+        Log.i("Player", "Notifying Player onRepeatChanged: $shuffleModeEnabled")
+        channelManager.onShuffleModeEnabled("sua-musica-player", shuffleModeEnabled)
     }
 
 }

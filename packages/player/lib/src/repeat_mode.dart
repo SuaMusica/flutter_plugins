@@ -1,13 +1,13 @@
-enum RepeatMode { NONE, QUEUE, TRACK }
+enum RepeatMode { REPEAT_MODE_OFF, REPEAT_MODE_ONE, REPEAT_MODE_ALL }
 
 extension ParseToString on RepeatMode {
   String toShortString() {
     switch (this) {
-      case RepeatMode.NONE:
+      case RepeatMode.REPEAT_MODE_OFF:
         return 'Disabled';
-      case RepeatMode.QUEUE:
+      case RepeatMode.REPEAT_MODE_ALL:
         return 'Queue';
-      case RepeatMode.TRACK:
+      case RepeatMode.REPEAT_MODE_ONE:
         return 'Track';
       default:
         return "Unknown";

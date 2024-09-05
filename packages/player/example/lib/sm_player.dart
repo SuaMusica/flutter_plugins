@@ -169,7 +169,7 @@ class _SMPlayerState extends State<SMPlayer> {
     print("Player State: ${_player.state}");
 
     if (_player.state == PlayerState.IDLE && _player.currentMedia != null) {
-      int result = await _player.play(_player.currentMedia!);
+      int result = await _player.play();
       if (result == Player.Ok) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Audio is now playing!!!!')));
@@ -240,9 +240,9 @@ class _SMPlayerState extends State<SMPlayer> {
   }
 
   _repeatModeToColor() {
-    if (_player.repeatMode == RepeatMode.NONE) {
+    if (_player.repeatMode == RepeatMode.REPEAT_MODE_OFF) {
       return AppColors.black;
-    } else if (_player.repeatMode == RepeatMode.QUEUE) {
+    } else if (_player.repeatMode == RepeatMode.REPEAT_MODE_ALL) {
       return AppColors.primary;
     } else {
       return AppColors.darkPink;
@@ -250,17 +250,17 @@ class _SMPlayerState extends State<SMPlayer> {
   }
 
   _changeRepeatMode() {
-    if (_player.repeatMode == RepeatMode.NONE) {
+    if (_player.repeatMode == RepeatMode.REPEAT_MODE_OFF) {
       setState(() {
-        _player.repeatMode = RepeatMode.QUEUE;
+        _player.repeatMode = RepeatMode.REPEAT_MODE_ALL;
       });
-    } else if (_player.repeatMode == RepeatMode.QUEUE) {
+    } else if (_player.repeatMode == RepeatMode.REPEAT_MODE_ALL) {
       setState(() {
-        _player.repeatMode = RepeatMode.TRACK;
+        _player.repeatMode = RepeatMode.REPEAT_MODE_ONE;
       });
     } else {
       setState(() {
-        _player.repeatMode = RepeatMode.NONE;
+        _player.repeatMode = RepeatMode.REPEAT_MODE_OFF;
       });
     }
   }

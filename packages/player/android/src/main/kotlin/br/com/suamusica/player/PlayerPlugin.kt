@@ -23,6 +23,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
         const val IS_PLAYING_ARGUMENT = "isPlaying"
         const val IS_FAVORITE_ARGUMENT = "isFavorite"
         const val POSITION_ARGUMENT = "position"
+        const val INDEXES_TO_REMOVE = "indexesToRemove"
         const val LOAD_ONLY = "loadOnly"
         const val RELEASE_MODE_ARGUMENT = "releaseMode"
         private const val CHANNEL = "suamusica.com.br/player"
@@ -31,10 +32,20 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
         // Method names
         const val LOAD_METHOD = "load"
         const val PLAY_METHOD = "play"
+        const val ENQUEUE = "enqueue"
+        const val ENQUEUE_ONE = "enqueue_one"
+        const val REMOVE_ALL = "remove_all"
+        const val REMOVE_IN = "remove_in"
+        const val REORDER = "reorder"
         const val PLAY_FROM_QUEUE_METHOD = "playFromQueue"
         const val RESUME_METHOD = "resume"
         const val PAUSE_METHOD = "pause"
         const val NEXT_METHOD = "next"
+        const val PREVIOUS_METHOD = "previous"
+        const val TOGGLE_SHUFFLE = "toggle_shuffle"
+        const val REPEAT_MODE = "repeat_mode"
+        const val DISABLE_REPEAT_MODE = "disable_repeat_mode"
+        const val UPDATE_FAVORITE = "update_favorite"
         const val STOP_METHOD = "stop"
         const val RELEASE_METHOD = "release"
         const val SEEK_METHOD = "seek"
@@ -100,7 +111,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
 
     private fun handleMethodCall(call: MethodCall, response: MethodChannel.Result) {
         val cookie: String?
-        if (call.method == "enqueue") {
+        if (call.method == ENQUEUE || call.method == ENQUEUE_ONE) {
             val listMedia: List<Map<String, String>> = call.arguments()!!
             cookie = listMedia[0]["cookie"]!!
             PlayerSingleton.externalPlayback = listMedia[0]["externalplayback"]!! == "true"
@@ -114,7 +125,8 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
         )
         when (call.method) {
             LOAD_METHOD -> {}
-            "enqueue" -> {
+            ENQUEUE_ONE,
+            ENQUEUE -> {
                 val listMedia: List<Map<String, Any>> = call.arguments()!!
                 val arg = listMedia[0]
                 val json = Gson().toJson(listMedia.drop(1))
@@ -126,11 +138,48 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
             }
 
             PLAY_METHOD -> {
-                PlayerSingleton.mediaSessionConnection?.play()
+                val shouldPrepare = call.argument<Boolean?>("shouldPrepare") ?: false
+                PlayerSingleton.mediaSessionConnection?.play(shouldPrepare)
+            }
+
+            REORDER -> {
+                val from = call.argument<Int>("oldIndex")!!
+                val to = call.argument<Int>("newIndex")!!
+                PlayerSingleton.mediaSessionConnection?.reorder(from, to)
+            }
+
+            REMOVE_ALL -> {
+                PlayerSingleton.mediaSessionConnection?.removeAll()
+            }
+
+            REMOVE_IN -> {
+                val indexes = call.argument<List<Int>>(INDEXES_TO_REMOVE) ?: emptyList()
+                PlayerSingleton.mediaSessionConnection?.removeIn(indexes)
             }
 
             NEXT_METHOD -> {
                 PlayerSingleton.mediaSessionConnection?.next()
+            }
+
+            TOGGLE_SHUFFLE -> {
+                PlayerSingleton.mediaSessionConnection?.toggleShuffle()
+            }
+
+            REPEAT_MODE -> {
+                PlayerSingleton.mediaSessionConnection?.repeatMode()
+            }
+
+            DISABLE_REPEAT_MODE -> {
+                PlayerSingleton.mediaSessionConnection?.disableRepeatMode()
+            }
+
+            PREVIOUS_METHOD -> {
+                PlayerSingleton.mediaSessionConnection?.previous()
+            }
+
+            UPDATE_FAVORITE -> {
+                val isFavorite = call.argument<Boolean?>(IS_FAVORITE_ARGUMENT) ?: false
+                PlayerSingleton.mediaSessionConnection?.updateFavorite(isFavorite)
             }
 
             PLAY_FROM_QUEUE_METHOD -> {
