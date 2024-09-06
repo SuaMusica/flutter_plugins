@@ -196,6 +196,14 @@ extension ListMediaToListStringCompressed on List<Media> {
   List<String> get toListStringCompressed => map((e) => e.toString()).toList();
 
   List<Map<String, dynamic>> get toListJson => map((e) => e.toJson()).toList();
+
+  // List<QueueItemData> get toQueueItemData => map((e) {
+  //       return QueueItemData(
+  //         position: e.indexInPlaylist ?? 0,
+  //         media: e,
+  //         markedForDelete: false,
+  //       );
+  //     }).toList();
 }
 
 extension ListStringToListPlayable on List<String> {

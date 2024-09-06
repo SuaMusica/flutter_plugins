@@ -46,7 +46,7 @@ class Player {
 
   CookiesForCustomPolicy? _cookies;
   PlayerState state = PlayerState.IDLE;
-  late Queue _queue;
+  static late Queue _queue;
   RepeatMode repeatMode = RepeatMode.REPEAT_MODE_OFF;
   final mutex = Mutex();
 
@@ -272,20 +272,18 @@ class Player {
     }
   }
 
-  static List<Media> newQueue = [];
+  static List<Media> newQueue = _queue.storage.map((e) => e.item).toList();
   static List<Media>? get safeNewQueue => newQueue.isNotEmpty ? newQueue : null;
   static Media? get currentMediaStatic => safeNewQueue?[_queuePosition];
   Media? get currentMedia => currentMediaStatic;
 
-  List<Media> get items => newQueue;
   int get queuePosition => _queuePosition;
-  // int get queuePosition => queuePosition;
   int get previousPlaylistIndex => _queue.previousIndex;
   PreviousPlaylistPosition? get previousPlaylistPosition =>
       _queue.previousPosition;
 
+  List<Media> get items => newQueue;
   int get size => newQueue.length;
-  Media? get top => safeNewQueue?.first;
 
   Future<int> play({bool shouldPrepare = false}) async {
     _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
@@ -311,11 +309,12 @@ class Player {
   Future<int> _doPlay({
     bool shouldPrepare = false,
   }) async {
-    _notifyBeforePlayEvent(
-      (_) => _channel.invokeMethod(
-        'play',
-        {'shouldPrepare': shouldPrepare},
-      ),
+    // _notifyBeforePlayEvent(
+    //   (_) =>
+    _channel.invokeMethod(
+      'play',
+      {'shouldPrepare': shouldPrepare},
+      // ),
     );
     return Ok;
   }

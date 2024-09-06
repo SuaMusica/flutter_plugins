@@ -237,6 +237,7 @@ class MediaService : MediaSessionService() {
             }
             player?.addMediaSource(prepare(cookie, medias[0]))
             idSum += medias[0].id
+            player?.prepare()
             PlayerSingleton.playerChangeNotifier?.sendCurrentQueue(medias, idSum)
             return
         }
