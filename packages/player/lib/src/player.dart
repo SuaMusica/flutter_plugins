@@ -272,7 +272,7 @@ class Player {
     }
   }
 
-  static List<Media> newQueue = _queue.storage.map((e) => e.item).toList();
+  static List<Media> get newQueue => _queue.storage.map((e) => e.item).toList();
   static List<Media>? get safeNewQueue => newQueue.isNotEmpty ? newQueue : null;
   static Media? get currentMediaStatic => safeNewQueue?[_queuePosition];
   Media? get currentMedia => currentMediaStatic;

@@ -512,8 +512,12 @@ class MediaService : MediaSessionService() {
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 super.onIsPlayingChanged(isPlaying)
-                if (isPlaying)
+                if (isPlaying){
                     PlayerSingleton.playerChangeNotifier?.notifyStateChange(PlaybackStateCompat.STATE_PLAYING)
+                    startTrackingProgress()
+                } else{
+                    stopTrackingProgressAndPerformTask {}
+                }
             }
 
             override fun onMediaItemTransition(
@@ -535,6 +539,7 @@ class MediaService : MediaSessionService() {
             override fun onPlaybackStateChanged(playbackState: Int) {
                 super.onPlaybackStateChanged(playbackState)
                 PlayerSingleton.playerChangeNotifier?.notifyStateChange(playbackState)
+
                 if (playbackState == Player.STATE_READY) {
                     if (previousState == -1) {
                         notifyPositionChange()
