@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:smaws/aws.dart';
 import 'package:flutter/services.dart';
-import 'package:smplayer/src/before_play_event.dart';
 import 'package:smplayer/src/event.dart';
 import 'package:smplayer/src/event_type.dart';
 import 'package:smplayer/src/isar_service.dart';
@@ -41,16 +40,22 @@ class Player {
   bool initializeIsar;
   bool externalPlayback = false;
   bool get itemsReady => _queue.itemsReady;
-  DateTime? _lastPrevious;
-  static int _queuePosition = 0;
 
   CookiesForCustomPolicy? _cookies;
   PlayerState state = PlayerState.IDLE;
   static late Queue _queue;
-  RepeatMode repeatMode = RepeatMode.REPEAT_MODE_OFF;
+  static RepeatMode _repeatMode = RepeatMode.REPEAT_MODE_OFF;
+  static bool _shuffleEnabled = false;
+  static int idSum = 0;
   final mutex = Mutex();
 
   final String playerId;
+
+  bool get isShuffleEnabled => _shuffleEnabled;
+  RepeatMode get repeatMode => _repeatMode;
+
+  set setShuffleEnabled(bool value) => _shuffleEnabled = value;
+  set repeatMode(RepeatMode value) => _repeatMode = value;
 
   final StreamController<Event> _eventStreamController =
       StreamController<Event>();
@@ -114,8 +119,8 @@ class Player {
     return Ok;
   }
 
-  static set setQueuePosition(int position) {
-    _queuePosition = position;
+  set setQueuePosition(int position) {
+    _queue.setIndex = position;
   }
 
   Future<int> enqueueAll(
@@ -142,8 +147,9 @@ class Player {
             ),
         )
         .then((result) => result ?? Future.value(Ok));
-    // _notifyBeforePlayEvent((_) => {}, media: items.first);
-    _queue.save(medias: items, saveOnTop: saveOnTop);
+
+    await IsarService.instance.removeAllMusics();
+    _queue.addAll(items);
     return Ok;
   }
 
@@ -164,49 +170,21 @@ class Player {
   int removeByPosition({
     required List<int> positionsToDelete,
   }) {
-    _channel.invokeMethod('remove_in', {
-      'indexesToDelete': positionsToDelete,
-    });
+    _channel.invokeMethod('remove_in', {'indexesToDelete': positionsToDelete});
 
-    return removeByIndexes(
+    return _queue.removeByPosition(
       positionsToDelete: positionsToDelete,
+      isShuffle: isShuffleEnabled,
     );
   }
 
-  int removeByIndexes({
-    required List<int> positionsToDelete,
-  }) {
-    try {
-      int lastLength = newQueue.length;
-      for (var i = 0; i < positionsToDelete.length; ++i) {
-        final pos = positionsToDelete[i] - i;
-        if (pos < _queuePosition) {
-          _queuePosition = _queuePosition - 1;
-        }
-        newQueue.removeAt(pos);
-      }
-
-      // for (var j = 0; j < newQueue.length; ++j) {
-      //   newQueue[j].position = j;
-      // }
-
-      return lastLength - newQueue.length;
-    } catch (e) {
-      return 0;
-    }
-  }
-
   Future<int> removeAll() async {
-    newQueue.clear();
+    _queue.clear();
+    setQueuePosition = 0;
     await IsarService.instance.removeAllMusics();
     _channel.invokeMethod('remove_all');
     return Ok;
   }
-
-  // Future<int> removeNotificaton() async {
-  //   await _invokeMethod('remove_notification');
-  //   return Ok;
-  // }
 
   Future<int> adsPlaying() async {
     await _invokeMethod('ads_playing');
@@ -224,18 +202,18 @@ class Player {
   }
 
   Future<Media> restartQueue() async {
-    // final media = _queue.restart();
-    setQueuePosition = 0;
+    final media = _queue.restart();
 
-    // await this.load(media);
-
-    return newQueue[queuePosition];
+    return media;
   }
 
-  Future<int> reorder(int oldIndex, int newIndex,
-      [bool isShuffle = false]) async {
+  Future<int> reorder(
+    int oldIndex,
+    int newIndex,
+  ) async {
     // _queue.reorder(oldIndex, newIndex, isShuffle);
-    _reorder(oldIndex, newIndex);
+    final result = _queue.reorder(oldIndex, newIndex, isShuffleEnabled);
+    debugPrint('#_queue.reorder: ${getPositionsList()}');
     _channel.invokeMethod('reorder', {
       'oldIndex': oldIndex,
       'newIndex': newIndex,
@@ -243,47 +221,19 @@ class Player {
     return Ok;
   }
 
-  void _reorder(int oldIndex, int newIndex) {
-    if (oldIndex < newIndex) {
-      for (int i = oldIndex; i < newIndex; i++) {
-        final temp = newQueue[i];
-        newQueue[i] = newQueue[i + 1];
-        newQueue[i + 1] = temp;
-      }
-    } else {
-      for (int i = oldIndex; i > newIndex; i--) {
-        final temp = newQueue[i];
-        newQueue[i] = newQueue[i - 1];
-        newQueue[i - 1] = temp;
-      }
-    }
-  }
-
   Future<int> clear() async => removeAll();
 
-  set setCurrentMedia(Media? media) {
-    if (media != null) {
-      newQueue.firstWhere(
-        (element) =>
-            element.id == media.id &&
-            element.indexInPlaylist == media.indexInPlaylist,
-      );
-      // _queue.replaceCurrent(media);
-    }
-  }
+  Media? get currentMedia => _queue.current;
 
-  static List<Media> get newQueue => _queue.storage.map((e) => e.item).toList();
-  static List<Media>? get safeNewQueue => newQueue.isNotEmpty ? newQueue : null;
-  static Media? get currentMediaStatic => safeNewQueue?[_queuePosition];
-  Media? get currentMedia => currentMediaStatic;
-
-  int get queuePosition => _queuePosition;
   int get previousPlaylistIndex => _queue.previousIndex;
   PreviousPlaylistPosition? get previousPlaylistPosition =>
       _queue.previousPosition;
 
-  List<Media> get items => newQueue;
-  int get size => newQueue.length;
+  List<Media> get items => _queue.items;
+  List<Media> get isarItems => _queue.storage.map((e) => e.item).toList();
+  int get size => items.length;
+
+  int get currentIndex => _queue.index;
 
   Future<int> play({bool shouldPrepare = false}) async {
     _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
@@ -331,15 +281,18 @@ class Player {
   }
 
   Future<int> rewind() async {
-    return _rewind(safeNewQueue?[queuePosition]);
+    final media = _queue.rewind();
+    _notifyRewind(media);
+    return Ok;
   }
 
-  Future<int> _rewind(Media? media) async {
-    if (media == null) {
-      return NotOk;
-    }
-    _notifyRewind(media);
-    return player.externalPlayback ? 1 : await seek(Duration(seconds: 0));
+  List<Map<String, int>> getPositionsList() {
+    return [
+      for (var item in _queue.storage)
+        {
+          'originalPosition': item.originalPosition,
+        }
+    ];
   }
 
   Future<int> forward() async {
@@ -359,28 +312,6 @@ class Player {
     return stop();
   }
 
-  Media? possiblePrevious() {
-    if (queuePosition >= 0) {
-      final now = DateTime.now();
-      if (_lastPrevious == null) {
-        _lastPrevious = now;
-        return currentMedia;
-      } else {
-        final diff = now.difference(_lastPrevious!).inMilliseconds;
-        if (diff < 3000) {
-          var workIndex = queuePosition;
-          if (queuePosition > 0) {
-            --workIndex;
-          }
-          return safeNewQueue?[workIndex];
-        } else {
-          return currentMedia;
-        }
-      }
-    }
-    return currentMedia;
-  }
-
   Future<int> toggleRepeatMode() async {
     return _channel.invokeMethod('repeat_mode').then((result) => result);
   }
@@ -391,45 +322,20 @@ class Player {
         .then((result) => result);
   }
 
-  Media? possibleNext(RepeatMode repeatMode) {
-    Media? _next() {
-      if (newQueue.length == 0) {
-        return null;
-      } else if (newQueue.length > 0 && queuePosition < newQueue.length - 1) {
-        var media = newQueue[queuePosition + 1];
-        return media;
-      } else {
-        return null;
-      }
-    }
-
-    if (repeatMode == RepeatMode.REPEAT_MODE_OFF ||
-        repeatMode == RepeatMode.REPEAT_MODE_ONE) {
-      return _next();
-    } else if (repeatMode == RepeatMode.REPEAT_MODE_ALL) {
-      if (newQueue.length - 1 == queuePosition) {
-        return safeNewQueue?[0];
-      } else {
-        return _next();
-      }
-    } else {
-      return null;
-    }
-  }
-
   Future<int?> previous() async {
-    Media? media = possiblePrevious();
+    Media? media = _queue.possibleNext(repeatMode);
     if (media == null) {
       return null;
     }
     // final mediaUrl = (await localMediaValidator?.call(media)) ?? media.url;
     _channel.invokeMethod('previous').then((result) => result);
+    return Ok;
   }
 
   Future<int?> next({
     bool shallNotify = true,
   }) async {
-    final media = possibleNext(repeatMode);
+    final media = _queue.possibleNext(repeatMode);
     if (media != null) {
       final mediaUrl = (await localMediaValidator?.call(media)) ?? media.url;
 
@@ -451,9 +357,12 @@ class Player {
 
   Future<int> updateFavorite({
     required bool isFavorite,
+    required int id,
   }) async {
-    return _channel.invokeMethod(
-        'update_favorite', {'isFavorite': isFavorite}).then((result) => result);
+    return _channel.invokeMethod('update_favorite', {
+      'isFavorite': isFavorite,
+      'idFavorite': id,
+    }).then((result) => result);
   }
 
   Future<int> pause() async {
@@ -500,14 +409,15 @@ class Player {
     return result;
   }
 
-  Future<void> shuffle() async {
-    // _queue.shuffle();
-    _channel.invokeMethod('toggle_shuffle');
-  }
-
-  Future<void> unshuffle() async {
-    // _queue.unshuffle();
-    _channel.invokeMethod('toggle_shuffle');
+  Future<void> toggleShuffle() async {
+    if (!isShuffleEnabled) {
+      _queue.shuffle();
+    } else {
+      _queue.unshuffle();
+    }
+    debugPrint('#_queue.shuffle: ${getPositionsList()}');
+    _channel
+        .invokeMethod('toggle_shuffle', {'positionsList': getPositionsList()});
   }
 
   Future<int> seek(Duration position) {
@@ -551,9 +461,12 @@ class Player {
   // }
 
   static Future<void> _doHandlePlatformCall(MethodCall call) async {
+    final currentMedia = _queue.current;
+    final currentIndex = _queue.index;
     final Map<dynamic, dynamic> callArgs = call.arguments as Map;
-    _log('_platformCallHandler call ${call.method} $callArgs');
-    _log('_platformCallHandler1 call ${call.method}');
+    if (call.method != 'audio.onCurrentPosition') {
+      _log('_platformCallHandler call ${call.method} $callArgs');
+    }
     switch (call.method) {
       case 'audio.onDuration':
         final duration = callArgs['duration'];
@@ -582,7 +495,7 @@ class Player {
       case 'state.change':
         final state = callArgs['state'];
         String error = callArgs['error'] ?? "";
-        _log('state.change1 call ${PlayerState.values[state]}');
+        _log('state.change call ${PlayerState.values[state]}');
         player.state = PlayerState.values[state];
         switch (player.state) {
           case PlayerState.IDLE:
@@ -595,13 +508,10 @@ class Player {
             );
             break;
           case PlayerState.ITEM_TRANSITION:
-            _addUsingPlayer(
+            _notifyPlayerStateChangeEvent(
               player,
-              BeforePlayEvent(
-                media: newQueue[_queuePosition],
-                queuePosition: _queuePosition,
-                operation: (bool _) {},
-              ),
+              EventType.BEFORE_PLAY,
+              error,
             );
             break;
           case PlayerState.PLAYING:
@@ -664,63 +574,63 @@ class Player {
       case 'commandCenter.onNext':
         _log("Player : Command Center : Got a next request");
         player.next();
-        if (currentMediaStatic != null) {
+        if (currentMedia != null) {
           _addUsingPlayer(
             player,
             Event(
               type: EventType.NEXT_NOTIFICATION,
-              media: currentMediaStatic!,
-              queuePosition: _queuePosition,
+              media: currentMedia,
+              queuePosition: currentIndex,
             ),
           );
         }
         break;
       case 'commandCenter.onPrevious':
         _log("Player : Command Center : Got a previous request");
-        if (currentMediaStatic != null) {
+        if (currentMedia != null) {
           _addUsingPlayer(
             player,
             Event(
               type: EventType.PREVIOUS_NOTIFICATION,
-              media: currentMediaStatic!,
-              queuePosition: _queuePosition,
+              media: currentMedia,
+              queuePosition: currentIndex,
             ),
           );
         }
         player.previous();
         break;
       case 'commandCenter.onPlay':
-        if (currentMediaStatic != null) {
+        if (currentMedia != null) {
           _addUsingPlayer(
             player,
             Event(
               type: EventType.PLAY_NOTIFICATION,
-              media: currentMediaStatic!,
-              queuePosition: _queuePosition,
+              media: currentMedia,
+              queuePosition: currentIndex,
             ),
           );
         }
         break;
       case 'commandCenter.onPause':
-        if (currentMediaStatic != null) {
+        if (currentMedia != null) {
           _addUsingPlayer(
             player,
             Event(
               type: EventType.PAUSED_NOTIFICATION,
-              media: currentMediaStatic!,
-              queuePosition: _queuePosition,
+              media: currentMedia,
+              queuePosition: currentIndex,
             ),
           );
         }
         break;
       case 'commandCenter.onTogglePlayPause':
-        if (currentMediaStatic != null) {
+        if (currentMedia != null) {
           _addUsingPlayer(
             player,
             Event(
               type: EventType.TOGGLE_PLAY_PAUSE,
-              media: currentMediaStatic!,
-              queuePosition: _queuePosition,
+              media: currentMedia,
+              queuePosition: currentIndex,
             ),
           );
         }
@@ -749,58 +659,41 @@ class Player {
 
         break;
       case 'SET_CURRENT_MEDIA_INDEX':
-        setQueuePosition = callArgs['CURRENT_MEDIA_INDEX'];
-        print('#QUEUE_KT PKG ${newQueue[_queuePosition].name}');
-        _addUsingPlayer(
+        _queue.setIndex = callArgs['CURRENT_MEDIA_INDEX'];
+        _notifyPlayerStateChangeEvent(
           player,
-          Event(
-            type: EventType.SET_CURRENT_MEDIA_INDEX,
-            queuePosition: _queuePosition,
-            media: newQueue[_queuePosition],
-          ),
+          EventType.SET_CURRENT_MEDIA_INDEX,
+          "",
         );
         break;
       case 'REPEAT_CHANGED':
-        final repeatMode = RepeatMode.values[callArgs['REPEAT_MODE']];
-        _addUsingPlayer(
+        _repeatMode = RepeatMode.values[callArgs['REPEAT_MODE']];
+        _notifyPlayerStateChangeEvent(
           player,
-          Event(
-            type: EventType.REPEAT_CHANGED,
-            queuePosition: _queuePosition,
-            media: newQueue[_queuePosition],
-            repeatMode: repeatMode,
-          ),
+          EventType.REPEAT_CHANGED,
+          "",
         );
         break;
       case 'SHUFFLE_CHANGED':
-        final shuffleEnabled = callArgs['SHUFFLE_MODE'];
-        _addUsingPlayer(
+        _shuffleEnabled = callArgs['SHUFFLE_MODE'];
+        _notifyPlayerStateChangeEvent(
           player,
-          Event(
-            type: EventType.SHUFFLE_CHANGED,
-            queuePosition: _queuePosition,
-            media: newQueue[_queuePosition],
-            shuffleEnabled: shuffleEnabled,
-          ),
+          EventType.SHUFFLE_CHANGED,
+          "",
         );
         break;
       case 'GET_INFO':
         // if (callArgs.values.contains('QUEUE_ARGS')) {
+        idSum = callArgs['ID_SUM'];
         final queue = callArgs['QUEUE_ARGS'];
-        final idSum = callArgs['ID_SUM'];
         final parsed = json.decode(queue) as List;
         final queueItems = parsed.map((json) => Media.fromJson(json)).toList();
-        newQueue.clear();
-        newQueue.addAll(queueItems);
-        _addUsingPlayer(
+        // _queue.clear();
+        // _queue.addAll(queueItems);
+        _notifyPlayerStateChangeEvent(
           player,
-          Event(
-            type: EventType.UPDATE_QUEUE,
-            queue: queueItems,
-            queuePosition: 0,
-            idSum: idSum,
-            media: queueItems[_queuePosition],
-          ),
+          EventType.UPDATE_QUEUE,
+          "",
         );
 
         break;
@@ -812,13 +705,15 @@ class Player {
   _notifyRewind(Media media) async {
     final positionInMilli = await getCurrentPosition();
     final durationInMilli = await getDuration();
-    _add(Event(
-      type: EventType.REWIND,
-      media: media,
-      queuePosition: queuePosition,
-      position: Duration(milliseconds: positionInMilli),
-      duration: Duration(milliseconds: durationInMilli),
-    ));
+    _add(
+      Event(
+        type: EventType.REWIND,
+        media: media,
+        queuePosition: currentIndex,
+        position: Duration(milliseconds: positionInMilli),
+        duration: Duration(milliseconds: durationInMilli),
+      ),
+    );
   }
 
   _notifyForward(Media media) async {
@@ -828,7 +723,7 @@ class Player {
     _add(Event(
       type: EventType.FORWARD,
       media: media,
-      queuePosition: queuePosition,
+      queuePosition: currentIndex,
       position: Duration(milliseconds: positionInMilli),
       duration: Duration(milliseconds: durationInMilli),
     ));
@@ -836,28 +731,24 @@ class Player {
 
   _notifyPlayerStatusChangeEvent(EventType type) {
     if (currentMedia != null) {
-      _add(Event(
-          type: type, media: currentMedia!, queuePosition: queuePosition));
+      _add(
+        Event(
+          type: type,
+          media: currentMedia!,
+          queuePosition: currentIndex,
+        ),
+      );
     }
   }
 
-  _notifyBeforePlayEvent(Function(bool) operation, {Media? media}) {
-    _add(
-      BeforePlayEvent(
-        media: media ?? currentMedia!,
-        queuePosition: queuePosition,
-        operation: operation,
-      ),
-    );
-  }
-
   static _notifyDurationChangeEvent(Player player, Duration newDuration) {
-    if (currentMediaStatic != null) {
+    final currentIndex = _queue.index;
+    if (_queue.current != null) {
       _addUsingPlayer(
           player,
           DurationChangeEvent(
-              media: currentMediaStatic!,
-              queuePosition: _queuePosition,
+              media: _queue.current!,
+              queuePosition: currentIndex,
               duration: newDuration));
     }
   }
@@ -867,6 +758,7 @@ class Player {
     EventType eventType,
     String error,
   ) {
+    final currentIndex = _queue.index;
     if (error.isNotEmpty) {
       _notifyPlayerErrorEvent(
         player: player,
@@ -874,13 +766,13 @@ class Player {
         errorType: PlayerErrorType.INFORMATION,
       );
     }
-    if (currentMediaStatic != null) {
+    if (_queue.current != null) {
       _addUsingPlayer(
         player,
         Event(
           type: eventType,
-          media: currentMediaStatic!,
-          queuePosition: _queuePosition,
+          media: _queue.current!,
+          queuePosition: currentIndex,
         ),
       );
     }
@@ -891,13 +783,14 @@ class Player {
     required String error,
     PlayerErrorType? errorType,
   }) {
-    if (currentMediaStatic != null) {
+    final currentIndex = _queue.index;
+    if (_queue.current != null) {
       _addUsingPlayer(
         player,
         Event(
           type: EventType.ERROR_OCCURED,
-          media: currentMediaStatic!,
-          queuePosition: _queuePosition,
+          media: _queue.current!,
+          queuePosition: currentIndex,
           error: error,
           errorType: errorType ?? PlayerErrorType.UNDEFINED,
         ),
@@ -907,14 +800,15 @@ class Player {
 
   static _notifyPositionChangeEvent(
       Player player, Duration newPosition, Duration newDuration) {
-    final media = currentMediaStatic;
+    final media = _queue.current;
+    final currentIndex = _queue.index;
     if (media != null) {
       final position = newPosition.inSeconds;
       _addUsingPlayer(
         player,
         PositionChangeEvent(
           media: media,
-          queuePosition: _queuePosition,
+          queuePosition: currentIndex,
           position: newPosition,
           duration: newDuration,
         ),

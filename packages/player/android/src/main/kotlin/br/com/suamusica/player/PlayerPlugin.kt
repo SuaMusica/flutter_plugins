@@ -22,8 +22,10 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
         const val BIG_COVER_URL_ARGUMENT = "bigCoverUrl"
         const val IS_PLAYING_ARGUMENT = "isPlaying"
         const val IS_FAVORITE_ARGUMENT = "isFavorite"
+        const val ID_FAVORITE_ARGUMENT = "idFavorite"
         const val POSITION_ARGUMENT = "position"
         const val INDEXES_TO_REMOVE = "indexesToRemove"
+        const val POSITIONS_LIST = "positionsList"
         const val LOAD_ONLY = "loadOnly"
         const val RELEASE_MODE_ARGUMENT = "releaseMode"
         private const val CHANNEL = "suamusica.com.br/player"
@@ -162,7 +164,8 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
             }
 
             TOGGLE_SHUFFLE -> {
-                PlayerSingleton.mediaSessionConnection?.toggleShuffle()
+                val positionsList = call.argument<List<Map<String, Int>>>(POSITIONS_LIST) ?: emptyList()
+                PlayerSingleton.mediaSessionConnection?.toggleShuffle(positionsList)
             }
 
             REPEAT_MODE -> {
@@ -179,7 +182,8 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
 
             UPDATE_FAVORITE -> {
                 val isFavorite = call.argument<Boolean?>(IS_FAVORITE_ARGUMENT) ?: false
-                PlayerSingleton.mediaSessionConnection?.updateFavorite(isFavorite)
+                val idFavorite = call.argument<Int?>(ID_FAVORITE_ARGUMENT) ?: 0
+                PlayerSingleton.mediaSessionConnection?.updateFavorite(isFavorite,idFavorite)
             }
 
             PLAY_FROM_QUEUE_METHOD -> {

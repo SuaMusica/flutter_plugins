@@ -23,8 +23,11 @@ import androidx.media3.session.SessionResult
 import br.com.suamusica.player.PlayerPlugin.Companion.DISABLE_REPEAT_MODE
 import br.com.suamusica.player.PlayerPlugin.Companion.ENQUEUE
 import br.com.suamusica.player.PlayerPlugin.Companion.ENQUEUE_ONE
+import br.com.suamusica.player.PlayerPlugin.Companion.FAVORITE
+import br.com.suamusica.player.PlayerPlugin.Companion.ID_FAVORITE_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.INDEXES_TO_REMOVE
 import br.com.suamusica.player.PlayerPlugin.Companion.IS_FAVORITE_ARGUMENT
+import br.com.suamusica.player.PlayerPlugin.Companion.POSITIONS_LIST
 import br.com.suamusica.player.PlayerPlugin.Companion.POSITION_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_ALL
 import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_IN
@@ -66,6 +69,7 @@ class MediaButtonEventHandler(
                 add(SessionCommand("next", Bundle.EMPTY))
                 add(SessionCommand("previous", Bundle.EMPTY))
                 add(SessionCommand(UPDATE_FAVORITE, session.token.extras))
+                add(SessionCommand(FAVORITE, session.token.extras))
                 add(SessionCommand(TOGGLE_SHUFFLE, Bundle.EMPTY))
                 add(SessionCommand(REPEAT_MODE, Bundle.EMPTY))
                 add(SessionCommand(DISABLE_REPEAT_MODE, Bundle.EMPTY))
@@ -106,17 +110,30 @@ class MediaButtonEventHandler(
         Log.d("Player", "#MEDIA3# - onCustomCommand ${customCommand.customAction}")
         if (customCommand.customAction == "notification_favoritar" || customCommand.customAction == "notification_desfavoritar") {
             val isFavorite = customCommand.customAction == "notification_favoritar"
-            buildIcons(isFavorite)
             PlayerSingleton.favorite(isFavorite)
+            buildIcons()
         }
+
         if (customCommand.customAction == "seek") {
             mediaService.seek(args.getLong("position"), args.getBoolean("playWhenReady"))
+        }
+        if (customCommand.customAction == FAVORITE) {
+            val mediaItem = session.player.currentMediaItem!!
+            updateFavoriteMetadata(
+                session.player,
+                session.player.currentMediaItemIndex,
+                mediaItem,
+                args.getBoolean(IS_FAVORITE_ARGUMENT)
+            )
+            buildIcons()
         }
         if (customCommand.customAction == REMOVE_ALL) {
             mediaService.removeAll()
         }
         if (customCommand.customAction == REMOVE_IN) {
-            mediaService.removeIn(args.getIntegerArrayList(INDEXES_TO_REMOVE)?.toList() ?: emptyList())
+            mediaService.removeIn(
+                args.getIntegerArrayList(INDEXES_TO_REMOVE)?.toList() ?: emptyList()
+            )
         }
         if (customCommand.customAction == REORDER) {
             val oldIndex = args.getInt("oldIndex")
@@ -127,7 +144,12 @@ class MediaButtonEventHandler(
             mediaService.togglePlayPause()
         }
         if (customCommand.customAction == TOGGLE_SHUFFLE) {
-            mediaService.toggleShuffle()
+//            val list = args.getSerializable("list",ArrayList<Map<String, Int>>()::class.java)
+            val json = args.getString(POSITIONS_LIST)
+            val gson = GsonBuilder().create()
+            val mediaListType = object : TypeToken<List<Map<String, Int>>>() {}.type
+            val positionsList: List<Map<String, Int>> = gson.fromJson(json, mediaListType)
+            mediaService.toggleShuffle(positionsList)
         }
         if (customCommand.customAction == REPEAT_MODE) {
             mediaService.repeatMode()
@@ -155,7 +177,22 @@ class MediaButtonEventHandler(
             mediaService.pause()
         }
         if (customCommand.customAction == UPDATE_FAVORITE) {
-            buildIcons(args.getBoolean(IS_FAVORITE_ARGUMENT))
+            val isFavorite = args.getBoolean(IS_FAVORITE_ARGUMENT)
+            val id = args.getInt(ID_FAVORITE_ARGUMENT)
+            session.player.let {
+                for (i in 0 until it.mediaItemCount) {
+                    val mediaItem = it.getMediaItemAt(i)
+                    if (mediaItem.mediaId == id.toString()) {
+                        updateFavoriteMetadata(it, i, mediaItem, isFavorite)
+                        if (id.toString() == session.player.currentMediaItem?.mediaId) {
+                            buildIcons()
+                        }
+                        break
+                    }
+                }
+            }
+            PlayerSingleton.favorite(true)
+//            }
         }
         if (customCommand.customAction == "ads_playing" || customCommand.customAction == "remove_notification") {
 //            mediaService.adsPlaying()
@@ -172,10 +209,7 @@ class MediaButtonEventHandler(
             if (mediaList.isNotEmpty()) {
                 Log.d("Player", "First media item: ${gson.toJson(mediaList.first())}")
             }
-            buildIcons(
-                session.player.mediaMetadata.extras?.getBoolean(IS_FAVORITE_ARGUMENT)
-                    ?: false
-            )
+            buildIcons()
             mediaService.enqueue(
                 args.getString("cookie")!!,
                 mediaList,
@@ -187,7 +221,30 @@ class MediaButtonEventHandler(
         )
     }
 
-    fun buildIcons(isFavorite: Boolean) {
+    private fun updateFavoriteMetadata(
+        player: Player,
+        i: Int,
+        mediaItem: MediaItem,
+        isFavorite: Boolean
+    ) {
+        player.replaceMediaItem(
+            i,
+            mediaItem.buildUpon().setMediaMetadata(
+                mediaItem.mediaMetadata.buildUpon().setExtras(
+                    Bundle().apply {
+                        putBoolean(IS_FAVORITE_ARGUMENT, isFavorite)
+                    }
+                ).build()
+            ).build()
+        )
+    }
+
+    fun buildIcons() {
+        val isFavorite =
+            mediaService.player?.currentMediaItem?.mediaMetadata?.extras?.getBoolean(
+                IS_FAVORITE_ARGUMENT
+            ) ?: false
+
         val baseList = mutableListOf(
             CommandButton.Builder()
                 .setDisplayName("Save to favorites")

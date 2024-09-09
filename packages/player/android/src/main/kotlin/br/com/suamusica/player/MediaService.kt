@@ -24,7 +24,6 @@ import androidx.media3.common.Player.MediaItemTransitionReason
 import androidx.media3.common.Player.REPEAT_MODE_ALL
 import androidx.media3.common.Player.REPEAT_MODE_OFF
 import androidx.media3.common.Player.REPEAT_MODE_ONE
-import androidx.media3.common.Timeline
 import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.util.Util
@@ -38,7 +37,6 @@ import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.source.ShuffleOrder
 import androidx.media3.exoplayer.source.ShuffleOrder.DefaultShuffleOrder
-import androidx.media3.exoplayer.source.ShuffleOrder.UnshuffledShuffleOrder
 import androidx.media3.session.CacheBitmapLoader
 import androidx.media3.session.CommandButton
 import androidx.media3.session.DefaultMediaNotificationProvider
@@ -77,20 +75,19 @@ class MediaService : MediaSessionService() {
         AudioAttributes.Builder().setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).setUsage(C.USAGE_MEDIA)
             .build()
 
-    private var player: ExoPlayer? = null
+    var player: ExoPlayer? = null
 
     private var progressTracker: ProgressTracker? = null
-
-    private var previousState: Int = -1
 
     private lateinit var dataSourceBitmapLoader: DataSourceBitmapLoader
     private lateinit var mediaButtonEventHandler: MediaButtonEventHandler
     private var shuffleOrder: DefaultShuffleOrder? = null
 
     private val artCache = HashMap<String, Bitmap>()
-    val queueShuffled = mutableListOf<Media>()
     var shuffledIndices = mutableListOf<Int>()
-    val queue = mutableListOf<Media>()
+
+
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         return Service.START_STICKY
@@ -214,37 +211,47 @@ class MediaService : MediaSessionService() {
         return false
     }
 
-    fun toggleShuffle() {
+    fun toggleShuffle(positionsList: List<Map<String, Int>>) {
         player?.shuffleModeEnabled = !(player?.shuffleModeEnabled ?: false)
+        player?.shuffleModeEnabled?.let {
+            if (it) {
+                shuffledIndices.clear()
+                for (element in positionsList) {
+                    shuffledIndices.add(element["originalPosition"] ?: 0)
+                }
+                shuffleOrder = DefaultShuffleOrder(
+                    shuffledIndices.toIntArray(),
+                    System.currentTimeMillis()
+                )
+                player!!.setShuffleOrder(shuffleOrder!!)
+            }
+            PlayerSingleton.playerChangeNotifier?.onShuffleModeEnabled(it)
+        }
     }
 
     fun enqueue(cookie: String, medias: List<Media>, autoPlay: Boolean) {
         var idSum = 0
-        if (medias.size == 1) {
-            queue.add(medias[0])
-            if (player?.shuffleModeEnabled == true) {
-                shuffleOrder?.let {
-                    it.cloneAndInsert(shuffleOrder!!.lastIndex, 1)
-                    player?.setShuffleOrder(it)
-                    for (i in 0 until it.length) {
-                        Log.i(
-                            TAG,
-                            "addMediaSource_one: enqueue: ${player?.getMediaItemAt(i)?.mediaMetadata?.title}"
-                        )
-                    }
-                }
-                player?.setShuffleOrder(shuffleOrder!!)
-            }
-            player?.addMediaSource(prepare(cookie, medias[0]))
-            idSum += medias[0].id
-            player?.prepare()
-            PlayerSingleton.playerChangeNotifier?.sendCurrentQueue(medias, idSum)
-            return
-        }
+//        if (medias.size == 1 && (player?.mediaItemCount ?: 0) > 0) {
+//            if (player?.shuffleModeEnabled == true) {
+//                shuffleOrder?.let {
+//                    it.cloneAndInsert(shuffleOrder!!.lastIndex, 1)
+//                    player?.setShuffleOrder(it)
+//                    for (i in 0 until it.length) {
+//                        Log.i(
+//                            TAG,
+//                            "addMediaSource_one: enqueue: ${player?.getMediaItemAt(i)?.mediaMetadata?.title}"
+//                        )
+//                    }
+//                }
+//                player?.setShuffleOrder(shuffleOrder!!)
+//            }
+//            player?.addMediaSource(prepare(cookie, medias[0]))
+//            idSum += medias[0].id
+//            PlayerSingleton.playerChangeNotifier?.sendCurrentQueue(medias, idSum)
+//            return
+//        }
 
         if (medias.isNotEmpty()) {
-            queue.clear()
-            queue.addAll(medias)
             // Prepare the first media source outside the coroutine
             if (player?.mediaItemCount == 0) {
                 val firstMediaSource = prepare(cookie, medias[0])
@@ -252,10 +259,10 @@ class MediaService : MediaSessionService() {
                 player?.setMediaSource(firstMediaSource)
                 player?.prepare()
                 if (autoPlay) {
-                    play()
+                    player?.playWhenReady = true
                 }
             }
-            mediaButtonEventHandler.buildIcons(medias[0].isFavorite ?: false)
+//            mediaButtonEventHandler.buildIcons(medias[0].isFavorite ?: false)
             // Use coroutine to prepare and add the remaining media sources
             CoroutineScope(Dispatchers.Main).launch {
                 for (i in 1 until medias.size) {
@@ -268,7 +275,7 @@ class MediaService : MediaSessionService() {
                 }
                 player?.prepare()
             }
-            PlayerSingleton.playerChangeNotifier?.sendCurrentQueue(medias, idSum)
+            PlayerSingleton.playerChangeNotifier?.sendCurrentQueue(listOf(medias[0]), idSum)
         }
     }
 
@@ -282,7 +289,8 @@ class MediaService : MediaSessionService() {
         val metadata = buildMetaData(media)
         val url = media.url
         val uri = if (url.startsWith("/")) Uri.fromFile(File(url)) else Uri.parse(url)
-        val mediaItem = MediaItem.Builder().setUri(uri).setMediaMetadata(metadata).build()
+        val mediaItem = MediaItem.Builder().setUri(uri).setMediaMetadata(metadata)
+            .setMediaId(media.id.toString()).build()
         @C.ContentType val type = Util.inferContentType(uri)
 
         return when (type) {
@@ -313,16 +321,11 @@ class MediaService : MediaSessionService() {
 
     fun reorder(oldIndex: Int, newIndex: Int) {
         player?.moveMediaItem(oldIndex, newIndex)
-        if (oldIndex < newIndex) {
-            for (i in oldIndex until newIndex) {
-                Collections.swap(queue, i, i + 1)
-            }
-        } else {
-            for (i in oldIndex downTo newIndex + 1) {
-                Collections.swap(queue, i, i - 1)
-            }
-        }
+        PlayerSingleton.playerChangeNotifier?.currentMediaIndex(
+            currentIndex()
+        )
     }
+
 
     fun removeIn(indexes: List<Int>) {
         if (indexes.isNotEmpty()) {
@@ -330,7 +333,6 @@ class MediaService : MediaSessionService() {
                 player?.removeMediaItem(it)
                 shuffleOrder?.cloneAndRemove(it, it)
                 shuffledIndices.removeAt(it)
-                queue.removeAt(it)
             }
         }
     }
@@ -397,7 +399,7 @@ class MediaService : MediaSessionService() {
 
     fun playFromQueue(position: Int) {
         player?.seekTo(
-            if (player?.shuffleModeEnabled == true) queue.indexOf(queue[shuffledIndices[position]]) else position,
+            if (player?.shuffleModeEnabled == true) shuffledIndices[position] else position,
             0
         )
     }
@@ -493,6 +495,7 @@ class MediaService : MediaSessionService() {
                 player?.currentMediaItemIndex ?: 0
             )
         else player?.currentMediaItemIndex ?: 0
+//        return player?.currentMediaItemIndex ?: 0
         return position
     }
 
@@ -512,10 +515,10 @@ class MediaService : MediaSessionService() {
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 super.onIsPlayingChanged(isPlaying)
-                if (isPlaying){
+                if (isPlaying) {
                     PlayerSingleton.playerChangeNotifier?.notifyStateChange(PlaybackStateCompat.STATE_PLAYING)
                     startTrackingProgress()
-                } else{
+                } else {
                     stopTrackingProgressAndPerformTask {}
                 }
             }
@@ -528,71 +531,21 @@ class MediaService : MediaSessionService() {
                 PlayerSingleton.playerChangeNotifier?.currentMediaIndex(
                     currentIndex()
                 )
-                mediaButtonEventHandler.buildIcons(
-                    mediaItem?.mediaMetadata?.extras?.getBoolean(
-                        PlayerPlugin.IS_FAVORITE_ARGUMENT
-                    ) ?: false
-                )
+                mediaButtonEventHandler.buildIcons()
                 PlayerSingleton.playerChangeNotifier?.notifyItemTransition()
             }
 
-            override fun onPlaybackStateChanged(playbackState: Int) {
+            override fun onPlaybackStateChanged(playbackState: @Player.State Int) {
                 super.onPlaybackStateChanged(playbackState)
                 PlayerSingleton.playerChangeNotifier?.notifyStateChange(playbackState)
-
-                if (playbackState == Player.STATE_READY) {
-                    if (previousState == -1) {
-                        notifyPositionChange()
-                    } else {
-                        stopTrackingProgressAndPerformTask {}
-                    }
-                } else if (playbackState == Player.STATE_ENDED) {
+                if (playbackState == Player.STATE_ENDED) {
                     stopTrackingProgressAndPerformTask {}
                 }
-                previousState = playbackState
             }
 
             override fun onRepeatModeChanged(repeatMode: @Player.RepeatMode Int) {
                 super.onRepeatModeChanged(repeatMode)
                 PlayerSingleton.playerChangeNotifier?.onRepeatChanged(repeatMode)
-            }
-
-            override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
-                super.onShuffleModeEnabledChanged(shuffleModeEnabled)
-                if (shuffleModeEnabled) {
-                    val currentIndex = player!!.currentMediaItemIndex
-                    shuffledIndices = (0 until player!!.mediaItemCount).toMutableList()
-                    shuffledIndices.removeAt(currentIndex)
-                    shuffledIndices.shuffle()
-                    shuffledIndices.add(0, currentIndex)
-
-                    Log.i(TAG, "Shuffled indices: ${shuffledIndices.joinToString()}")
-
-                    queueShuffled.clear()
-                    for (index in shuffledIndices) {
-                        queueShuffled.add(queue[index])
-                        Log.i(TAG, "Shuffled queue: ${queue[index].name}")
-                    }
-
-                    shuffleOrder = DefaultShuffleOrder(
-                        shuffledIndices.toIntArray(),
-                        System.currentTimeMillis()
-                    )
-
-                    player!!.setShuffleOrder(shuffleOrder!!)
-                } else {
-                    queueShuffled.clear()
-                    queueShuffled.addAll(queue)
-                }
-
-                PlayerSingleton.playerChangeNotifier?.sendCurrentQueue(
-                    if (shuffleModeEnabled) queueShuffled else queue,
-                    0
-                )
-                PlayerSingleton.playerChangeNotifier?.onShuffleModeEnabled(shuffleModeEnabled)
-                PlayerSingleton.playerChangeNotifier?.currentMediaIndex(
-                    if (shuffleModeEnabled) 0 else player?.currentMediaItemIndex ?: 0
-                )
             }
 
             override fun onPlayerError(error: PlaybackException) {

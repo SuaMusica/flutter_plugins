@@ -12,14 +12,17 @@ import android.util.Log
 import br.com.suamusica.player.PlayerPlugin.Companion.DISABLE_REPEAT_MODE
 import br.com.suamusica.player.PlayerPlugin.Companion.ENQUEUE
 import br.com.suamusica.player.PlayerPlugin.Companion.ENQUEUE_ONE
+import br.com.suamusica.player.PlayerPlugin.Companion.ID_FAVORITE_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.INDEXES_TO_REMOVE
 import br.com.suamusica.player.PlayerPlugin.Companion.IS_FAVORITE_ARGUMENT
+import br.com.suamusica.player.PlayerPlugin.Companion.POSITIONS_LIST
 import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_ALL
 import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_IN
 import br.com.suamusica.player.PlayerPlugin.Companion.REORDER
 import br.com.suamusica.player.PlayerPlugin.Companion.REPEAT_MODE
 import br.com.suamusica.player.PlayerPlugin.Companion.TOGGLE_SHUFFLE
 import br.com.suamusica.player.PlayerPlugin.Companion.UPDATE_FAVORITE
+import com.google.gson.Gson
 import java.lang.ref.WeakReference
 
 class MediaSessionConnection(
@@ -93,9 +96,10 @@ class MediaSessionConnection(
         sendCommand("pause", null)
     }
 
-    fun updateFavorite(isFavorite: Boolean) {
+    fun updateFavorite(isFavorite: Boolean, idFavorite: Int) {
         val bundle = Bundle()
         bundle.putBoolean(IS_FAVORITE_ARGUMENT, isFavorite)
+        bundle.putInt(ID_FAVORITE_ARGUMENT, idFavorite)
         sendCommand(UPDATE_FAVORITE, bundle)
     }
 
@@ -113,8 +117,13 @@ class MediaSessionConnection(
         sendCommand("next", null)
     }
 
-    fun toggleShuffle() {
-        sendCommand(TOGGLE_SHUFFLE, null)
+    fun toggleShuffle(positionsList: List<Map<String, Int>>) {
+        val bundle = Bundle()
+        //API33
+//        bundle.putSerializable(POSITIONS_LIST, ArrayList(positionsList))
+        val json = Gson().toJson(positionsList)
+        bundle.putString(POSITIONS_LIST, json)
+        sendCommand(TOGGLE_SHUFFLE, bundle)
     }
 
     fun repeatMode() {
@@ -131,7 +140,7 @@ class MediaSessionConnection(
 
     fun favorite(shouldFavorite: Boolean) {
         val bundle = Bundle()
-        bundle.putBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT, shouldFavorite)
+        bundle.putBoolean(IS_FAVORITE_ARGUMENT, shouldFavorite)
         sendCommand(PlayerPlugin.FAVORITE, bundle)
     }
 
