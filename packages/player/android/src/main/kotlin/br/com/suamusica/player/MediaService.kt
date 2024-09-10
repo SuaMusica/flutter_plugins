@@ -229,25 +229,6 @@ class MediaService : MediaSessionService() {
 
     fun enqueue(cookie: String, medias: List<Media>, autoPlay: Boolean) {
         var idSum = 0L
-//        if (medias.size == 1 && (player?.mediaItemCount ?: 0) > 0) {
-//            if (player?.shuffleModeEnabled == true) {
-//                shuffleOrder?.let {
-//                    it.cloneAndInsert(shuffleOrder!!.lastIndex, 1)
-//                    player?.setShuffleOrder(it)
-//                    for (i in 0 until it.length) {
-//                        Log.i(
-//                            TAG,
-//                            "addMediaSource_one: enqueue: ${player?.getMediaItemAt(i)?.mediaMetadata?.title}"
-//                        )
-//                    }
-//                }
-//                player?.setShuffleOrder(shuffleOrder!!)
-//            }
-//            player?.addMediaSource(prepare(cookie, medias[0]))
-//            idSum += medias[0].id
-//            PlayerSingleton.playerChangeNotifier?.sendCurrentQueue(medias, idSum)
-//            return
-//        }
 
         if (medias.isNotEmpty()) {
             // Prepare the first media source outside the coroutine
@@ -258,17 +239,19 @@ class MediaService : MediaSessionService() {
                 player?.prepare()
                 if (autoPlay) {
                     player?.playWhenReady = true
+                    PlayerSingleton.playerChangeNotifier?.notifyItemTransition()
                 }
             }
-//            mediaButtonEventHandler.buildIcons(medias[0].isFavorite ?: false)
             // Use coroutine to prepare and add the remaining media sources
+            val workList:List<Media> = if(player?.mediaItemCount == 0) medias.drop(1) else medias.toList()
+
             CoroutineScope(Dispatchers.Main).launch {
-                for (i in 1 until medias.size) {
+                for (i in  workList.indices) {
                     val mediaSource = withContext(Dispatchers.IO) {
-                        Log.i(TAG, "CoroutineScope: enqueue: ${medias[i].name}")
-                        prepare(cookie, medias[i])
+                        Log.i(TAG, "CoroutineScope: enqueue: ${workList[i].name}")
+                        prepare(cookie, workList[i])
                     }
-                    idSum += medias[i].id
+                    idSum += workList[i].id
                     player?.addMediaSource(mediaSource)
                 }
                 player?.prepare()
@@ -542,7 +525,9 @@ class MediaService : MediaSessionService() {
                     currentIndex()
                 )
                 mediaButtonEventHandler.buildIcons()
-                PlayerSingleton.playerChangeNotifier?.notifyItemTransition()
+                if(reason != Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED){
+                    PlayerSingleton.playerChangeNotifier?.notifyItemTransition()
+                }
             }
 
             override fun onPlaybackStateChanged(playbackState: @Player.State Int) {
