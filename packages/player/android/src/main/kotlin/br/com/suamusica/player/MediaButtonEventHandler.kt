@@ -27,6 +27,7 @@ import br.com.suamusica.player.PlayerPlugin.Companion.FAVORITE
 import br.com.suamusica.player.PlayerPlugin.Companion.ID_FAVORITE_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.INDEXES_TO_REMOVE
 import br.com.suamusica.player.PlayerPlugin.Companion.IS_FAVORITE_ARGUMENT
+import br.com.suamusica.player.PlayerPlugin.Companion.PLAY_FROM_QUEUE_METHOD
 import br.com.suamusica.player.PlayerPlugin.Companion.POSITIONS_LIST
 import br.com.suamusica.player.PlayerPlugin.Companion.POSITION_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_ALL
@@ -138,7 +139,12 @@ class MediaButtonEventHandler(
         if (customCommand.customAction == REORDER) {
             val oldIndex = args.getInt("oldIndex")
             val newIndex = args.getInt("newIndex")
-            mediaService.reorder(oldIndex, newIndex)
+            val json = args.getString(POSITIONS_LIST)
+            val gson = GsonBuilder().create()
+            val mediaListType = object : TypeToken<List<Map<String, Int>>?>() {}.type
+            val positionsList: List<Map<String, Int>> = gson.fromJson(json, mediaListType)
+
+            mediaService.reorder(oldIndex, newIndex,positionsList)
         }
         if (customCommand.customAction == "onTogglePlayPause") {
             mediaService.togglePlayPause()
@@ -164,14 +170,14 @@ class MediaButtonEventHandler(
             val shouldPrepare = args.getBoolean("shouldPrepare")
             mediaService.play(shouldPrepare)
         }
-        if (customCommand.customAction == "playFromQueue") {
+        if (customCommand.customAction == PLAY_FROM_QUEUE_METHOD) {
             mediaService.playFromQueue(args.getInt(POSITION_ARGUMENT))
         }
         if (customCommand.customAction == "notification_previous" || customCommand.customAction == "previous") {
-            session.player.seekToPrevious()
+            session.player.seekToPreviousMediaItem()
         }
         if (customCommand.customAction == "notification_next" || customCommand.customAction == "next") {
-            session.player.seekToNext()
+            session.player.seekToNextMediaItem()
         }
         if (customCommand.customAction == "pause") {
             mediaService.pause()

@@ -147,7 +147,8 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
             REORDER -> {
                 val from = call.argument<Int>("oldIndex")!!
                 val to = call.argument<Int>("newIndex")!!
-                PlayerSingleton.mediaSessionConnection?.reorder(from, to)
+                val positionsList = call.argument<List<Map<String, Int>>>(POSITIONS_LIST) ?: emptyList()
+                PlayerSingleton.mediaSessionConnection?.reorder(from, to,positionsList)
             }
 
             REMOVE_ALL -> {

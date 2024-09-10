@@ -45,14 +45,12 @@ class MethodChannelManager(private val channel: MethodChannel) {
     }
 
     fun sendCurrentQueue(
-        queue: List<Media>,
-        idSum: Int,
+        idSum: Long,
         playerId: String,
     ) {
         val args = MethodChannelManagerArgsBuilder()
             .event("CURRENT_QUEUE")
             .playerId(playerId)
-            .queue(queue)
             .idSum(idSum)
             .build()
         invokeMethod("GET_INFO", args)

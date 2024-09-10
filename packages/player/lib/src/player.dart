@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:smaws/aws.dart';
 import 'package:flutter/services.dart';
@@ -46,11 +45,12 @@ class Player {
   static late Queue _queue;
   static RepeatMode _repeatMode = RepeatMode.REPEAT_MODE_OFF;
   static bool _shuffleEnabled = false;
-  static int idSum = 0;
+  static int _idSum = 0;
   final mutex = Mutex();
 
   final String playerId;
 
+  int get idSum => _idSum;
   bool get isShuffleEnabled => _shuffleEnabled;
   RepeatMode get repeatMode => _repeatMode;
 
@@ -203,7 +203,6 @@ class Player {
 
   Future<Media> restartQueue() async {
     final media = _queue.restart();
-
     return media;
   }
 
@@ -211,12 +210,12 @@ class Player {
     int oldIndex,
     int newIndex,
   ) async {
-    // _queue.reorder(oldIndex, newIndex, isShuffle);
-    final result = _queue.reorder(oldIndex, newIndex, isShuffleEnabled);
+    _queue.reorder(oldIndex, newIndex, isShuffleEnabled);
     debugPrint('#_queue.reorder: ${getPositionsList()}');
     _channel.invokeMethod('reorder', {
       'oldIndex': oldIndex,
       'newIndex': newIndex,
+      'positionsList': getPositionsList(),
     });
     return Ok;
   }
@@ -684,12 +683,7 @@ class Player {
         break;
       case 'GET_INFO':
         // if (callArgs.values.contains('QUEUE_ARGS')) {
-        idSum = callArgs['ID_SUM'];
-        final queue = callArgs['QUEUE_ARGS'];
-        final parsed = json.decode(queue) as List;
-        final queueItems = parsed.map((json) => Media.fromJson(json)).toList();
-        // _queue.clear();
-        // _queue.addAll(queueItems);
+        _idSum = callArgs['ID_SUM'];
         _notifyPlayerStateChangeEvent(
           player,
           EventType.UPDATE_QUEUE,

@@ -35,11 +35,11 @@ class PlayerChangeNotifier(private val channelManager: MethodChannelManager) {
         Log.i("Player", "notifyItemTransition")
         channelManager.notifyItemTransition("sua-musica-player")
     }
-    fun sendCurrentQueue(queue:List<Media>, idSum:Int) {
+    fun sendCurrentQueue(idSum: Long) {
         Log.i("Player", "Notifying Player Previous")
-        channelManager.sendCurrentQueue(queue,idSum,"sua-musica-player")
+        channelManager.sendCurrentQueue(idSum, "sua-musica-player")
     }
-    fun currentMediaIndex(currentMediaIndex:Int) {
+    fun currentMediaIndex(currentMediaIndex: Int) {
         Log.i("Player", "Notifying Player Previous")
         channelManager.currentMediaIndex("sua-musica-player", currentMediaIndex)
     }

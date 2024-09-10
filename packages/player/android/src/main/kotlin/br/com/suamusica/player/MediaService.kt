@@ -84,9 +84,7 @@ class MediaService : MediaSessionService() {
     private var shuffleOrder: DefaultShuffleOrder? = null
 
     private val artCache = HashMap<String, Bitmap>()
-    var shuffledIndices = mutableListOf<Int>()
-
-
+    private var shuffledIndices = mutableListOf<Int>()
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
@@ -216,8 +214,8 @@ class MediaService : MediaSessionService() {
         player?.shuffleModeEnabled?.let {
             if (it) {
                 shuffledIndices.clear()
-                for (element in positionsList) {
-                    shuffledIndices.add(element["originalPosition"] ?: 0)
+                for (e in positionsList) {
+                    shuffledIndices.add(e["originalPosition"] ?: 0)
                 }
                 shuffleOrder = DefaultShuffleOrder(
                     shuffledIndices.toIntArray(),
@@ -230,7 +228,7 @@ class MediaService : MediaSessionService() {
     }
 
     fun enqueue(cookie: String, medias: List<Media>, autoPlay: Boolean) {
-        var idSum = 0
+        var idSum = 0L
 //        if (medias.size == 1 && (player?.mediaItemCount ?: 0) > 0) {
 //            if (player?.shuffleModeEnabled == true) {
 //                shuffleOrder?.let {
@@ -274,8 +272,9 @@ class MediaService : MediaSessionService() {
                     player?.addMediaSource(mediaSource)
                 }
                 player?.prepare()
+                PlayerSingleton.playerChangeNotifier?.sendCurrentQueue(idSum)
             }
-            PlayerSingleton.playerChangeNotifier?.sendCurrentQueue(listOf(medias[0]), idSum)
+            PlayerSingleton.playerChangeNotifier?.sendCurrentQueue(idSum)
         }
     }
 
@@ -319,13 +318,23 @@ class MediaService : MediaSessionService() {
         }
     }
 
-    fun reorder(oldIndex: Int, newIndex: Int) {
-        player?.moveMediaItem(oldIndex, newIndex)
-        PlayerSingleton.playerChangeNotifier?.currentMediaIndex(
-            currentIndex()
-        )
+    fun reorder(
+        oldIndex: Int,
+        newIndex: Int,
+        positionsList: List<Map<String, Int>>
+    ) {
+        if (player?.shuffleModeEnabled == true) {
+            val list = shuffledIndices.ifEmpty {
+                positionsList.map { it["originalPosition"] ?: 0 }.toMutableList()
+            }
+            Collections.swap(list, oldIndex, newIndex)
+            shuffleOrder =
+                DefaultShuffleOrder(list.toIntArray(), System.currentTimeMillis())
+            player?.setShuffleOrder(shuffleOrder!!)
+        } else {
+            player?.moveMediaItem(oldIndex, newIndex)
+        }
     }
-
 
     fun removeIn(indexes: List<Int>) {
         if (indexes.isNotEmpty()) {
@@ -490,12 +499,13 @@ class MediaService : MediaSessionService() {
     }
 
     fun currentIndex(): Int {
-        val position = if (player?.shuffleModeEnabled == true)
+        val position = if (player?.shuffleModeEnabled == true) {
             shuffledIndices.indexOf(
                 player?.currentMediaItemIndex ?: 0
             )
-        else player?.currentMediaItemIndex ?: 0
-//        return player?.currentMediaItemIndex ?: 0
+        } else {
+            player?.currentMediaItemIndex ?: 0
+        }
         return position
     }
 

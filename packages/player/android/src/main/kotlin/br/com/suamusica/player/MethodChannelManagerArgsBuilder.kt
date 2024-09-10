@@ -32,11 +32,7 @@ class MethodChannelManagerArgsBuilder {
         return this
     }
 
-    fun queue(queue: List<Media>): MethodChannelManagerArgsBuilder {
-        args["QUEUE_ARGS"] = Gson().toJson(queue)
-        return this
-    }
-    fun idSum(idSum: Int): MethodChannelManagerArgsBuilder {
+    fun idSum(idSum: Long): MethodChannelManagerArgsBuilder {
         args["ID_SUM"] = idSum
         return this
     }

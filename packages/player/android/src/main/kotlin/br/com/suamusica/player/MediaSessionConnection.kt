@@ -15,6 +15,7 @@ import br.com.suamusica.player.PlayerPlugin.Companion.ENQUEUE_ONE
 import br.com.suamusica.player.PlayerPlugin.Companion.ID_FAVORITE_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.INDEXES_TO_REMOVE
 import br.com.suamusica.player.PlayerPlugin.Companion.IS_FAVORITE_ARGUMENT
+import br.com.suamusica.player.PlayerPlugin.Companion.PLAY_FROM_QUEUE_METHOD
 import br.com.suamusica.player.PlayerPlugin.Companion.POSITIONS_LIST
 import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_ALL
 import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_IN
@@ -68,7 +69,7 @@ class MediaSessionConnection(
     fun playFromQueue(index: Int) {
         val bundle = Bundle()
         bundle.putInt("position", index)
-        sendCommand("playFromQueue", bundle)
+        sendCommand(PLAY_FROM_QUEUE_METHOD, bundle)
     }
 
     fun play(shouldPrepare: Boolean = false) {
@@ -77,10 +78,12 @@ class MediaSessionConnection(
         sendCommand("play", bundle)
     }
 
-    fun reorder(oldIndex: Int, newIndex: Int) {
+    fun reorder(oldIndex: Int, newIndex: Int, positionsList: List<Map<String, Int>>) {
         val bundle = Bundle()
         bundle.putInt("oldIndex", oldIndex)
         bundle.putInt("newIndex", newIndex)
+        val json = Gson().toJson(positionsList)
+        bundle.putString(POSITIONS_LIST, json)
         sendCommand(REORDER, bundle)
     }
 
