@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:smaws/aws.dart';
 import 'package:flutter/services.dart';
@@ -131,22 +132,29 @@ class Player {
   }) async {
     _cookies = await cookieSigner();
     String cookie = _cookies!.toHeaders();
-    _channel
-        .invokeMethod(
-          items.length > 1 ? 'enqueue' : 'enqueue_one',
-          items.toListJson
-            ..insert(
-              0,
-              {
-                'playerId': playerId,
-                'cookie': cookie,
-                'shallSendEvents': _shallSendEvents,
-                'externalplayback': externalPlayback,
-                'autoPlay': autoPlay,
-              },
-            ),
-        )
-        .then((result) => result ?? Future.value(Ok));
+    final int batchSize = 50;
+
+    final List<Map<String, dynamic>> batchArgs = items
+        .map((media) => {
+              ...media.toJson(),
+              'playerId': playerId,
+              'cookie': cookie,
+              'shallSendEvents': _shallSendEvents,
+              'externalplayback': externalPlayback,
+              'autoPlay': autoPlay,
+            })
+        .toList();
+
+    for (int i = 0; i < batchArgs.length; i += batchSize) {
+      final batch = batchArgs.sublist(i, min(i + batchSize, batchArgs.length));
+      await _channel
+          .invokeMethod(
+            batch.length > 1 ? 'enqueue' : 'enqueue_one',
+            batch,
+          )
+          .then((result) => result ?? Future.value(Ok));
+    }
+    ;
 
     await IsarService.instance.removeAllMusics();
     _queue.addAll(items);
@@ -682,14 +690,12 @@ class Player {
         );
         break;
       case 'GET_INFO':
-        // if (callArgs.values.contains('QUEUE_ARGS')) {
         _idSum = callArgs['ID_SUM'];
         _notifyPlayerStateChangeEvent(
           player,
           EventType.UPDATE_QUEUE,
           "",
         );
-
         break;
       default:
         _log('Unknown method ${call.method} ');
