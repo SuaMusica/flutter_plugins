@@ -151,12 +151,12 @@ class Player {
           {
             'batch': batch,
             'isLastBatch': isLastBatch,
+            'autoPlay': autoPlay,
+            'playerId': playerId,
+            'shallSendEvents': _shallSendEvents,
+            'externalplayback': externalPlayback,
             if (i == 0) ...{
-              'playerId': playerId,
               'cookie': cookie,
-              'shallSendEvents': _shallSendEvents,
-              'externalplayback': externalPlayback,
-              'autoPlay': autoPlay,
             },
           },
         ),
