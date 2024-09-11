@@ -44,6 +44,7 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.MediaNotification
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import br.com.suamusica.player.PlayerPlugin.Companion.IS_FAVORITE_ARGUMENT
 import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.ListenableFuture
@@ -85,7 +86,7 @@ class MediaService : MediaSessionService() {
 
     private val artCache = HashMap<String, Bitmap>()
     private var shuffledIndices = mutableListOf<Int>()
-
+    val allMedias: MutableList<Media> = mutableListOf()
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         return Service.START_STICKY
@@ -227,12 +228,22 @@ class MediaService : MediaSessionService() {
         }
     }
 
-    fun enqueue(cookie: String, medias: List<Media>, autoPlay: Boolean) {
-        var idSum = 0L
+    fun enqueue(cookie: String, medias: List<Media>, autoPlay: Boolean, isLastBatch: Boolean) {
+        allMedias.addAll(medias)
+        Log.i(TAG, "##enqueueAll: enqueue: ${allMedias.size}| $isLastBatch | autoPlay: $autoPlay")
+        if (isLastBatch) {
+            createMediaSource(cookie, allMedias, autoPlay)
+            allMedias.clear()
+        }
+    }
 
+    private fun createMediaSource(cookie: String, medias: List<Media>, autoPlay: Boolean) {
+        var idSum = 0L
+        val mediaSources: MutableList<MediaSource> = mutableListOf()
         if (medias.isNotEmpty()) {
             // Prepare the first media source outside the coroutine
             if (player?.mediaItemCount == 0) {
+
                 val firstMediaSource = prepare(cookie, medias[0])
                 idSum += medias[0].id
                 player?.setMediaSource(firstMediaSource)
@@ -243,32 +254,35 @@ class MediaService : MediaSessionService() {
                 }
             }
             // Use coroutine to prepare and add the remaining media sources
-            val workList:List<Media> = if(player?.mediaItemCount == 0) medias.drop(1) else medias.toList()
-
-            CoroutineScope(Dispatchers.Main).launch {
-                for (i in  workList.indices) {
-                    val mediaSource = withContext(Dispatchers.IO) {
+            val workList: List<Media> =
+                if (player?.mediaItemCount == 0) medias.drop(1) else medias.toList()
+            val job = CoroutineScope(Dispatchers.Main).launch {
+                for (i in workList.indices) {
+                    mediaSources.add(withContext(Dispatchers.IO) {
                         Log.i(TAG, "CoroutineScope: enqueue: ${workList[i].name}")
                         prepare(cookie, workList[i])
-                    }
+                    })
                     idSum += workList[i].id
-                    player?.addMediaSource(mediaSource)
+//                    PlayerSingleton.playerChangeNotifier?.notifyItemTransition()
                 }
-                player?.prepare()
-                PlayerSingleton.playerChangeNotifier?.sendCurrentQueue(idSum)
+                player?.addMediaSources(mediaSources)
             }
-            PlayerSingleton.playerChangeNotifier?.sendCurrentQueue(idSum)
+            job.invokeOnCompletion {
+                player?.prepare()
+                PlayerSingleton.playerChangeNotifier?.notifyItemTransition()
+                Log.i(TAG, "CoroutineScope: enqueue job completation")
+            }
         }
     }
 
-    private fun prepare(cookie: String, media: Media): MediaSource {
+    private fun prepare(cookie: String, media: Media, coverBytes: ByteArray? = null): MediaSource {
         val dataSourceFactory = DefaultHttpDataSource.Factory()
         dataSourceFactory.setReadTimeoutMs(15 * 1000)
         dataSourceFactory.setConnectTimeoutMs(10 * 1000)
         dataSourceFactory.setUserAgent(userAgent)
         dataSourceFactory.setAllowCrossProtocolRedirects(true)
         dataSourceFactory.setDefaultRequestProperties(mapOf("Cookie" to cookie))
-        val metadata = buildMetaData(media)
+        val metadata = buildMetaData(media, coverBytes)
         val url = media.url
         val uri = if (url.startsWith("/")) Uri.fromFile(File(url)) else Uri.parse(url)
         val mediaItem = MediaItem.Builder().setUri(uri).setMediaMetadata(metadata)
@@ -351,26 +365,18 @@ class MediaService : MediaSessionService() {
         }
     }
 
-    private fun buildMetaData(media: Media): MediaMetadata {
+    private fun buildMetaData(media: Media, coverBytes: ByteArray?): MediaMetadata {
         val metadataBuilder = MediaMetadata.Builder()
-        val stream = ByteArrayOutputStream()
 
-        val art = artCache[media.bigCoverUrl] ?: try {
-            dataSourceBitmapLoader.loadBitmap(Uri.parse(media.bigCoverUrl))
-                .get(5000, TimeUnit.MILLISECONDS).also {
-                    artCache[media.bigCoverUrl] = it
-                }
-        } catch (e: Exception) {
-            BitmapFactory.decodeResource(resources, R.drawable.default_art)
-        }
-
-        art?.compress(Bitmap.CompressFormat.PNG, 95, stream)
         val bundle = Bundle()
-        bundle.putBoolean(PlayerPlugin.IS_FAVORITE_ARGUMENT, media.isFavorite ?: false)
+        bundle.putBoolean(IS_FAVORITE_ARGUMENT, media.isFavorite ?: false)
         metadataBuilder.apply {
             setAlbumTitle(media.name)
             setArtist(media.author)
-            setArtworkData(stream.toByteArray(), PICTURE_TYPE_FRONT_COVER)
+//            if (coverBytes != null) {
+//                setArtworkData(coverBytes, PICTURE_TYPE_FRONT_COVER)
+//            }
+            setArtworkUri(Uri.parse(media.bigCoverUrl))
             setArtist(media.author)
             setTitle(media.name)
             setDisplayTitle(media.name)
@@ -378,6 +384,23 @@ class MediaService : MediaSessionService() {
         }
         val metadata = metadataBuilder.build()
         return metadata
+    }
+
+    private fun transformCoverInBytes(coverUrl: Uri): ByteArray {
+        val stream = ByteArrayOutputStream()
+
+        val art = artCache[coverUrl.toString()] ?: try {
+            dataSourceBitmapLoader.loadBitmap(coverUrl)
+                .get(5000, TimeUnit.MILLISECONDS).also {
+                    artCache[coverUrl.toString()] = it
+                }
+        } catch (e: Exception) {
+            BitmapFactory.decodeResource(resources, R.drawable.default_art)
+        }
+
+        art?.compress(Bitmap.CompressFormat.PNG, 95, stream)
+
+        return stream.toByteArray()
     }
 
     fun play(shouldPrepare: Boolean = false) {
@@ -525,7 +548,7 @@ class MediaService : MediaSessionService() {
                     currentIndex()
                 )
                 mediaButtonEventHandler.buildIcons()
-                if(reason != Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED){
+                if (reason != Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED) {
                     PlayerSingleton.playerChangeNotifier?.notifyItemTransition()
                 }
             }

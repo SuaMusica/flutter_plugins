@@ -129,13 +129,20 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
             LOAD_METHOD -> {}
             ENQUEUE_ONE,
             ENQUEUE -> {
-                val listMedia: List<Map<String, Any>> = call.arguments()!!
-                val arg = listMedia[0]
-                val json = Gson().toJson(listMedia.drop(1))
+//                val listMedia: List<Map<String, Any>> = call.arguments()!!
+//                val arg = listMedia[0]
+                val batch: Map<String,Any> = call.arguments()!!
+                val listMedia: List<Map<String, String>> = batch["batch"] as List<Map<String, String>>
+                val isLastBatch: Boolean = batch["isLastBatch"] as Boolean
+
+
+                PlayerSingleton.externalPlayback = listMedia[0]["externalplayback"]!! == "true"
+                val json = Gson().toJson(listMedia)
                 PlayerSingleton.mediaSessionConnection?.enqueue(
-                    arg["cookie"] as String,
+                   cookie,
                     json,
-                    arg["autoPlay"] as Boolean
+                    listMedia[0]["autoPlay"].toString() == "true",
+                    isLastBatch,
                 )
             }
 

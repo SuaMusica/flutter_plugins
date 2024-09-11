@@ -206,6 +206,7 @@ class MediaButtonEventHandler(
         }
         if (customCommand.customAction == ENQUEUE || customCommand.customAction == ENQUEUE_ONE) {
             val json = args.getString("json")
+            val isLastBatch = args.getBoolean("isLastBatch")
             // Log the received JSON
             Log.d("Player", "First media Received JSON for enqueue: $json")
             val gson = GsonBuilder().create()
@@ -220,6 +221,7 @@ class MediaButtonEventHandler(
                 args.getString("cookie")!!,
                 mediaList,
                 args.getBoolean("autoPlay"),
+                isLastBatch,
             )
         }
         return Futures.immediateFuture(

@@ -132,7 +132,7 @@ class Player {
   }) async {
     _cookies = await cookieSigner();
     String cookie = _cookies!.toHeaders();
-    final int batchSize = 50;
+    final int batchSize = 80;
 
     final List<Map<String, dynamic>> batchArgs = items
         .map((media) => {
@@ -144,17 +144,23 @@ class Player {
               'autoPlay': autoPlay,
             })
         .toList();
-
+    int j = 0;
     for (int i = 0; i < batchArgs.length; i += batchSize) {
       final batch = batchArgs.sublist(i, min(i + batchSize, batchArgs.length));
-      await _channel
-          .invokeMethod(
-            batch.length > 1 ? 'enqueue' : 'enqueue_one',
-            batch,
-          )
-          .then((result) => result ?? Future.value(Ok));
+      final bool isLastBatch = (items.length / batchSize).ceil() == ++j;
+      debugPrint(
+          '##enqueueAll $isLastBatch | ${(items.length / batchSize).ceil()} | $j');
+      unawaited(
+        _channel.invokeMethod(
+          items.length > 1 ? 'enqueue' : 'enqueue_one',
+          {
+            'batch': batch,
+            'isLastBatch': isLastBatch,
+          },
+        ),
+      );
+      // .then((result) => result ?? Future.value(Ok));
     }
-    ;
 
     await IsarService.instance.removeAllMusics();
     _queue.addAll(items);
