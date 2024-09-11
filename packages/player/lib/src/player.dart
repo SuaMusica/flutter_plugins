@@ -137,11 +137,6 @@ class Player {
     final List<Map<String, dynamic>> batchArgs = items
         .map((media) => {
               ...media.toJson(),
-              'playerId': playerId,
-              'cookie': cookie,
-              'shallSendEvents': _shallSendEvents,
-              'externalplayback': externalPlayback,
-              'autoPlay': autoPlay,
             })
         .toList();
     int j = 0;
@@ -156,10 +151,16 @@ class Player {
           {
             'batch': batch,
             'isLastBatch': isLastBatch,
+            if (i == 0) ...{
+              'playerId': playerId,
+              'cookie': cookie,
+              'shallSendEvents': _shallSendEvents,
+              'externalplayback': externalPlayback,
+              'autoPlay': autoPlay,
+            },
           },
         ),
       );
-      // .then((result) => result ?? Future.value(Ok));
     }
 
     await IsarService.instance.removeAllMusics();

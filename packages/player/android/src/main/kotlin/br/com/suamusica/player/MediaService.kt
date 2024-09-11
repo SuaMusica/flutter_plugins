@@ -45,11 +45,15 @@ import androidx.media3.session.MediaNotification
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import br.com.suamusica.player.PlayerPlugin.Companion.IS_FAVORITE_ARGUMENT
+import br.com.suamusica.player.PlayerPlugin.Companion.cookie
 import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
@@ -86,7 +90,7 @@ class MediaService : MediaSessionService() {
 
     private val artCache = HashMap<String, Bitmap>()
     private var shuffledIndices = mutableListOf<Int>()
-    val allMedias: MutableList<Media> = mutableListOf()
+    private var autoPlay: Boolean = true
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         return Service.START_STICKY
@@ -228,50 +232,57 @@ class MediaService : MediaSessionService() {
         }
     }
 
-    fun enqueue(cookie: String, medias: List<Media>, autoPlay: Boolean, isLastBatch: Boolean) {
-        allMedias.addAll(medias)
-        Log.i(TAG, "##enqueueAll: enqueue: ${allMedias.size}| $isLastBatch | autoPlay: $autoPlay")
-        if (isLastBatch) {
-            createMediaSource(cookie, allMedias, autoPlay)
-            allMedias.clear()
+    private val channel = Channel<List<Media>>(Channel.BUFFERED)
+    private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
+    // Function to add items to the channel
+    private fun addToQueue(item: List<Media>) {
+        serviceScope.launch {
+            channel.send(item)
         }
+    }
+
+    // Function to process items (replace with your actual processing logic)
+    private fun processItem(item: List<Media>) {
+        createMediaSource(cookie, item, autoPlay)
+    }
+
+    private val consumer = serviceScope.launch {
+        channel.receiveAsFlow().collect { item ->
+            Log.i(TAG, "[TESTE QUEUE] processItem: ${item.size}")
+            processItem(item)
+        }
+    }
+
+    fun enqueue(
+        cookie: String,
+        medias: List<Media>,
+        autoPlay: Boolean,
+        isLastBatch: Boolean
+    ) {
+//        this.cookie = cookie
+        this.autoPlay = autoPlay
+        Log.i(TAG, "[TESTE QUEUE] enqueue: ${medias.size}")
+        addToQueue(medias)
     }
 
     private fun createMediaSource(cookie: String, medias: List<Media>, autoPlay: Boolean) {
         var idSum = 0L
         val mediaSources: MutableList<MediaSource> = mutableListOf()
         if (medias.isNotEmpty()) {
-            // Prepare the first media source outside the coroutine
-            if (player?.mediaItemCount == 0) {
-
-                val firstMediaSource = prepare(cookie, medias[0])
-                idSum += medias[0].id
-                player?.setMediaSource(firstMediaSource)
-                player?.prepare()
-                if (autoPlay) {
-                    player?.playWhenReady = true
-                    PlayerSingleton.playerChangeNotifier?.notifyItemTransition()
-                }
-            }
-            // Use coroutine to prepare and add the remaining media sources
-            val workList: List<Media> =
-                if (player?.mediaItemCount == 0) medias.drop(1) else medias.toList()
-            val job = CoroutineScope(Dispatchers.Main).launch {
-                for (i in workList.indices) {
-                    mediaSources.add(withContext(Dispatchers.IO) {
-                        Log.i(TAG, "CoroutineScope: enqueue: ${workList[i].name}")
-                        prepare(cookie, workList[i])
-                    })
-                    idSum += workList[i].id
-//                    PlayerSingleton.playerChangeNotifier?.notifyItemTransition()
+//            val job = CoroutineScope(Dispatchers.Main).launch {
+                for (i in medias.indices) {
+                    Log.i(TAG, "[TESTE QUEUE]CoroutineScope: enqueue: ${medias[i].name}")
+                    mediaSources.add(prepare(cookie, medias[i]))
+                    idSum += medias[i].id
                 }
                 player?.addMediaSources(mediaSources)
-            }
-            job.invokeOnCompletion {
+//            }
+//            job.invokeOnCompletion {
                 player?.prepare()
                 PlayerSingleton.playerChangeNotifier?.notifyItemTransition()
                 Log.i(TAG, "CoroutineScope: enqueue job completation")
-            }
+//            }
         }
     }
 

@@ -63,6 +63,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
         const val TAG = "Player"
         const val Ok = 1
         private var alreadyAttachedToActivity: Boolean = false
+        var cookie = ""
     }
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
@@ -112,13 +113,13 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
     }
 
     private fun handleMethodCall(call: MethodCall, response: MethodChannel.Result) {
-        val cookie: String?
         if (call.method == ENQUEUE || call.method == ENQUEUE_ONE) {
-            val listMedia: List<Map<String, String>> = call.arguments()!!
-            cookie = listMedia[0]["cookie"]!!
-            PlayerSingleton.externalPlayback = listMedia[0]["externalplayback"]!! == "true"
+            val batch: Map<String, Any> = call.arguments()!!
+            cookie = if (batch.containsKey("cookie")) batch["cookie"] as String else cookie
+            PlayerSingleton.externalPlayback =
+                if (batch.containsKey("externalplayback")) batch["externalplayback"].toString() == "true" else PlayerSingleton.externalPlayback
         } else {
-            cookie = call.argument<String>("cookie")
+            cookie = call.argument<String>("cookie") ?: ""
             PlayerSingleton.externalPlayback = call.argument<Boolean>("externalplayback")
         }
         Log.d(
@@ -131,17 +132,16 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
             ENQUEUE -> {
 //                val listMedia: List<Map<String, Any>> = call.arguments()!!
 //                val arg = listMedia[0]
-                val batch: Map<String,Any> = call.arguments()!!
-                val listMedia: List<Map<String, String>> = batch["batch"] as List<Map<String, String>>
+                val batch: Map<String, Any> = call.arguments()!!
+                val listMedia: List<Map<String, String>> =
+                    batch["batch"] as List<Map<String, String>>
                 val isLastBatch: Boolean = batch["isLastBatch"] as Boolean
-
-
-                PlayerSingleton.externalPlayback = listMedia[0]["externalplayback"]!! == "true"
+                val autoPlay: Boolean = (batch["autoPlay"] ?: false) as Boolean
                 val json = Gson().toJson(listMedia)
                 PlayerSingleton.mediaSessionConnection?.enqueue(
-                   cookie,
+                    cookie,
                     json,
-                    listMedia[0]["autoPlay"].toString() == "true",
+                    autoPlay,
                     isLastBatch,
                 )
             }
@@ -154,8 +154,9 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
             REORDER -> {
                 val from = call.argument<Int>("oldIndex")!!
                 val to = call.argument<Int>("newIndex")!!
-                val positionsList = call.argument<List<Map<String, Int>>>(POSITIONS_LIST) ?: emptyList()
-                PlayerSingleton.mediaSessionConnection?.reorder(from, to,positionsList)
+                val positionsList =
+                    call.argument<List<Map<String, Int>>>(POSITIONS_LIST) ?: emptyList()
+                PlayerSingleton.mediaSessionConnection?.reorder(from, to, positionsList)
             }
 
             REMOVE_ALL -> {
@@ -172,7 +173,8 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
             }
 
             TOGGLE_SHUFFLE -> {
-                val positionsList = call.argument<List<Map<String, Int>>>(POSITIONS_LIST) ?: emptyList()
+                val positionsList =
+                    call.argument<List<Map<String, Int>>>(POSITIONS_LIST) ?: emptyList()
                 PlayerSingleton.mediaSessionConnection?.toggleShuffle(positionsList)
             }
 
@@ -191,7 +193,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
             UPDATE_FAVORITE -> {
                 val isFavorite = call.argument<Boolean?>(IS_FAVORITE_ARGUMENT) ?: false
                 val idFavorite = call.argument<Int?>(ID_FAVORITE_ARGUMENT) ?: 0
-                PlayerSingleton.mediaSessionConnection?.updateFavorite(isFavorite,idFavorite)
+                PlayerSingleton.mediaSessionConnection?.updateFavorite(isFavorite, idFavorite)
             }
 
             PLAY_FROM_QUEUE_METHOD -> {
