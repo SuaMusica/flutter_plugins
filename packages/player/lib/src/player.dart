@@ -137,30 +137,26 @@ class Player {
     _cookies = await cookieSigner();
     String cookie = _cookies!.toHeaders();
     final int batchSize = 80;
-
-    final List<Map<String, dynamic>> batchArgs = items
-        .map(
-          (media) => {
-            ...media
-                .copyWith(
-                  url: localMediaValidator?.call(media) ?? media.url,
-                )
-                .toJson(),
-          },
-        )
-        .toList();
-    int j = 0;
+    _idSum = 0;
+    final List<Map<String, dynamic>> batchArgs = items.map(
+      (media) {
+        _idSum += media.id;
+        return {
+          ...media
+              .copyWith(
+                url: localMediaValidator?.call(media) ?? media.url,
+              )
+              .toJson(),
+        };
+      },
+    ).toList();
     for (int i = 0; i < batchArgs.length; i += batchSize) {
       final batch = batchArgs.sublist(i, min(i + batchSize, batchArgs.length));
-      final bool isLastBatch = (items.length / batchSize).ceil() == ++j;
-      debugPrint(
-          '##enqueueAll $isLastBatch | ${(items.length / batchSize).ceil()} | $j');
       unawaited(
         _channel.invokeMethod(
           'enqueue',
           {
             'batch': batch,
-            'isLastBatch': isLastBatch,
             'autoPlay': autoPlay,
             'playerId': playerId,
             'shallSendEvents': _shallSendEvents,
@@ -703,14 +699,6 @@ class Player {
         _notifyPlayerStateChangeEvent(
           player,
           EventType.SHUFFLE_CHANGED,
-          "",
-        );
-        break;
-      case 'GET_INFO':
-        _idSum = callArgs['ID_SUM'];
-        _notifyPlayerStateChangeEvent(
-          player,
-          EventType.UPDATE_QUEUE,
           "",
         );
         break;

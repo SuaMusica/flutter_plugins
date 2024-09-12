@@ -58,12 +58,10 @@ class MediaSessionConnection(
         }
     }
 
-    fun enqueue(cookie: String, medias: String, autoPlay: Boolean, isLastBatch: Boolean) {
+    fun enqueue( medias: String, autoPlay: Boolean) {
         val bundle = Bundle()
-        bundle.putString("cookie", cookie)
         bundle.putString("json", medias)
         bundle.putBoolean("autoPlay", autoPlay)
-        bundle.putBoolean("isLastBatch", isLastBatch)
         sendCommand(ENQUEUE, bundle)
     }
 

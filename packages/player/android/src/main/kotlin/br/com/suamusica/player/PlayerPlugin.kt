@@ -130,19 +130,14 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
             LOAD_METHOD -> {}
             ENQUEUE_ONE,
             ENQUEUE -> {
-//                val listMedia: List<Map<String, Any>> = call.arguments()!!
-//                val arg = listMedia[0]
                 val batch: Map<String, Any> = call.arguments()!!
                 val listMedia: List<Map<String, String>> =
                     batch["batch"] as List<Map<String, String>>
-                val isLastBatch: Boolean = batch["isLastBatch"] as Boolean
                 val autoPlay: Boolean = (batch["autoPlay"] ?: false) as Boolean
                 val json = Gson().toJson(listMedia)
                 PlayerSingleton.mediaSessionConnection?.enqueue(
-                    cookie,
                     json,
                     autoPlay,
-                    isLastBatch,
                 )
             }
 
@@ -197,27 +192,6 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
             }
 
             PLAY_FROM_QUEUE_METHOD -> {
-//                val name = call.argument<String>(NAME_ARGUMENT)!!
-//                val author = call.argument<String>(AUTHOR_ARGUMENT)!!
-//                val url = call.argument<String>(URL_ARGUMENT)!!
-//                val coverUrl = call.argument<String>(COVER_URL_ARGUMENT)!!
-//                val bigCoverUrl = call.argument<String>(BIG_COVER_URL_ARGUMENT)
-//                val position = call.argument<Int>(POSITION_ARGUMENT)
-//                val loadOnly = call.argument<Boolean>(LOAD_ONLY)!!
-//                val isFavorite: Boolean? = call.argument<Boolean>(IS_FAVORITE_ARGUMENT)
-//
-//                PlayerSingleton.mediaSessionConnection?.prepare(
-//                    cookie!!,
-//                    Media(name, author, url, coverUrl, bigCoverUrl, isFavorite)
-//                )
-//                Log.d(TAG, "before prepare: cookie: $cookie")
-//                position?.let {
-//                    PlayerSingleton.mediaSessionConnection?.seek(it.toLong(), true)
-//                }
-//
-//                if (!loadOnly) {
-//                    PlayerSingleton.mediaSessionConnection?.play()
-//                }
                 val position = call.argument<Int>(POSITION_ARGUMENT) ?: 0
                 PlayerSingleton.mediaSessionConnection?.playFromQueue(
                     position

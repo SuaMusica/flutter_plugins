@@ -197,7 +197,7 @@ class MediaButtonEventHandler(
                     }
                 }
             }
-            PlayerSingleton.favorite(true)
+            PlayerSingleton.favorite(isFavorite)
 //            }
         }
         if (customCommand.customAction == "ads_playing" || customCommand.customAction == "remove_notification") {
@@ -206,22 +206,13 @@ class MediaButtonEventHandler(
         }
         if (customCommand.customAction == ENQUEUE || customCommand.customAction == ENQUEUE_ONE) {
             val json = args.getString("json")
-            val isLastBatch = args.getBoolean("isLastBatch")
-            // Log the received JSON
-            Log.d("Player", "First media Received JSON for enqueue: $json")
             val gson = GsonBuilder().create()
             val mediaListType = object : TypeToken<List<Media>>() {}.type
             val mediaList: List<Media> = gson.fromJson(json, mediaListType)
-            // Log the first item for debugging
-            if (mediaList.isNotEmpty()) {
-                Log.d("Player", "First media item: ${gson.toJson(mediaList.first())}")
-            }
             buildIcons()
             mediaService.enqueue(
-                args.getString("cookie")!!,
                 mediaList,
                 args.getBoolean("autoPlay"),
-                isLastBatch,
             )
         }
         return Futures.immediateFuture(

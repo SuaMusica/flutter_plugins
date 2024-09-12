@@ -52,6 +52,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
@@ -193,6 +194,8 @@ class MediaService : MediaSessionService() {
             release()
             mediaSession.release()
         }
+        consumer.cancel()
+        channel.cancel()
         releasePossibleLeaks()
         stopSelf()
         super.onDestroy()
@@ -249,40 +252,31 @@ class MediaService : MediaSessionService() {
 
     private val consumer = serviceScope.launch {
         channel.receiveAsFlow().collect { item ->
-            Log.i(TAG, "[TESTE QUEUE] processItem: ${item.size}")
             processItem(item)
         }
     }
 
     fun enqueue(
-        cookie: String,
         medias: List<Media>,
         autoPlay: Boolean,
-        isLastBatch: Boolean
     ) {
-//        this.cookie = cookie
         this.autoPlay = autoPlay
         Log.i(TAG, "[TESTE QUEUE] enqueue: ${medias.size}")
         addToQueue(medias)
     }
 
     private fun createMediaSource(cookie: String, medias: List<Media>, autoPlay: Boolean) {
-        var idSum = 0L
         val mediaSources: MutableList<MediaSource> = mutableListOf()
         if (medias.isNotEmpty()) {
-//            val job = CoroutineScope(Dispatchers.Main).launch {
-                for (i in medias.indices) {
-                    Log.i(TAG, "[TESTE QUEUE]CoroutineScope: enqueue: ${medias[i].name}")
-                    mediaSources.add(prepare(cookie, medias[i]))
-                    idSum += medias[i].id
-                }
-                player?.addMediaSources(mediaSources)
-//            }
-//            job.invokeOnCompletion {
-                player?.prepare()
-                PlayerSingleton.playerChangeNotifier?.notifyItemTransition()
-                Log.i(TAG, "CoroutineScope: enqueue job completation")
-//            }
+            for (i in medias.indices) {
+                Log.i(TAG, "[TESTE QUEUE]CoroutineScope: enqueue: ${medias[i].name}")
+                mediaSources.add(prepare(cookie, medias[i]))
+            }
+            player?.addMediaSources(mediaSources)
+
+            player?.prepare()
+
+            Log.i(TAG, "CoroutineScope: enqueue job completation")
         }
     }
 
