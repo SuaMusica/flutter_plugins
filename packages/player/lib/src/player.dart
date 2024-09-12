@@ -62,7 +62,7 @@ class Player {
       StreamController<Event>();
 
   final Future<CookiesForCustomPolicy?> Function() cookieSigner;
-  final Future<String?> Function(Media)? localMediaValidator;
+  final String? Function(Media)? localMediaValidator;
   final bool autoPlay;
   final chromeCastEnabledEvents = [
     EventType.BEFORE_PLAY,
@@ -129,15 +129,25 @@ class Player {
     bool shouldRemoveFirst = false,
     bool saveOnTop = false,
     bool autoPlay = false,
+    // Future<String?> Function(
+    //   int albumId,
+    //   String url,
+    // )? getLocalCover,
   }) async {
     _cookies = await cookieSigner();
     String cookie = _cookies!.toHeaders();
     final int batchSize = 80;
 
     final List<Map<String, dynamic>> batchArgs = items
-        .map((media) => {
-              ...media.toJson(),
-            })
+        .map(
+          (media) => {
+            ...media
+                .copyWith(
+                  url: localMediaValidator?.call(media) ?? media.url,
+                )
+                .toJson(),
+          },
+        )
         .toList();
     int j = 0;
     for (int i = 0; i < batchArgs.length; i += batchSize) {
@@ -147,7 +157,7 @@ class Player {
           '##enqueueAll $isLastBatch | ${(items.length / batchSize).ceil()} | $j');
       unawaited(
         _channel.invokeMethod(
-          items.length > 1 ? 'enqueue' : 'enqueue_one',
+          'enqueue',
           {
             'batch': batch,
             'isLastBatch': isLastBatch,
