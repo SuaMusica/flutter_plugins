@@ -15,12 +15,15 @@ import br.com.suamusica.player.PlayerPlugin.Companion.ENQUEUE_ONE
 import br.com.suamusica.player.PlayerPlugin.Companion.ID_FAVORITE_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.INDEXES_TO_REMOVE
 import br.com.suamusica.player.PlayerPlugin.Companion.IS_FAVORITE_ARGUMENT
+import br.com.suamusica.player.PlayerPlugin.Companion.LOAD_ONLY
 import br.com.suamusica.player.PlayerPlugin.Companion.PLAY_FROM_QUEUE_METHOD
 import br.com.suamusica.player.PlayerPlugin.Companion.POSITIONS_LIST
+import br.com.suamusica.player.PlayerPlugin.Companion.POSITION_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_ALL
 import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_IN
 import br.com.suamusica.player.PlayerPlugin.Companion.REORDER
 import br.com.suamusica.player.PlayerPlugin.Companion.REPEAT_MODE
+import br.com.suamusica.player.PlayerPlugin.Companion.TIME_POSITION_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.TOGGLE_SHUFFLE
 import br.com.suamusica.player.PlayerPlugin.Companion.UPDATE_FAVORITE
 import com.google.gson.Gson
@@ -65,9 +68,11 @@ class MediaSessionConnection(
         sendCommand(ENQUEUE, bundle)
     }
 
-    fun playFromQueue(index: Int) {
+    fun playFromQueue(index: Int, timePosition:Long, loadOnly:Boolean) {
         val bundle = Bundle()
-        bundle.putInt("position", index)
+        bundle.putInt(POSITION_ARGUMENT, index)
+        bundle.putLong(TIME_POSITION_ARGUMENT, timePosition)
+        bundle.putBoolean(LOAD_ONLY, loadOnly)
         sendCommand(PLAY_FROM_QUEUE_METHOD, bundle)
     }
 
@@ -226,7 +231,7 @@ class MediaSessionConnection(
                         if (lastState != state.state) {
                             Log.i(TAG, "onPlaybackStateChanged2: $state")
                             lastState = state.state
-//                            playerChangeNotifier.notifyStateChange(state.state)
+                            playerChangeNotifier.notifyStateChange(state.state)
                         }
                     }
 

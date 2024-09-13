@@ -52,6 +52,7 @@ class Player {
   final String playerId;
 
   int get idSum => _idSum;
+  set idSum(int value) => _idSum = value;
   bool get isShuffleEnabled => _shuffleEnabled;
   RepeatMode get repeatMode => _repeatMode;
 
@@ -109,25 +110,12 @@ class Player {
         .then((result) => result ?? Future.value(Ok));
   }
 
-  Future<int> enqueue({
-    required Media media,
-    bool autoPlay = false,
-  }) async {
-    enqueueAll(
-      [media],
-      autoPlay: autoPlay,
-    );
-    return Ok;
-  }
-
   set setQueuePosition(int position) {
     _queue.setIndex = position;
   }
 
   Future<int> enqueueAll(
     List<Media> items, {
-    bool shouldRemoveFirst = false,
-    bool saveOnTop = false,
     bool autoPlay = false,
     // Future<String?> Function(
     //   int albumId,
@@ -262,18 +250,17 @@ class Player {
 
   Future<int> playFromQueue(
     int pos, {
-    double volume = 1.0,
     Duration? position,
-    bool respectSilence = false,
-    bool stayAwake = false,
-    bool shallNotify = false,
     bool loadOnly = false,
   }) async {
     if (!loadOnly) {
       _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
     }
-    return _channel.invokeMethod(
-        'playFromQueue', {'position': pos}).then((result) => result);
+    return _channel.invokeMethod('playFromQueue', {
+      'position': pos,
+      'timePosition': position?.inMilliseconds,
+      'loadOnly': loadOnly,
+    }).then((result) => result);
   }
 
   Future<int> _doPlay({
@@ -577,6 +564,14 @@ class Player {
             // _handleOnComplete(player);
             break;
 
+          case PlayerState.STATE_ENDED:
+            _notifyPlayerStateChangeEvent(
+              player,
+              EventType.STATE_ENDED,
+              error,
+            );
+            break;
+
           case PlayerState.ERROR:
             final error = callArgs['error'] ?? "Unknown from Source";
             final isPermissionError =
@@ -680,6 +675,8 @@ class Player {
         break;
       case 'SET_CURRENT_MEDIA_INDEX':
         _queue.setIndex = callArgs['CURRENT_MEDIA_INDEX'];
+        _queue.updateIsarIndex(
+            currentMedia!.id, callArgs['CURRENT_MEDIA_INDEX']);
         _notifyPlayerStateChangeEvent(
           player,
           EventType.SET_CURRENT_MEDIA_INDEX,

@@ -24,6 +24,10 @@ import androidx.media3.common.Player.MediaItemTransitionReason
 import androidx.media3.common.Player.REPEAT_MODE_ALL
 import androidx.media3.common.Player.REPEAT_MODE_OFF
 import androidx.media3.common.Player.REPEAT_MODE_ONE
+import androidx.media3.common.Player.STATE_BUFFERING
+import androidx.media3.common.Player.STATE_ENDED
+import androidx.media3.common.Player.STATE_IDLE
+import androidx.media3.common.Player.STATE_READY
 import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.util.Util
@@ -92,25 +96,10 @@ class MediaService : MediaSessionService() {
     private val artCache = HashMap<String, Bitmap>()
     private var shuffledIndices = mutableListOf<Int>()
     private var autoPlay: Boolean = true
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        super.onStartCommand(intent, flags, startId)
-        return Service.START_STICKY
-    }
 
-    private fun getPendingIntent(): PendingIntent {
-        val notifyIntent = Intent("SUA_MUSICA_FLUTTER_NOTIFICATION_CLICK").apply {
-            addCategory(Intent.CATEGORY_DEFAULT)
-            flags =
-                Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-        }
+    private val channel = Channel<List<Media>>(Channel.BUFFERED)
+    private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
-        return PendingIntent.getActivity(
-            applicationContext,
-            0,
-            notifyIntent,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT else PendingIntent.FLAG_UPDATE_CURRENT
-        )
-    }
 
     override fun onCreate() {
         super.onCreate()
@@ -170,6 +159,26 @@ class MediaService : MediaSessionService() {
                 }
             })
         }
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
+        return Service.START_STICKY
+    }
+
+    private fun getPendingIntent(): PendingIntent {
+        val notifyIntent = Intent("SUA_MUSICA_FLUTTER_NOTIFICATION_CLICK").apply {
+            addCategory(Intent.CATEGORY_DEFAULT)
+            flags =
+                Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+
+        return PendingIntent.getActivity(
+            applicationContext,
+            0,
+            notifyIntent,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT else PendingIntent.FLAG_UPDATE_CURRENT
+        )
     }
 
     override fun onGetSession(
@@ -235,17 +244,12 @@ class MediaService : MediaSessionService() {
         }
     }
 
-    private val channel = Channel<List<Media>>(Channel.BUFFERED)
-    private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-
-    // Function to add items to the channel
     private fun addToQueue(item: List<Media>) {
         serviceScope.launch {
             channel.send(item)
         }
     }
 
-    // Function to process items (replace with your actual processing logic)
     private fun processItem(item: List<Media>) {
         createMediaSource(cookie, item, autoPlay)
     }
@@ -260,8 +264,14 @@ class MediaService : MediaSessionService() {
         medias: List<Media>,
         autoPlay: Boolean,
     ) {
+        Log.d(
+            TAG,
+            "onMediaItemTransition: mediaItemCount: ${player?.mediaItemCount} | autoPlay: $autoPlay"
+        )
         this.autoPlay = autoPlay
-        Log.i(TAG, "[TESTE QUEUE] enqueue: ${medias.size}")
+        if (player?.mediaItemCount == 0) {
+            player?.playWhenReady = autoPlay
+        }
         addToQueue(medias)
     }
 
@@ -269,14 +279,10 @@ class MediaService : MediaSessionService() {
         val mediaSources: MutableList<MediaSource> = mutableListOf()
         if (medias.isNotEmpty()) {
             for (i in medias.indices) {
-                Log.i(TAG, "[TESTE QUEUE]CoroutineScope: enqueue: ${medias[i].name}")
                 mediaSources.add(prepare(cookie, medias[i]))
             }
             player?.addMediaSources(mediaSources)
-
             player?.prepare()
-
-            Log.i(TAG, "CoroutineScope: enqueue job completation")
         }
     }
 
@@ -378,9 +384,6 @@ class MediaService : MediaSessionService() {
         metadataBuilder.apply {
             setAlbumTitle(media.name)
             setArtist(media.author)
-//            if (coverBytes != null) {
-//                setArtworkData(coverBytes, PICTURE_TYPE_FRONT_COVER)
-//            }
             setArtworkUri(Uri.parse(media.bigCoverUrl))
             setArtist(media.author)
             setTitle(media.name)
@@ -389,23 +392,6 @@ class MediaService : MediaSessionService() {
         }
         val metadata = metadataBuilder.build()
         return metadata
-    }
-
-    private fun transformCoverInBytes(coverUrl: Uri): ByteArray {
-        val stream = ByteArrayOutputStream()
-
-        val art = artCache[coverUrl.toString()] ?: try {
-            dataSourceBitmapLoader.loadBitmap(coverUrl)
-                .get(5000, TimeUnit.MILLISECONDS).also {
-                    artCache[coverUrl.toString()] = it
-                }
-        } catch (e: Exception) {
-            BitmapFactory.decodeResource(resources, R.drawable.default_art)
-        }
-
-        art?.compress(Bitmap.CompressFormat.PNG, 95, stream)
-
-        return stream.toByteArray()
     }
 
     fun play(shouldPrepare: Boolean = false) {
@@ -417,11 +403,16 @@ class MediaService : MediaSessionService() {
         }
     }
 
-    fun playFromQueue(position: Int) {
+    fun playFromQueue(position: Int, timePosition: Long, loadOnly: Boolean = false) {
+        player?.playWhenReady = !loadOnly
+
         player?.seekTo(
             if (player?.shuffleModeEnabled == true) shuffledIndices[position] else position,
-            0
+            timePosition,
         )
+        if (!loadOnly) {
+            player?.prepare()
+        }
     }
 
     fun removeNotification() {
@@ -537,7 +528,7 @@ class MediaService : MediaSessionService() {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 super.onIsPlayingChanged(isPlaying)
                 if (isPlaying) {
-                    PlayerSingleton.playerChangeNotifier?.notifyStateChange(PlaybackStateCompat.STATE_PLAYING)
+//                    PlayerSingleton.playerChangeNotifier?.notifyStateChange(PlaybackStateCompat.STATE_PLAYING)
                     startTrackingProgress()
                 } else {
                     stopTrackingProgressAndPerformTask {}
@@ -549,19 +540,40 @@ class MediaService : MediaSessionService() {
                 reason: @MediaItemTransitionReason Int
             ) {
                 super.onMediaItemTransition(mediaItem, reason)
-                PlayerSingleton.playerChangeNotifier?.currentMediaIndex(
-                    currentIndex()
-                )
+                Log.d(TAG, "onMediaItemTransition: reason: ${reason}")
+                if ((player?.mediaItemCount ?: 0) > 0
+//                    && intArrayOf(
+//                        Player.MEDIA_ITEM_TRANSITION_REASON_AUTO,
+//                        Player.MEDIA_ITEM_TRANSITION_REASON_SEEK
+//                    ).contains(reason)
+                ) {
+                    PlayerSingleton.playerChangeNotifier?.currentMediaIndex(
+                        currentIndex()
+                    )
+                }
                 mediaButtonEventHandler.buildIcons()
                 if (reason != Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED) {
+                    player?.playWhenReady = true
                     PlayerSingleton.playerChangeNotifier?.notifyItemTransition()
                 }
             }
 
             override fun onPlaybackStateChanged(playbackState: @Player.State Int) {
                 super.onPlaybackStateChanged(playbackState)
-                PlayerSingleton.playerChangeNotifier?.notifyStateChange(playbackState)
-                if (playbackState == Player.STATE_ENDED) {
+
+//                if(playbackState == STATE_IDLE) {
+//                    PlayerSingleton.playerChangeNotifier?.notifyStateChange(PlaybackStateCompat.STATE_NONE)
+//                } else if(playbackState == STATE_BUFFERING) {
+//                    PlayerSingleton.playerChangeNotifier?.notifyStateChange(PlaybackStateCompat.STATE_BUFFERING)
+//                } else if(playbackState == STATE_READY) {
+//                    PlayerSingleton.playerChangeNotifier?.notifyStateChange(PlaybackStateCompat.STATE_PLAYING)
+//                    startTrackingProgress()
+//                } else if(playbackState == STATE_ENDED) {
+//                    PlayerSingleton.playerChangeNotifier?.notifyStateChange(PlaybackStateCompat.STATE_STOPPED)
+//                }
+//                Log.d(TAG, "#onPlaybackStateChanged: playbackState: $playbackState")
+//                PlayerSingleton.playerChangeNotifier?.notifyStateChange(playbackState)
+                if (playbackState == STATE_ENDED) {
                     stopTrackingProgressAndPerformTask {}
                 }
             }

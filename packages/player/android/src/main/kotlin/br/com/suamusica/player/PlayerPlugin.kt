@@ -24,6 +24,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
         const val IS_FAVORITE_ARGUMENT = "isFavorite"
         const val ID_FAVORITE_ARGUMENT = "idFavorite"
         const val POSITION_ARGUMENT = "position"
+        const val TIME_POSITION_ARGUMENT = "timePosition"
         const val INDEXES_TO_REMOVE = "indexesToRemove"
         const val POSITIONS_LIST = "positionsList"
         const val LOAD_ONLY = "loadOnly"
@@ -147,11 +148,13 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
             }
 
             REORDER -> {
-                val from = call.argument<Int>("oldIndex")!!
-                val to = call.argument<Int>("newIndex")!!
+                val from = call.argument<Int>("oldIndex")
+                val to = call.argument<Int>("newIndex")
                 val positionsList =
                     call.argument<List<Map<String, Int>>>(POSITIONS_LIST) ?: emptyList()
-                PlayerSingleton.mediaSessionConnection?.reorder(from, to, positionsList)
+                if (from != null && to != null) {
+                    PlayerSingleton.mediaSessionConnection?.reorder(from, to, positionsList)
+                }
             }
 
             REMOVE_ALL -> {
@@ -193,8 +196,12 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
 
             PLAY_FROM_QUEUE_METHOD -> {
                 val position = call.argument<Int>(POSITION_ARGUMENT) ?: 0
+                val timePosition = call.argument<Int>(TIME_POSITION_ARGUMENT) ?: 0
+                val loadOnly = call.argument<Boolean>(LOAD_ONLY) ?: false
                 PlayerSingleton.mediaSessionConnection?.playFromQueue(
-                    position
+                    position,
+                    timePosition.toLong(),
+                    loadOnly
                 )
             }
 

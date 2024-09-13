@@ -27,6 +27,7 @@ import br.com.suamusica.player.PlayerPlugin.Companion.FAVORITE
 import br.com.suamusica.player.PlayerPlugin.Companion.ID_FAVORITE_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.INDEXES_TO_REMOVE
 import br.com.suamusica.player.PlayerPlugin.Companion.IS_FAVORITE_ARGUMENT
+import br.com.suamusica.player.PlayerPlugin.Companion.LOAD_ONLY
 import br.com.suamusica.player.PlayerPlugin.Companion.PLAY_FROM_QUEUE_METHOD
 import br.com.suamusica.player.PlayerPlugin.Companion.POSITIONS_LIST
 import br.com.suamusica.player.PlayerPlugin.Companion.POSITION_ARGUMENT
@@ -34,6 +35,7 @@ import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_ALL
 import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_IN
 import br.com.suamusica.player.PlayerPlugin.Companion.REORDER
 import br.com.suamusica.player.PlayerPlugin.Companion.REPEAT_MODE
+import br.com.suamusica.player.PlayerPlugin.Companion.TIME_POSITION_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.TOGGLE_SHUFFLE
 import br.com.suamusica.player.PlayerPlugin.Companion.UPDATE_FAVORITE
 import com.google.common.collect.ImmutableList
@@ -144,7 +146,7 @@ class MediaButtonEventHandler(
             val mediaListType = object : TypeToken<List<Map<String, Int>>?>() {}.type
             val positionsList: List<Map<String, Int>> = gson.fromJson(json, mediaListType)
 
-            mediaService.reorder(oldIndex, newIndex,positionsList)
+            mediaService.reorder(oldIndex, newIndex, positionsList)
         }
         if (customCommand.customAction == "onTogglePlayPause") {
             mediaService.togglePlayPause()
@@ -171,7 +173,12 @@ class MediaButtonEventHandler(
             mediaService.play(shouldPrepare)
         }
         if (customCommand.customAction == PLAY_FROM_QUEUE_METHOD) {
-            mediaService.playFromQueue(args.getInt(POSITION_ARGUMENT))
+            mediaService.playFromQueue(
+                args.getInt(POSITION_ARGUMENT), args.getLong(TIME_POSITION_ARGUMENT),
+                args.getBoolean(
+                    LOAD_ONLY
+                ),
+            )
         }
         if (customCommand.customAction == "notification_previous" || customCommand.customAction == "previous") {
             session.player.seekToPreviousMediaItem()

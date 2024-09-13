@@ -294,7 +294,7 @@ class Queue {
       final newIndex = index + 1;
       setIndex = newIndex;
       var media = storage[newIndex].item;
-      _updateIndex(media.id, newIndex);
+      updateIsarIndex(media.id, newIndex);
       return media;
     } else {
       return null;
@@ -339,7 +339,7 @@ class Queue {
     }
   }
 
-  void _updateIndex(int id, int newIndex) async {
+  void updateIsarIndex(int id, int newIndex) async {
     IsarService.instance.addPreviousPlaylistCurrentIndex(
       PreviousPlaylistCurrentIndex(mediaId: id, currentIndex: newIndex),
     );
@@ -347,7 +347,7 @@ class Queue {
 
   Media? item(int pos) {
     final item = storage[pos].item;
-    _updateIndex(item.id, pos);
+    updateIsarIndex(item.id, pos);
     if (storage.length == 0) {
       return null;
     } else if (storage.length > 0 && pos <= storage.length - 1) {
