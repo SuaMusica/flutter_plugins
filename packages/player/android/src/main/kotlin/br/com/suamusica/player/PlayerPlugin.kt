@@ -25,7 +25,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
         const val ID_FAVORITE_ARGUMENT = "idFavorite"
         const val POSITION_ARGUMENT = "position"
         const val TIME_POSITION_ARGUMENT = "timePosition"
-        const val INDEXES_TO_REMOVE = "indexesToRemove"
+        const val INDEXES_TO_REMOVE = "indexesToDelete"
         const val POSITIONS_LIST = "positionsList"
         const val LOAD_ONLY = "loadOnly"
         const val RELEASE_MODE_ARGUMENT = "releaseMode"

@@ -135,7 +135,7 @@ class MediaButtonEventHandler(
         }
         if (customCommand.customAction == REMOVE_IN) {
             mediaService.removeIn(
-                args.getIntegerArrayList(INDEXES_TO_REMOVE)?.toList() ?: emptyList()
+                args.getIntegerArrayList(INDEXES_TO_REMOVE) ?: emptyList()
             )
         }
         if (customCommand.customAction == REORDER) {

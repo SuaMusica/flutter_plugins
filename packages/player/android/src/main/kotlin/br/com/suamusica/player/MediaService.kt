@@ -186,14 +186,7 @@ class MediaService : MediaSessionService() {
     ): MediaSession = mediaSession
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        val player = mediaSession.player
-        val shouldStopService = !player.playWhenReady
-                || player.mediaItemCount == 0
-                || player.playbackState == Player.STATE_ENDED
-        if (shouldStopService) {
-            stopSelf()
-        }
-        isServiceRunning()
+        stopSelf()
     }
 
     override fun onDestroy() {
@@ -283,6 +276,7 @@ class MediaService : MediaSessionService() {
             }
             player?.addMediaSources(mediaSources)
             player?.prepare()
+            PlayerSingleton.playerChangeNotifier?.notifyItemTransition()
         }
     }
 
@@ -348,9 +342,21 @@ class MediaService : MediaSessionService() {
         if (indexes.isNotEmpty()) {
             indexes.forEach {
                 player?.removeMediaItem(it)
-                shuffleOrder?.cloneAndRemove(it, it)
-                shuffledIndices.removeAt(it)
+                if (shuffledIndices.isNotEmpty()) {
+                    shuffledIndices.removeAt(
+                        shuffledIndices.indexOf(
+                            player?.currentMediaItemIndex ?: 0
+                        )
+                    )
+                }
             }
+        }
+        if (player?.shuffleModeEnabled == true) {
+            shuffleOrder = DefaultShuffleOrder(
+                shuffledIndices.toIntArray(),
+                System.currentTimeMillis()
+            )
+            player?.setShuffleOrder(shuffleOrder!!)
         }
     }
 

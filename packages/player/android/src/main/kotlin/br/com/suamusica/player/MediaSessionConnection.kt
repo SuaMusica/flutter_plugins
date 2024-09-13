@@ -117,7 +117,7 @@ class MediaSessionConnection(
     fun removeIn(indexes: List<Int>) {
         val bundle = Bundle()
         bundle.putIntegerArrayList(INDEXES_TO_REMOVE, ArrayList(indexes))
-        sendCommand(REMOVE_IN, null)
+        sendCommand(REMOVE_IN, bundle)
     }
 
     fun next() {
