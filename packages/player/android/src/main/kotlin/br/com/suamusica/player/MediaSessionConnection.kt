@@ -229,7 +229,6 @@ class MediaSessionConnection(
                     var lastState = PlaybackStateCompat.STATE_NONE - 1
                     override fun onPlaybackStateChanged(state: PlaybackStateCompat) {
                         if (lastState != state.state) {
-                            Log.i(TAG, "onPlaybackStateChanged2: $state")
                             lastState = state.state
                             playerChangeNotifier.notifyStateChange(state.state)
                         }

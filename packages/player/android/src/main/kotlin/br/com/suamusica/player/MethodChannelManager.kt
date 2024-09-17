@@ -44,19 +44,6 @@ class MethodChannelManager(private val channel: MethodChannel) {
         invokeMethod("state.change", args)
     }
 
-    fun sendCurrentQueue(
-        idSum: Long,
-        playerId: String,
-    ) {
-        val args = MethodChannelManagerArgsBuilder()
-            .event("CURRENT_QUEUE")
-            .playerId(playerId)
-            .idSum(idSum)
-            .build()
-        invokeMethod("GET_INFO", args)
-    }
-
-
     private fun invokeMethod(method: String, args: Map<String, Any>) {
         channel.invokeMethod(method, args)
     }

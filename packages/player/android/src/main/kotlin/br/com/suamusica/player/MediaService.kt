@@ -93,7 +93,7 @@ class MediaService : MediaSessionService() {
     private lateinit var mediaButtonEventHandler: MediaButtonEventHandler
     private var shuffleOrder: DefaultShuffleOrder? = null
 
-    private val artCache = HashMap<String, Bitmap>()
+    private var seekToLoadOnly: Boolean = false
     private var shuffledIndices = mutableListOf<Int>()
     private var autoPlay: Boolean = true
 
@@ -186,6 +186,8 @@ class MediaService : MediaSessionService() {
     ): MediaSession = mediaSession
 
     override fun onTaskRemoved(rootIntent: Intent?) {
+        Log.d(TAG, "onTaskRemoved")
+        player?.stop()
         stopSelf()
     }
 
@@ -276,7 +278,7 @@ class MediaService : MediaSessionService() {
             }
             player?.addMediaSources(mediaSources)
             player?.prepare()
-            PlayerSingleton.playerChangeNotifier?.notifyItemTransition()
+//            PlayerSingleton.playerChangeNotifier?.notifyItemTransition("createMediaSource")
         }
     }
 
@@ -300,7 +302,6 @@ class MediaService : MediaSessionService() {
                     .setPlaylistParserFactory(SMHlsPlaylistParserFactory())
                     .setAllowChunklessPreparation(true)
                     .createMediaSource(mediaItem)
-
             }
 
             C.CONTENT_TYPE_OTHER -> {
@@ -339,8 +340,13 @@ class MediaService : MediaSessionService() {
     }
 
     fun removeIn(indexes: List<Int>) {
-        if (indexes.isNotEmpty()) {
-            indexes.forEach {
+        val sortedIndexes = indexes.sortedDescending()
+        if (sortedIndexes.isNotEmpty()) {
+            sortedIndexes.forEach {
+                android.util.Log.d(
+                    "#NATIVE LOGS ==>",
+                    "removeIn  ${player?.getMediaItemAt(it)?.mediaMetadata?.title}"
+                )
                 player?.removeMediaItem(it)
                 if (shuffledIndices.isNotEmpty()) {
                     shuffledIndices.removeAt(
@@ -412,6 +418,10 @@ class MediaService : MediaSessionService() {
     fun playFromQueue(position: Int, timePosition: Long, loadOnly: Boolean = false) {
         player?.playWhenReady = !loadOnly
 
+        if (loadOnly) {
+            seekToLoadOnly = true
+        }
+
         player?.seekTo(
             if (player?.shuffleModeEnabled == true) shuffledIndices[position] else position,
             timePosition,
@@ -419,9 +429,6 @@ class MediaService : MediaSessionService() {
         if (!loadOnly) {
             player?.prepare()
         }
-    }
-
-    fun removeNotification() {
     }
 
     fun removeAll() {
@@ -547,6 +554,10 @@ class MediaService : MediaSessionService() {
             ) {
                 super.onMediaItemTransition(mediaItem, reason)
                 Log.d(TAG, "onMediaItemTransition: reason: ${reason}")
+//                if(isSeekWithLoadOnly){
+//                    isSeekWithLoadOnly = false
+//                    return
+//                }
                 if ((player?.mediaItemCount ?: 0) > 0
 //                    && intArrayOf(
 //                        Player.MEDIA_ITEM_TRANSITION_REASON_AUTO,
@@ -554,13 +565,17 @@ class MediaService : MediaSessionService() {
 //                    ).contains(reason)
                 ) {
                     PlayerSingleton.playerChangeNotifier?.currentMediaIndex(
-                        currentIndex()
+                        currentIndex(),
+                        "onMediaItemTransition",
                     )
                 }
                 mediaButtonEventHandler.buildIcons()
                 if (reason != Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED) {
-                    player?.playWhenReady = true
-                    PlayerSingleton.playerChangeNotifier?.notifyItemTransition()
+                    if (!seekToLoadOnly) {
+                        player?.playWhenReady = true
+                        seekToLoadOnly = false
+                    }
+                    PlayerSingleton.playerChangeNotifier?.notifyItemTransition("onMediaItemTransition != 3")
                 }
             }
 
@@ -590,6 +605,10 @@ class MediaService : MediaSessionService() {
             }
 
             override fun onPlayerError(error: PlaybackException) {
+                android.util.Log.d(
+                    "#NATIVE LOGS ==>",
+                    "onPlayerError cause ${error.cause.toString()}"
+                )
                 val bundle = Bundle()
                 bundle.putString("type", "error")
                 bundle.putString(

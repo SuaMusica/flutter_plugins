@@ -121,12 +121,13 @@ class MediaButtonEventHandler(
             mediaService.seek(args.getLong("position"), args.getBoolean("playWhenReady"))
         }
         if (customCommand.customAction == FAVORITE) {
+            val isFavorite =  args.getBoolean(IS_FAVORITE_ARGUMENT)
             val mediaItem = session.player.currentMediaItem!!
             updateFavoriteMetadata(
                 session.player,
                 session.player.currentMediaItemIndex,
                 mediaItem,
-                args.getBoolean(IS_FAVORITE_ARGUMENT)
+               isFavorite,
             )
             buildIcons()
         }
@@ -207,11 +208,12 @@ class MediaButtonEventHandler(
             PlayerSingleton.favorite(isFavorite)
 //            }
         }
-        if (customCommand.customAction == "ads_playing" || customCommand.customAction == "remove_notification") {
+        if (customCommand.customAction == "ads_playing") {
+//            mediaService.player?.pause()
 //            mediaService.adsPlaying()
-            mediaService.removeNotification()
+//            mediaService.removeNotification()
         }
-        if (customCommand.customAction == ENQUEUE || customCommand.customAction == ENQUEUE_ONE) {
+        if (customCommand.customAction == ENQUEUE) {
             val json = args.getString("json")
             val gson = GsonBuilder().create()
             val mediaListType = object : TypeToken<List<Media>>() {}.type

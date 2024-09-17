@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:smaws/aws.dart';
 import 'package:flutter/services.dart';
+import 'package:smplayer/src/before_play_event.dart';
 import 'package:smplayer/src/event.dart';
 import 'package:smplayer/src/event_type.dart';
 import 'package:smplayer/src/isar_service.dart';
@@ -117,10 +118,6 @@ class Player {
   Future<int> enqueueAll(
     List<Media> items, {
     bool autoPlay = false,
-    // Future<String?> Function(
-    //   int albumId,
-    //   String url,
-    // )? getLocalCover,
   }) async {
     _cookies = await cookieSigner();
     String cookie = _cookies!.toHeaders();
@@ -244,8 +241,11 @@ class Player {
   int get currentIndex => _queue.index;
 
   Future<int> play({bool shouldPrepare = false}) async {
-    _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
-    return _doPlay(shouldPrepare: shouldPrepare);
+    _channel.invokeMethod(
+      'play',
+      {'shouldPrepare': shouldPrepare},
+    );
+    return Ok;
   }
 
   Future<int> playFromQueue(
@@ -285,12 +285,6 @@ class Player {
   Future<int> invokeLoad(Map<String, dynamic> args) async {
     final int result = await _invokeMethod('load', args);
     return result;
-  }
-
-  Future<int> rewind() async {
-    final media = _queue.rewind();
-    _notifyRewind(media);
-    return Ok;
   }
 
   List<Map<String, int>> getPositionsList() {
@@ -382,15 +376,16 @@ class Player {
   void addUsingPlayer(Event event) => _addUsingPlayer(player, event);
 
   Future<int> stop() async {
-    _notifyPlayerStatusChangeEvent(EventType.STOP_REQUESTED);
-    final int result = await _invokeMethod('stop');
+    // _notifyPlayerStatusChangeEvent(EventType.STOP_REQUESTED);
+    // final int result = await _invokeMethod('stop');
 
-    if (result == Ok) {
-      state = PlayerState.STOPPED;
-      _notifyPlayerStatusChangeEvent(EventType.STOPPED);
-    }
+    // if (result == Ok) {
+    //   state = PlayerState.STOPPED;
+    //   _notifyPlayerStatusChangeEvent(EventType.STOPPED);
+    // }
 
-    return result;
+    // return result;
+    return Ok;
   }
 
   Future<int> resume() async {
@@ -675,8 +670,7 @@ class Player {
         break;
       case 'SET_CURRENT_MEDIA_INDEX':
         _queue.setIndex = callArgs['CURRENT_MEDIA_INDEX'];
-        _queue.updateIsarIndex(
-            currentMedia!.id, callArgs['CURRENT_MEDIA_INDEX']);
+        _queue.updateIsarIndex(currentMedia!.id, _queue.index);
         _notifyPlayerStateChangeEvent(
           player,
           EventType.SET_CURRENT_MEDIA_INDEX,
@@ -704,19 +698,19 @@ class Player {
     }
   }
 
-  _notifyRewind(Media media) async {
-    final positionInMilli = await getCurrentPosition();
-    final durationInMilli = await getDuration();
-    _add(
-      Event(
-        type: EventType.REWIND,
-        media: media,
-        queuePosition: currentIndex,
-        position: Duration(milliseconds: positionInMilli),
-        duration: Duration(milliseconds: durationInMilli),
-      ),
-    );
-  }
+  // _notifyRewind(Media media) async {
+  //   final positionInMilli = await getCurrentPosition();
+  //   final durationInMilli = await getDuration();
+  //   _add(
+  //     Event(
+  //       type: EventType.REWIND,
+  //       media: media,
+  //       queuePosition: currentIndex,
+  //       position: Duration(milliseconds: positionInMilli),
+  //       duration: Duration(milliseconds: durationInMilli),
+  //     ),
+  //   );
+  // }
 
   _notifyForward(Media media) async {
     final positionInMilli = await getCurrentPosition();

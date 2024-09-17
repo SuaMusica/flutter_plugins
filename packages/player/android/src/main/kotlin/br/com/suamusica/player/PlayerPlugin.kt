@@ -114,13 +114,13 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
     }
 
     private fun handleMethodCall(call: MethodCall, response: MethodChannel.Result) {
-        if (call.method == ENQUEUE || call.method == ENQUEUE_ONE) {
+        if (call.method == ENQUEUE) {
             val batch: Map<String, Any> = call.arguments()!!
             cookie = if (batch.containsKey("cookie")) batch["cookie"] as String else cookie
             PlayerSingleton.externalPlayback =
                 if (batch.containsKey("externalplayback")) batch["externalplayback"].toString() == "true" else PlayerSingleton.externalPlayback
         } else {
-            cookie = call.argument<String>("cookie") ?: ""
+            cookie = call.argument<String>("cookie") ?: cookie
             PlayerSingleton.externalPlayback = call.argument<Boolean>("externalplayback")
         }
         Log.d(
@@ -128,8 +128,6 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
             "method: ${call.method}"
         )
         when (call.method) {
-            LOAD_METHOD -> {}
-            ENQUEUE_ONE,
             ENQUEUE -> {
                 val batch: Map<String, Any> = call.arguments()!!
                 val listMedia: List<Map<String, String>> =
