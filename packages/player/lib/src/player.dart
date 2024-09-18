@@ -317,6 +317,11 @@ class Player {
     return _channel.invokeMethod('repeat_mode').then((result) => result);
   }
 
+  Future<int> setRepeatMode(String mode) async {
+    return _channel.invokeMethod(
+        'set_repeat_mode', {'mode': mode}).then((result) => result);
+  }
+
   Future<int> disableRepeatMode() async {
     return _channel
         .invokeMethod('disable_repeat_mode')
@@ -324,11 +329,13 @@ class Player {
   }
 
   Future<int?> previous() async {
-    Media? media = _queue.possibleNext(repeatMode);
+    Media? media = _queue.possiblePrevious();
     if (media == null) {
       return null;
     }
-    // final mediaUrl = (await localMediaValidator?.call(media)) ?? media.url;
+    if (repeatMode == RepeatMode.REPEAT_MODE_ONE) {
+      setRepeatMode("all");
+    }
     _channel.invokeMethod('previous').then((result) => result);
     return Ok;
   }
@@ -339,7 +346,9 @@ class Player {
     final media = _queue.possibleNext(repeatMode);
     if (media != null) {
       final mediaUrl = (await localMediaValidator?.call(media)) ?? media.url;
-
+      if (repeatMode == RepeatMode.REPEAT_MODE_ONE) {
+        setRepeatMode("all");
+      }
       return _doNext(
         shallNotify: shallNotify,
         mediaUrl: mediaUrl,
@@ -500,7 +509,13 @@ class Player {
         _log('state.change call ${PlayerState.values[state]}');
         player.state = PlayerState.values[state];
         switch (player.state) {
+          case PlayerState.STATE_READY:
           case PlayerState.IDLE:
+            _notifyPlayerStateChangeEvent(
+              player,
+              EventType.IDLE,
+              error,
+            );
             break;
           case PlayerState.BUFFERING:
             _notifyPlayerStateChangeEvent(

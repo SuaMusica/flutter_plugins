@@ -2,20 +2,28 @@ package br.com.suamusica.player
 
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
+import androidx.media3.common.Player
+import androidx.media3.common.Player.*
 
 class PlayerChangeNotifier(private val channelManager: MethodChannelManager) {
-    fun notifyStateChange(state: Int, error: String? = null) {
+    fun notifyStateChange(state: @State Int) {
         val playerState = when (state) {
-            PlaybackStateCompat.STATE_NONE -> PlayerState.IDLE
-            PlaybackStateCompat.STATE_BUFFERING -> PlayerState.BUFFERING
-            PlaybackStateCompat.STATE_PAUSED -> PlayerState.PAUSED
-            PlaybackStateCompat.STATE_PLAYING -> PlayerState.PLAYING
-            PlaybackStateCompat.STATE_ERROR -> PlayerState.ERROR
-            PlaybackStateCompat.STATE_STOPPED -> PlayerState.COMPLETED
+            STATE_IDLE, STATE_READY -> PlayerState.IDLE
+            STATE_BUFFERING -> PlayerState.BUFFERING
+            STATE_ENDED -> PlayerState.COMPLETED
+            STATE_READY -> PlayerState.STATE_READY
             else -> PlayerState.IDLE
         }
-        Log.i("Player", "Notifying Player State change: $playerState")
-        channelManager.notifyPlayerStateChange("sua-musica-player", playerState, error)
+        Log.i("Player", "Notifying Player State change: $playerState | $state")
+        channelManager.notifyPlayerStateChange("sua-musica-player", playerState)
+    }
+
+    fun notifyPlaying(isPlaying:Boolean){
+        channelManager.notifyPlayerStateChange("sua-musica-player", if(isPlaying) PlayerState.PLAYING else PlayerState.PAUSED)
+    }
+
+    fun notifyError(message: String? = null){
+        channelManager.notifyError("sua-musica-player", PlayerState.ERROR, message)
     }
 
     fun notifySeekEnd() {

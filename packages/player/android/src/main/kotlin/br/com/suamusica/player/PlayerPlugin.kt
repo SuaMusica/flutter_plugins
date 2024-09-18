@@ -22,6 +22,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
         const val BIG_COVER_URL_ARGUMENT = "bigCoverUrl"
         const val IS_PLAYING_ARGUMENT = "isPlaying"
         const val IS_FAVORITE_ARGUMENT = "isFavorite"
+        const val FALLBACK_URL = "fallbackURL"
         const val ID_FAVORITE_ARGUMENT = "idFavorite"
         const val POSITION_ARGUMENT = "position"
         const val TIME_POSITION_ARGUMENT = "timePosition"
@@ -35,6 +36,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
         // Method names
         const val LOAD_METHOD = "load"
         const val PLAY_METHOD = "play"
+        const val SET_REPEAT_MODE = "set_repeat_mode"
         const val ENQUEUE = "enqueue"
         const val ENQUEUE_ONE = "enqueue_one"
         const val REMOVE_ALL = "remove_all"
@@ -143,6 +145,11 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
             PLAY_METHOD -> {
                 val shouldPrepare = call.argument<Boolean?>("shouldPrepare") ?: false
                 PlayerSingleton.mediaSessionConnection?.play(shouldPrepare)
+            }
+
+            SET_REPEAT_MODE -> {
+                val mode = call.argument<String?>("mode") ?: ""
+                PlayerSingleton.mediaSessionConnection?.setRepeatMode(mode)
             }
 
             REORDER -> {

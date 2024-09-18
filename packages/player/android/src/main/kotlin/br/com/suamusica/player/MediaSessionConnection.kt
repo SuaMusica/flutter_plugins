@@ -23,6 +23,7 @@ import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_ALL
 import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_IN
 import br.com.suamusica.player.PlayerPlugin.Companion.REORDER
 import br.com.suamusica.player.PlayerPlugin.Companion.REPEAT_MODE
+import br.com.suamusica.player.PlayerPlugin.Companion.SET_REPEAT_MODE
 import br.com.suamusica.player.PlayerPlugin.Companion.TIME_POSITION_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.TOGGLE_SHUFFLE
 import br.com.suamusica.player.PlayerPlugin.Companion.UPDATE_FAVORITE
@@ -61,14 +62,14 @@ class MediaSessionConnection(
         }
     }
 
-    fun enqueue( medias: String, autoPlay: Boolean) {
+    fun enqueue(medias: String, autoPlay: Boolean) {
         val bundle = Bundle()
         bundle.putString("json", medias)
         bundle.putBoolean("autoPlay", autoPlay)
         sendCommand(ENQUEUE, bundle)
     }
 
-    fun playFromQueue(index: Int, timePosition:Long, loadOnly:Boolean) {
+    fun playFromQueue(index: Int, timePosition: Long, loadOnly: Boolean) {
         val bundle = Bundle()
         bundle.putInt(POSITION_ARGUMENT, index)
         bundle.putLong(TIME_POSITION_ARGUMENT, timePosition)
@@ -80,6 +81,12 @@ class MediaSessionConnection(
         val bundle = Bundle()
         bundle.putBoolean("shouldPrepare", shouldPrepare)
         sendCommand("play", bundle)
+    }
+
+    fun setRepeatMode(mode: String) {
+        val bundle = Bundle()
+        bundle.putString("mode", mode)
+        sendCommand(SET_REPEAT_MODE, bundle)
     }
 
     fun reorder(oldIndex: Int, newIndex: Int, positionsList: List<Map<String, Int>>) {
@@ -225,54 +232,6 @@ class MediaSessionConnection(
                     return
 
                 mediaController = MediaControllerCompat(context, mediaBrowser.sessionToken)
-                mediaController?.registerCallback(object : MediaControllerCompat.Callback() {
-                    var lastState = PlaybackStateCompat.STATE_NONE - 1
-                    override fun onPlaybackStateChanged(state: PlaybackStateCompat) {
-                        if (lastState != state.state) {
-                            lastState = state.state
-                            playerChangeNotifier.notifyStateChange(state.state)
-                        }
-                    }
-
-                    override fun onExtrasChanged(extras: Bundle) {
-                        if (extras.containsKey("type")) {
-                            when (extras.getString("type")) {
-                                "position" -> {
-                                    val position = extras.getLong("position")
-                                    this@MediaSessionConnection.currentPosition = position
-                                    val duration = extras.getLong("duration")
-                                    this@MediaSessionConnection.duration = duration
-                                    playerChangeNotifier.notifyPositionChange(position, duration)
-                                }
-
-                                "error" -> {
-                                    val error = extras.getString("error")
-                                    playerChangeNotifier.notifyStateChange(
-                                        PlaybackStateCompat.STATE_ERROR,
-                                        error
-                                    )
-                                }
-
-                                "seek-end" -> {
-                                    playerChangeNotifier.notifySeekEnd()
-                                }
-
-                                "next" -> {
-                                    playerChangeNotifier.notifyNext()
-                                }
-
-                                "previous" -> {
-                                    playerChangeNotifier.notifyPrevious()
-                                }
-                            }
-                        }
-                        super.onExtrasChanged(extras)
-                    }
-
-                    override fun onMetadataChanged(metadata: MediaMetadataCompat) {
-//                        Log.i(TAG, "onMetadataChanged: $metadata duration: ${metadata.duration}")
-                    }
-                })
             }
             Log.i(TAG, "MediaBrowserConnectionCallback.onConnected : ENDED")
         }

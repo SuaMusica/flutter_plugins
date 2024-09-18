@@ -37,6 +37,8 @@ enum EventType {
   REPEAT_CHANGED,
   SHUFFLE_CHANGED,
   STATE_ENDED,
+  IDLE,
+  STATE_READY,
 }
 
 enum PlayerErrorType {

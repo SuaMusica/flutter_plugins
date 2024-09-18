@@ -35,6 +35,7 @@ import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_ALL
 import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_IN
 import br.com.suamusica.player.PlayerPlugin.Companion.REORDER
 import br.com.suamusica.player.PlayerPlugin.Companion.REPEAT_MODE
+import br.com.suamusica.player.PlayerPlugin.Companion.SET_REPEAT_MODE
 import br.com.suamusica.player.PlayerPlugin.Companion.TIME_POSITION_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.TOGGLE_SHUFFLE
 import br.com.suamusica.player.PlayerPlugin.Companion.UPDATE_FAVORITE
@@ -80,6 +81,7 @@ class MediaButtonEventHandler(
                 add(SessionCommand(REMOVE_ALL, Bundle.EMPTY))
                 add(SessionCommand(REORDER, session.token.extras))
                 add(SessionCommand(REMOVE_IN, session.token.extras))
+                add(SessionCommand(SET_REPEAT_MODE, session.token.extras))
                 add(SessionCommand("prepare", session.token.extras))
                 add(SessionCommand("playFromQueue", session.token.extras))
                 add(SessionCommand("play", Bundle.EMPTY))
@@ -172,6 +174,10 @@ class MediaButtonEventHandler(
         if (customCommand.customAction == "play") {
             val shouldPrepare = args.getBoolean("shouldPrepare")
             mediaService.play(shouldPrepare)
+        }
+        if (customCommand.customAction == SET_REPEAT_MODE) {
+            val mode = args.getString("mode")
+            mediaService.setRepeatMode(mode ?:"")
         }
         if (customCommand.customAction == PLAY_FROM_QUEUE_METHOD) {
             mediaService.playFromQueue(
