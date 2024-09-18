@@ -272,7 +272,7 @@ class MediaService : MediaSessionService() {
         val mediaSources: MutableList<MediaSource> = mutableListOf()
         if (medias.isNotEmpty()) {
             for (i in medias.indices) {
-                mediaSources.add(prepare(cookie, medias[i]))
+                mediaSources.add(prepare(cookie, medias[i],""))
             }
             player?.addMediaSources(mediaSources)
             player?.prepare()
@@ -292,10 +292,15 @@ class MediaService : MediaSessionService() {
         dataSourceFactory.setAllowCrossProtocolRedirects(true)
         dataSourceFactory.setDefaultRequestProperties(mapOf("Cookie" to cookie))
         val metadata = buildMetaData(media)
-        val url = media.url
-        val uri = if (url.startsWith("/")) Uri.fromFile(File(url)) else Uri.parse(url)
+        val uri = if (urlToPrepare.isEmpty()) {
+            val url = media.url
+            if (url.startsWith("/")) Uri.fromFile(File(url)) else Uri.parse(url)
+        } else {
+            Uri.parse(urlToPrepare)
+        }
         val mediaItem = MediaItem.Builder().setUri(uri).setMediaMetadata(metadata)
             .setMediaId(media.id.toString()).build()
+
         @C.ContentType val type = Util.inferContentType(uri)
 
         return when (type) {
@@ -441,7 +446,7 @@ class MediaService : MediaSessionService() {
         if (!loadOnly) {
             player?.prepare()
         }
-        playerChangeNotifier?.currentMediaIndex(currentIndex(),"playFromQueue")
+        playerChangeNotifier?.currentMediaIndex(currentIndex(), "playFromQueue")
     }
 
     fun removeAll() {
@@ -664,7 +669,7 @@ class MediaService : MediaSessionService() {
                         )
                     )
                     player?.prepare()
-                    playFromQueue(currentIndex()-1, 0)
+                    playFromQueue(currentIndex() - 1, 0)
                     return
                 }
 
