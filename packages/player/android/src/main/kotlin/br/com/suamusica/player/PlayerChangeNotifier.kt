@@ -44,6 +44,7 @@ class PlayerChangeNotifier(private val channelManager: MethodChannelManager) {
         channelManager.notifyItemTransition("sua-musica-player")
     }
     fun currentMediaIndex(currentMediaIndex: Int, from: String) {
+        Log.i("Player", "=>> currentMediaIndex | FROM: $from | $currentMediaIndex")
         channelManager.currentMediaIndex("sua-musica-player", currentMediaIndex)
     }
     fun notifyPositionChange(position: Long, duration: Long) {

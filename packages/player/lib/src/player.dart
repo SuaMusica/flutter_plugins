@@ -119,6 +119,7 @@ class Player {
     List<Media> items, {
     bool autoPlay = false,
   }) async {
+    _queue.addAll(items);
     _cookies = await cookieSigner();
     String cookie = _cookies!.toHeaders();
     final int batchSize = 80;
@@ -155,7 +156,7 @@ class Player {
     }
 
     await IsarService.instance.removeAllMusics();
-    _queue.addAll(items);
+
     return Ok;
   }
 
