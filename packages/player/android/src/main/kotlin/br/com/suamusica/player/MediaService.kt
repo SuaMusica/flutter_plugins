@@ -35,6 +35,7 @@ import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.source.ShuffleOrder.DefaultShuffleOrder
+import androidx.media3.exoplayer.source.preload.BasePreloadManager
 import androidx.media3.session.CacheBitmapLoader
 import androidx.media3.session.CommandButton
 import androidx.media3.session.DefaultMediaNotificationProvider
@@ -106,7 +107,6 @@ class MediaService : MediaSessionService() {
             preloadConfiguration = ExoPlayer.PreloadConfiguration(
                 10000000
             )
-
         }
 
         dataSourceBitmapLoader =
@@ -182,10 +182,12 @@ class MediaService : MediaSessionService() {
     ): MediaSession = mediaSession
 
     override fun onTaskRemoved(rootIntent: Intent?) {
+        player?.clearMediaItems()
         Log.d(TAG, "onTaskRemoved")
         player?.stop()
         stopTrackingProgress()
         stopSelf()
+        super.onTaskRemoved(rootIntent)
     }
 
     override fun onDestroy() {
@@ -230,6 +232,7 @@ class MediaService : MediaSessionService() {
                     shuffledIndices.toIntArray(),
                     System.currentTimeMillis()
                 )
+                Log.d(TAG, "toggleShuffle - shuffleOrder is null: ${shuffleOrder == null} | shuffledIndices: ${shuffledIndices.size} - ${player?.mediaItemCount}")
                 player!!.setShuffleOrder(shuffleOrder!!)
             }
             playerChangeNotifier?.onShuffleModeEnabled(it)
@@ -610,6 +613,7 @@ class MediaService : MediaSessionService() {
             ) {
                 super.onMediaItemTransition(mediaItem, reason)
                 Log.d(TAG, "onMediaItemTransition: reason: ${reason}")
+                if((player?.mediaItemCount?:0) > 0)
                 playerChangeNotifier?.currentMediaIndex(
                     currentIndex(),
                     "onMediaItemTransition",

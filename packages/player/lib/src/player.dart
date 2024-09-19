@@ -155,8 +155,6 @@ class Player {
       );
     }
 
-    await IsarService.instance.removeAllMusics();
-
     return Ok;
   }
 
@@ -236,7 +234,7 @@ class Player {
       _queue.previousPosition;
 
   List<Media> get items => _queue.items;
-  List<Media> get isarItems => _queue.storage.map((e) => e.item).toList();
+  List<Media> get isarItems => _queue.isarItems;
   int get size => items.length;
 
   int get currentIndex => _queue.index;
