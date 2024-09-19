@@ -255,6 +255,9 @@ class Player {
     if (!loadOnly) {
       _notifyPlayerStatusChangeEvent(EventType.PLAY_REQUESTED);
     }
+    if (repeatMode == RepeatMode.REPEAT_MODE_ONE) {
+      setRepeatMode("all");
+    }
     return _channel.invokeMethod('playFromQueue', {
       'position': pos,
       'timePosition': position?.inMilliseconds,
