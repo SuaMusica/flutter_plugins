@@ -23,6 +23,7 @@ import androidx.media3.common.Player.REPEAT_MODE_ALL
 import androidx.media3.common.Player.REPEAT_MODE_OFF
 import androidx.media3.common.Player.REPEAT_MODE_ONE
 import androidx.media3.common.Player.STATE_ENDED
+import androidx.media3.common.Timeline
 import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.util.Util
@@ -39,16 +40,21 @@ import androidx.media3.exoplayer.source.preload.BasePreloadManager
 import androidx.media3.session.CacheBitmapLoader
 import androidx.media3.session.CommandButton
 import androidx.media3.session.DefaultMediaNotificationProvider
+import androidx.media3.session.LibraryResult
+import androidx.media3.session.MediaConstants
 import androidx.media3.session.MediaController
+import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaNotification
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import androidx.media3.session.SessionError
 import br.com.suamusica.player.PlayerPlugin.Companion.FALLBACK_URL
 import br.com.suamusica.player.PlayerPlugin.Companion.IS_FAVORITE_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.cookie
 import br.com.suamusica.player.PlayerSingleton.playerChangeNotifier
 import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
 import com.google.common.collect.ImmutableList
+import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -92,7 +98,7 @@ class MediaService : MediaSessionService() {
 
     private val channel = Channel<List<Media>>(Channel.BUFFERED)
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    private var currentMedias = listOf<Media>()
+    var currentMedias = listOf<Media>()
 
     override fun onCreate() {
         super.onCreate()
@@ -613,11 +619,12 @@ class MediaService : MediaSessionService() {
             ) {
                 super.onMediaItemTransition(mediaItem, reason)
                 Log.d(TAG, "onMediaItemTransition: reason: ${reason}")
-                if((player?.mediaItemCount?:0) > 0)
-                playerChangeNotifier?.currentMediaIndex(
-                    currentIndex(),
-                    "onMediaItemTransition",
-                )
+                if((player?.mediaItemCount?:0) > 0) {
+                    playerChangeNotifier?.currentMediaIndex(
+                        currentIndex(),
+                        "onMediaItemTransition",
+                    )
+                }
                 mediaButtonEventHandler.buildIcons()
                 if (reason != Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED) {
                     if (!seekToLoadOnly) {
