@@ -1,6 +1,6 @@
 import MediaPlayer
 
-@objc public class NowPlayingCenter : NSObject {
+public class NowPlayingCenter : NSObject {
     
     @objc static public func set(item: PlaylistItem?) {
         DispatchQueue.main.async {

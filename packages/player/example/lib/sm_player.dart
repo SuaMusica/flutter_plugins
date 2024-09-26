@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:smaws/aws.dart';
 import 'package:smplayer/player.dart';
@@ -108,6 +110,25 @@ class _SMPlayerState extends State<SMPlayer> {
         playlistId: 0,
       );
 
+      var media3 = Media(
+        id: 1,
+        albumTitle: "Album unsigned",
+        albumId: 1,
+        name: "Track unsigned",
+        url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+        coverUrl: "https://picsum.photos/500/500",
+        bigCoverUrl: "https://picsum.photos/500/500",
+        author: "Xand Avião",
+        fallbackUrl:
+            "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+        isLocal: false,
+        isVerified: true,
+        shareUrl: "",
+        isSpot: false,
+        ownerId: 0,
+        playlistId: 0,
+      );
+
       var media2 = Media(
         id: 2,
         albumTitle: "Album",
@@ -127,8 +148,7 @@ class _SMPlayerState extends State<SMPlayer> {
         playlistId: 0,
       );
 
-      player.enqueue(media: media1);
-      player.enqueue(media: media2);
+      player.enqueueAll([media1, media2, media3], autoPlay: true);
 
       if (!mounted) return;
 
@@ -222,10 +242,10 @@ class _SMPlayerState extends State<SMPlayer> {
   void shuffleOrUnshuffle() {
     setState(() {
       if (_shuffled) {
-        _player.unshuffle();
+        _player.toggleShuffle();
         _shuffled = false;
       } else {
-        _player.shuffle();
+        _player.toggleShuffle();
         _shuffled = true;
       }
     });
