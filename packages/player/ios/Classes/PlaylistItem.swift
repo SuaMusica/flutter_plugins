@@ -17,7 +17,14 @@ import AVFoundation
     
     @objc public var duration: CMTime
     
-    @objc public init(albumId: String, albumName: String, title: String, artist: String, url: String, coverUrl: String) {
+    @objc public var fallbackUrl: String?
+    
+    @objc public var mediaId: Int
+    
+    @objc public var bigCoverUrl: String?
+//    @objc public var index: Int
+    
+    @objc public init(albumId: String, albumName: String, title: String, artist: String, url: String, coverUrl: String,fallbackUrl: String, mediaId:Int, bigCoverUrl: String) {
         self.albumId = albumId
         self.albumName = albumName
         self.title = title
@@ -26,5 +33,9 @@ import AVFoundation
         self.coverUrl = coverUrl
         self.duration = .zero
         self.error = nil
+        self.fallbackUrl = fallbackUrl
+        self.mediaId = mediaId
+        self.bigCoverUrl = bigCoverUrl
+//        self.index = index
     }
 }

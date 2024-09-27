@@ -42,7 +42,15 @@ public class MethodChannelManager:NSObject{
             .build()
         channel?.invokeMethod("state.change", arguments: args)
     }
-//    
+    
+    func currentMediaIndex(index: Int) {
+        let args = MethodChannelManagerArgsBuilder()
+            .playerId(id:"TAG_ONEPLAYER")
+            .currentIndex(index:index)
+            .build()
+        channel?.invokeMethod(SET_CURRENT_MEDIA_INDEX, arguments: args)
+    }
+//
 //    func repeatModeChanged(repeatMode: Int) {
 //        let args = MethodChannelManagerArgsBuilder()
 //            .event(event: REPEAT_MODE_CHANGED)

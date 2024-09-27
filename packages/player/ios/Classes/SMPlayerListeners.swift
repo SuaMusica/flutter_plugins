@@ -17,6 +17,9 @@ public class SMPlayerListeners : NSObject {
         self.playerItem = playerItem
         self.smPlayer = smPlayer
         self.methodChannelManager = methodChannelManager
+        super.init()
+        self.smPlayer.addObserver(self, forKeyPath: "currentItem", options: [.new, .old], context: nil)
+
     }
 
     private var mediaChange: NSKeyValueObservation?
@@ -36,19 +39,21 @@ public class SMPlayerListeners : NSObject {
                         let duration : Float64 = CMTimeGetSeconds(smPlayer.currentItem!.duration);
                         if(position < duration){
                             methodChannelManager?.notifyPositionChange(position: position, duration: duration)
+                            NowPlayingCenter.update(item: smPlayer.currentItem?.playlistItem, rate: 1.0, position: position, duration: duration)
                         }
                     }
                 }
 
-                mediaChange = smPlayer.observe(\.currentItem, options: [.new,.old]) { [self]
-                    (player, item) in
-                    if(item.oldValue! != nil && (item.newValue != item.oldValue)){
-//                        OnePlayerSingleton.i.currentInterval += 1
-                    }
-                    if(item.newValue != item.oldValue){
-                       print("onMediaChanged")
-                    }
-                }
+        mediaChange = smPlayer.observe(\.currentItem, options: [.new, .old]) { [weak self] (player, change) in
+                          guard let self = self else { return }
+                          
+                          if let newItem = change.newValue, newItem != change.oldValue {
+                              let index = smPlayer.items().firstIndex(of: newItem!) ?? 0
+                              print("onMediaChanged index: \(index)")
+                              self.methodChannelManager?.currentMediaIndex(index: index)
+                              self.methodChannelManager?.notifyPlayerStateChange(state: PlayerState.itemTransition)
+                          }
+                      }
 
                 statusChange = smPlayer.currentItem?.observe(\.status, options:  [.new, .old], changeHandler: {
                     (playerItem, change) in
@@ -86,26 +91,20 @@ public class SMPlayerListeners : NSObject {
                     }
                 })
 
-                playback = smPlayer.observe(\.timeControlStatus, options: [.new, .old], changeHandler: { [self]
-                    (playerItem, change) in
-                    switch (playerItem.timeControlStatus) {
-                    case AVPlayer.TimeControlStatus.paused:
-                        print("observer - paused")
-//                        onePlayerManager?.onStateChange(state: OnePlayerState.PAUSED)
-                        methodChannelManager?.notifyPlayerStateChange(state:  PlayerState.paused)
-                        break
-                    case AVPlayer.TimeControlStatus.playing:
-                        print("observer - playing")
-                        methodChannelManager?.notifyPlayerStateChange(state:  PlayerState.playing)
-                        break
-                    case AVPlayer.TimeControlStatus.waitingToPlayAtSpecifiedRate:
-                        print("observer - waitingToPlayAtSpecifiedRate")
-                        break
-                    default:
-                        print("observer - default: \(AVPlayer.TimeControlStatus.self)")
-                        break
-                    }
-                })
+        playback = smPlayer.observe(\.timeControlStatus, options: [.new, .old]) { [weak self] (player, change) in
+                           guard let self = self else { return }
+                           
+                           switch player.timeControlStatus {
+                           case .playing:
+                               self.methodChannelManager?.notifyPlayerStateChange(state: PlayerState.playing)
+                           case .paused:
+                               self.methodChannelManager?.notifyPlayerStateChange(state: PlayerState.paused)
+                           case .waitingToPlayAtSpecifiedRate:
+                               self.methodChannelManager?.notifyPlayerStateChange(state: PlayerState.buffering)
+                           @unknown default:
+                               break
+                           }
+                       }
 
                 smPlayer.addObserver(self, forKeyPath: "error", options: [.old, .new], context: nil)
     }
@@ -115,6 +114,16 @@ public class SMPlayerListeners : NSObject {
                 print("Erro HTTP: contentIsNotAuthorized")
             }
         }
+        if keyPath == "currentItem" {
+                    if let currentItem = smPlayer.currentItem, let index = smPlayer.items().firstIndex(of: currentItem) {
+                        print("Novo item reproduzido. Índice atual: \(index) | \(smPlayer.currentItem)")
+                        if let currentItem = smPlayer.currentItem, let index = smPlayer.items().firstIndex(of: currentItem) {
+                            print("Item terminou de tocar. Índice atual: \(index) | \(smPlayer.items().count)")
+                             }
+                    } else {
+                        print("Nenhum item atual ou item não encontrado na fila.")
+                    }
+                }
     }
 
 }

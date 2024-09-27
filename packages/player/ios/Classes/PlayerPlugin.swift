@@ -16,7 +16,7 @@ private let tag = TAG
 private var smPlayer: SMPlayer? = nil
 
 
-
+var currentIndex:Int = 0
 
 public class PlayerPlugin: NSObject, FlutterPlugin {
     public static func register(with registrar: FlutterPluginRegistrar) {
@@ -57,19 +57,19 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
         }
     }
     
-    func convertToMedia(mediaArray: [[String: Any]]) -> [Media]? {
-        var mediaList: [Media] = []
+    func convertToMedia(mediaArray: [[String: Any]]) -> [PlaylistItem]? {
+        var mediaList: [PlaylistItem] = []
         
         for mediaDict in mediaArray {
-            
+    
           var id = mediaDict["id"] // Certificar que 'id' é um número
-          let name = mediaDict["name"]
+          let title = mediaDict["name"]
           let albumId = mediaDict["albumId"]
-          let albumTitle = mediaDict["albumTitle"]
-          let author = mediaDict["author"]
+          let albumName = mediaDict["albumTitle"]
+          let artist = mediaDict["author"]
           let url = mediaDict["url"]
           let isLocal = mediaDict["isLocal"]
-          let coverUrl = mediaDict["coverUrl"]
+          let coverUrl = mediaDict["cover_url"]
           let bigCoverUrl = mediaDict["bigCoverUrl"]
           let isVerifiedString = mediaDict["isVerified"]
           let isVerified = isVerifiedString
@@ -80,27 +80,27 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
             let localPath = mediaDict["localPath"]
             let playlistId = mediaDict["playlistId"]
             let fallbackUrl = mediaDict["fallbackUrl"]
-
+            
             // Criar o objeto Media e adicionar à lista
-            let media = Media(
-                id: id as! Int,
-                name: name as! String,
-                albumId: albumId as! Int,
-                albumTitle: albumTitle as! String,
-                author: author as! String,
+            let media = PlaylistItem(
+                albumId:String(albumId as! Int),
+                albumName: albumName as! String,
+                title:title as! String,
+                artist: artist as! String,
                 url: url as! String,
-                isLocal: isLocal as? Bool ?? false,
-                localPath: localPath as? String ?? "",
                 coverUrl: coverUrl as? String ?? "",
-                bigCoverUrl: bigCoverUrl as? String ?? "",
-                isVerified: isVerified as? Bool ?? false,
-                playlistId: playlistId as? Int ?? 0,
-                fallbackUrl: fallbackUrl as? String ?? ""
+                fallbackUrl: fallbackUrl as? String ?? "",
+                mediaId: id as! Int,
+                bigCoverUrl: bigCoverUrl as? String ?? ""
             )
             mediaList.append(media)
         }
         
         return mediaList
+    }
+    
+    deinit {
+        smPlayer?.clearNowPlayingInfo()
     }
 
 }

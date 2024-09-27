@@ -44,6 +44,11 @@ class MethodChannelManagerArgsBuilder{
         return self
     }
     
+    open func currentIndex(index: Int) -> MethodChannelManagerArgsBuilder {
+        args[CURRENT_MEDIA_INDEX_ARGS] = index
+        return self
+    }
+    
 //    open func queue(queue: Array<Media>) -> MethodChannelManagerArgsBuilder {
 //        let queueJson = JsonUtil.toJson(queue) as? String
 //        //TODO: Melhorar o tratamento do null
