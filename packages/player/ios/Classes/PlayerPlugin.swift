@@ -15,7 +15,6 @@ private let tag = TAG
 
 private var smPlayer: SMPlayer? = nil
 
-
 var currentIndex:Int = 0
 
 public class PlayerPlugin: NSObject, FlutterPlugin {
@@ -29,20 +28,24 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-    print("call.method: \(call.method)")
+        print("call.method: \(call.method)")
         switch call.method {
         case "enqueue":
             if let batch = call.arguments as? [String: Any],
-               let listMedia = batch["batch"] as? [[String: Any]]{
+               let listMedia = batch["batch"] as? [[String: Any]] {
                 let autoPlay = batch["autoPlay"] as? Bool ?? false
                 let cookie = batch["cookie"] as? String ?? ""
-                if convertToMedia(mediaArray: listMedia) != nil {
-                    smPlayer?.enqueue(medias: convertToMedia(mediaArray: listMedia)!, autoPlay: autoPlay,cookie: cookie)
-                 }
+                if let mediaList = convertToMedia(mediaArray: listMedia) {
+                    MessageBuffer.shared.send(mediaList)
+                    smPlayer?.enqueue(medias: mediaList, autoPlay: autoPlay, cookie: cookie)
+                }
             }
             result(NSNumber(value: true))
         case "next":
-            smPlayer?.next()
+            smPlayer?.nextTrack()
+            result(NSNumber(value: 1))
+        case "previous":
+            smPlayer?.previousTrack()
             result(NSNumber(value: 1))
         case "play":
             smPlayer?.play()
@@ -50,35 +53,43 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
         case "pause":
             smPlayer?.pause()
             result(NSNumber(value: 1))
+        case "disable_repeat_mode":
+            smPlayer?.disableRepeatMode()
+            result(NSNumber(value: 1))
+        case "playFromQueue":
+            if let args = call.arguments as? [String: Any] {
+                smPlayer?.playFromQueue(position: args["position"] as? Int ?? 0, timePosition: args["timePosition"] as? Int ?? 0, loadOnly: args["loadOnly"] as? Bool ?? false)
+            }
+            result(NSNumber(value: 1))
         case "remove_all":
             result(NSNumber(value: true))
+        case "seek":
+            if let args = call.arguments as? [String: Any] {
+                let position = args["position"] ?? 0
+                smPlayer?.seek(position:position as! Int)
+            }
+            result(NSNumber(value: 1))
         default:
-            result(NSNumber(value: false))
+            result(NSNumber(value: 0))
         }
     }
     
     func convertToMedia(mediaArray: [[String: Any]]) -> [PlaylistItem]? {
+        let enqueueStartTime = Date()
         var mediaList: [PlaylistItem] = []
         
         for mediaDict in mediaArray {
-    
-          var id = mediaDict["id"] // Certificar que 'id' é um número
-          let title = mediaDict["name"]
-          let albumId = mediaDict["albumId"]
-          let albumName = mediaDict["albumTitle"]
-          let artist = mediaDict["author"]
-          let url = mediaDict["url"]
-          let isLocal = mediaDict["isLocal"]
-          let coverUrl = mediaDict["cover_url"]
-          let bigCoverUrl = mediaDict["bigCoverUrl"]
-          let isVerifiedString = mediaDict["isVerified"]
-          let isVerified = isVerifiedString
-        
-    
-
-            // Atribuição opcional
-            let localPath = mediaDict["localPath"]
-            let playlistId = mediaDict["playlistId"]
+            
+            let id = mediaDict["id"]
+            let title = mediaDict["name"]
+            let albumId = mediaDict["albumId"]
+            let albumName = mediaDict["albumTitle"]
+            let artist = mediaDict["author"]
+            let url = mediaDict["url"]
+            let isLocal = mediaDict["isLocal"]
+            let coverUrl = mediaDict["cover_url"]
+            let bigCoverUrl = mediaDict["bigCoverUrl"]
+            let isVerifiedString = mediaDict["isVerified"]
             let fallbackUrl = mediaDict["fallbackUrl"]
             
             // Criar o objeto Media e adicionar à lista
@@ -95,12 +106,14 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
             )
             mediaList.append(media)
         }
-        
+        let enqueueEndTime = Date()
+        let enqueueTime = enqueueEndTime.timeIntervalSince(enqueueStartTime)
+        print("PlayerPlugin: convertToMedia concluído em \(enqueueTime) segundos mediaArray: \(mediaArray.count)")
         return mediaList
     }
     
     deinit {
         smPlayer?.clearNowPlayingInfo()
     }
-
+    
 }

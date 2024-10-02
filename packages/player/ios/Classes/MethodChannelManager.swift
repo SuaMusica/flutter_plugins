@@ -30,7 +30,7 @@ public class MethodChannelManager:NSObject{
             .duration(duration:Int(duration)*1000)
 //            .currentMediaIndex(currentMediaIndex:currentMediaIndex)
             .build()
-            print("notifyPositionChange no tempo: \(position) segundos | duration: \(duration)")
+//            print("notifyPositionChange no tempo: \(position) segundos | duration: \(duration)")
             channel?.invokeMethod("audio.onCurrentPosition", arguments: args)
     }
     
@@ -50,14 +50,13 @@ public class MethodChannelManager:NSObject{
             .build()
         channel?.invokeMethod(SET_CURRENT_MEDIA_INDEX, arguments: args)
     }
-//
-//    func repeatModeChanged(repeatMode: Int) {
-//        let args = MethodChannelManagerArgsBuilder()
-//            .event(event: REPEAT_MODE_CHANGED)
-//            .repeatMode(repeatMode: repeatMode)
-//            .build()
-//        eventSink?(args)
-//    }
+
+    func repeatModeChanged(repeatMode: Int) {
+        let args = MethodChannelManagerArgsBuilder()
+            .repeatMode(repeatMode: repeatMode)
+            .build()
+        channel?.invokeMethod(REPEAT_MODE_CHANGED, arguments: args)
+    }
 //    
 //    func shuffleChanged(shuffleIsActive: Bool) {
 //        let args = MethodChannelManagerArgsBuilder()
