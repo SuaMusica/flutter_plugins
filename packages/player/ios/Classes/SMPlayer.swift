@@ -6,18 +6,30 @@ private var playlistItemKey: UInt8 = 0
 
 public class SMPlayer : NSObject  {
     var methodChannelManager: MethodChannelManager?
+    //Queue handle
     private var smPlayer: AVQueuePlayer
     private var playerItem: AVPlayerItem?
     private var historyQueue: [AVPlayerItem] = []
     private var futureQueue: [AVPlayerItem] = []
+    //Shuffle handle
+    private var originalQueue: [AVPlayerItem] = []
+    private var shuffledIndices: [Int] = []
+    private var isShuffleModeEnabled: Bool = false
+    var shuffledQueue: [AVPlayerItem] = []
     
-    var currentQueue: [AVPlayerItem] {
-       return historyQueue + smPlayer.items() + futureQueue
+    var fullQueue: [AVPlayerItem] {
+        return historyQueue + smPlayer.items() + futureQueue
+    }
+    
+    var currentIndex : Int? {
+        guard let currentItem = smPlayer.currentItem else {
+            return nil
+        }
+        return fullQueue.firstIndex(of: currentItem)
     }
     
     init(methodChannelManager: MethodChannelManager?) {
         smPlayer = AVQueuePlayer()
-
         super.init()
         self.methodChannelManager = methodChannelManager
         let listeners = SMPlayerListeners(playerItem: playerItem,smPlayer:smPlayer,methodChannelManager:methodChannelManager)
@@ -29,15 +41,7 @@ public class SMPlayer : NSObject  {
         _ = AudioSessionManager.activeSession()
         _ = RepeatManager(player:smPlayer)
         NotificationCenter.default.addObserver(self, selector: #selector(itemDidFinishPlaying(_:)), name: .AVPlayerItemDidPlayToEndTime, object: smPlayer.currentItem)
-
-    }
-    
-    func play(url: String) {
-        guard let videoURL = URL(string: url) else { return }
-        playerItem = AVPlayerItem(url: videoURL)
-        smPlayer.replaceCurrentItem(with: playerItem)
-        //        updateNowPlayingInfo()
-        smPlayer.play()
+        
     }
     
     func pause() {
@@ -47,6 +51,7 @@ public class SMPlayer : NSObject  {
     
     func disableRepeatMode() {
         smPlayer.repeatMode = .REPEAT_MODE_OFF
+        methodChannelManager?.repeatModeChanged(repeatMode: smPlayer.repeatMode.hashValue)
     }
     
     func seek(position:Int){
@@ -78,27 +83,51 @@ public class SMPlayer : NSObject  {
     }
     
     func enqueue(medias: [PlaylistItem], autoPlay: Bool, cookie: String) {
-            guard let message = MessageBuffer.shared.receive() else { return }
-                let isFirstBatch = self.smPlayer.items().count == 0
-                for media in message {
-                    guard let url = URL(string: media.url!) else { continue }
-                    let assetOptions = ["AVURLAssetHTTPHeaderFieldsKey": ["Cookie": cookie]]
-                    let playerItem = AVPlayerItem(asset: AVURLAsset(url: url, options: assetOptions))
-                    playerItem.playlistItem = media
-                    self.addItem(playerItem)
-                }
-                if autoPlay && isFirstBatch {
-                    self.smPlayer.play()
-                    self.setNowPlaying()
-                }
+        guard let message = MessageBuffer.shared.receive() else { return }
+        let isFirstBatch = self.smPlayer.items().count == 0
+        for media in message {
+            guard let url = URL(string: media.url!) else { continue }
+            let assetOptions = ["AVURLAssetHTTPHeaderFieldsKey": ["Cookie": cookie]]
+            let playerItem = AVPlayerItem(asset: AVURLAsset(url: url, options: assetOptions))
+            playerItem.playlistItem = media
+            futureQueue.append(playerItem)
+        }
+        insertIntoPlayerIfNeeded()
+        if autoPlay && isFirstBatch {
+            self.smPlayer.play()
+            self.setNowPlaying()
+        }
     }
     
-    func getCurrentIndex() -> Int? {
-        guard let currentItem = smPlayer.currentItem else {
-            return nil
+    func toggleShuffle(positionsList: [[String: Int]]) {
+        isShuffleModeEnabled.toggle()
+        if isShuffleModeEnabled {
+            shuffledIndices = positionsList.compactMap { $0["originalPosition"] }
+            originalQueue = fullQueue
+            fillShuffledQueue()
+            distributeItemsInRightQueue(currentQueue: shuffledQueue)
+        } else {
+            if(!originalQueue.isEmpty){
+                distributeItemsInRightQueue(currentQueue: originalQueue)
+            }
         }
-        
-        return smPlayer.items().firstIndex(of: currentItem)
+        methodChannelManager?.shuffleChanged(shuffleIsActive: isShuffleModeEnabled)
+    }
+    
+    func fillShuffledQueue()  {
+        shuffledQueue.removeAll()
+        for index in shuffledIndices {
+            if index < fullQueue.count {
+                shuffledQueue.append(fullQueue[index])
+            }
+        }
+    }
+    
+    
+    func reorder(fromIndex: Int, toIndex: Int, positionsList: [[String: Int]]) {
+        var queue = isShuffleModeEnabled ?  shuffledQueue : fullQueue
+        queue.insert(queue.remove(at: fromIndex), at: toIndex)
+        distributeItemsInRightQueue(currentQueue: queue)
     }
     
     func nextTrack() {
@@ -106,23 +135,35 @@ public class SMPlayer : NSObject  {
             historyQueue.append(currentItem)
         }
         smPlayer.advanceToNextItem()
+        seekToPosition(position: 0)
         setNowPlaying()
         insertIntoPlayerIfNeeded()
+        printStatus(from:"NEXT")
     }
     
     func previousTrack() {
-        //TESTE com pause
-        guard let lastHistoryItem = historyQueue.popLast() else { return /*smPlayer.seek(to: CMTime.zero) */}
-        let currentItem = smPlayer.currentItem
-        let lastItemInPlayer = smPlayer.items().last!
-        smPlayer.remove(lastItemInPlayer)
-        futureQueue.insert(lastItemInPlayer, at: 0)
-        smPlayer.insert(lastHistoryItem, after: currentItem!)
+        smPlayer.pause()
+        guard let lastHistoryItem = historyQueue.popLast() else {
+            seekToPosition(position: 0)
+            return
+        }
+        guard let currentItem = smPlayer.currentItem else { return}
+        guard let lastItemInPlayer = smPlayer.items().last else { return }
+        
+        if(currentItem != lastItemInPlayer) {
+            smPlayer.remove(lastItemInPlayer)
+            futureQueue.insert(lastItemInPlayer, at: 0)
+        }
+        
+        smPlayer.insert(lastHistoryItem, after: currentItem)
         smPlayer.advanceToNextItem()
-        smPlayer.insert(currentItem!, after: smPlayer.currentItem)
-        printStatus()
+        smPlayer.insert(currentItem, after: smPlayer.currentItem)
+        
         seekToPosition(position: 0)
         setNowPlaying()
+        insertIntoPlayerIfNeeded()
+        smPlayer.play()
+        printStatus(from:"previousTrack")
     }
     
     func setNowPlaying(){
@@ -136,36 +177,30 @@ public class SMPlayer : NSObject  {
         
         for _ in 0..<itemsToAdd {
             if let item = futureQueue.first {
-                print("Items added in player: \(String(describing: item.playlistItem?.title))")
                 smPlayer.insert(item, after: nil)
                 futureQueue.removeFirst()
             }
         }
-        printStatus()
+        printStatus(from:"insertIntoPlayerIfNeeded")
     }
-
+    
     
     func removeAll(){
-        smPlayer.removeAllItems()
-        //        queue.removeAll()
         smPlayer.pause()
-        smPlayer.seek(to: .zero)
+        smPlayer.seek(to: CMTime.zero)
+        smPlayer.removeAllItems()
+        historyQueue.removeAll()
+        futureQueue.removeAll()
+        originalQueue.removeAll()
     }
     
     func play(){
         smPlayer.play()
     }
     
-    func addItem(_ item: AVPlayerItem) {
-        futureQueue.append(item)
-        insertIntoPlayerIfNeeded()
-    }
-    
     func seekToPosition(position:Int){
-        
         let positionInSec = CMTime(seconds: Double(position/1000), preferredTimescale: 60000)
         smPlayer.seek(to: positionInSec, toleranceBefore: .zero, toleranceAfter: .zero)
-        
     }
     
     func getCurrentPlaylistItem() -> PlaylistItem? {
@@ -175,20 +210,40 @@ public class SMPlayer : NSObject  {
         return currentItem.playlistItem
     }
     
-    func playFromQueue(position: Int, timePosition: Int, loadOnly: Bool) {
-        let allItems = currentQueue
-        smPlayer.removeAllItems()
+    private func distributeItemsInRightQueue(currentQueue: [AVPlayerItem], keepFirst: Bool = true, positionArg: Int = -1) {
+        guard currentQueue.count > 0 else { return }
+        
+        var position = positionArg
+        
         historyQueue.removeAll()
         futureQueue.removeAll()
-        for (index, item) in allItems.enumerated() {
-            if index < position {
-                historyQueue.append(item)
-            } else  {
-                futureQueue.append(item)
-//                MessageBuffer.shared.sendUnique(item)
+        
+        
+        if(keepFirst){
+            position =  smPlayer.currentItem != nil ? currentQueue.firstIndex(of:smPlayer.currentItem!)  ?? -1 : -1
+            let itemsToRemove = smPlayer.items().dropFirst()
+            for item in itemsToRemove {
+                smPlayer.remove(item)
+            }
+        }else{
+            smPlayer.removeAllItems()
+        }
+        
+        
+        for (index, item) in currentQueue.enumerated() {
+            if(index != position){
+                if index < position  {
+                    historyQueue.append(item)
+                } else  {
+                    futureQueue.append(item)
+                }
             }
         }
         insertIntoPlayerIfNeeded()
+    }
+    
+    func playFromQueue(position: Int, timePosition: Int, loadOnly: Bool) {
+        distributeItemsInRightQueue(currentQueue:fullQueue, keepFirst: false, positionArg: position)
         if(loadOnly){
             seekToPosition(position: timePosition)
             smPlayer.pause()
@@ -213,11 +268,11 @@ public class SMPlayer : NSObject  {
         }
         
         commandCenter.nextTrackCommand.addTarget {[self]event in
-            smPlayer.advanceToNextItem()
+            nextTrack()
             return .success
         }
         commandCenter.previousTrackCommand.addTarget {[self]event in
-            smPlayer.advanceToNextItem()
+            previousTrack()
             return .success
         }
         
@@ -228,17 +283,20 @@ public class SMPlayer : NSObject  {
         }
     }
     
-    func printStatus() {
+    func printStatus(from:String) {
         print("#printStatus #################################################")
+        print("#printStatus  \(from) ")
+        print("#printStatus Current Index: \(String(describing: currentIndex))")
+        print("#printStatus ------------------------------------------")
         print("#printStatus History: \(historyQueue.count) items")
         for item in historyQueue {
             print("#printStatus History: \(String(describing: item.playlistItem?.title))")
         }
         print("#printStatus ------------------------------------------")
         print("#printStatus futureQueue Items: \(futureQueue.count) items")
-//        for item in futureQueue {
-//            print("#printStatus Upcoming: \(String(describing: item.playlistItem?.title))")
-//        }
+        for item in futureQueue {
+            print("#printStatus Upcoming: \(String(describing: item.playlistItem?.title))")
+        }
         print("#printStatus ------------------------------------------")
         print("#printStatus AVQueuePlayer items: \(smPlayer.items().count)")
         for item in smPlayer.items() {
@@ -254,6 +312,7 @@ public class SMPlayer : NSObject  {
         smPlayer.play()
     }
 }
+
 extension AVPlayerItem {
     var playlistItem: PlaylistItem? {
         get {
@@ -265,8 +324,6 @@ extension AVPlayerItem {
     }
 }
 
-
-// Extensão de AVPlayer para suporte a modo de repetição
 public extension AVQueuePlayer {
     private struct CustomProperties {
         static var repeatManager: UInt8 = 0

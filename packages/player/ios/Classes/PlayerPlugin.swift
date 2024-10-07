@@ -15,8 +15,6 @@ private let tag = TAG
 
 private var smPlayer: SMPlayer? = nil
 
-var currentIndex:Int = 0
-
 public class PlayerPlugin: NSObject, FlutterPlugin {
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: CHANNEL, binaryMessenger: registrar.messenger())
@@ -53,6 +51,11 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
         case "pause":
             smPlayer?.pause()
             result(NSNumber(value: 1))
+        case "toggle_shuffle":
+            if let args = call.arguments as? [String: Any]{
+                smPlayer?.toggleShuffle(positionsList: args["positionsList"] as! [[String: Int]])
+            }
+            result(NSNumber(value: 1))
         case "disable_repeat_mode":
             smPlayer?.disableRepeatMode()
             result(NSNumber(value: 1))
@@ -62,6 +65,15 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
             }
             result(NSNumber(value: 1))
         case "remove_all":
+            smPlayer?.removeAll()
+            result(NSNumber(value: true))
+        case "reorder":
+            if let args = call.arguments as? [String: Any],
+               let oldIndex = args["oldIndex"] as? Int,
+               let newIndex = args["newIndex"] as? Int,
+               let positionsList = args["positionsList"] as? [[String : Int]] {
+                smPlayer?.reorder(fromIndex: oldIndex, toIndex: newIndex,positionsList: positionsList)
+            }
             result(NSNumber(value: true))
         case "seek":
             if let args = call.arguments as? [String: Any] {

@@ -57,13 +57,12 @@ public class MethodChannelManager:NSObject{
             .build()
         channel?.invokeMethod(REPEAT_MODE_CHANGED, arguments: args)
     }
-//    
-//    func shuffleChanged(shuffleIsActive: Bool) {
-//        let args = MethodChannelManagerArgsBuilder()
-//            .event(event: SHUFFLE_CHANGED)
-//            .shuffleIsActive(shuffleIsActive: shuffleIsActive)
-//            .build()
-//        eventSink?(args)
-//    }
+    
+    func shuffleChanged(shuffleIsActive: Bool) {
+        let args = MethodChannelManagerArgsBuilder()
+            .shuffleIsActive(shuffleIsActive: shuffleIsActive)
+            .build()
+        channel?.invokeMethod(SHUFFLE_CHANGED, arguments: args)
+    }
 }
 
