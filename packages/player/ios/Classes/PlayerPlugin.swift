@@ -40,7 +40,7 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
             }
             result(NSNumber(value: true))
         case "next":
-            smPlayer?.nextTrack()
+            smPlayer?.nextTrack(from:"next call")
             result(NSNumber(value: 1))
         case "previous":
             smPlayer?.previousTrack()
@@ -67,6 +67,9 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
         case "remove_all":
             smPlayer?.removeAll()
             result(NSNumber(value: true))
+        case "repeat_mode":
+            smPlayer?.toggleRepeatMode()
+            result(NSNumber(value: 1))
         case "reorder":
             if let args = call.arguments as? [String: Any],
                let oldIndex = args["oldIndex"] as? Int,
@@ -114,7 +117,8 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
                 coverUrl: coverUrl as? String ?? "",
                 fallbackUrl: fallbackUrl as? String ?? "",
                 mediaId: id as! Int,
-                bigCoverUrl: bigCoverUrl as? String ?? ""
+                bigCoverUrl: bigCoverUrl as? String ?? "",
+                cookie: ""
             )
             mediaList.append(media)
         }

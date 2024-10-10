@@ -18,34 +18,48 @@ public class MethodChannelManager:NSObject{
         self.channel = channel
     }
     var tag = "MethodChannelManager"
-//    let methodChannel = FlutterMethodChannel(name: CHANNEL, binaryMessenger: controller.binaryMessenger)
-
     
     func notifyPositionChange(
         position: Double,
         duration: Double) {
         let args = MethodChannelManagerArgsBuilder()
-            .playerId(id:"TAG_ONEPLAYER")
+            .playerId(id:"smplayer")
             .position(position:Int(position)*1000)
             .duration(duration:Int(duration)*1000)
-//            .currentMediaIndex(currentMediaIndex:currentMediaIndex)
             .build()
-//            print("notifyPositionChange no tempo: \(position) segundos | duration: \(duration)")
             channel?.invokeMethod("audio.onCurrentPosition", arguments: args)
+    }
+    
+    func notifyNetworkStatus(
+    status:Bool) {
+        let args = MethodChannelManagerArgsBuilder()
+            .playerId(id:"smplayer")
+            .build()
+        channel?.invokeMethod("network.onChange", arguments: status ? "CONNECTED" : "DISCONNECTED")
     }
     
     
     func notifyPlayerStateChange(state: PlayerState) {
+        print("#CheckListeners - notifyPlayerStateChange \(state)")
         let args = MethodChannelManagerArgsBuilder()
-            .playerId(id:"TAG_ONEPLAYER")
+            .playerId(id:"smplayer")
             .state(state:state)
             .build()
         channel?.invokeMethod("state.change", arguments: args)
     }
     
+    func notifyError(error: String? = nil) {
+         let args = MethodChannelManagerArgsBuilder()
+            .playerId(id: "smplayer")
+            .state(state:PlayerState.error)
+            .error(error:error)
+            .build()
+        channel?.invokeMethod("state.change", arguments: args)
+     }
+    
     func currentMediaIndex(index: Int) {
         let args = MethodChannelManagerArgsBuilder()
-            .playerId(id:"TAG_ONEPLAYER")
+            .playerId(id:"smplayer")
             .currentIndex(index:index)
             .build()
         channel?.invokeMethod(SET_CURRENT_MEDIA_INDEX, arguments: args)
