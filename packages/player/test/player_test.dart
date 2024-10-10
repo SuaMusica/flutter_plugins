@@ -71,23 +71,23 @@ void main() {
     test('Adding media to an empty queue shall make it the queue top',
         () async {
       final subject = createPlayer();
-      subject.enqueue(media1);
+      subject.enqueue(media: media1);
       expect(subject.size, 1);
       expect(subject.top, media1);
     });
     test('The queue shall support multiple items', () async {
       final subject = createPlayer();
-      subject.enqueue(media1);
-      subject.enqueue(media2);
-      subject.enqueue(media3);
+      subject.enqueue(media: media1);
+      subject.enqueue(media: media2);
+      subject.enqueue(media: media3);
       expect(subject.size, 3);
       expect(subject.top, media1);
       expect(subject.items, [media1, media2, media3]);
     });
     test('Playing a media shall replace the queue top', () async {
       final subject = createPlayer();
-      subject.enqueue(media1);
-      subject.enqueue(media2);
+      subject.enqueue(media: media1);
+      subject.enqueue(media: media2);
       subject.play(media3);
       expect(subject.size, 2);
       expect(subject.top, media3);
@@ -96,9 +96,9 @@ void main() {
 
     test('Removing a media shall be supported', () async {
       final subject = createPlayer();
-      subject.enqueue(media1);
-      subject.enqueue(media2);
-      subject.enqueue(media3);
+      subject.enqueue(media: media1);
+      subject.enqueue(media: media2);
+      subject.enqueue(media: media3);
 
       subject.removeByPosition(positionsToDelete: [1], isShuffle: false);
 
@@ -159,18 +159,18 @@ void main() {
     test('Rewind on a queue that was not played shall raise an error',
         () async {
       final subject = createPlayer();
-      subject.enqueue(media1);
-      subject.enqueue(media2);
-      subject.enqueue(media3);
+      subject.enqueue(media: media1);
+      subject.enqueue(media: media2);
+      subject.enqueue(media: media3);
       expect(await subject.rewind(), 1);
     });
     test(
       'Rewind shall be supported',
       () async {
         final subject = createPlayer();
-        subject.enqueue(media1);
-        subject.enqueue(media2);
-        subject.enqueue(media3);
+        subject.enqueue(media: media1);
+        subject.enqueue(media: media2);
+        subject.enqueue(media: media3);
         subject.play(media1);
 
         subject.rewind();
@@ -190,17 +190,17 @@ void main() {
     test('Previous on a queue that was not played shall raise an error',
         () async {
       final subject = createPlayer();
-      subject.enqueue(media1);
-      subject.enqueue(media2);
-      subject.enqueue(media3);
+      subject.enqueue(media: media1);
+      subject.enqueue(media: media2);
+      subject.enqueue(media: media3);
       final a = await subject.previous();
       expect(a, 1);
     });
     test('Previous shall act as rewind', () async {
       final subject = createPlayer();
-      subject.enqueue(media1);
-      subject.enqueue(media2);
-      subject.enqueue(media3);
+      subject.enqueue(media: media1);
+      subject.enqueue(media: media2);
+      subject.enqueue(media: media3);
       subject.play(media1);
 
       subject.previous();
@@ -213,9 +213,9 @@ void main() {
         'Two consecutive previous invocation shall really go the previous track',
         () async {
       final subject = createPlayer();
-      subject.enqueue(media1);
-      subject.enqueue(media2);
-      subject.enqueue(media3);
+      subject.enqueue(media: media1);
+      subject.enqueue(media: media2);
+      subject.enqueue(media: media3);
 
       expect(await subject.next(), Player.Ok);
       expect(subject.size, 3);
@@ -238,9 +238,9 @@ void main() {
         () async {
       final subject = createPlayer();
 
-      subject.enqueue(media1);
-      subject.enqueue(media2);
-      subject.enqueue(media3);
+      subject.enqueue(media: media1);
+      subject.enqueue(media: media2);
+      subject.enqueue(media: media3);
 
       expect(await subject.next(), Player.Ok);
       expect(subject.size, 3);
@@ -266,9 +266,9 @@ void main() {
     test('Next on a queue that was not played shall start playing it',
         () async {
       final subject = createPlayer();
-      subject.enqueue(media1);
-      subject.enqueue(media2);
-      subject.enqueue(media3);
+      subject.enqueue(media: media1);
+      subject.enqueue(media: media2);
+      subject.enqueue(media: media3);
 
       expect(await subject.next(), Player.Ok);
       expect(subject.size, 3);
@@ -278,9 +278,9 @@ void main() {
     test('Next on a queue that is playing shall move to the next', () async {
       final subject = createPlayer();
 
-      subject.enqueue(media1);
-      subject.enqueue(media2);
-      subject.enqueue(media3);
+      subject.enqueue(media: media1);
+      subject.enqueue(media: media2);
+      subject.enqueue(media: media3);
 
       expect(await subject.next(), Player.Ok);
 
@@ -296,9 +296,9 @@ void main() {
     test('Next when reaching the end of the queue shall return null', () async {
       final subject = createPlayer();
 
-      subject.enqueue(media1);
-      subject.enqueue(media2);
-      subject.enqueue(media3);
+      subject.enqueue(media: media1);
+      subject.enqueue(media: media2);
+      subject.enqueue(media: media3);
 
       expect(await subject.next(), Player.Ok);
       expect(subject.size, 3);
@@ -342,17 +342,17 @@ void main() {
     test('Top on an unplayed queue shall return the top of the queue',
         () async {
       final subject = createPlayer();
-      subject.enqueue(media1);
-      subject.enqueue(media2);
-      subject.enqueue(media3);
+      subject.enqueue(media: media1);
+      subject.enqueue(media: media2);
+      subject.enqueue(media: media3);
       expect(subject.size, 3);
       expect(subject.top, media1);
     });
     test('Current on an unplayed queue shall return media1', () async {
       final subject = createPlayer();
-      subject.enqueue(media1);
-      subject.enqueue(media2);
-      subject.enqueue(media3);
+      subject.enqueue(media: media1);
+      subject.enqueue(media: media2);
+      subject.enqueue(media: media3);
       expect(subject.size, 3);
       expect(subject.current, media1);
     });

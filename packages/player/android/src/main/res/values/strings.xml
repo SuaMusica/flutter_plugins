@@ -2,6 +2,7 @@
   <string name="app_name">Media</string>
   <!-- Notificaiton Channel -->
   <string name="notification_channel">SM - Tocando Agora</string>
+  <string name="notification_id">SM_NOW_PLAYING</string>
   <string name="notification_channel_description">Exibe que música está tocando no Sua Música</string>
   
   <!-- Notification actions -->

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:smplayer/src/isar_service.dart';
@@ -20,7 +19,6 @@ class Queue {
     itemsReady = !initializeIsar;
     _initialize();
   }
-
   Future<void> _initialize() async {
     if (!itemsReady) {
       try {
@@ -295,7 +293,7 @@ class Queue {
       final newIndex = index + 1;
       setIndex = newIndex;
       var media = storage[newIndex].item;
-      _updateIndex(media.id, newIndex);
+      updateIsarIndex(media.id, newIndex);
       return media;
     } else {
       return null;
@@ -303,9 +301,10 @@ class Queue {
   }
 
   Media? possibleNext(RepeatMode repeatMode) {
-    if (repeatMode == RepeatMode.NONE || repeatMode == RepeatMode.TRACK) {
+    if (repeatMode == RepeatMode.REPEAT_MODE_OFF ||
+        repeatMode == RepeatMode.REPEAT_MODE_ONE) {
       return _next();
-    } else if (repeatMode == RepeatMode.QUEUE) {
+    } else if (repeatMode == RepeatMode.REPEAT_MODE_ALL) {
       if (storage.length - 1 == index) {
         return storage[0].item;
       } else {
@@ -339,7 +338,7 @@ class Queue {
     }
   }
 
-  void _updateIndex(int id, int newIndex) async {
+  void updateIsarIndex(int id, int newIndex) async {
     IsarService.instance.addPreviousPlaylistCurrentIndex(
       PreviousPlaylistCurrentIndex(mediaId: id, currentIndex: newIndex),
     );
@@ -347,7 +346,7 @@ class Queue {
 
   Media? item(int pos) {
     final item = storage[pos].item;
-    _updateIndex(item.id, pos);
+    updateIsarIndex(item.id, pos);
     if (storage.length == 0) {
       return null;
     } else if (storage.length > 0 && pos <= storage.length - 1) {
@@ -362,7 +361,7 @@ class Queue {
     return storage.first.item;
   }
 
-  void reorder(int oldIndex, int newIndex, [bool isShuffle = false]) {
+  reorder(int oldIndex, int newIndex, [bool isShuffle = false]) {
     final playingItem = storage.elementAt(index);
     if (newIndex > oldIndex) {
       for (int i = oldIndex + 1; i <= newIndex; i++) {
@@ -400,7 +399,6 @@ class Queue {
         );
       }
     }
-
     setIndex = playingIndex;
   }
 
