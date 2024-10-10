@@ -19,13 +19,14 @@ class Queue {
     itemsReady = !initializeIsar;
     _initialize();
   }
-  List<Media> isarItems = [];
   Future<void> _initialize() async {
     if (!itemsReady) {
       try {
-        isarItems = await previousItems;
+        final items = await previousItems;
         previousIndex = await previousPlaylistIndex;
         previousPosition = await _previousPlaylistPosition;
+        int i = 0;
+        storage.addAll(items.map((e) => QueueItem(i++, i, e)));
       } catch (_) {
       } finally {
         itemsReady = true;

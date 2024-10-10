@@ -8,6 +8,8 @@ import 'package:flutter/services.dart';
 import 'package:smplayer_example/app_colors.dart';
 import 'package:smplayer_example/ui_data.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:collection/collection.dart';
+import 'package:file_picker/file_picker.dart';
 
 class SMPlayer extends StatefulWidget {
   SMPlayer({
@@ -17,6 +19,84 @@ class SMPlayer extends StatefulWidget {
   @override
   State<StatefulWidget> createState() => _SMPlayerState();
 }
+
+var media1 = Media(
+  id: 1,
+  albumTitle: "Album",
+  albumId: 1,
+  name: "Track 1",
+  url:
+      "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
+  coverUrl:
+      "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+  bigCoverUrl:
+      "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+  author: "Xand Avião",
+  isLocal: false,
+  isVerified: true,
+  shareUrl: "",
+  isSpot: false,
+  ownerId: 0,
+  playlistId: 0,
+);
+
+var media3 = Media(
+  id: 1,
+  albumTitle: "Album unsigned",
+  albumId: 1,
+  name: "Track unsigned",
+  url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+  coverUrl: "https://picsum.photos/500/500",
+  bigCoverUrl: "https://picsum.photos/500/500",
+  author: "Xand Avião",
+  fallbackUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+  isLocal: false,
+  isVerified: true,
+  shareUrl: "",
+  isSpot: false,
+  ownerId: 0,
+  playlistId: 0,
+);
+
+var media4 = Media(
+  id: 1,
+  albumTitle: "É o Grelo",
+  albumId: 1,
+  name: "01 - VIDA LOK4 part.1",
+  url:
+      "https://ios-stream.suamusica.com.br/61523203/4435593/stream/01+-+VIDA+LOK4+part.1.m3u8",
+  coverUrl:
+      "https://images.suamusica.com.br/FTpOBQiRWVspoErSnNQgZxhou40=/500x500/filters:format(webp)/61523203/4435593/cd_cover.jpeg",
+  bigCoverUrl:
+      "https://images.suamusica.com.br/FTpOBQiRWVspoErSnNQgZxhou40=/500x500/filters:format(webp)/61523203/4435593/cd_cover.jpeg",
+  author: "É o Grelo",
+  fallbackUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+  isLocal: false,
+  isVerified: true,
+  shareUrl: "",
+  isSpot: false,
+  ownerId: 0,
+  playlistId: 0,
+);
+
+var media2 = Media(
+  id: 2,
+  albumTitle: "Album",
+  albumId: 1,
+  name: "Track 2",
+  url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
+  coverUrl:
+      "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+  bigCoverUrl:
+      "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+  author: "Xand Avião",
+  isLocal: false,
+  isVerified: true,
+  shareUrl: "",
+  isSpot: false,
+  ownerId: 0,
+  playlistId: 0,
+);
 
 class _SMPlayerState extends State<SMPlayer> {
   late Player _player;
@@ -90,65 +170,13 @@ class _SMPlayerState extends State<SMPlayer> {
         }
       });
 
-      var media1 = Media(
-        id: 1,
-        albumTitle: "Album",
-        albumId: 1,
-        name: "Track 1",
-        url:
-            "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
-        coverUrl:
-            "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
-        bigCoverUrl:
-            "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
-        author: "Xand Avião",
-        isLocal: false,
-        isVerified: true,
-        shareUrl: "",
-        isSpot: false,
-        ownerId: 0,
-        playlistId: 0,
-      );
+      final listOfMedias = <Media>[];
 
-      var media3 = Media(
-        id: 1,
-        albumTitle: "Album unsigned",
-        albumId: 1,
-        name: "Track unsigned",
-        url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-        coverUrl: "https://picsum.photos/500/500",
-        bigCoverUrl: "https://picsum.photos/500/500",
-        author: "Xand Avião",
-        fallbackUrl:
-            "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-        isLocal: false,
-        isVerified: true,
-        shareUrl: "",
-        isSpot: false,
-        ownerId: 0,
-        playlistId: 0,
-      );
+      // for (var i = 0; i < 250; i++) {
+      listOfMedias.addAll([media1, media2, media3, media4]);
+      // }
 
-      var media2 = Media(
-        id: 2,
-        albumTitle: "Album",
-        albumId: 1,
-        name: "Track 2",
-        url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
-        coverUrl:
-            "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
-        bigCoverUrl:
-            "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
-        author: "Xand Avião",
-        isLocal: false,
-        isVerified: true,
-        shareUrl: "",
-        isSpot: false,
-        ownerId: 0,
-        playlistId: 0,
-      );
-
-      player.enqueueAll([media1, media2, media3], autoPlay: true);
+      player.enqueueAll(listOfMedias, autoPlay: true);
 
       if (!mounted) return;
 
@@ -269,18 +297,34 @@ class _SMPlayerState extends State<SMPlayer> {
     }
   }
 
-  _changeRepeatMode() {
-    if (_player.repeatMode == RepeatMode.REPEAT_MODE_OFF) {
+  Future<void> pickLocalFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      type: FileType.custom,
+      allowedExtensions: ['mp3'],
+    );
+
+    if (result != null) {
+      String? filePath = result.files.single.path;
+      var localMedia = Media(
+        id: DateTime.now().millisecondsSinceEpoch, // Unique ID
+        albumTitle: "Local Album",
+        albumId: 0,
+        name: result.files.single.name,
+        url: filePath ?? "",
+        coverUrl: "", // You can set a default cover URL or leave it empty
+        bigCoverUrl: "",
+        author: "Local Author",
+        isLocal: true,
+        isVerified: false,
+        shareUrl: "",
+        isSpot: false,
+        ownerId: 0,
+        playlistId: 0,
+      );
+
       setState(() {
-        _player.repeatMode = RepeatMode.REPEAT_MODE_ALL;
-      });
-    } else if (_player.repeatMode == RepeatMode.REPEAT_MODE_ALL) {
-      setState(() {
-        _player.repeatMode = RepeatMode.REPEAT_MODE_ONE;
-      });
-    } else {
-      setState(() {
-        _player.repeatMode = RepeatMode.REPEAT_MODE_OFF;
+        _player.enqueueAll([localMedia], autoPlay: true);
       });
     }
   }
@@ -294,48 +338,79 @@ class _SMPlayerState extends State<SMPlayer> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         children: <Widget>[
-          Stack(children: <Widget>[
-            Wrap(
-              direction: Axis.horizontal,
-              children: <Widget>[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    Padding(
-                      padding: EdgeInsets.only(left: 20.0),
-                      child:
-                          Text(positionText, style: TextStyle(fontSize: 14.0)),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(right: 20.0),
-                      child:
-                          Text(durationText, style: TextStyle(fontSize: 14.0)),
-                    )
-                  ],
-                ),
-              ],
-            ),
-            Container(
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: Icon(Icons.delete),
+                onPressed: () {
+                  _player.removeAll();
+                },
+                tooltip: 'Remove all',
+              ),
+              IconButton(
+                icon: Icon(Icons.add),
+                onPressed: () {
+                  _player.enqueueAll(
+                    [media1, media2, media3, media4],
+                    autoPlay: true,
+                  );
+                },
+                tooltip: 'Add media',
+              ),
+              IconButton(
+                icon: Icon(Icons.folder),
+                onPressed: pickLocalFile,
+                tooltip: 'Add local file',
+              ),
+            ],
+          ),
+          Stack(
+            children: <Widget>[
+              Wrap(
+                direction: Axis.horizontal,
+                children: <Widget>[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      Padding(
+                        padding: EdgeInsets.only(left: 20.0),
+                        child: Text(positionText,
+                            style: TextStyle(fontSize: 14.0)),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.only(right: 20.0),
+                        child: Text(durationText,
+                            style: TextStyle(fontSize: 14.0)),
+                      )
+                    ],
+                  ),
+                ],
+              ),
+              Container(
                 width: double.infinity,
                 margin: EdgeInsets.only(top: 5.0),
                 child: SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      trackHeight: 2.0,
-                      thumbShape:
-                          const RoundSliderThumbShape(enabledThumbRadius: 7.0),
-                      showValueIndicator: ShowValueIndicator.always,
-                    ),
-                    child: Slider(
-                      activeColor: AppColors.redPink,
-                      inactiveColor: AppColors.inactiveColor,
-                      min: 0.0,
-                      max: duration.inMilliseconds.toDouble(),
-                      value: position.inMilliseconds.toDouble(),
-                      onChanged: (double value) {
-                        seek(value);
-                      },
-                    ))),
-          ]),
+                  data: SliderTheme.of(context).copyWith(
+                    trackHeight: 2.0,
+                    thumbShape:
+                        const RoundSliderThumbShape(enabledThumbRadius: 7.0),
+                    showValueIndicator: ShowValueIndicator.always,
+                  ),
+                  child: Slider(
+                    activeColor: AppColors.redPink,
+                    inactiveColor: AppColors.inactiveColor,
+                    min: 0.0,
+                    max: duration.inMilliseconds.toDouble(),
+                    value: position.inMilliseconds.toDouble(),
+                    onChanged: (double value) {
+                      seek(value);
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
           Row(
             children: [
               Container(
@@ -359,14 +434,16 @@ class _SMPlayerState extends State<SMPlayer> {
                   Container(
                     margin: EdgeInsets.only(left: 8, right: 8),
                     child: Material(
-                        borderRadius: BorderRadius.circular(40.0),
-                        clipBehavior: Clip.hardEdge,
-                        child: IconButton(
-                            onPressed: previous,
-                            iconSize: 40,
-                            icon: Container(
-                              child: SvgPicture.asset(UIData.btPlayerPrevious),
-                            ))),
+                      borderRadius: BorderRadius.circular(40.0),
+                      clipBehavior: Clip.hardEdge,
+                      child: IconButton(
+                        onPressed: previous,
+                        iconSize: 40,
+                        icon: Container(
+                          child: SvgPicture.asset(UIData.btPlayerPrevious),
+                        ),
+                      ),
+                    ),
                   ),
                   Material(
                       borderRadius: BorderRadius.circular(58.0),
@@ -401,7 +478,7 @@ class _SMPlayerState extends State<SMPlayer> {
                       iconSize: 25,
                       icon: SvgPicture.asset(UIData.btPlayerRepeat,
                           color: _repeatModeToColor()),
-                      onPressed: _changeRepeatMode,
+                      onPressed: _player.toggleRepeatMode,
                     )),
               ),
             ],
@@ -410,23 +487,37 @@ class _SMPlayerState extends State<SMPlayer> {
           Text(mediaLabel),
           SizedBox(height: 30),
           Expanded(
-              child: SizedBox(
-            height: 200,
-            child: ListView.separated(
-              padding: const EdgeInsets.all(8.0),
-              itemCount: _player.items.length,
-              itemBuilder: (BuildContext context, int index) {
-                var media = _player.items[index];
-                return Container(
-                  height: 50,
-                  color: Colors.blue[colorCodes[index % 3]],
-                  child: Center(child: Text('${media.id} - ${media.name}')),
-                );
-              },
-              separatorBuilder: (BuildContext context, int index) =>
-                  const Divider(),
+            child: SizedBox(
+              height: 200,
+              child: ReorderableListView(
+                onReorder: (int oldIndex, int newIndex) {
+                  if (newIndex > _player.items.length) {
+                    newIndex = _player.items.length;
+                  }
+                  if (oldIndex < newIndex) {
+                    newIndex--;
+                  }
+                  _player.reorder(oldIndex, newIndex);
+                },
+                children: _player.items
+                    .mapIndexed(
+                      (index, media) => GestureDetector(
+                        key: Key('queueItemWidgetKey$index'),
+                        child: Container(
+                          height: 50,
+                          color: Colors.blue[colorCodes[index % 3]],
+                          child: Center(
+                              child: Text('${media.id} - ${media.name}')),
+                        ),
+                        onTap: () {
+                          _player.playFromQueue(index);
+                        },
+                      ),
+                    )
+                    .toList(),
+              ),
             ),
-          ))
+          )
         ],
       ),
     );

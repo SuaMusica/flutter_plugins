@@ -234,7 +234,6 @@ class Player {
       _queue.previousPosition;
 
   List<Media> get items => _queue.items;
-  List<Media> get isarItems => _queue.isarItems;
   int get size => items.length;
 
   int get currentIndex => _queue.index;
@@ -418,7 +417,7 @@ class Player {
       state = PlayerState.STOPPED;
       _notifyPlayerStatusChangeEvent(EventType.RELEASED);
     }
-    // _queue.dispose();
+    _queue.dispose();
     return result;
   }
 
@@ -458,24 +457,10 @@ class Player {
     }
   }
 
-  // static Future<void> _handleOnComplete(Player player) async {
-  //   player.state = PlayerState.COMPLETED;
-  //   _notifyPlayerStateChangeEvent(player, EventType.FINISHED_PLAYING, "");
-  //   switch (player.repeatMode) {
-  //     case RepeatMode.REPEAT_MODE_OFF:
-  //     case RepeatMode.REPEAT_MODE_ALL:
-  //       player._doNext(shallNotify: false);
-  //       break;
-
-  //     case RepeatMode.REPEAT_MODE_ONE:
-  //       player.rewind();
-  //       break;
-  //   }
-  // }
-
   static Future<void> _doHandlePlatformCall(MethodCall call) async {
     final currentMedia = _queue.current;
     final currentIndex = _queue.index;
+    print('call.arguments: ${call.arguments}');
     final Map<dynamic, dynamic> callArgs = call.arguments as Map;
     if (call.method != 'audio.onCurrentPosition') {
       _log('_platformCallHandler call ${call.method} $callArgs');
