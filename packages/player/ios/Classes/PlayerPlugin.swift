@@ -70,6 +70,10 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
         case "repeat_mode":
             smPlayer?.toggleRepeatMode()
             result(NSNumber(value: 1))
+        case "remove_in":
+            let args = call.arguments as? [String: Any]
+            smPlayer?.removeByPosition(indexes:args?["indexesToDelete"] as? [Int] ?? [])
+            result(NSNumber(value: 1))
         case "reorder":
             if let args = call.arguments as? [String: Any],
                let oldIndex = args["oldIndex"] as? Int,
@@ -80,8 +84,8 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
             result(NSNumber(value: true))
         case "seek":
             if let args = call.arguments as? [String: Any] {
-                let position = args["position"] ?? 0
-                smPlayer?.seek(position:position as! Int)
+                let position = args["position"] as? Int ?? 0
+                smPlayer?.seekToPosition(position: position)
             }
             result(NSNumber(value: 1))
         default:

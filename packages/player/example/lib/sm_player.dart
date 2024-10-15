@@ -176,7 +176,7 @@ class _SMPlayerState extends State<SMPlayer> {
       listOfMedias.addAll([media1, media2, media3, media4]);
       // }
 
-      player.enqueueAll(listOfMedias, autoPlay: true);
+      player.enqueueAll(listOfMedias, autoPlay: false);
 
       if (!mounted) return;
 
@@ -224,7 +224,7 @@ class _SMPlayerState extends State<SMPlayer> {
       }
     } else if (_player.state == PlayerState.BUFFERING &&
         _player.currentMedia != null) {
-      int result = await _player.resume();
+      int result = await _player.play();
       if (result == Player.Ok) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Audio is now playing!!!!')));
@@ -236,7 +236,7 @@ class _SMPlayerState extends State<SMPlayer> {
             .showSnackBar(SnackBar(content: Text('Audio is now paused!!!!')));
       }
     } else if (_player.state == PlayerState.PAUSED) {
-      int result = await _player.resume();
+      int result = await _player.play();
       if (result == Player.Ok) {
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Audio is now playing again!!!!')));
@@ -359,9 +359,24 @@ class _SMPlayerState extends State<SMPlayer> {
                 tooltip: 'Add media',
               ),
               IconButton(
+                icon: Icon(Icons.queue),
+                onPressed: () {
+                  _player.enqueueAll(
+                    [media1, media2, media3, media4],
+                  );
+                },
+                tooltip: 'Add media',
+              ),
+              IconButton(
                 icon: Icon(Icons.folder),
                 onPressed: pickLocalFile,
                 tooltip: 'Add local file',
+              ),
+              IconButton(
+                icon: Icon(Icons.play_arrow),
+                onPressed: () => _player.playFromQueue(1,
+                    loadOnly: true, position: Duration(seconds: 50)),
+                tooltip: 'Play from queue',
               ),
             ],
           ),

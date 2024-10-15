@@ -55,7 +55,6 @@ public class NowPlayingCenter : NSObject {
             nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = Float(position)
             nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = rate
             nowPlayingInfo[MPNowPlayingInfoPropertyDefaultPlaybackRate] = 1.0
-            
             nowPlayingInfoCenter.nowPlayingInfo = nowPlayingInfo
         }
     }

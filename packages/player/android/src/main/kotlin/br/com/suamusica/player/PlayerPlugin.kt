@@ -34,11 +34,9 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
         const val FAVORITE: String = "favorite"
 
         // Method names
-        const val LOAD_METHOD = "load"
         const val PLAY_METHOD = "play"
         const val SET_REPEAT_MODE = "set_repeat_mode"
         const val ENQUEUE = "enqueue"
-        const val ENQUEUE_ONE = "enqueue_one"
         const val REMOVE_ALL = "remove_all"
         const val REMOVE_IN = "remove_in"
         const val REORDER = "reorder"
@@ -60,7 +58,6 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
         const val GET_CURRENT_POSITION_METHOD = "getCurrentPosition"
         const val SET_RELEASE_MODE_METHOD = "setReleaseMode"
         const val CAN_PLAY = "can_play"
-        const val SEND_NOTIFICATION = "send_notification"
         const val DISABLE_NOTIFICATION_COMMANDS = "disable_notification_commands"
         const val ENABLE_NOTIFICATION_COMMANDS = "enable_notification_commands"
         const val TAG = "Player"

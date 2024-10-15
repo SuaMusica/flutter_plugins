@@ -30,15 +30,6 @@ public class MethodChannelManager:NSObject{
             channel?.invokeMethod("audio.onCurrentPosition", arguments: args)
     }
     
-    func notifyNetworkStatus(
-    status:Bool) {
-        let args = MethodChannelManagerArgsBuilder()
-            .playerId(id:"smplayer")
-            .build()
-        channel?.invokeMethod("network.onChange", arguments: status ? "CONNECTED" : "DISCONNECTED")
-    }
-    
-    
     func notifyPlayerStateChange(state: PlayerState) {
         print("#CheckListeners - notifyPlayerStateChange \(state)")
         let args = MethodChannelManagerArgsBuilder()
@@ -58,6 +49,7 @@ public class MethodChannelManager:NSObject{
      }
     
     func currentMediaIndex(index: Int) {
+        print("#CheckListeners - currentMediaIndex \(index)")
         let args = MethodChannelManagerArgsBuilder()
             .playerId(id:"smplayer")
             .currentIndex(index:index)

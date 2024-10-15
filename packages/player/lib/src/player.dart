@@ -25,7 +25,11 @@ class Player {
     this.initializeIsar = false,
     this.autoPlay = false,
   }) {
-    _queue = Queue(initializeIsar: this.initializeIsar);
+    _queue = Queue(
+        initializeIsar: this.initializeIsar,
+        onInitialize: () {
+          enqueueAll(items, alreadyAddedToStorage: true);
+        });
     player = this;
   }
   static const Ok = 1;
@@ -76,7 +80,8 @@ class Player {
     EventType.PAUSED,
     EventType.PLAYING,
     EventType.EXTERNAL_RESUME_REQUESTED,
-    EventType.EXTERNAL_PAUSE_REQUESTED
+    EventType.EXTERNAL_PAUSE_REQUESTED,
+    EventType.SET_CURRENT_MEDIA_INDEX
   ];
 
   Stream<Event>? _stream;
@@ -118,8 +123,12 @@ class Player {
   Future<int> enqueueAll(
     List<Media> items, {
     bool autoPlay = false,
+    bool saveOnTop = false,
+    bool alreadyAddedToStorage = false,
   }) async {
-    _queue.addAll(items);
+    if (!alreadyAddedToStorage) {
+      _queue.addAll(items, saveOnTop: saveOnTop);
+    }
     _cookies = await cookieSigner();
     String cookie = _cookies!.toHeaders();
     final int batchSize = 80;
@@ -329,8 +338,13 @@ class Player {
         .then((result) => result);
   }
 
-  Future<int?> previous() async {
+  Future<int?> previous({bool isFromChromecast = false}) async {
     Media? media = _queue.possiblePrevious();
+    print('possiblePrevious media: ${media?.name ?? 'null'}');
+    if (isFromChromecast && media != null) {
+      _queue.lastPrevious = DateTime.now();
+      return _queue.items.indexOf(media);
+    }
     if (media == null) {
       return null;
     }
@@ -341,28 +355,22 @@ class Player {
     return Ok;
   }
 
-  Future<int?> next({
-    bool shallNotify = true,
-  }) async {
+  Future<int?> next({bool isFromChromecast = false}) async {
     final media = _queue.possibleNext(repeatMode);
+    if (isFromChromecast && media != null) {
+      return _queue.items.indexOf(media);
+    }
     if (media != null) {
-      final mediaUrl = (await localMediaValidator?.call(media)) ?? media.url;
       if (repeatMode == RepeatMode.REPEAT_MODE_ONE) {
         setRepeatMode("all");
       }
-      return _doNext(
-        shallNotify: shallNotify,
-        mediaUrl: mediaUrl,
-      );
+      return _doNext();
     } else {
       return null;
     }
   }
 
-  Future<int> _doNext({
-    bool? shallNotify,
-    String? mediaUrl,
-  }) async {
+  Future<int> _doNext() async {
     return _channel.invokeMethod('next').then((result) => result);
   }
 
@@ -396,17 +404,6 @@ class Player {
 
     // return result;
     return Ok;
-  }
-
-  Future<int> resume() async {
-    _notifyPlayerStatusChangeEvent(EventType.RESUME_REQUESTED);
-    final int result = await _invokeMethod('play');
-
-    if (result == Ok) {
-      _notifyPlayerStatusChangeEvent(EventType.RESUMED);
-    }
-
-    return result;
   }
 
   Future<int> release() async {

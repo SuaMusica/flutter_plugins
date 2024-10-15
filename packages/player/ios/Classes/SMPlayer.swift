@@ -17,16 +17,17 @@ public class SMPlayer : NSObject  {
     private var isShuffleModeEnabled: Bool = false
     var shuffledQueue: [AVPlayerItem] = []
     private var listeners: SMPlayerListeners? = nil
-   
+    private var seekToLoadOnly: Bool = false
+    
     var fullQueue: [AVPlayerItem] {
         return historyQueue + smPlayer.items() + futureQueue
     }
     
-    var currentIndex : Int? {
+    var currentIndex : Int {
         guard let currentItem = smPlayer.currentItem else {
-            return nil
+            return 0
         }
-        return fullQueue.firstIndex(of: currentItem)
+        return fullQueue.firstIndex(of: currentItem) ?? 0
     }
     
     init(methodChannelManager: MethodChannelManager?) {
@@ -35,14 +36,19 @@ public class SMPlayer : NSObject  {
         self.methodChannelManager = methodChannelManager
         listeners = SMPlayerListeners(smPlayer:smPlayer,methodChannelManager:methodChannelManager)
         listeners?.addPlayerObservers()
-        listeners?.onMediaChanged = {
+        listeners?.onMediaChanged = { [self] in
             if(self.smPlayer.items().count > 0){
                 if(self.smPlayer.currentItem != self.fullQueue.first && self.historyQueue.count > 0){
                     methodChannelManager?.notifyPlayerStateChange(state: PlayerState.itemTransition)
                     self.updateEndPlaybackObserver()
+                    
+                    seekToLoadOnly = !seekToLoadOnly
+                    if(seekToLoadOnly){
+                        seekToLoadOnly = false
+                        methodChannelManager?.currentMediaIndex(index: self.currentIndex)
+                    }
+                    self.listeners?.addItemsObservers()
                 }
-                methodChannelManager?.currentMediaIndex(index: self.historyQueue.count)
-                self.listeners?.addItemsObservers()
             }
         }
         setupNowPlayingInfoCenter()
@@ -72,21 +78,17 @@ public class SMPlayer : NSObject  {
             )
         }
     }
-
+    
     func updateEndPlaybackObserver() {
         removeEndPlaybackObserver()
         addEndPlaybackObserver()
     }
-
+    
     func disableRepeatMode() {
         smPlayer.repeatMode = .REPEAT_MODE_OFF
         methodChannelManager?.repeatModeChanged(repeatMode: smPlayer.repeatModeIndex)
     }
     
-    func seek(position:Int){
-        let positionInSec = CMTime(seconds: Double(position/1000), preferredTimescale: 60000)
-        smPlayer.seek(to: positionInSec, toleranceBefore: .zero, toleranceAfter: .zero)
-    }
     
     func toggleRepeatMode() {
         switch smPlayer.repeatMode {
@@ -133,6 +135,20 @@ public class SMPlayer : NSObject  {
         }
     }
     
+    func removeByPosition(indexes: [Int]) {
+        if(indexes.count > 0){
+            let sortedIndexes = indexes.sorted(by: >)
+            var queueAfterRemovedItems = isShuffleModeEnabled ? shuffledQueue : fullQueue
+            for index in sortedIndexes {
+                if index < queueAfterRemovedItems.count {
+                    queueAfterRemovedItems.remove(at: index)
+                }
+            }
+            distributeItemsInRightQueue(currentQueue: queueAfterRemovedItems, keepFirst: true)
+            printStatus(from: "removeByPosition")
+        }
+    }
+    
     func toggleShuffle(positionsList: [[String: Int]]) {
         isShuffleModeEnabled.toggle()
         if isShuffleModeEnabled {
@@ -149,8 +165,8 @@ public class SMPlayer : NSObject  {
     }
     
     func fillShuffledQueue()  {
-            shuffledQueue.removeAll()
-            for index in shuffledIndices {
+        shuffledQueue.removeAll()
+        for index in shuffledIndices {
             if index < fullQueue.count {
                 shuffledQueue.append(fullQueue[index])
             }
@@ -207,8 +223,7 @@ public class SMPlayer : NSObject  {
     
     private func insertIntoPlayerIfNeeded() {
         let maxTotalItems = 5
-        let currentItemCount = smPlayer.items().count
-        let itemsToAdd = min(maxTotalItems - currentItemCount, futureQueue.count)
+        let itemsToAdd = min(maxTotalItems - smPlayer.items().count, futureQueue.count)
         
         for _ in 0..<itemsToAdd {
             if let item = futureQueue.first {
@@ -216,6 +231,7 @@ public class SMPlayer : NSObject  {
                 futureQueue.removeFirst()
             }
         }
+        print("#NATIVE LOGS insertIntoPlayerIfNeeded ==> \(String(describing: smPlayer.currentItem?.playlistItem?.title))")
         printStatus(from:"insertIntoPlayerIfNeeded")
     }
     
@@ -238,7 +254,11 @@ public class SMPlayer : NSObject  {
     
     func seekToPosition(position:Int){
         let positionInSec = CMTime(seconds: Double(position/1000), preferredTimescale: 60000)
-        smPlayer.currentItem?.seek(to: positionInSec, toleranceBefore: .zero, toleranceAfter: .zero, completionHandler: nil)
+        smPlayer.currentItem?.seek(to: positionInSec, toleranceBefore: .zero, toleranceAfter: .zero, completionHandler: { completed in
+            if completed {
+                self.methodChannelManager?.notifyPlayerStateChange(state: PlayerState.seekEnd)
+            }
+        } )
     }
     
     func getCurrentPlaylistItem() -> PlaylistItem? {
@@ -248,7 +268,7 @@ public class SMPlayer : NSObject  {
         return currentItem.playlistItem
     }
     
-    private func distributeItemsInRightQueue(currentQueue: [AVPlayerItem], keepFirst: Bool = true, positionArg: Int = -1) {
+    private func distributeItemsInRightQueue(currentQueue: [AVPlayerItem], keepFirst: Bool = true, positionArg: Int = -1, completionHandler completion: (() -> Void)? = nil) {
         guard currentQueue.count > 0 else { return }
         if(!keepFirst){
             guard positionArg >= 0 else { return }
@@ -278,12 +298,21 @@ public class SMPlayer : NSObject  {
             }
         }
         insertIntoPlayerIfNeeded()
+        completion?()
     }
     
     func playFromQueue(position: Int, timePosition: Int = 0, loadOnly: Bool = false) {
-        distributeItemsInRightQueue(currentQueue:fullQueue, keepFirst: false, positionArg: position)
-        methodChannelManager?.currentMediaIndex(index: self.historyQueue.count)
-        seekToPosition(position: timePosition)
+        if (loadOnly) {
+            seekToLoadOnly = true
+        }
+        print("#NATIVE LOGS playFromQueue ==> position: \(position) timePosition: \(timePosition) | loadOnly \(loadOnly)")
+        distributeItemsInRightQueue(currentQueue: fullQueue, keepFirst: false, positionArg: position, completionHandler: {
+            print("#NATIVE LOGS ==> completionHandler")
+            self.methodChannelManager?.currentMediaIndex(index: position)
+            if(timePosition > 0){
+                self.seekToPosition(position: timePosition)
+            }
+        })
         if(loadOnly){
             pause()
         }else{
@@ -325,7 +354,7 @@ public class SMPlayer : NSObject  {
     }
     
     func printStatus(from:String) {
-    //TODO: adicionar variavel de debug
+        //TODO: adicionar variavel de debug
         if(true){
             print("#printStatus #################################################")
             print("#printStatus  \(from) ")
@@ -394,7 +423,7 @@ public extension AVQueuePlayer {
             return currentRepeatmode
         }
         set(mode) {
-         
+            
             currentRepeatmode = mode
             
             switch mode {
@@ -406,11 +435,11 @@ public extension AVQueuePlayer {
                 actionAtItemEnd = .pause
             }
         }
-    
+        
     }
     
-   var repeatModeIndex: Int {
-           return RepeatMode.allCases.firstIndex(of: repeatMode) ?? -1
-       }
+    var repeatModeIndex: Int {
+        return RepeatMode.allCases.firstIndex(of: repeatMode) ?? -1
+    }
     
 }
