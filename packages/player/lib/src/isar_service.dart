@@ -63,7 +63,7 @@ class IsarService {
           await _isarStorage?.previousPlaylistMusics
               .put(previousPlaylistMusics);
         },
-        silent: !kDebugMode,
+        silent: kDebugMode,
       );
     } catch (_) {}
   }
@@ -83,7 +83,7 @@ class IsarService {
           await _isarStorage?.previousPlaylistCurrentIndexs
               .put(previousPlaylistCurrentIndex);
         },
-        silent: !kDebugMode,
+        silent: kDebugMode,
       );
     } catch (_) {}
   }
@@ -104,7 +104,7 @@ class IsarService {
           await _isarStorage?.previousPlaylistPositions
               .put(previousPlaylistPosition);
         },
-        silent: !kDebugMode,
+        silent: kDebugMode,
       );
     } catch (_) {}
   }
@@ -118,6 +118,6 @@ class IsarService {
         () async {
           await _isarStorage?.clear();
         },
-        silent: !kDebugMode,
+        silent: kDebugMode,
       );
 }

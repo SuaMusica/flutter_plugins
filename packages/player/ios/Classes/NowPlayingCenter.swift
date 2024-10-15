@@ -1,6 +1,6 @@
 import MediaPlayer
 
-@objc public class NowPlayingCenter : NSObject {
+public class NowPlayingCenter : NSObject {
     
     @objc static public func set(item: PlaylistItem?) {
         DispatchQueue.main.async {
@@ -55,7 +55,6 @@ import MediaPlayer
             nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = Float(position)
             nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = rate
             nowPlayingInfo[MPNowPlayingInfoPropertyDefaultPlaybackRate] = 1.0
-            
             nowPlayingInfoCenter.nowPlayingInfo = nowPlayingInfo
         }
     }
