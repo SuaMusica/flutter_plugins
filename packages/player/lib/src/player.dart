@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:smaws/aws.dart';
 import 'package:flutter/services.dart';
-import 'package:smplayer/src/before_play_event.dart';
 import 'package:smplayer/src/event.dart';
 import 'package:smplayer/src/event_type.dart';
 import 'package:smplayer/src/isar_service.dart';
@@ -26,10 +25,12 @@ class Player {
     this.autoPlay = false,
   }) {
     _queue = Queue(
-        initializeIsar: this.initializeIsar,
-        onInitialize: () {
-          enqueueAll(items, alreadyAddedToStorage: true);
-        });
+      beforeInitialize: () async => await _channel.invokeMethod('remove_all'),
+      initializeIsar: this.initializeIsar,
+      onInitialize: () async {
+        await enqueueAll(items, alreadyAddedToStorage: true);
+      },
+    );
     player = this;
   }
   static const Ok = 1;
@@ -95,19 +96,22 @@ class Player {
     String method, [
     Map<String, dynamic>? arguments,
   ]) async {
+    if (!_shallSendEvents) {
+      return NotOk;
+    }
     arguments ??= const {};
-    if (_cookies == null || !_cookies!.isValid) {
-      _log("Generating Cookies");
-      _cookies = await cookieSigner();
-    }
-    String cookie = _cookies!.toHeaders();
-    if (method == "play") {
-      _log("Cookie: $cookie");
-    }
+    // if (_cookies == null || !_cookies!.isValid) {
+    //   _log("Generating Cookies");
+    //   _cookies = await cookieSigner();
+    // }
+    // String cookie = _cookies!.toHeaders();
+    // if (method == "play") {
+    //   _log("Cookie: $cookie");
+    // }
 
     final Map<String, dynamic> args = Map.of(arguments)
       ..['playerId'] = playerId
-      ..['cookie'] = cookie
+      // ..['cookie'] = cookie
       ..['shallSendEvents'] = _shallSendEvents
       ..['externalplayback'] = externalPlayback;
 
@@ -120,6 +124,14 @@ class Player {
     _queue.setIndex = position;
   }
 
+  Future<int> updateMediaUri({required int id, String? uri}) async {
+    _channel.invokeMethod('update_media_uri', {
+      'id': id,
+      'uri': uri,
+    });
+    return Ok;
+  }
+
   Future<int> enqueueAll(
     List<Media> items, {
     bool autoPlay = false,
@@ -129,17 +141,21 @@ class Player {
     if (!alreadyAddedToStorage) {
       _queue.addAll(items, saveOnTop: saveOnTop);
     }
-    _cookies = await cookieSigner();
+    if (_cookies == null || !_cookies!.isValid) {
+      _log("Generating Cookies");
+      _cookies = await cookieSigner();
+    }
     String cookie = _cookies!.toHeaders();
     final int batchSize = 80;
     _idSum = 0;
     final List<Map<String, dynamic>> batchArgs = items.map(
       (media) {
         _idSum += media.id;
+        final localPath = localMediaValidator?.call(media);
         return {
           ...media
               .copyWith(
-                url: localMediaValidator?.call(media) ?? media.url,
+                url: localPath ?? media.url,
               )
               .toJson(),
         };
@@ -248,7 +264,7 @@ class Player {
   int get currentIndex => _queue.index;
 
   Future<int> play({bool shouldPrepare = false}) async {
-    _channel.invokeMethod(
+    await _invokeMethod(
       'play',
       {'shouldPrepare': shouldPrepare},
     );
@@ -271,30 +287,6 @@ class Player {
       'timePosition': position?.inMilliseconds,
       'loadOnly': loadOnly,
     }).then((result) => result);
-  }
-
-  Future<int> _doPlay({
-    bool shouldPrepare = false,
-  }) async {
-    // _notifyBeforePlayEvent(
-    //   (_) =>
-    _channel.invokeMethod(
-      'play',
-      {'shouldPrepare': shouldPrepare},
-      // ),
-    );
-    return Ok;
-  }
-
-  Future<int> invokePlay(Media media, Map<String, dynamic> args) async {
-    print(args);
-    final int result = await _invokeMethod('play', args);
-    return result;
-  }
-
-  Future<int> invokeLoad(Map<String, dynamic> args) async {
-    final int result = await _invokeMethod('load', args);
-    return result;
   }
 
   List<Map<String, int>> getPositionsList() {
@@ -340,7 +332,6 @@ class Player {
 
   Future<int?> previous({bool isFromChromecast = false}) async {
     Media? media = _queue.possiblePrevious();
-    print('possiblePrevious media: ${media?.name ?? 'null'}');
     if (isFromChromecast && media != null) {
       _queue.lastPrevious = DateTime.now();
       return _queue.items.indexOf(media);
@@ -351,8 +342,7 @@ class Player {
     if (repeatMode == RepeatMode.REPEAT_MODE_ONE) {
       setRepeatMode("all");
     }
-    _channel.invokeMethod('previous').then((result) => result);
-    return Ok;
+    return await _invokeMethod('previous');
   }
 
   Future<int?> next({bool isFromChromecast = false}) async {
@@ -371,7 +361,7 @@ class Player {
   }
 
   Future<int> _doNext() async {
-    return _channel.invokeMethod('next').then((result) => result);
+    return _invokeMethod('next').then((result) => result);
   }
 
   Future<int> updateFavorite({
@@ -386,9 +376,7 @@ class Player {
 
   Future<int> pause() async {
     _notifyPlayerStatusChangeEvent(EventType.PAUSE_REQUEST);
-
-    // return await _invokeMethod('pause');
-    return _channel.invokeMethod('pause').then((result) => result);
+    return await _invokeMethod('pause');
   }
 
   void addUsingPlayer(Event event) => _addUsingPlayer(player, event);

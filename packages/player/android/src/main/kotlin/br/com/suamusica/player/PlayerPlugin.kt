@@ -24,6 +24,8 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
         const val IS_FAVORITE_ARGUMENT = "isFavorite"
         const val FALLBACK_URL = "fallbackURL"
         const val ID_FAVORITE_ARGUMENT = "idFavorite"
+        const val NEW_URI_ARGUMENT = "newUri"
+        const val ID_URI_ARGUMENT = "idUri"
         const val POSITION_ARGUMENT = "position"
         const val TIME_POSITION_ARGUMENT = "timePosition"
         const val INDEXES_TO_REMOVE = "indexesToDelete"
@@ -49,6 +51,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
         const val REPEAT_MODE = "repeat_mode"
         const val DISABLE_REPEAT_MODE = "disable_repeat_mode"
         const val UPDATE_FAVORITE = "update_favorite"
+        const val UPDATE_MEDIA_URI = "update_media_uri"
         const val STOP_METHOD = "stop"
         const val RELEASE_METHOD = "release"
         const val SEEK_METHOD = "seek"
@@ -176,6 +179,12 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
                 val positionsList =
                     call.argument<List<Map<String, Int>>>(POSITIONS_LIST) ?: emptyList()
                 PlayerSingleton.mediaSessionConnection?.toggleShuffle(positionsList)
+            }
+
+            UPDATE_MEDIA_URI ->{
+                val id = call.argument<Int>("id") ?: 0
+                val uri = call.argument<String>("uri")
+                PlayerSingleton.mediaSessionConnection?.updateMediaUri(id,uri)
             }
 
             REPEAT_MODE -> {

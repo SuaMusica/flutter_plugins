@@ -27,20 +27,8 @@ public class SMPlayerListeners : NSObject {
         removeItemObservers()
         guard let currentItem = smPlayer.currentItem else { return }
         statusChange = currentItem.observe(\.status, options: [.new, .old]) { (playerItem, change) in
-            if playerItem.status == .readyToPlay {
-                print("#Listeners - readyToPlay")
-            } else if playerItem.status == .failed {
+            if playerItem.status == .failed {
                 if let error = playerItem.error {
-                    print("#Listeners notifyError \(error.localizedDescription)")
-                    if let fallbackUrl = playerItem.playlistItem?.fallbackUrl  {
-                        let assetOptions = ["AVURLAssetHTTPHeaderFieldsKey": ["Cookie": playerItem.playlistItem?.cookie ?? ""]]
-                        let fallbackItem = AVPlayerItem(asset: AVURLAsset(url: URL(string: fallbackUrl)! , options: assetOptions))
-                        
-                        self.smPlayer.replaceCurrentItem(with: fallbackItem)
-                    } else {
-                        self.methodChannelManager?.notifyError(error: "NO FALLBACK")
-                    }
-                } else {
                     self.methodChannelManager?.notifyError(error: "UNKNOW ERROR")
                 }
             }

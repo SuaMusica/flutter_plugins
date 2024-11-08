@@ -11,11 +11,12 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import br.com.suamusica.player.PlayerPlugin.Companion.DISABLE_REPEAT_MODE
 import br.com.suamusica.player.PlayerPlugin.Companion.ENQUEUE
-import br.com.suamusica.player.PlayerPlugin.Companion.ENQUEUE_ONE
 import br.com.suamusica.player.PlayerPlugin.Companion.ID_FAVORITE_ARGUMENT
+import br.com.suamusica.player.PlayerPlugin.Companion.ID_URI_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.INDEXES_TO_REMOVE
 import br.com.suamusica.player.PlayerPlugin.Companion.IS_FAVORITE_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.LOAD_ONLY
+import br.com.suamusica.player.PlayerPlugin.Companion.NEW_URI_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.PLAY_FROM_QUEUE_METHOD
 import br.com.suamusica.player.PlayerPlugin.Companion.POSITIONS_LIST
 import br.com.suamusica.player.PlayerPlugin.Companion.POSITION_ARGUMENT
@@ -27,6 +28,7 @@ import br.com.suamusica.player.PlayerPlugin.Companion.SET_REPEAT_MODE
 import br.com.suamusica.player.PlayerPlugin.Companion.TIME_POSITION_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.TOGGLE_SHUFFLE
 import br.com.suamusica.player.PlayerPlugin.Companion.UPDATE_FAVORITE
+import br.com.suamusica.player.PlayerPlugin.Companion.UPDATE_MEDIA_URI
 import com.google.gson.Gson
 import java.lang.ref.WeakReference
 
@@ -115,6 +117,13 @@ class MediaSessionConnection(
         bundle.putBoolean(IS_FAVORITE_ARGUMENT, isFavorite)
         bundle.putInt(ID_FAVORITE_ARGUMENT, idFavorite)
         sendCommand(UPDATE_FAVORITE, bundle)
+    }
+
+    fun updateMediaUri(id:Int,newUri:String?){
+        val bundle = Bundle()
+        bundle.putString(NEW_URI_ARGUMENT,newUri)
+        bundle.putInt(ID_URI_ARGUMENT,id)
+        sendCommand(UPDATE_MEDIA_URI, bundle)
     }
 
     fun removeAll() {

@@ -8,7 +8,6 @@ public class SMPlayer : NSObject  {
     var methodChannelManager: MethodChannelManager?
     //Queue handle
     private var smPlayer: AVQueuePlayer
-    private var playerItem: AVPlayerItem?
     private var historyQueue: [AVPlayerItem] = []
     private var futureQueue: [AVPlayerItem] = []
     //Shuffle handle
@@ -40,14 +39,13 @@ public class SMPlayer : NSObject  {
             if(self.smPlayer.items().count > 0){
                 if(self.smPlayer.currentItem != self.fullQueue.first && self.historyQueue.count > 0){
                     methodChannelManager?.notifyPlayerStateChange(state: PlayerState.itemTransition)
-                    self.updateEndPlaybackObserver()
-                    
-                    seekToLoadOnly = !seekToLoadOnly
-                    if(seekToLoadOnly){
-                        seekToLoadOnly = false
-                        methodChannelManager?.currentMediaIndex(index: self.currentIndex)
-                    }
-                    self.listeners?.addItemsObservers()
+                }
+                self.updateEndPlaybackObserver()
+                seekToLoadOnly = !seekToLoadOnly
+                self.listeners?.addItemsObservers()
+                if(seekToLoadOnly){
+                    seekToLoadOnly = false
+                    methodChannelManager?.currentMediaIndex(index: self.currentIndex)
                 }
             }
         }
@@ -114,6 +112,7 @@ public class SMPlayer : NSObject  {
     }
     
     func enqueue(medias: [PlaylistItem], autoPlay: Bool, cookie: String) {
+        var playerItem: AVPlayerItem?
         guard let message = MessageBuffer.shared.receive() else { return }
         let isFirstBatch = self.smPlayer.items().count == 0
         for media in message {
@@ -270,9 +269,9 @@ public class SMPlayer : NSObject  {
     
     private func distributeItemsInRightQueue(currentQueue: [AVPlayerItem], keepFirst: Bool = true, positionArg: Int = -1, completionHandler completion: (() -> Void)? = nil) {
         guard currentQueue.count > 0 else { return }
-        if(!keepFirst){
-            guard positionArg >= 0 else { return }
-        }
+        //        if(!keepFirst){
+        //            guard positionArg >= 0 else { return }
+        //        }
         var position = positionArg
         historyQueue.removeAll()
         futureQueue.removeAll()
@@ -301,14 +300,37 @@ public class SMPlayer : NSObject  {
         completion?()
     }
     
+    func updateMediaUri(id: Int, uri: String?){
+        var fullQueueUpdated = fullQueue
+        if let index = fullQueue.firstIndex(where: { $0.playlistItem?.mediaId == id }){
+            let oldItem = fullQueueUpdated[index]
+            var playerItem: AVPlayerItem?
+            if(uri?.contains("https") ?? true){
+                guard let url = URL(string: (uri ?? oldItem.playlistItem!.fallbackUrl!)) else { return }
+                let assetOptions = ["AVURLAssetHTTPHeaderFieldsKey": ["Cookie": oldItem.playlistItem?.cookie]]
+                playerItem = AVPlayerItem(asset: AVURLAsset(url: url, options: assetOptions))
+            }else{
+                playerItem = AVPlayerItem(asset:AVAsset(url: NSURL(fileURLWithPath: uri!) as URL))
+            }
+            playerItem?.playlistItem = oldItem.playlistItem
+            fullQueueUpdated[index] = playerItem!
+            print("updateMediaUri: \(String(describing: uri))")
+            for item in fullQueueUpdated {
+                print("#updateMediaUri QUEUE: \(String(describing: item.playlistItem?.title)) | \(item.asset) | \(currentIndex)")
+            }
+            distributeItemsInRightQueue(currentQueue: fullQueueUpdated)
+        }
+        
+    }
+
     func playFromQueue(position: Int, timePosition: Int = 0, loadOnly: Bool = false) {
         if (loadOnly) {
             seekToLoadOnly = true
         }
-        print("#NATIVE LOGS playFromQueue ==> position: \(position) timePosition: \(timePosition) | loadOnly \(loadOnly)")
+        listeners?.removeItemObservers()
         distributeItemsInRightQueue(currentQueue: fullQueue, keepFirst: false, positionArg: position, completionHandler: {
             print("#NATIVE LOGS ==> completionHandler")
-            self.methodChannelManager?.currentMediaIndex(index: position)
+            self.methodChannelManager?.currentMediaIndex(index: self.currentIndex)
             if(timePosition > 0){
                 self.seekToPosition(position: timePosition)
             }

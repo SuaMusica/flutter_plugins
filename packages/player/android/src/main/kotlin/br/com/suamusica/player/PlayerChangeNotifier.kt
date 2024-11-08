@@ -23,6 +23,7 @@ class PlayerChangeNotifier(private val channelManager: MethodChannelManager) {
     }
 
     fun notifyError(message: String? = null){
+        Log.i("Player", "Notifying Error: $message")
         channelManager.notifyError("sua-musica-player", PlayerState.ERROR, message)
     }
 
@@ -40,11 +41,11 @@ class PlayerChangeNotifier(private val channelManager: MethodChannelManager) {
         channelManager.notifyPrevious("sua-musica-player")
     }
     fun notifyItemTransition(from:String) {
-        Log.i("Player", "notifyItemTransition")
+        Log.i("Player", "#NATIVE LOGS ==> notifyItemTransition | FROM: $from")
         channelManager.notifyItemTransition("sua-musica-player")
     }
     fun currentMediaIndex(currentMediaIndex: Int, from: String) {
-        Log.i("Player", "=>> currentMediaIndex | FROM: $from | $currentMediaIndex")
+        Log.i("Player", "#NATIVE LOGS ==> currentMediaIndex | FROM: $from | $currentMediaIndex")
         channelManager.currentMediaIndex("sua-musica-player", currentMediaIndex)
     }
     fun notifyPositionChange(position: Long, duration: Long) {

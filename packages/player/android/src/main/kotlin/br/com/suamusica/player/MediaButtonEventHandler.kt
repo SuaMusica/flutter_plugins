@@ -22,12 +22,13 @@ import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import br.com.suamusica.player.PlayerPlugin.Companion.DISABLE_REPEAT_MODE
 import br.com.suamusica.player.PlayerPlugin.Companion.ENQUEUE
-import br.com.suamusica.player.PlayerPlugin.Companion.ENQUEUE_ONE
 import br.com.suamusica.player.PlayerPlugin.Companion.FAVORITE
 import br.com.suamusica.player.PlayerPlugin.Companion.ID_FAVORITE_ARGUMENT
+import br.com.suamusica.player.PlayerPlugin.Companion.ID_URI_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.INDEXES_TO_REMOVE
 import br.com.suamusica.player.PlayerPlugin.Companion.IS_FAVORITE_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.LOAD_ONLY
+import br.com.suamusica.player.PlayerPlugin.Companion.NEW_URI_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.PLAY_FROM_QUEUE_METHOD
 import br.com.suamusica.player.PlayerPlugin.Companion.POSITIONS_LIST
 import br.com.suamusica.player.PlayerPlugin.Companion.POSITION_ARGUMENT
@@ -39,6 +40,7 @@ import br.com.suamusica.player.PlayerPlugin.Companion.SET_REPEAT_MODE
 import br.com.suamusica.player.PlayerPlugin.Companion.TIME_POSITION_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.TOGGLE_SHUFFLE
 import br.com.suamusica.player.PlayerPlugin.Companion.UPDATE_FAVORITE
+import br.com.suamusica.player.PlayerPlugin.Companion.UPDATE_MEDIA_URI
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
@@ -89,6 +91,7 @@ class MediaButtonEventHandler(
                 add(SessionCommand("send_notification", session.token.extras))
                 add(SessionCommand("ads_playing", Bundle.EMPTY))
                 add(SessionCommand("onTogglePlayPause", Bundle.EMPTY))
+                add(SessionCommand(UPDATE_MEDIA_URI, session.token.extras))
             }.build()
 
         val playerCommands =
@@ -201,6 +204,21 @@ class MediaButtonEventHandler(
         if (customCommand.customAction == "pause") {
             mediaService.pause()
         }
+
+        if (customCommand.customAction == UPDATE_MEDIA_URI) {
+            val newUri = args.getString(NEW_URI_ARGUMENT)
+            val id = args.getInt(ID_URI_ARGUMENT)
+            session.player.let {
+                for (i in 0 until it.mediaItemCount) {
+                    val mediaItem = it.getMediaItemAt(i)
+                    if (mediaItem.mediaId == id.toString()) {
+                        mediaService.updateMediaUri(i, newUri)
+                        break
+                    }
+                }
+            }
+        }
+
         if (customCommand.customAction == UPDATE_FAVORITE) {
             val isFavorite = args.getBoolean(IS_FAVORITE_ARGUMENT)
             val id = args.getInt(ID_FAVORITE_ARGUMENT)
@@ -222,7 +240,7 @@ class MediaButtonEventHandler(
         if (customCommand.customAction == "ads_playing") {
 //            mediaService.player?.pause()
 //            mediaService.adsPlaying()
-//            mediaService.removeNotification()
+            mediaService.removeNotification()
         }
         if (customCommand.customAction == ENQUEUE) {
             val json = args.getString("json")

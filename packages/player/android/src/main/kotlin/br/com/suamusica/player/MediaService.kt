@@ -64,6 +64,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.Collections
+import java.util.WeakHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
 const val NOW_PLAYING_CHANNEL: String = "br.com.suamusica.media.NOW_PLAYING"
@@ -98,7 +99,7 @@ class MediaService : MediaSessionService() {
 
     private val channel = Channel<List<Media>>(Channel.BUFFERED)
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    var currentMedias = listOf<Media>()
+    private val mediaItemMediaAssociations = WeakHashMap<MediaItem, Media>()
 
     override fun onCreate() {
         super.onCreate()
@@ -226,6 +227,23 @@ class MediaService : MediaSessionService() {
         return false
     }
 
+    fun updateMediaUri(index: Int, uri: String?) {
+//        if (index != player?.currentMediaItemIndex) {
+            val media = player?.getMediaItemAt(index)
+            media?.associatedMedia?.let {
+                player?.removeMediaItem(index)
+                player?.addMediaSource(
+                    index, prepare(
+                        cookie,
+                        it,
+                        uri ?: media.mediaMetadata.extras?.getString(FALLBACK_URL) ?: ""
+                    )
+                )
+//                player?.prepare()
+            }
+//        }
+    }
+
     fun toggleShuffle(positionsList: List<Map<String, Int>>) {
         player?.shuffleModeEnabled = !(player?.shuffleModeEnabled ?: false)
         player?.shuffleModeEnabled?.let {
@@ -238,7 +256,10 @@ class MediaService : MediaSessionService() {
                     shuffledIndices.toIntArray(),
                     System.currentTimeMillis()
                 )
-                Log.d(TAG, "toggleShuffle - shuffleOrder is null: ${shuffleOrder == null} | shuffledIndices: ${shuffledIndices.size} - ${player?.mediaItemCount}")
+                Log.d(
+                    TAG,
+                    "toggleShuffle - shuffleOrder is null: ${shuffleOrder == null} | shuffledIndices: ${shuffledIndices.size} - ${player?.mediaItemCount}"
+                )
                 player!!.setShuffleOrder(shuffleOrder!!)
             }
             playerChangeNotifier?.onShuffleModeEnabled(it)
@@ -273,7 +294,6 @@ class MediaService : MediaSessionService() {
         if (player?.mediaItemCount == 0) {
             player?.playWhenReady = autoPlay
         }
-        currentMedias = medias
         addToQueue(medias)
     }
 
@@ -281,7 +301,7 @@ class MediaService : MediaSessionService() {
         val mediaSources: MutableList<MediaSource> = mutableListOf()
         if (medias.isNotEmpty()) {
             for (i in medias.indices) {
-                mediaSources.add(prepare(cookie, medias[i],""))
+                mediaSources.add(prepare(cookie, medias[i], ""))
             }
             player?.addMediaSources(mediaSources)
             player?.prepare()
@@ -309,7 +329,7 @@ class MediaService : MediaSessionService() {
         }
         val mediaItem = MediaItem.Builder().setUri(uri).setMediaMetadata(metadata)
             .setMediaId(media.id.toString()).build()
-
+        mediaItem.associatedMedia = media
         @C.ContentType val type = Util.inferContentType(uri)
 
         return when (type) {
@@ -619,7 +639,7 @@ class MediaService : MediaSessionService() {
             ) {
                 super.onMediaItemTransition(mediaItem, reason)
                 Log.d(TAG, "onMediaItemTransition: reason: ${reason}")
-                if((player?.mediaItemCount?:0) > 0) {
+                if ((player?.mediaItemCount ?: 0) > 0) {
                     playerChangeNotifier?.currentMediaIndex(
                         currentIndex(),
                         "onMediaItemTransition",
@@ -667,23 +687,6 @@ class MediaService : MediaSessionService() {
                     "onPlayerError cause ${error.cause.toString()}"
                 )
 
-                if (error.cause.toString()
-                        .contains("No such file or directory")
-                ) {
-                    val mediaItem = player?.currentMediaItem!!
-                    player?.removeMediaItem(player?.currentMediaItemIndex ?: 0)
-                    player?.addMediaSource(
-                        player?.currentMediaItemIndex ?: 0, prepare(
-                            cookie,
-                            currentMedias[player?.currentMediaItemIndex ?: 0],
-                            mediaItem.mediaMetadata.extras?.getString(FALLBACK_URL) ?: ""
-                        )
-                    )
-                    player?.prepare()
-                    playFromQueue(currentIndex() - 1, 0)
-                    return
-                }
-
                 playerChangeNotifier?.notifyError(
                     if (error.cause.toString()
                             .contains("Permission denied")
@@ -695,6 +698,12 @@ class MediaService : MediaSessionService() {
             }
         }
     }
+
+    var MediaItem.associatedMedia: Media?
+        get() = mediaItemMediaAssociations[this]
+        set(value) {
+            mediaItemMediaAssociations[this] = value
+        }
 
     private inner class ProgressTracker(val handler: Handler) : Runnable {
         private val shutdownRequest = AtomicBoolean(false)

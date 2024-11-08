@@ -8,9 +8,6 @@ let TAG = "SMPlayerIos"
 let CHANNEL = "suamusica.com.br/player"
 let CHANNEL_NOTIFICATION = "One_Player_Notification"
 let NOTIFICATION_ID = 0xb339
-//let MIME_TYPE_HLS = MimeTypes.APPLICATION_M3U8
-//let AUDIO_MPEG = MimeTypes.BASE_TYPE_AUDIO
-var registrarAds: FlutterPluginRegistrar? = nil
 private let tag = TAG
 
 private var smPlayer: SMPlayer? = nil
@@ -20,8 +17,6 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
         let channel = FlutterMethodChannel(name: CHANNEL, binaryMessenger: registrar.messenger())
         let instance = PlayerPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
-        
-        registrarAds = registrar
         smPlayer = SMPlayer(methodChannelManager: MethodChannelManager(channel: channel))
     }
     
@@ -82,6 +77,13 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
                 smPlayer?.reorder(fromIndex: oldIndex, toIndex: newIndex,positionsList: positionsList)
             }
             result(NSNumber(value: true))
+        case "update_media_uri":
+            if let args = call.arguments as? [String: Any],
+               let id = args["id"] as? Int,
+               let uri = args["uri"] as? String {
+                smPlayer?.updateMediaUri(id: id, uri: uri)
+            }
+            result(NSNumber(value: true))
         case "seek":
             if let args = call.arguments as? [String: Any] {
                 let position = args["position"] as? Int ?? 0
@@ -133,7 +135,9 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
     }
     
     deinit {
+        print("PlayerPlugin: deinit")
         smPlayer?.clearNowPlayingInfo()
+        smPlayer?.removeAll()
     }
     
 }

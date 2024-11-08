@@ -15,27 +15,34 @@ class Queue {
     mode,
     this.initializeIsar = false,
     this.onInitialize,
+    this.beforeInitialize,
   }) : _shuffler = shuffler ?? SimpleShuffler() {
     IsarService.instance.isarEnabled = initializeIsar;
     itemsReady = !initializeIsar;
     _initialize();
   }
   Future<void> _initialize() async {
-    if (!itemsReady) {
-      try {
-        final items = await previousItems;
-        previousIndex = await previousPlaylistIndex;
-        previousPosition = await _previousPlaylistPosition;
-        int i = 0;
-        storage.addAll(items.map((e) => QueueItem(i++, i, e)));
-        if (items.isNotEmpty) {
-          onInitialize?.call();
+    beforeInitialize?.call().then(
+      (_) async {
+        if (!itemsReady) {
+          try {
+            final items = await previousItems;
+            previousIndex = await previousPlaylistIndex;
+            previousPosition = await _previousPlaylistPosition;
+            int i = 0;
+            storage.addAll(items.map((e) => QueueItem(i++, i, e)));
+            if (items.isNotEmpty) {
+              debugPrint('#APP LOGS ==> onInitialize');
+              onInitialize?.call().then((_) => itemsReady = true);
+            } else {
+              itemsReady = true;
+            }
+          } catch (_) {
+            itemsReady = true;
+          }
         }
-      } catch (_) {
-      } finally {
-        itemsReady = true;
-      }
-    }
+      },
+    );
   }
 
   var _index = 0;
@@ -51,7 +58,7 @@ class Queue {
 
   final Shuffler _shuffler;
   final bool initializeIsar;
-  final VoidCallback? onInitialize;
+  final Future<void> Function()? onInitialize, beforeInitialize;
   bool itemsReady = false;
   int previousIndex = 0;
   PreviousPlaylistPosition? previousPosition;
