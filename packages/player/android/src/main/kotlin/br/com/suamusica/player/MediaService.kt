@@ -1,6 +1,7 @@
 package br.com.suamusica.player
 
 import android.app.ActivityManager
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
@@ -9,6 +10,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.support.v4.media.session.PlaybackStateCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -94,8 +96,10 @@ class MediaService : MediaSessionService() {
     private var shuffleOrder: DefaultShuffleOrder? = null
 
     private var seekToLoadOnly: Boolean = false
+//    private var enqueueLoadOnly: Boolean = false
     private var shuffledIndices = mutableListOf<Int>()
     private var autoPlay: Boolean = true
+    private var shouldNotifyTransition: Boolean = true
 
     private val channel = Channel<List<Media>>(Channel.BUFFERED)
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -164,6 +168,12 @@ class MediaService : MediaSessionService() {
         }
     }
 
+    fun removeNotification() {
+        Log.d("Player", "removeNotification")
+        player?.stop()
+//        NotificationManagerCompat.from(applicationContext).cancelAll()
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         return Service.START_STICKY
@@ -229,18 +239,18 @@ class MediaService : MediaSessionService() {
 
     fun updateMediaUri(index: Int, uri: String?) {
 //        if (index != player?.currentMediaItemIndex) {
-            val media = player?.getMediaItemAt(index)
-            media?.associatedMedia?.let {
-                player?.removeMediaItem(index)
-                player?.addMediaSource(
-                    index, prepare(
-                        cookie,
-                        it,
-                        uri ?: media.mediaMetadata.extras?.getString(FALLBACK_URL) ?: ""
-                    )
+        val media = player?.getMediaItemAt(index)
+        media?.associatedMedia?.let {
+            player?.removeMediaItem(index)
+            player?.addMediaSource(
+                index, prepare(
+                    cookie,
+                    it,
+                    uri ?: media.mediaMetadata.extras?.getString(FALLBACK_URL) ?: ""
                 )
+            )
 //                player?.prepare()
-            }
+        }
 //        }
     }
 
@@ -285,15 +295,22 @@ class MediaService : MediaSessionService() {
     fun enqueue(
         medias: List<Media>,
         autoPlay: Boolean,
+        shouldNotifyTransition: Boolean,
     ) {
         Log.d(
             TAG,
-            "onMediaItemTransition: mediaItemCount: ${player?.mediaItemCount} | autoPlay: $autoPlay"
+            "enqueue: mediaItemCount: ${player?.mediaItemCount} | autoPlay: $autoPlay"
         )
         this.autoPlay = autoPlay
+        this.shouldNotifyTransition = shouldNotifyTransition
         if (player?.mediaItemCount == 0) {
             player?.playWhenReady = autoPlay
         }
+//        enqueueLoadOnly = autoPlay
+        android.util.Log.d(
+            "#NATIVE LOGS ==>",
+            "enqueue  $autoPlay | mediaItemCount: ${player?.mediaItemCount} | shouldNotifyTransition: ${shouldNotifyTransition}"
+        )
         addToQueue(medias)
     }
 
@@ -379,10 +396,6 @@ class MediaService : MediaSessionService() {
         val sortedIndexes = indexes.sortedDescending()
         if (sortedIndexes.isNotEmpty()) {
             sortedIndexes.forEach {
-                android.util.Log.d(
-                    "#NATIVE LOGS ==>",
-                    "removeIn  ${player?.getMediaItemAt(it)?.mediaMetadata?.title}"
-                )
                 player?.removeMediaItem(it)
                 if (shuffledIndices.isNotEmpty()) {
                     shuffledIndices.removeAt(
@@ -474,6 +487,7 @@ class MediaService : MediaSessionService() {
         )
         if (!loadOnly) {
             player?.prepare()
+            playerChangeNotifier?.notifyItemTransition("playFromQueue")
         }
         playerChangeNotifier?.currentMediaIndex(currentIndex(), "playFromQueue")
     }
@@ -588,57 +602,11 @@ class MediaService : MediaSessionService() {
                 }
             }
 
-            override fun onEvents(player: Player, events: Player.Events) {
-                super.onEvents(player, events)
-                for (i in 0 until events.size()) {
-                    val event = events.get(i)
-                    val eventName = when (event) {
-                        Player.EVENT_TIMELINE_CHANGED -> "EVENT_TIMELINE_CHANGED"
-                        Player.EVENT_MEDIA_ITEM_TRANSITION -> "EVENT_MEDIA_ITEM_TRANSITION"
-                        Player.EVENT_TRACKS_CHANGED -> "EVENT_TRACKS_CHANGED"
-                        Player.EVENT_IS_LOADING_CHANGED -> "EVENT_IS_LOADING_CHANGED"
-                        Player.EVENT_PLAYBACK_STATE_CHANGED -> "EVENT_PLAYBACK_STATE_CHANGED"
-                        Player.EVENT_PLAY_WHEN_READY_CHANGED -> "EVENT_PLAY_WHEN_READY_CHANGED"
-                        Player.EVENT_PLAYBACK_SUPPRESSION_REASON_CHANGED -> "EVENT_PLAYBACK_SUPPRESSION_REASON_CHANGED"
-                        Player.EVENT_IS_PLAYING_CHANGED -> "EVENT_IS_PLAYING_CHANGED"
-                        Player.EVENT_REPEAT_MODE_CHANGED -> "EVENT_REPEAT_MODE_CHANGED"
-                        Player.EVENT_SHUFFLE_MODE_ENABLED_CHANGED -> "EVENT_SHUFFLE_MODE_ENABLED_CHANGED"
-                        Player.EVENT_PLAYER_ERROR -> "EVENT_PLAYER_ERROR"
-                        Player.EVENT_POSITION_DISCONTINUITY -> "EVENT_POSITION_DISCONTINUITY"
-                        Player.EVENT_PLAYBACK_PARAMETERS_CHANGED -> "EVENT_PLAYBACK_PARAMETERS_CHANGED"
-                        Player.EVENT_AVAILABLE_COMMANDS_CHANGED -> "EVENT_AVAILABLE_COMMANDS_CHANGED"
-                        Player.EVENT_MEDIA_METADATA_CHANGED -> "EVENT_MEDIA_METADATA_CHANGED"
-                        Player.EVENT_PLAYLIST_METADATA_CHANGED -> "EVENT_PLAYLIST_METADATA_CHANGED"
-                        Player.EVENT_SEEK_BACK_INCREMENT_CHANGED -> "EVENT_SEEK_BACK_INCREMENT_CHANGED"
-                        Player.EVENT_SEEK_FORWARD_INCREMENT_CHANGED -> "EVENT_SEEK_FORWARD_INCREMENT_CHANGED"
-                        Player.EVENT_MAX_SEEK_TO_PREVIOUS_POSITION_CHANGED -> "EVENT_MAX_SEEK_TO_PREVIOUS_POSITION_CHANGED"
-                        Player.EVENT_TRACK_SELECTION_PARAMETERS_CHANGED -> "EVENT_TRACK_SELECTION_PARAMETERS_CHANGED"
-                        Player.EVENT_AUDIO_ATTRIBUTES_CHANGED -> "EVENT_AUDIO_ATTRIBUTES_CHANGED"
-                        Player.EVENT_AUDIO_SESSION_ID -> "EVENT_AUDIO_SESSION_ID"
-                        Player.EVENT_VOLUME_CHANGED -> "EVENT_VOLUME_CHANGED"
-                        Player.EVENT_SKIP_SILENCE_ENABLED_CHANGED -> "EVENT_SKIP_SILENCE_ENABLED_CHANGED"
-                        Player.EVENT_SURFACE_SIZE_CHANGED -> "EVENT_SURFACE_SIZE_CHANGED"
-                        Player.EVENT_VIDEO_SIZE_CHANGED -> "EVENT_VIDEO_SIZE_CHANGED"
-                        Player.EVENT_RENDERED_FIRST_FRAME -> "EVENT_RENDERED_FIRST_FRAME"
-                        Player.EVENT_CUES -> "EVENT_CUES"
-                        Player.EVENT_METADATA -> "EVENT_METADATA"
-                        Player.EVENT_DEVICE_VOLUME_CHANGED -> "EVENT_DEVICE_VOLUME_CHANGED"
-                        Player.EVENT_DEVICE_INFO_CHANGED -> "EVENT_DEVICE_INFO_CHANGED"
-                        else -> "UNKNOWN_EVENT"
-                    }
-                    Log.d(TAG, "LOG onEvents: reason: $eventName")
-                    if (event == Player.EVENT_MEDIA_METADATA_CHANGED) {
-                        playerChangeNotifier?.notifyPlaying(player.isPlaying)
-                    }
-                }
-            }
-
             override fun onMediaItemTransition(
                 mediaItem: MediaItem?,
                 reason: @MediaItemTransitionReason Int
             ) {
                 super.onMediaItemTransition(mediaItem, reason)
-                Log.d(TAG, "onMediaItemTransition: reason: ${reason}")
                 if ((player?.mediaItemCount ?: 0) > 0) {
                     playerChangeNotifier?.currentMediaIndex(
                         currentIndex(),
@@ -646,13 +614,10 @@ class MediaService : MediaSessionService() {
                     )
                 }
                 mediaButtonEventHandler.buildIcons()
-                if (reason != Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED) {
-                    if (!seekToLoadOnly) {
-                        player?.playWhenReady = true
-                        seekToLoadOnly = false
-                    }
-                    playerChangeNotifier?.notifyItemTransition("onMediaItemTransition != 3 seekToLoadOnly: $seekToLoadOnly")
+                if(reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED || !shouldNotifyTransition){
+                    return
                 }
+                playerChangeNotifier?.notifyItemTransition("onMediaItemTransition  reason: ${reason} | shouldNotifyTransition: ${shouldNotifyTransition}")
             }
 
             var lastState = PlaybackStateCompat.STATE_NONE - 1

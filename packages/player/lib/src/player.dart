@@ -137,6 +137,7 @@ class Player {
     bool autoPlay = false,
     bool saveOnTop = false,
     bool alreadyAddedToStorage = false,
+    bool shouldNotifyTransition = false,
   }) async {
     if (!alreadyAddedToStorage) {
       _queue.addAll(items, saveOnTop: saveOnTop);
@@ -172,6 +173,7 @@ class Player {
             'playerId': playerId,
             'shallSendEvents': _shallSendEvents,
             'externalplayback': externalPlayback,
+            'shouldNotifyTransition': shouldNotifyTransition,
             if (i == 0) ...{
               'cookie': cookie,
             },

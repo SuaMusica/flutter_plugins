@@ -251,6 +251,7 @@ class MediaButtonEventHandler(
             mediaService.enqueue(
                 mediaList,
                 args.getBoolean("autoPlay"),
+                args.getBoolean("shouldNotifyTransition"),
             )
         }
         return Futures.immediateFuture(

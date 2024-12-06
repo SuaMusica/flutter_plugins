@@ -64,10 +64,11 @@ class MediaSessionConnection(
         }
     }
 
-    fun enqueue(medias: String, autoPlay: Boolean) {
+    fun enqueue(medias: String, autoPlay: Boolean,shouldNotifyTransition:Boolean) {
         val bundle = Bundle()
         bundle.putString("json", medias)
         bundle.putBoolean("autoPlay", autoPlay)
+        bundle.putBoolean("shouldNotifyTransition", shouldNotifyTransition)
         sendCommand(ENQUEUE, bundle)
     }
 
