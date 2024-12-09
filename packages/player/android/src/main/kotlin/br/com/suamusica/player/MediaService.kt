@@ -309,7 +309,7 @@ class MediaService : MediaSessionService() {
 //        enqueueLoadOnly = autoPlay
         android.util.Log.d(
             "#NATIVE LOGS ==>",
-            "enqueue  $autoPlay | mediaItemCount: ${player?.mediaItemCount} | shouldNotifyTransition: ${shouldNotifyTransition}"
+            "enqueue  $autoPlay | mediaItemCount: ${player?.mediaItemCount} | shouldNotifyTransition: $shouldNotifyTransition"
         )
         addToQueue(medias)
     }
@@ -323,10 +323,13 @@ class MediaService : MediaSessionService() {
             player?.addMediaSources(mediaSources)
             player?.prepare()
 //            PlayerSingleton.playerChangeNotifier?.notifyItemTransition("createMediaSource")
-            playerChangeNotifier?.currentMediaIndex(
-                currentIndex(),
-                "createMediaSource",
-            )
+//            playerChangeNotifier?.currentMediaIndex(
+//                currentIndex(),
+//                "createMediaSource",
+//            )
+        }
+        if(shouldNotifyTransition){
+            playerChangeNotifier?.notifyItemTransition("Enqueue - createMediaSource")
         }
     }
 
@@ -489,7 +492,6 @@ class MediaService : MediaSessionService() {
             player?.prepare()
             playerChangeNotifier?.notifyItemTransition("playFromQueue")
         }
-        playerChangeNotifier?.currentMediaIndex(currentIndex(), "playFromQueue")
     }
 
     fun removeAll() {
