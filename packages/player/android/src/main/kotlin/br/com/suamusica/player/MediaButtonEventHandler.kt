@@ -192,13 +192,14 @@ class MediaButtonEventHandler(
         }
         if (customCommand.customAction == "notification_previous" || customCommand.customAction == "previous") {
             if(session.player.hasPreviousMediaItem()){
-
             session.player.seekToPreviousMediaItem()
             }else{
                 session.player.seekToPrevious()
             }
+            mediaService.shouldNotifyTransition = true
         }
         if (customCommand.customAction == "notification_next" || customCommand.customAction == "next") {
+            mediaService.shouldNotifyTransition = true
             session.player.seekToNextMediaItem()
         }
         if (customCommand.customAction == "pause") {

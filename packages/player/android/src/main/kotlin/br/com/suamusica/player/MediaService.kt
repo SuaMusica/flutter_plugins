@@ -99,7 +99,7 @@ class MediaService : MediaSessionService() {
 //    private var enqueueLoadOnly: Boolean = false
     private var shuffledIndices = mutableListOf<Int>()
     private var autoPlay: Boolean = true
-    private var shouldNotifyTransition: Boolean = true
+    var shouldNotifyTransition: Boolean = true
 
     private val channel = Channel<List<Media>>(Channel.BUFFERED)
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -620,6 +620,7 @@ class MediaService : MediaSessionService() {
                     return
                 }
                 playerChangeNotifier?.notifyItemTransition("onMediaItemTransition  reason: ${reason} | shouldNotifyTransition: ${shouldNotifyTransition}")
+                shouldNotifyTransition = false
             }
 
             var lastState = PlaybackStateCompat.STATE_NONE - 1
