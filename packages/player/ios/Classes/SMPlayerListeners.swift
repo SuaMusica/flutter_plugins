@@ -36,12 +36,12 @@ public class SMPlayerListeners : NSObject {
 
         loading = currentItem.observe(\.isPlaybackBufferEmpty, options: [.new, .old]) { [weak self] (new, old) in
             guard let self = self else { return }
-            print("#Listeners - observer - loading")
+            print("#NATIVE LOGS ==> Listeners - observer - loading")
             self.methodChannelManager?.notifyPlayerStateChange(state: PlayerState.buffering)
         }
         
         loaded = currentItem.observe(\.isPlaybackLikelyToKeepUp, options: [.new]) { (player, _) in
-            print("#Listeners - observer - loaded")
+            print("#NATIVE LOGS ==> Listeners - observer - loaded")
         }
     }
     
@@ -51,7 +51,7 @@ public class SMPlayerListeners : NSObject {
         mediaChange = smPlayer.observe(\.currentItem, options: [.new, .old]) { [weak self] (player, change) in
             guard let self = self else { return }
             let oldItemExists = change.oldValue != nil
-            print("onMediaChanged: \(oldItemExists)")
+            print("#NATIVE LOGS ==> onMediaChanged: \(oldItemExists)")
             
             if let newItem = change.newValue, newItem != change.oldValue {
                 self.onMediaChanged?()
@@ -75,13 +75,13 @@ public class SMPlayerListeners : NSObject {
         notPlayingReason = smPlayer.observe(\.reasonForWaitingToPlay, options: [.new]) { (playerItem, change) in
             switch self.smPlayer.reasonForWaitingToPlay {
             case .evaluatingBufferingRate:
-                print("#Listeners reasonForWaitingToPlay - evaluatingBufferingRate")
+                print("#NATIVE LOGS ==> Listeners reasonForWaitingToPlay - evaluatingBufferingRate")
             case .toMinimizeStalls:
-                print("#Listeners reasonForWaitingToPlay - toMinimizeStalls")
+                print("#NATIVE LOGS ==> Listeners reasonForWaitingToPlay - toMinimizeStalls")
             case .noItemToPlay:
-                print("#Listeners reasonForWaitingToPlay - noItemToPlay")
+                print("#NATIVE LOGS ==> Listeners reasonForWaitingToPlay - noItemToPlay")
             default:
-                print("#Listeners reasonForWaitingToPlay - default")
+                print("#NATIVE LOGS ==> Listeners reasonForWaitingToPlay - default")
             }
         }
         
@@ -90,13 +90,13 @@ public class SMPlayerListeners : NSObject {
             switch player.timeControlStatus {
             case .playing:
                 self.methodChannelManager?.notifyPlayerStateChange(state: PlayerState.playing)
-                print("#Listeners - Playing")
+                print("#NATIVE LOGS ==> Listeners - Playing")
             case .paused:
                 self.methodChannelManager?.notifyPlayerStateChange(state: PlayerState.paused)
-                print("#Listeners - Paused")
+                print("#NATIVE LOGS ==> Listeners - Paused")
             case .waitingToPlayAtSpecifiedRate:
                 self.methodChannelManager?.notifyPlayerStateChange(state: PlayerState.buffering)
-                print("#Listeners - Buffering")
+                print("#NATIVE LOGS ==> Listeners - Buffering")
             @unknown default:
                 break
             }

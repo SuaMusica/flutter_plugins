@@ -17,6 +17,8 @@ public class SMPlayer : NSObject  {
     var shuffledQueue: [AVPlayerItem] = []
     private var listeners: SMPlayerListeners? = nil
     private var seekToLoadOnly: Bool = false
+    // Transition Control
+    private var shouldNotifyTransition: Bool = false
     
     var fullQueue: [AVPlayerItem] {
         return historyQueue + smPlayer.items() + futureQueue
@@ -35,11 +37,13 @@ public class SMPlayer : NSObject  {
         self.methodChannelManager = methodChannelManager
         listeners = SMPlayerListeners(smPlayer:smPlayer,methodChannelManager:methodChannelManager)
         listeners?.addPlayerObservers()
+    
         listeners?.onMediaChanged = { [self] in
             if(self.smPlayer.items().count > 0){
-                if(self.smPlayer.currentItem != self.fullQueue.first && self.historyQueue.count > 0){
+                if(self.smPlayer.currentItem != self.fullQueue.first && self.historyQueue.count > 0 && shouldNotifyTransition){
                     methodChannelManager?.notifyPlayerStateChange(state: PlayerState.itemTransition)
                 }
+                shouldNotifyTransition = true
                 self.updateEndPlaybackObserver()
                 seekToLoadOnly = !seekToLoadOnly
                 self.listeners?.addItemsObservers()
@@ -111,9 +115,10 @@ public class SMPlayer : NSObject  {
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
     }
     
-    func enqueue(medias: [PlaylistItem], autoPlay: Bool, cookie: String) {
+    func enqueue(medias: [PlaylistItem], autoPlay: Bool, cookie: String, shouldNotifyTransition: Bool) {
         var playerItem: AVPlayerItem?
         guard let message = MessageBuffer.shared.receive() else { return }
+        self.shouldNotifyTransition = shouldNotifyTransition
         let isFirstBatch = self.smPlayer.items().count == 0
         for media in message {
             if(media.url!.contains("https")){
@@ -131,6 +136,9 @@ public class SMPlayer : NSObject  {
         if autoPlay && isFirstBatch {
             self.smPlayer.play()
             self.setNowPlaying()
+        }
+        if(shouldNotifyTransition){
+            methodChannelManager?.notifyPlayerStateChange(state: PlayerState.itemTransition)
         }
     }
     
@@ -378,28 +386,28 @@ public class SMPlayer : NSObject  {
     func printStatus(from:String) {
         //TODO: adicionar variavel de debug
         if(true){
-            print("#printStatus #################################################")
-            print("#printStatus  \(from) ")
-            print("#printStatus Current Index: \(String(describing: currentIndex))")
-            print("#printStatus ------------------------------------------")
-            print("#printStatus History: \(historyQueue.count) items")
+            print("QueueActivity #################################################")
+            print("QueueActivity  \(from) ")
+            print("QueueActivity Current Index: \(String(describing: currentIndex))")
+            print("QueueActivity ------------------------------------------")
+            print("QueueActivity printStatus History: \(historyQueue.count) items")
             
             for item in historyQueue {
-                print("#printStatus History: \(String(describing: item.playlistItem?.title))")
+                print("QueueActivity printStatus History: \(String(describing: item.playlistItem?.title))")
             }
-            print("#printStatus ------------------------------------------")
-            print("#printStatus futureQueue Items: \(futureQueue.count) items")
+            print("QueueActivity printStatus ------------------------------------------")
+            print("QueueActivity printStatus futureQueue Items: \(futureQueue.count) items")
             
             for item in futureQueue {
-                print("#printStatus Upcoming: \(String(describing: item.playlistItem?.title))")
+                print("QueueActivity printStatus Upcoming: \(String(describing: item.playlistItem?.title))")
             }
-            print("#printStatus ------------------------------------------")
-            print("#printStatus AVQueuePlayer items: \(smPlayer.items().count)")
+            print("QueueActivity printStatus ------------------------------------------")
+            print("QueueActivity printStatus AVQueuePlayer items: \(smPlayer.items().count)")
             
             for item in smPlayer.items() {
-                print("#printStatus AVQueuePlayer: \(String(describing: item.playlistItem?.title))")
+                print("QueueActivity printStatus AVQueuePlayer: \(String(describing: item.playlistItem?.title))")
             }
-            print("#printStatus #################################################")
+            print("QueueActivity printStatus #################################################")
         }
     }
     
