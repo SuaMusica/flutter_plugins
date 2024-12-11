@@ -277,9 +277,6 @@ public class SMPlayer : NSObject  {
     
     private func distributeItemsInRightQueue(currentQueue: [AVPlayerItem], keepFirst: Bool = true, positionArg: Int = -1, completionHandler completion: (() -> Void)? = nil) {
         guard currentQueue.count > 0 else { return }
-        //        if(!keepFirst){
-        //            guard positionArg >= 0 else { return }
-        //        }
         var position = positionArg
         historyQueue.removeAll()
         futureQueue.removeAll()
