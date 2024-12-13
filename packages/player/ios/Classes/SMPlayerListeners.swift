@@ -14,7 +14,7 @@ public class SMPlayerListeners : NSObject {
         addPlayerObservers()
     }
     
-    private var mediaChange: NSKeyValueObservation?
+    var mediaChange: NSKeyValueObservation?
     private var statusChange: NSKeyValueObservation?
     private var loading: NSKeyValueObservation?
     private var loaded: NSKeyValueObservation?
@@ -46,8 +46,7 @@ public class SMPlayerListeners : NSObject {
     }
     
 
-    
-    func addPlayerObservers() {
+    func addMediaChangeObserver(){
         mediaChange = smPlayer.observe(\.currentItem, options: [.new, .old]) { [weak self] (player, change) in
             guard let self = self else { return }
             let oldItemExists = change.oldValue != nil
@@ -58,6 +57,9 @@ public class SMPlayerListeners : NSObject {
                 self.addItemsObservers()
             }
         }
+    }
+    func addPlayerObservers() {
+        addMediaChangeObserver()
         
         let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         smPlayer.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in

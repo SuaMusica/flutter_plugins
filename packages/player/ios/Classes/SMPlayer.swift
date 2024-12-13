@@ -335,6 +335,7 @@ public class SMPlayer : NSObject  {
     func playFromQueue(position: Int, timePosition: Int = 0, loadOnly: Bool = false) {
         if (loadOnly) {
             seekToLoadOnly = true
+            listeners?.mediaChange?.invalidate()
         }
         listeners?.removeItemObservers()
         distributeItemsInRightQueue(currentQueue: fullQueue, keepFirst: false, positionArg: position, completionHandler: {
@@ -349,6 +350,7 @@ public class SMPlayer : NSObject  {
         }else{
             play()
         }
+        listeners?.addMediaChangeObserver()
     }
     
     func setupNowPlayingInfoCenter(){

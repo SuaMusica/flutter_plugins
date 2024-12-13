@@ -141,7 +141,7 @@ class Player {
     bool autoPlay = false,
     bool saveOnTop = false,
     bool alreadyAddedToStorage = false,
-    bool shouldNotifyTransition = false,
+    bool shouldNotifyTransition = true,
   }) async {
     if (!alreadyAddedToStorage) {
       _queue.addAll(items, saveOnTop: saveOnTop);
