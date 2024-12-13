@@ -28,7 +28,11 @@ class Player {
       beforeInitialize: () async => await _channel.invokeMethod('remove_all'),
       initializeIsar: this.initializeIsar,
       onInitialize: () async {
-        await enqueueAll(items, alreadyAddedToStorage: true);
+        await enqueueAll(
+          items,
+          alreadyAddedToStorage: true,
+          shouldNotifyTransition: false,
+        );
       },
     );
     player = this;

@@ -192,6 +192,10 @@ public class SMPlayer : NSObject  {
         if let currentItem = smPlayer.currentItem {
             historyQueue.append(currentItem)
         }
+        
+        if(smPlayer.currentItem == fullQueue.last && smPlayer.repeatMode == .REPEAT_MODE_ALL){
+            playFromQueue(position: 0)
+        }
         smPlayer.advanceToNextItem()
         seekToPosition(position: 0)
         setNowPlaying()
