@@ -177,7 +177,8 @@ class Player {
             'playerId': playerId,
             'shallSendEvents': _shallSendEvents,
             'externalplayback': externalPlayback,
-            'shouldNotifyTransition': shouldNotifyTransition,
+            'shouldNotifyTransition':
+                batch.length > 1 ? false : shouldNotifyTransition,
             if (i == 0) ...{
               'cookie': cookie,
             },

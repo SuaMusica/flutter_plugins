@@ -6,6 +6,7 @@ private var playlistItemKey: UInt8 = 0
 var currentRepeatmode: AVQueuePlayer.RepeatMode = .REPEAT_MODE_OFF
 public class SMPlayer : NSObject  {
     var methodChannelManager: MethodChannelManager?
+    private var cookie: String = ""
     //Queue handle
     private var smPlayer: AVQueuePlayer
     private var historyQueue: [AVPlayerItem] = []
@@ -119,11 +120,14 @@ public class SMPlayer : NSObject  {
         var playerItem: AVPlayerItem?
         guard let message = MessageBuffer.shared.receive() else { return }
         self.shouldNotifyTransition = shouldNotifyTransition
+        if(!cookie.isEmpty){
+            self.cookie = cookie
+        }
         let isFirstBatch = self.smPlayer.items().count == 0
         for media in message {
             if(media.url!.contains("https")){
                 guard let url = URL(string: media.url!) else { continue }
-                let assetOptions = ["AVURLAssetHTTPHeaderFieldsKey": ["Cookie": cookie]]
+                let assetOptions = ["AVURLAssetHTTPHeaderFieldsKey": ["Cookie": self.cookie]]
                 playerItem = AVPlayerItem(asset: AVURLAsset(url: url, options: assetOptions))
             }else{
                 playerItem = AVPlayerItem(asset:AVAsset(url: NSURL(fileURLWithPath: media.url!) as URL))
@@ -137,6 +141,7 @@ public class SMPlayer : NSObject  {
             self.smPlayer.play()
             self.setNowPlaying()
         }
+        print("#ENQUEUE: shouldNotifyTransition: \(shouldNotifyTransition)")
         if(shouldNotifyTransition){
             methodChannelManager?.notifyPlayerStateChange(state: PlayerState.itemTransition)
         }
