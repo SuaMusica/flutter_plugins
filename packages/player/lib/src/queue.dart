@@ -65,7 +65,6 @@ class Queue {
   var storage = <QueueItem<Media>>[];
   PreviousPlaylistMusics? previousPlaylistMusics;
   DateTime? _lastPrevious;
-  set lastPrevious(DateTime? value) => _lastPrevious = value;
   Media? get current =>
       _current ??
       (index >= 0 && index < storage.length ? storage[index].item : null);
@@ -248,49 +247,28 @@ class Queue {
     return storage.length;
   }
 
-  Media rewind() {
-    assert(index >= 0 && index < storage.length);
-    return storage[index].item;
-  }
-
-  Media previous() {
-    assert(index >= 0);
-    final now = DateTime.now();
-    if (_lastPrevious == null) {
-      _lastPrevious = now;
-      return rewind();
-    } else {
-      final diff = now.difference(_lastPrevious!).inMilliseconds;
-      print("diff: $diff");
-      if (diff < 3000) {
-        if (index > 0) {
-          setIndex = index - 1;
-        }
-        return storage[index].item;
-      } else {
+  bool shouldRewind() {
+    if (index >= 0) {
+      final now = DateTime.now();
+      if (_lastPrevious == null) {
         _lastPrevious = now;
-        return rewind();
+        return true;
+      } else {
+        final diff = now.difference(_lastPrevious!).inMilliseconds;
+        _lastPrevious = now;
+        return diff > 3000;
       }
     }
+    return false;
   }
 
   Media? possiblePrevious() {
     if (index >= 0) {
-      final now = DateTime.now();
-      if (_lastPrevious == null) {
-        return storage[index].item;
-      } else {
-        final diff = now.difference(_lastPrevious!).inMilliseconds;
-        if (diff < 3000) {
-          var workIndex = index;
-          if (index > 0) {
-            --workIndex;
-          }
-          return storage[workIndex].item;
-        } else {
-          return storage[index].item;
-        }
+      var workIndex = index;
+      if (index > 0) {
+        --workIndex;
       }
+      return storage[workIndex].item;
     }
     return storage.isNotEmpty && index >= 0 ? storage[index].item : null;
   }

@@ -340,9 +340,14 @@ class Player {
   }
 
   Future<int?> previous({bool isFromChromecast = false}) async {
+    if (_queue.shouldRewind()) {
+      seek(Duration(milliseconds: 0));
+      print("#APP LOGS ==> shouldRewind");
+      return Ok;
+    }
+
     Media? media = _queue.possiblePrevious();
     if (isFromChromecast && media != null) {
-      _queue.lastPrevious = DateTime.now();
       return _queue.items.indexOf(media);
     }
     if (media == null) {

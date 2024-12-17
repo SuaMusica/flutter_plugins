@@ -194,6 +194,7 @@ public class SMPlayer : NSObject  {
     }
     
     func nextTrack(from:String) {
+        smPlayer.pause()
         print("#print nextTrack \(from)")
         if let currentItem = smPlayer.currentItem {
             historyQueue.append(currentItem)
@@ -206,11 +207,13 @@ public class SMPlayer : NSObject  {
         seekToPosition(position: 0)
         setNowPlaying()
         insertIntoPlayerIfNeeded()
+        smPlayer.play()
         printStatus(from:"NEXT")
     }
     
     func previousTrack() {
         smPlayer.pause()
+
         guard let lastHistoryItem = historyQueue.popLast() else {
             seekToPosition(position: 0)
             return
@@ -403,8 +406,7 @@ public class SMPlayer : NSObject  {
     }
     
     func printStatus(from:String) {
-        //TODO: adicionar variavel de debug
-        if(true){
+        if(isDebugMode()){
             print("QueueActivity #################################################")
             print("QueueActivity  \(from) ")
             print("QueueActivity Current Index: \(String(describing: currentIndex))")
@@ -429,6 +431,14 @@ public class SMPlayer : NSObject  {
             print("QueueActivity printStatus #################################################")
         }
     }
+    
+    func isDebugMode() -> Bool {
+           #if DEBUG
+           return true
+           #else
+           return false
+           #endif
+       }
     
     //override automatic next
     @objc func itemDidFinishPlaying(_ notification: Notification) {
