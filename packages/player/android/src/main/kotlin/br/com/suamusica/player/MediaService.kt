@@ -609,6 +609,7 @@ class MediaService : MediaSessionService() {
                 reason: @MediaItemTransitionReason Int
             ) {
                 super.onMediaItemTransition(mediaItem, reason)
+                Log.d(TAG, "#NATIVE LOGS ==> onMediaItemTransition reason: $reason")
                 if ((player?.mediaItemCount ?: 0) > 0) {
                     playerChangeNotifier?.currentMediaIndex(
                         currentIndex(),
@@ -682,6 +683,14 @@ class MediaService : MediaSessionService() {
         }
 
         override fun run() {
+            val position = player?.currentPosition ?: 0L
+            val duration = player?.duration ?: 0L
+
+            if (duration > 0 && position >= duration - 800) {
+                playerChangeNotifier?.notifyStateChange(STATE_ENDED)
+                Log.d(TAG, "#NATIVE LOGS ==> Notifying COMPLETED print ONLY")
+            }
+
             notifyPositionChange()
 
             if (!shutdownRequest.get()) {

@@ -40,6 +40,7 @@ import br.com.suamusica.player.PlayerPlugin.Companion.SET_REPEAT_MODE
 import br.com.suamusica.player.PlayerPlugin.Companion.TIME_POSITION_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.TOGGLE_SHUFFLE
 import br.com.suamusica.player.PlayerPlugin.Companion.UPDATE_FAVORITE
+import br.com.suamusica.player.PlayerPlugin.Companion.UPDATE_IS_PLAYING
 import br.com.suamusica.player.PlayerPlugin.Companion.UPDATE_MEDIA_URI
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
@@ -92,6 +93,7 @@ class MediaButtonEventHandler(
                 add(SessionCommand("ads_playing", Bundle.EMPTY))
                 add(SessionCommand("onTogglePlayPause", Bundle.EMPTY))
                 add(SessionCommand(UPDATE_MEDIA_URI, session.token.extras))
+                add(SessionCommand(UPDATE_IS_PLAYING, session.token.extras))
             }.build()
 
         val playerCommands =
@@ -119,6 +121,10 @@ class MediaButtonEventHandler(
         if (customCommand.customAction == "notification_favoritar" || customCommand.customAction == "notification_desfavoritar") {
             val isFavorite = customCommand.customAction == "notification_favoritar"
             PlayerSingleton.favorite(isFavorite)
+            buildIcons()
+        }
+
+        if(customCommand.customAction == UPDATE_IS_PLAYING){
             buildIcons()
         }
 
@@ -365,25 +371,31 @@ class MediaButtonEventHandler(
 
                 KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
                     Log.d("Player", "Player: Key Code : PlayPause")
-                    mediaService.togglePlayPause()
+                    if(session.player.isPlaying){
+                        PlayerSingleton.pause()
+                    }else{
+                        PlayerSingleton.play()
+                    }
                 }
 
                 KeyEvent.KEYCODE_MEDIA_NEXT -> {
                     Log.d("Player", "Player: Key Code : Next")
-                    session.player.seekToNext()
+//                    session.player.seekToNext()
+                    PlayerSingleton.next()
                 }
 
                 KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
                     Log.d("Player", "Player: Key Code : Previous")
-                    session.player.seekToPrevious()
+//                    session.player.seekToPrevious()
+                    PlayerSingleton.previous()
                 }
 
                 KeyEvent.KEYCODE_MEDIA_STOP -> {
                     PlayerSingleton.stop()
                 }
             }
-        } else if (intent.hasExtra(PlayerPlugin.FAVORITE)) {
-            PlayerSingleton.favorite(intent.getBooleanExtra(PlayerPlugin.FAVORITE, false))
+        } else if (intent.hasExtra(FAVORITE)) {
+            PlayerSingleton.favorite(intent.getBooleanExtra(FAVORITE, false))
         }
         return
     }

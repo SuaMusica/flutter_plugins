@@ -14,7 +14,7 @@ class PlayerChangeNotifier(private val channelManager: MethodChannelManager) {
             STATE_READY -> PlayerState.STATE_READY
             else -> PlayerState.IDLE
         }
-        Log.i("Player", "Notifying Player State change: $playerState | $state")
+        Log.i("Player", "#NATIVE LOGS ==> Notifying Player State change: $playerState | $state")
         channelManager.notifyPlayerStateChange("sua-musica-player", playerState)
     }
 

@@ -104,18 +104,8 @@ class Player {
       return NotOk;
     }
     arguments ??= const {};
-    // if (_cookies == null || !_cookies!.isValid) {
-    //   _log("Generating Cookies");
-    //   _cookies = await cookieSigner();
-    // }
-    // String cookie = _cookies!.toHeaders();
-    // if (method == "play") {
-    //   _log("Cookie: $cookie");
-    // }
-
     final Map<String, dynamic> args = Map.of(arguments)
       ..['playerId'] = playerId
-      // ..['cookie'] = cookie
       ..['shallSendEvents'] = _shallSendEvents
       ..['externalplayback'] = externalPlayback;
 
@@ -273,7 +263,9 @@ class Player {
   Future<int> play({bool shouldPrepare = false}) async {
     await _invokeMethod(
       'play',
-      {'shouldPrepare': shouldPrepare},
+      {
+        'shouldPrepare': shouldPrepare,
+      },
     );
     return Ok;
   }
@@ -361,14 +353,10 @@ class Player {
       if (repeatMode == RepeatMode.REPEAT_MODE_ONE) {
         setRepeatMode("all");
       }
-      return _doNext();
+      return _invokeMethod('next');
     } else {
       return null;
     }
-  }
-
-  Future<int> _doNext() async {
-    return _invokeMethod('next').then((result) => result);
   }
 
   Future<int> updateFavorite({
@@ -577,7 +565,7 @@ class Player {
         break;
       case 'commandCenter.onNext':
         _log("Player : Command Center : Got a next request");
-        player.next();
+        await player.next();
         if (currentMedia != null) {
           _addUsingPlayer(
             player,

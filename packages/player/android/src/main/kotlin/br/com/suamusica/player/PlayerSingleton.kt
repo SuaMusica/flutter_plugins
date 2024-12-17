@@ -28,11 +28,11 @@ object PlayerSingleton {
             channel?.invokeMethod("commandCenter.onPlay", emptyMap<String, String>())
         }
     }
-//TODO(Lucas) verificar se pode retirar
-//    fun togglePlayPause(){
-//        mediaSessionConnection?.togglePlayPause()
-//        channel?.invokeMethod("commandCenter.onTogglePlayPause", emptyMap<String, String>())
-//    }
+
+    fun togglePlayPause(){
+        mediaSessionConnection?.togglePlayPause()
+        channel?.invokeMethod("commandCenter.onTogglePlayPause", emptyMap<String, String>())
+    }
 //    fun adsPlaying(){
 //        mediaSessionConnection?.adsPlaying()
 //    }
@@ -50,7 +50,6 @@ object PlayerSingleton {
     }
 
     fun next() {
-        Log.d("Player", "#MEDIA3# - commandCenter NEXT")
         channel?.invokeMethod("commandCenter.onNext", emptyMap<String, String>())
     }
 
