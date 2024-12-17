@@ -38,6 +38,12 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
         case "next":
             smPlayer?.nextTrack(from:"next call")
             result(NSNumber(value: 1))
+        case  "disable_notification_commands":
+            smPlayer?.areNotificationCommandsEnabled = false
+            result(NSNumber(value: 1))
+        case  "enable_notification_commands":
+            smPlayer?.areNotificationCommandsEnabled = true
+            result(NSNumber(value: 1))
         case "previous":
             smPlayer?.previousTrack()
             result(NSNumber(value: 1))

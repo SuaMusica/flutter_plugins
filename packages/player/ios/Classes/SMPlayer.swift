@@ -20,6 +20,7 @@ public class SMPlayer : NSObject  {
     private var seekToLoadOnly: Bool = false
     // Transition Control
     private var shouldNotifyTransition: Bool = false
+    var areNotificationCommandsEnabled: Bool = true
     
     var fullQueue: [AVPlayerItem] {
         return historyQueue + smPlayer.items() + futureQueue
@@ -366,27 +367,37 @@ public class SMPlayer : NSObject  {
         commandCenter.changePlaybackPositionCommand.isEnabled = true
         
         commandCenter.pauseCommand.addTarget { [self]event in
-            smPlayer.pause()
+            if(areNotificationCommandsEnabled){
+                smPlayer.pause()
+            }
             return .success
         }
         
         commandCenter.playCommand.addTarget { [self]event in
-            smPlayer.play()
+            if(areNotificationCommandsEnabled){
+                smPlayer.play()
+            }
             return .success
         }
         
         commandCenter.nextTrackCommand.addTarget {[self]event in
-            nextTrack(from: "commandCenter.nextTrackCommand")
+            if(areNotificationCommandsEnabled){
+                nextTrack(from: "commandCenter.nextTrackCommand")
+            }
             return .success
         }
         commandCenter.previousTrackCommand.addTarget {[self]event in
-            previousTrack()
+            if(areNotificationCommandsEnabled){
+                previousTrack()
+            }
             return .success
         }
         
         commandCenter.changePlaybackPositionCommand.addTarget{[self]event in
-            let e = event as? MPChangePlaybackPositionCommandEvent
-            seekToPosition(position: Int((e?.positionTime ?? 0) * 1000))
+            if(areNotificationCommandsEnabled){
+                let e = event as? MPChangePlaybackPositionCommandEvent
+                seekToPosition(position: Int((e?.positionTime ?? 0) * 1000))
+            }
             return .success
         }
     }

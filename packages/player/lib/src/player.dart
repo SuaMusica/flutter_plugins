@@ -270,6 +270,16 @@ class Player {
     return Ok;
   }
 
+  Future<int> disableNotificatonCommands() async {
+    await _invokeMethod('disable_notification_commands');
+    return Ok;
+  }
+
+  Future<int> enableNotificatonCommands() async {
+    await _invokeMethod('enable_notification_commands');
+    return Ok;
+  }
+
   Future<int> playFromQueue(
     int pos, {
     Duration? position,
