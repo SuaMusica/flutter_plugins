@@ -150,6 +150,7 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
         _ = AudioSessionManager.inactivateSession()
         smPlayer?.clearNowPlayingInfo()
         smPlayer?.removeAll()
+        NotificationCenter.default.removeObserver(self, name: AVAudioSession.interruptionNotification, object: nil)
     }
     
 }

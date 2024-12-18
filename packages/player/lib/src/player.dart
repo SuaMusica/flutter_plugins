@@ -383,6 +383,11 @@ class Player {
     required bool isFavorite,
     required int id,
   }) async {
+    // final index = _queue.items.indexWhere((item) => item.id == id);
+    // if (index != -1) {
+    //   _queue.items[index] =
+    //       _queue.items[index].copyWith(isFavorite: isFavorite);
+    // }
     return _channel.invokeMethod('update_notification', {
       'isFavorite': isFavorite,
       'idFavorite': id,

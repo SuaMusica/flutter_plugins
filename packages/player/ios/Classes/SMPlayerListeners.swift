@@ -28,7 +28,8 @@ public class SMPlayerListeners : NSObject {
         guard let currentItem = smPlayer.currentItem else { return }
         statusChange = currentItem.observe(\.status, options: [.new, .old]) { (playerItem, change) in
             if playerItem.status == .failed {
-                if let error = playerItem.error {
+               if let error = playerItem.error {
+                    print("#NATIVE LOGS ==> ERROR: \(String(describing: playerItem.error))")
                     self.methodChannelManager?.notifyError(error: "UNKNOW ERROR")
                 }
             }
@@ -132,7 +133,6 @@ public class SMPlayerListeners : NSObject {
         notPlayingReason?.invalidate()
         playback?.invalidate()
         mediaChange?.invalidate()
-        
         mediaChange = nil
         notPlayingReason = nil
         playback = nil

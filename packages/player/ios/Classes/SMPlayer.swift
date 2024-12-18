@@ -39,6 +39,13 @@ public class SMPlayer : NSObject  {
         self.methodChannelManager = methodChannelManager
         listeners = SMPlayerListeners(smPlayer:smPlayer,methodChannelManager:methodChannelManager)
         listeners?.addPlayerObservers()
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleInterruption(_:)),
+            name: AVAudioSession.interruptionNotification,
+            object: nil
+        )
     
         listeners?.onMediaChanged = { [self] in
             if(self.smPlayer.items().count > 0){
@@ -57,6 +64,27 @@ public class SMPlayer : NSObject  {
         }
         setupNowPlayingInfoCenter()
         _ = AudioSessionManager.activeSession()
+    }
+
+    @objc private func handleInterruption(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeValue) else {
+            return
+        }
+        switch type {
+        case .began:
+            pause()
+        case .ended:
+            if let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt {
+                let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
+                if options.contains(.shouldResume) {
+                    play()
+                }
+            }
+        @unknown default:
+            break
+        }
     }
     
     func pause() {
