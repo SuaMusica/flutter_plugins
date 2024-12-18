@@ -126,6 +126,11 @@ class Player {
     return Ok;
   }
 
+  Future<int> removeNotification() async {
+    await _channel.invokeMethod('remove_notification');
+    return Ok;
+  }
+
   Future<int> enqueueAll(
     List<Media> items, {
     bool autoPlay = false,

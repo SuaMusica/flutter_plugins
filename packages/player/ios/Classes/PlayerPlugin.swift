@@ -45,6 +45,9 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
             smPlayer?.areNotificationCommandsEnabled = true
             smPlayer?.enableCommands()
             result(NSNumber(value: 1))
+        case "remove_notification":
+            smPlayer?.removeNotification()
+            result(NSNumber(value: 1))
         case "previous":
             smPlayer?.previousTrack()
             result(NSNumber(value: 1))
@@ -144,6 +147,7 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
     
     deinit {
         print("PlayerPlugin: deinit")
+        _ = AudioSessionManager.inactivateSession()
         smPlayer?.clearNowPlayingInfo()
         smPlayer?.removeAll()
     }

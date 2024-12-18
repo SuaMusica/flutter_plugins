@@ -115,6 +115,7 @@ public class SMPlayer : NSObject  {
     
     func clearNowPlayingInfo() {
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+        removeNotification()
     }
     
     func enqueue(medias: [PlaylistItem], autoPlay: Bool, cookie: String, shouldNotifyTransition: Bool) {
@@ -141,11 +142,13 @@ public class SMPlayer : NSObject  {
         if autoPlay && isFirstBatch {
             self.smPlayer.play()
             self.setNowPlaying()
+            self.enableCommands()
         }
         print("#ENQUEUE: shouldNotifyTransition: \(shouldNotifyTransition)")
         if(shouldNotifyTransition){
             methodChannelManager?.notifyPlayerStateChange(state: PlayerState.itemTransition)
         }
+        self.enableCommands()
     }
     
     func removeByPosition(indexes: [Int]) {
@@ -263,7 +266,19 @@ public class SMPlayer : NSObject  {
         originalQueue.removeAll()
         shuffledQueue.removeAll()
         shuffledIndices.removeAll()
+    }
+    
+    func removeNotification(){
+        let commandCenter = MPRemoteCommandCenter.shared()
+        commandCenter.nextTrackCommand.isEnabled = false;
+        commandCenter.previousTrackCommand.isEnabled = false;
+        commandCenter.changePlaybackPositionCommand.isEnabled = false
+        commandCenter.playCommand.removeTarget(self)
+        commandCenter.pauseCommand.removeTarget(self)
         
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+        try? AVAudioSession.sharedInstance().setActive(false)
+        UIApplication.shared.endReceivingRemoteControlEvents()
     }
     
     func play(){
