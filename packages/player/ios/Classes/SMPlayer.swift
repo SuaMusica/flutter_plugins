@@ -52,7 +52,7 @@ public class SMPlayer : NSObject  {
                 if(seekToLoadOnly){
                     seekToLoadOnly = false
                     methodChannelManager?.currentMediaIndex(index: self.currentIndex)
-                }
+                }             
             }
         }
         setupNowPlayingInfoCenter()
@@ -205,7 +205,6 @@ public class SMPlayer : NSObject  {
         }
         smPlayer.advanceToNextItem()
         seekToPosition(position: 0)
-        setNowPlaying()
         insertIntoPlayerIfNeeded()
         smPlayer.play()
         printStatus(from:"NEXT")
@@ -231,7 +230,6 @@ public class SMPlayer : NSObject  {
         smPlayer.insert(currentItem, after: smPlayer.currentItem)
         
         seekToPosition(position: 0)
-        setNowPlaying()
         insertIntoPlayerIfNeeded()
         smPlayer.play()
         printStatus(from:"previousTrack")
@@ -360,6 +358,13 @@ public class SMPlayer : NSObject  {
             play()
         }
         listeners?.addMediaChangeObserver()
+    }
+    
+    func enableCommands(){
+        let commandCenter = MPRemoteCommandCenter.shared()
+        commandCenter.nextTrackCommand.isEnabled = true;
+        commandCenter.previousTrackCommand.isEnabled = true;
+        commandCenter.changePlaybackPositionCommand.isEnabled = true
     }
     
     func setupNowPlayingInfoCenter(){

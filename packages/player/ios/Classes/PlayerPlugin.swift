@@ -43,6 +43,7 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
             result(NSNumber(value: 1))
         case  "enable_notification_commands":
             smPlayer?.areNotificationCommandsEnabled = true
+            smPlayer?.enableCommands()
             result(NSNumber(value: 1))
         case "previous":
             smPlayer?.previousTrack()
