@@ -379,11 +379,11 @@ class Player {
     }
   }
 
-  Future<int> updateFavorite({
+  Future<int> updateNotification({
     required bool isFavorite,
     required int id,
   }) async {
-    return _channel.invokeMethod('update_favorite', {
+    return _channel.invokeMethod('update_notification', {
       'isFavorite': isFavorite,
       'idFavorite': id,
     }).then((result) => result);
