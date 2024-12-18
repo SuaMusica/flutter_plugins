@@ -210,7 +210,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
                     val idFavorite = call.argument<Int?>(ID_FAVORITE_ARGUMENT) ?: 0
                     PlayerSingleton.mediaSessionConnection?.updateFavorite(isFavorite, idFavorite)
                 } else {
-                    PlayerSingleton.mediaSessionConnection?.updatePlayState(call.argument<Boolean?>(IS_PLAYING_ARGUMENT))
+                    PlayerSingleton.mediaSessionConnection?.updatePlayState(call.argument<Boolean?>(IS_PLAYING_ARGUMENT) ?: false)
                 }
             }
 
