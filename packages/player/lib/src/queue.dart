@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:smplayer/src/isar_service.dart';
@@ -15,25 +14,35 @@ class Queue {
     shuffler,
     mode,
     this.initializeIsar = false,
+    this.onInitialize,
+    this.beforeInitialize,
   }) : _shuffler = shuffler ?? SimpleShuffler() {
     IsarService.instance.isarEnabled = initializeIsar;
     itemsReady = !initializeIsar;
     _initialize();
   }
-
   Future<void> _initialize() async {
-    if (!itemsReady) {
-      try {
-        final items = await previousItems;
-        previousIndex = await previousPlaylistIndex;
-        previousPosition = await _previousPlaylistPosition;
-        int i = 0;
-        storage.addAll(items.map((e) => QueueItem(i++, i, e)));
-      } catch (_) {
-      } finally {
-        itemsReady = true;
-      }
-    }
+    beforeInitialize?.call().then(
+      (_) async {
+        if (!itemsReady) {
+          try {
+            final items = await previousItems;
+            previousIndex = await previousPlaylistIndex;
+            previousPosition = await _previousPlaylistPosition;
+            int i = 0;
+            storage.addAll(items.map((e) => QueueItem(i++, i, e)));
+            if (items.isNotEmpty) {
+              debugPrint('#APP LOGS ==> onInitialize');
+              onInitialize?.call().then((_) => itemsReady = true);
+            } else {
+              itemsReady = true;
+            }
+          } catch (_) {
+            itemsReady = true;
+          }
+        }
+      },
+    );
   }
 
   var _index = 0;
@@ -49,13 +58,13 @@ class Queue {
 
   final Shuffler _shuffler;
   final bool initializeIsar;
+  final Future<void> Function()? onInitialize, beforeInitialize;
   bool itemsReady = false;
   int previousIndex = 0;
   PreviousPlaylistPosition? previousPosition;
   var storage = <QueueItem<Media>>[];
   PreviousPlaylistMusics? previousPlaylistMusics;
   DateTime? _lastPrevious;
-
   Media? get current =>
       _current ??
       (index >= 0 && index < storage.length ? storage[index].item : null);
@@ -129,16 +138,13 @@ class Queue {
 
   addAll(
     List<Media> items, {
-    bool shouldRemoveFirst = false,
     bool saveOnTop = false,
   }) async {
-    final medias = shouldRemoveFirst ? items.sublist(1) : items;
-
     int i = storage.length == 1 ? 0 : storage.length - 1;
     if (saveOnTop) {
-      storage.insertAll(0, _toQueueItems(medias, i));
+      storage.insertAll(0, _toQueueItems(items, i));
     } else {
-      storage.addAll(_toQueueItems(medias, i));
+      storage.addAll(_toQueueItems(items, i));
     }
 
     await _save(medias: items, saveOnTop: saveOnTop);
@@ -241,71 +247,51 @@ class Queue {
     return storage.length;
   }
 
-  Media rewind() {
-    assert(index >= 0 && index < storage.length);
-    return storage[index].item;
-  }
-
-  Media previous() {
-    assert(index >= 0);
-    final now = DateTime.now();
-    if (_lastPrevious == null) {
-      _lastPrevious = now;
-      return rewind();
-    } else {
-      final diff = now.difference(_lastPrevious!).inMilliseconds;
-      print("diff: $diff");
-      if (diff < 3000) {
-        if (index > 0) {
-          setIndex = index - 1;
-        }
-        return storage[index].item;
-      } else {
+  bool shouldRewind() {
+    if (index >= 0) {
+      final now = DateTime.now();
+      if (_lastPrevious == null) {
         _lastPrevious = now;
-        return rewind();
+        return true;
+      } else {
+        final diff = now.difference(_lastPrevious!).inMilliseconds;
+        _lastPrevious = now;
+        return diff > 3000;
       }
     }
+    return false;
   }
 
   Media? possiblePrevious() {
     if (index >= 0) {
-      final now = DateTime.now();
-      if (_lastPrevious == null) {
-        return storage[index].item;
-      } else {
-        final diff = now.difference(_lastPrevious!).inMilliseconds;
-        if (diff < 3000) {
-          var workIndex = index;
-          if (index > 0) {
-            --workIndex;
-          }
-          return storage[workIndex].item;
-        } else {
-          return storage[index].item;
-        }
+      var workIndex = index;
+      if (index > 0) {
+        --workIndex;
       }
+      return storage[workIndex].item;
     }
     return storage.isNotEmpty && index >= 0 ? storage[index].item : null;
   }
 
-  Media? next() {
-    if (storage.length == 0) {
-      throw AssertionError("Queue is empty");
-    } else if (storage.length > 0 && index < storage.length - 1) {
-      final newIndex = index + 1;
-      setIndex = newIndex;
-      var media = storage[newIndex].item;
-      _updateIndex(media.id, newIndex);
-      return media;
-    } else {
-      return null;
-    }
-  }
+  // Media? next() {
+  //   if (storage.length == 0) {
+  //     throw AssertionError("Queue is empty");
+  //   } else if (storage.length > 0 && index < storage.length - 1) {
+  //     final newIndex = index + 1;
+  //     setIndex = newIndex;
+  //     var media = storage[newIndex].item;
+  //     updateIsarIndex(media.id, newIndex);
+  //     return media;
+  //   } else {
+  //     return null;
+  //   }
+  // }
 
   Media? possibleNext(RepeatMode repeatMode) {
-    if (repeatMode == RepeatMode.NONE || repeatMode == RepeatMode.TRACK) {
+    if (repeatMode == RepeatMode.REPEAT_MODE_OFF ||
+        repeatMode == RepeatMode.REPEAT_MODE_ONE) {
       return _next();
-    } else if (repeatMode == RepeatMode.QUEUE) {
+    } else if (repeatMode == RepeatMode.REPEAT_MODE_ALL) {
       if (storage.length - 1 == index) {
         return storage[0].item;
       } else {
@@ -339,30 +325,30 @@ class Queue {
     }
   }
 
-  void _updateIndex(int id, int newIndex) async {
+  void updateIsarIndex(int id, int newIndex) async {
     IsarService.instance.addPreviousPlaylistCurrentIndex(
       PreviousPlaylistCurrentIndex(mediaId: id, currentIndex: newIndex),
     );
   }
 
-  Media? item(int pos) {
-    final item = storage[pos].item;
-    _updateIndex(item.id, pos);
-    if (storage.length == 0) {
-      return null;
-    } else if (storage.length > 0 && pos <= storage.length - 1) {
-      return item;
-    } else {
-      return null;
-    }
-  }
+  // Media? item(int pos) {
+  //   final item = storage[pos].item;
+  //   updateIsarIndex(item.id, pos);
+  //   if (storage.length == 0) {
+  //     return null;
+  //   } else if (storage.length > 0 && pos <= storage.length - 1) {
+  //     return item;
+  //   } else {
+  //     return null;
+  //   }
+  // }
 
   Media restart() {
     setIndex = 0;
     return storage.first.item;
   }
 
-  void reorder(int oldIndex, int newIndex, [bool isShuffle = false]) {
+  reorder(int oldIndex, int newIndex, [bool isShuffle = false]) {
     final playingItem = storage.elementAt(index);
     if (newIndex > oldIndex) {
       for (int i = oldIndex + 1; i <= newIndex; i++) {
@@ -400,7 +386,6 @@ class Queue {
         );
       }
     }
-
     setIndex = playingIndex;
   }
 

@@ -17,21 +17,26 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.Format;
-import com.google.android.exoplayer2.ParserException;
-import com.google.android.exoplayer2.drm.DrmInitData;
-import com.google.android.exoplayer2.extractor.mp4.PsshAtomUtil;
-import com.google.android.exoplayer2.metadata.Metadata;
-import com.google.android.exoplayer2.source.UnrecognizedInputFormatException;
-import com.google.android.exoplayer2.source.hls.HlsTrackMetadataEntry;
-import com.google.android.exoplayer2.source.hls.playlist.HlsMediaPlaylist;
-import com.google.android.exoplayer2.source.hls.playlist.HlsPlaylist;
-import com.google.android.exoplayer2.upstream.ParsingLoadable;
-import com.google.android.exoplayer2.util.Assertions;
-import com.google.android.exoplayer2.util.MimeTypes;
-import com.google.android.exoplayer2.util.UriUtil;
-import com.google.android.exoplayer2.util.Util;
+import androidx.annotation.OptIn;
+import androidx.media3.common.C;
+import androidx.media3.common.Format;
+import androidx.media3.common.ParserException;
+import androidx.media3.common.DrmInitData;
+//import androidx.media3.exoplayer.extractor.mp4.PsshAtomUtil;
+import androidx.media3.common.Metadata;
+import androidx.media3.common.util.Assertions;
+import androidx.media3.common.util.UnstableApi;
+import androidx.media3.common.util.UriUtil;
+import androidx.media3.common.util.Util;
+import androidx.media3.exoplayer.source.UnrecognizedInputFormatException;
+import androidx.media3.exoplayer.hls.HlsTrackMetadataEntry;
+import androidx.media3.exoplayer.hls.playlist.HlsMediaPlaylist;
+import androidx.media3.exoplayer.hls.playlist.HlsPlaylist;
+import androidx.media3.exoplayer.upstream.ParsingLoadable;
+//import androidx.media3.exoplayer.util.Assertions;
+import androidx.media3.common.MimeTypes;
+//import com.google.android.exoplayer2.util.UriUtil;
+//import com.google.android.exoplayer2.util.Util;
 
 import android.util.Log;
 
@@ -40,7 +45,9 @@ import android.text.TextUtils;
 import android.util.Base64;
 
 import androidx.annotation.Nullable;
+import androidx.media3.extractor.mp4.PsshAtomUtil;
 
+@UnstableApi
 public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlaylist> {
 
     private static final String PLAYLIST_HEADER = "#EXTM3U";
@@ -171,6 +178,7 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
         this.masterPlaylist = masterPlaylist;
     }
 
+    @OptIn(markerClass = UnstableApi.class)
     @Override
     public HlsPlaylist parse(Uri uri, InputStream inputStream) throws IOException {
         Log.i("MusicService", "Player : Parser...");
@@ -211,6 +219,7 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
         throw ParserException.createForUnsupportedContainerFeature("Failed to parse the playlist, could not identify any tags.");
     }
 
+
     private static boolean checkPlaylistHeader(BufferedReader reader) throws IOException {
         int last = reader.read();
         if (last == 0xEF) {
@@ -232,6 +241,7 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
         return Util.isLinebreak(last);
     }
 
+
     private static int skipIgnorableWhitespace(BufferedReader reader, boolean skipLinebreaks, int c)
             throws IOException {
         while (c != -1 && Character.isWhitespace(c) && (skipLinebreaks || !Util.isLinebreak(c))) {
@@ -240,7 +250,8 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
         return c;
     }
 
-    private static CustomHlsMasterPlaylist parseMasterPlaylist(CustomHlsPlaylistParser.LineIterator iterator, String baseUri)
+    @UnstableApi
+    private static HlsPlaylist parseMasterPlaylist(LineIterator iterator, String baseUri)
             throws IOException {
         HashMap<Uri, ArrayList<HlsTrackMetadataEntry.VariantInfo>> urlToVariantInfos = new HashMap<>();
         HashMap<String, String> variableDefinitions = new HashMap<>();
@@ -421,7 +432,7 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
                                     .setHeight(height)
                                     .setFrameRate(frameRate)
                                     .build();
-                                    //.copyWithMetadata(metadata);
+                    //.copyWithMetadata(metadata);
                     if (uri == null) {
                         // TODO: Remove this case and add a Rendition with a null uri to videos.
                     } else {
@@ -586,7 +597,7 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
         DrmInitData cachedDrmInitData = null;
         List<HlsMediaPlaylist.Part> trailingParts = new ArrayList<>();
         Map<Uri, HlsMediaPlaylist.RenditionReport> renditionReports = new HashMap<>();
-        HlsMediaPlaylist.ServerControl serverControl = new HlsMediaPlaylist.ServerControl(0,false,0,0,false);
+        HlsMediaPlaylist.ServerControl serverControl = new HlsMediaPlaylist.ServerControl(0, false, 0, 0, false);
         List<HlsMediaPlaylist.Part> updatedParts = new ArrayList<>();
 
         String line;
@@ -806,6 +817,7 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
     }
 
     @C.RoleFlags
+
     private static int parseRoleFlags(String line, Map<String, String> variableDefinitions) {
         String concatenatedCharacteristics =
                 parseOptionalStringAttr(line, REGEX_CHARACTERISTICS, variableDefinitions);
@@ -829,6 +841,7 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
         return roleFlags;
     }
 
+
     private static int parseChannelsAttribute(String line, Map<String, String> variableDefinitions) {
         String channelsString = parseOptionalStringAttr(line, REGEX_CHANNELS, variableDefinitions);
         return channelsString != null
@@ -837,6 +850,7 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
     }
 
     @Nullable
+
     private static DrmInitData.SchemeData parseDrmSchemeData(
             String line, String keyFormat, Map<String, String> variableDefinitions)
             throws ParserException {
@@ -859,23 +873,28 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
         return null;
     }
 
+
     private static String parseEncryptionScheme(String method) {
         return METHOD_SAMPLE_AES_CENC.equals(method) || METHOD_SAMPLE_AES_CTR.equals(method)
                 ? C.CENC_TYPE_cenc
                 : C.CENC_TYPE_cbcs;
     }
 
+
     private static int parseIntAttr(String line, Pattern pattern) throws ParserException {
         return Integer.parseInt(parseStringAttr(line, pattern, new HashMap<String, String>()));
     }
+
 
     private static long parseLongAttr(String line, Pattern pattern) throws ParserException {
         return Long.parseLong(parseStringAttr(line, pattern, new HashMap<String, String>()));
     }
 
+
     private static double parseDoubleAttr(String line, Pattern pattern) throws ParserException {
         return Double.parseDouble(parseStringAttr(line, pattern, new HashMap<String, String>()));
     }
+
 
     private static String parseStringAttr(
             String line, Pattern pattern, Map<String, String> variableDefinitions)

@@ -59,6 +59,9 @@ extension String {
             } else {
                 saveToLocalCache(item: item, url: url, data: data!)
             }
+            if(data == nil){
+                return nil
+            }
         }
         
         let image = self.toUIImage(data: Data.init(referencing: data!), url: url)

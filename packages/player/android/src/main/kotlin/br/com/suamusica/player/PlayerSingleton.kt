@@ -8,14 +8,15 @@ object PlayerSingleton {
     var channel: MethodChannel? = null
     var mediaSessionConnection: MediaSessionConnection? = null
     var externalPlayback: Boolean? = false
-    var lastFavorite: Boolean=false
     private const val TAG = "Player"
+    var playerChangeNotifier: PlayerChangeNotifier? = null
 
     fun setChannel(c: MethodChannel, context: Context) {
         channel = c
+        playerChangeNotifier =   PlayerChangeNotifier(MethodChannelManager(c))
         mediaSessionConnection = MediaSessionConnection(
             context,
-            PlayerChangeNotifier(MethodChannelManager(c))
+            playerChangeNotifier!!
         )
     }
 
@@ -32,9 +33,9 @@ object PlayerSingleton {
         mediaSessionConnection?.togglePlayPause()
         channel?.invokeMethod("commandCenter.onTogglePlayPause", emptyMap<String, String>())
     }
-    fun adsPlaying(){
-        mediaSessionConnection?.adsPlaying()
-    }
+//    fun adsPlaying(){
+//        mediaSessionConnection?.adsPlaying()
+//    }
     fun pause() {
         if (externalPlayback!!) {
             channel?.invokeMethod("externalPlayback.pause", emptyMap<String, String>())
@@ -58,10 +59,9 @@ object PlayerSingleton {
 
     fun favorite(shouldFavorite: Boolean) {
         Log.d(TAG, "Should Favorite: $shouldFavorite")
-        lastFavorite = shouldFavorite
         mediaSessionConnection?.favorite(shouldFavorite)
         val args = mutableMapOf<String, Any>()
-        args[FAVORITE] = shouldFavorite
+        args[PlayerPlugin.FAVORITE] = shouldFavorite
         channel?.invokeMethod("commandCenter.onFavorite", args)
     }
 }

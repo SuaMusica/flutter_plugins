@@ -7,4 +7,5 @@ export 'src/event.dart';
 export 'src/duration_change_event.dart';
 export 'src/position_change_event.dart';
 export 'src/before_play_event.dart';
+export 'src/current_queue_updated.dart';
 export 'src/repeat_mode.dart';

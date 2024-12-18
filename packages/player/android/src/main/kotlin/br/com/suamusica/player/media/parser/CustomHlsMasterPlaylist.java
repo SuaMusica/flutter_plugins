@@ -4,21 +4,25 @@ import android.net.Uri;
 
 import androidx.annotation.Nullable;
 
-import com.google.android.exoplayer2.Format;
-import com.google.android.exoplayer2.drm.DrmInitData;
-import com.google.android.exoplayer2.offline.StreamKey;
-import com.google.android.exoplayer2.source.hls.playlist.HlsPlaylist;
-import com.google.android.exoplayer2.util.MimeTypes;
+import androidx.media3.common.Format;
+import androidx.media3.common.DrmInitData;
+import androidx.media3.common.StreamKey;
+import androidx.media3.common.MimeTypes;
+import androidx.media3.common.util.UnstableApi;
+import androidx.media3.exoplayer.hls.playlist.HlsPlaylist;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+@UnstableApi
 public final class CustomHlsMasterPlaylist extends HlsPlaylist {
 
-    /** Represents an empty master playlist, from which no attributes can be inherited. */
+    /**
+     * Represents an empty master playlist, from which no attributes can be inherited.
+     */
+
     public static final CustomHlsMasterPlaylist EMPTY =
             new CustomHlsMasterPlaylist(
                     /* baseUri= */ "",
@@ -39,35 +43,52 @@ public final class CustomHlsMasterPlaylist extends HlsPlaylist {
     public static final int GROUP_INDEX_AUDIO = 1;
     public static final int GROUP_INDEX_SUBTITLE = 2;
 
-    /** A variant (i.e. an #EXT-X-STREAM-INF tag) in a master playlist. */
+    /**
+     * A variant (i.e. an #EXT-X-STREAM-INF tag) in a master playlist.
+     */
     public static final class Variant {
 
-        /** The variant's url. */
+        /**
+         * The variant's url.
+         */
         public final Uri url;
 
-        /** Format information associated with this variant. */
+        /**
+         * Format information associated with this variant.
+         */
         public final Format format;
 
-        /** The video rendition group referenced by this variant, or {@code null}. */
+        /**
+         * The video rendition group referenced by this variant, or {@code null}.
+         */
         @Nullable
         public final String videoGroupId;
 
-        /** The audio rendition group referenced by this variant, or {@code null}. */
-        @Nullable public final String audioGroupId;
-
-        /** The subtitle rendition group referenced by this variant, or {@code null}. */
-        @Nullable public final String subtitleGroupId;
-
-        /** The caption rendition group referenced by this variant, or {@code null}. */
-        @Nullable public final String captionGroupId;
+        /**
+         * The audio rendition group referenced by this variant, or {@code null}.
+         */
+        @Nullable
+        public final String audioGroupId;
 
         /**
-         * @param url See {@link #url}.
-         * @param format See {@link #format}.
-         * @param videoGroupId See {@link #videoGroupId}.
-         * @param audioGroupId See {@link #audioGroupId}.
+         * The subtitle rendition group referenced by this variant, or {@code null}.
+         */
+        @Nullable
+        public final String subtitleGroupId;
+
+        /**
+         * The caption rendition group referenced by this variant, or {@code null}.
+         */
+        @Nullable
+        public final String captionGroupId;
+
+        /**
+         * @param url             See {@link #url}.
+         * @param format          See {@link #format}.
+         * @param videoGroupId    See {@link #videoGroupId}.
+         * @param audioGroupId    See {@link #audioGroupId}.
          * @param subtitleGroupId See {@link #subtitleGroupId}.
-         * @param captionGroupId See {@link #captionGroupId}.
+         * @param captionGroupId  See {@link #captionGroupId}.
          */
         public Variant(
                 Uri url,
@@ -90,6 +111,7 @@ public final class CustomHlsMasterPlaylist extends HlsPlaylist {
          * @param url The media playlist url.
          * @return The variant instance.
          */
+
         public static CustomHlsMasterPlaylist.Variant createMediaPlaylistVariantUrl(Uri url) {
             Format format =
                     new Format.Builder()
@@ -113,32 +135,45 @@ public final class CustomHlsMasterPlaylist extends HlsPlaylist {
                     /* captionGroupId= */ null);
         }
 
-        /** Returns a copy of this instance with the given {@link Format}. */
+        /**
+         * Returns a copy of this instance with the given {@link Format}.
+         */
         public CustomHlsMasterPlaylist.Variant copyWithFormat(Format format) {
             return new CustomHlsMasterPlaylist.Variant(url, format, videoGroupId, audioGroupId, subtitleGroupId, captionGroupId);
         }
     }
 
-    /** A rendition (i.e. an #EXT-X-MEDIA tag) in a master playlist. */
+    /**
+     * A rendition (i.e. an #EXT-X-MEDIA tag) in a master playlist.
+     */
     public static final class Rendition {
 
-        /** The rendition's url, or null if the tag does not have a URI attribute. */
-        @Nullable public final Uri url;
+        /**
+         * The rendition's url, or null if the tag does not have a URI attribute.
+         */
+        @Nullable
+        public final Uri url;
 
-        /** Format information associated with this rendition. */
+        /**
+         * Format information associated with this rendition.
+         */
         public final Format format;
 
-        /** The group to which this rendition belongs. */
+        /**
+         * The group to which this rendition belongs.
+         */
         public final String groupId;
 
-        /** The name of the rendition. */
+        /**
+         * The name of the rendition.
+         */
         public final String name;
 
         /**
-         * @param url See {@link #url}.
-         * @param format See {@link #format}.
+         * @param url     See {@link #url}.
+         * @param format  See {@link #format}.
          * @param groupId See {@link #groupId}.
-         * @param name See {@link #name}.
+         * @param name    See {@link #name}.
          */
         public Rendition(@Nullable Uri url, Format format, String groupId, String name) {
             this.url = url;
@@ -149,17 +184,29 @@ public final class CustomHlsMasterPlaylist extends HlsPlaylist {
 
     }
 
-    /** All of the media playlist URLs referenced by the playlist. */
+    /**
+     * All of the media playlist URLs referenced by the playlist.
+     */
     public final List<Uri> mediaPlaylistUrls;
-    /** The variants declared by the playlist. */
+    /**
+     * The variants declared by the playlist.
+     */
     public final List<CustomHlsMasterPlaylist.Variant> variants;
-    /** The video renditions declared by the playlist. */
+    /**
+     * The video renditions declared by the playlist.
+     */
     public final List<CustomHlsMasterPlaylist.Rendition> videos;
-    /** The audio renditions declared by the playlist. */
+    /**
+     * The audio renditions declared by the playlist.
+     */
     public final List<CustomHlsMasterPlaylist.Rendition> audios;
-    /** The subtitle renditions declared by the playlist. */
+    /**
+     * The subtitle renditions declared by the playlist.
+     */
     public final List<CustomHlsMasterPlaylist.Rendition> subtitles;
-    /** The closed caption renditions declared by the playlist. */
+    /**
+     * The closed caption renditions declared by the playlist.
+     */
     public final List<CustomHlsMasterPlaylist.Rendition> closedCaptions;
 
     /**
@@ -173,25 +220,30 @@ public final class CustomHlsMasterPlaylist extends HlsPlaylist {
      * captions information.
      */
     public final List<Format> muxedCaptionFormats;
-    /** Contains variable definitions, as defined by the #EXT-X-DEFINE tag. */
+    /**
+     * Contains variable definitions, as defined by the #EXT-X-DEFINE tag.
+     */
     public final Map<String, String> variableDefinitions;
-    /** DRM initialization data derived from #EXT-X-SESSION-KEY tags. */
+    /**
+     * DRM initialization data derived from #EXT-X-SESSION-KEY tags.
+     */
     public final List<DrmInitData> sessionKeyDrmInitData;
 
     /**
-     * @param baseUri See {@link #baseUri}.
-     * @param tags See {@link #tags}.
-     * @param variants See {@link #variants}.
-     * @param videos See {@link #videos}.
-     * @param audios See {@link #audios}.
-     * @param subtitles See {@link #subtitles}.
-     * @param closedCaptions See {@link #closedCaptions}.
-     * @param muxedAudioFormat See {@link #muxedAudioFormat}.
-     * @param muxedCaptionFormats See {@link #muxedCaptionFormats}.
+     * @param baseUri                See {@link #baseUri}.
+     * @param tags                   See {@link #tags}.
+     * @param variants               See {@link #variants}.
+     * @param videos                 See {@link #videos}.
+     * @param audios                 See {@link #audios}.
+     * @param subtitles              See {@link #subtitles}.
+     * @param closedCaptions         See {@link #closedCaptions}.
+     * @param muxedAudioFormat       See {@link #muxedAudioFormat}.
+     * @param muxedCaptionFormats    See {@link #muxedCaptionFormats}.
      * @param hasIndependentSegments See {@link #hasIndependentSegments}.
-     * @param variableDefinitions See {@link #variableDefinitions}.
-     * @param sessionKeyDrmInitData See {@link #sessionKeyDrmInitData}.
+     * @param variableDefinitions    See {@link #variableDefinitions}.
+     * @param sessionKeyDrmInitData  See {@link #sessionKeyDrmInitData}.
      */
+
     public CustomHlsMasterPlaylist(
             String baseUri,
             List<String> tags,
@@ -222,6 +274,7 @@ public final class CustomHlsMasterPlaylist extends HlsPlaylist {
     }
 
     @Override
+
     public CustomHlsMasterPlaylist copy(List<StreamKey> streamKeys) {
         return new CustomHlsMasterPlaylist(
                 baseUri,
@@ -246,6 +299,7 @@ public final class CustomHlsMasterPlaylist extends HlsPlaylist {
      * @param variantUrl The url of the single variant.
      * @return A master playlist with a single variant for the provided url.
      */
+
     public static CustomHlsMasterPlaylist createSingleVariantMasterPlaylist(String variantUrl) {
         List<CustomHlsMasterPlaylist.Variant> variant =
                 Collections.singletonList(CustomHlsMasterPlaylist.Variant.createMediaPlaylistVariantUrl(Uri.parse(variantUrl)));
@@ -292,6 +346,7 @@ public final class CustomHlsMasterPlaylist extends HlsPlaylist {
             }
         }
     }
+
 
     private static <T> List<T> copyStreams(
             List<T> streams, int groupIndex, List<StreamKey> streamKeys) {

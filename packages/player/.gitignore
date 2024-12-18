@@ -6,7 +6,9 @@
 
 build/
 
-
+example/linux/
+example/macos/
+example/windows/
 # Created by https://www.gitignore.io/api/dart,android,flutter,jetbrains,visualstudio,androidstudio,visualstudiocode
 # Edit at https://www.gitignore.io/?templates=dart,android,flutter,jetbrains,visualstudio,androidstudio,visualstudiocode
 
