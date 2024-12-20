@@ -146,7 +146,10 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
                     shouldNotifyTransition,
                 )
             }
-
+            "cast" -> {
+                val id = call.argument<String?>("castId") ?: ""
+                PlayerSingleton.mediaSessionConnection?.cast(id)
+            }
             PLAY_METHOD -> {
                 val shouldPrepare = call.argument<Boolean?>("shouldPrepare") ?: false
                 PlayerSingleton.mediaSessionConnection?.play(shouldPrepare)

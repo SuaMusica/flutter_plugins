@@ -131,6 +131,11 @@ class Player {
     return Ok;
   }
 
+  Future<int> cast(String castId) async {
+    await _channel.invokeMethod('cast', {'castId': castId});
+    return Ok;
+  }
+
   Future<int> enqueueAll(
     List<Media> items, {
     bool autoPlay = false,

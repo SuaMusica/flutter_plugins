@@ -50,11 +50,17 @@ import androidx.media3.session.MediaNotification
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionError
+import androidx.mediarouter.media.MediaRouteSelector
+import androidx.mediarouter.media.MediaRouter
 import br.com.suamusica.player.PlayerPlugin.Companion.FALLBACK_URL
 import br.com.suamusica.player.PlayerPlugin.Companion.IS_FAVORITE_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.cookie
 import br.com.suamusica.player.PlayerSingleton.playerChangeNotifier
 import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
+import com.google.android.gms.cast.CastMediaControlIntent
+import com.google.android.gms.cast.framework.CastContext
+import com.google.android.gms.cast.framework.CastSession
+import com.google.android.gms.cast.framework.SessionManagerListener
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
@@ -105,6 +111,8 @@ class MediaService : MediaSessionService() {
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private val mediaItemMediaAssociations = WeakHashMap<MediaItem, Media>()
 
+    //CAST
+    private var cast:Cast? = null
     override fun onCreate() {
         super.onCreate()
         mediaButtonEventHandler = MediaButtonEventHandler(this)
@@ -166,6 +174,12 @@ class MediaService : MediaSessionService() {
                 }
             })
         }
+    }
+
+    fun cast(castId: String?) {
+        cast = Cast(this, player,cookie, mediaItemMediaAssociations)
+        cast?.discoveryCast()
+        cast?.connectToCast(castId!!)
     }
 
     fun removeNotification() {
@@ -498,6 +512,7 @@ class MediaService : MediaSessionService() {
         player?.stop()
         player?.clearMediaItems()
     }
+
 
     fun seek(position: Long, playWhenReady: Boolean) {
         player?.seekTo(position)

@@ -32,7 +32,7 @@ kapt {
 }
 
 android {
-    compileSdkVersion 34
+    compileSdk = 35
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
@@ -60,8 +60,12 @@ dependencies {
     implementation "androidx.media3:media3-ui:$media3_version"
 
 //    implementation files('/Users/lucastonussi/flutter/bin/cache/artifacts/engine/android-x64/flutter.jar')
-    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2'
+    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1'
 
     implementation "com.google.code.gson:gson:2.10.1"
+//    api 'com.google.android.gms:play-services-cast-framework:22.0.0'
+    // Add the MediaRouter library
+    implementation 'androidx.mediarouter:mediarouter:1.7.0'
+    implementation 'androidx.media3:media3-cast:1.5.1'// Use the latest stable version
 
 }

@@ -4,10 +4,12 @@ import 'package:smplayer/player.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:smplayer_example/app_colors.dart';
+import 'package:smplayer_example/service_discovery.dart';
 import 'package:smplayer_example/ui_data.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:collection/collection.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:mdns_plugin/mdns_plugin.dart';
 
 class SMPlayer extends StatefulWidget {
   SMPlayer({
@@ -327,211 +329,242 @@ class _SMPlayerState extends State<SMPlayer> {
     }
   }
 
+  Map<String, Uint8List> toTXTMap(Map<dynamic, dynamic>? txt) {
+    final map = <String, Uint8List>{};
+    txt?.forEach((key, value) {
+      if (key != null && value != null) {
+        map.putIfAbsent(key, () => value);
+      }
+    });
+
+    return map;
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<int> colorCodes = <int>[600, 500, 100];
+    List<MDNSService> foundServices = [];
 
-    return Container(
-      padding: EdgeInsets.only(top: 8.0, bottom: 0.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: Icon(Icons.delete),
-                onPressed: () {
-                  _player.removeAll();
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('SM Player'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.cast),
+            onPressed: () {
+              ServiceDiscovery(
+                (service) {
+                  String castId =
+                      String.fromCharCodes(service.map['txt']['id']);
+                  _player.cast(castId);
                 },
-                tooltip: 'Remove all',
-              ),
-              IconButton(
-                icon: Icon(Icons.add),
-                onPressed: () {
-                  _player.enqueueAll(
-                    [media1, media2, media3, media4],
-                    autoPlay: true,
-                  );
-                },
-                tooltip: 'Add media',
-              ),
-              IconButton(
-                icon: Icon(Icons.queue),
-                onPressed: () {
-                  _player.enqueueAll(
-                    [media1, media2, media3, media4],
-                  );
-                },
-                tooltip: 'Add media',
-              ),
-              IconButton(
-                icon: Icon(Icons.folder),
-                onPressed: pickLocalFile,
-                tooltip: 'Add local file',
-              ),
-              IconButton(
-                icon: Icon(Icons.play_arrow),
-                onPressed: () => _player.playFromQueue(1,
-                    loadOnly: true, position: Duration(seconds: 50)),
-                tooltip: 'Play from queue',
-              ),
-            ],
+              ).startDiscovery();
+            },
           ),
-          Stack(
-            children: <Widget>[
-              Wrap(
-                direction: Axis.horizontal,
-                children: <Widget>[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      Padding(
-                        padding: EdgeInsets.only(left: 20.0),
-                        child: Text(positionText,
-                            style: TextStyle(fontSize: 14.0)),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.only(right: 20.0),
-                        child: Text(durationText,
-                            style: TextStyle(fontSize: 14.0)),
-                      )
-                    ],
-                  ),
-                ],
-              ),
-              Container(
-                width: double.infinity,
-                margin: EdgeInsets.only(top: 5.0),
-                child: SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    trackHeight: 2.0,
-                    thumbShape:
-                        const RoundSliderThumbShape(enabledThumbRadius: 7.0),
-                    showValueIndicator: ShowValueIndicator.always,
-                  ),
-                  child: Slider(
-                    activeColor: AppColors.redPink,
-                    inactiveColor: AppColors.inactiveColor,
-                    min: 0.0,
-                    max: duration.inMilliseconds.toDouble(),
-                    value: position.inMilliseconds.toDouble(),
-                    onChanged: (double value) {
-                      seek(value);
-                    },
-                  ),
+        ],
+      ),
+      body: Container(
+        padding: EdgeInsets.only(top: 8.0, bottom: 0.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.delete),
+                  onPressed: () {
+                    _player.removeAll();
+                  },
+                  tooltip: 'Remove all',
                 ),
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              Container(
-                margin: EdgeInsets.only(left: 8),
-                child: Material(
-                    borderRadius: BorderRadius.circular(25.0),
-                    clipBehavior: Clip.hardEdge,
-                    child: IconButton(
-                      iconSize: 25,
-                      icon: SvgPicture.asset(UIData.btPlayerSuffle,
-                          color: _shuffled
-                              ? AppColors.darkPink
-                              : AppColors.primary),
-                      onPressed: shuffleOrUnshuffle,
-                    )),
-              ),
-              Expanded(
-                  child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  Container(
-                    margin: EdgeInsets.only(left: 8, right: 8),
-                    child: Material(
-                      borderRadius: BorderRadius.circular(40.0),
-                      clipBehavior: Clip.hardEdge,
-                      child: IconButton(
-                        onPressed: previous,
-                        iconSize: 40,
-                        icon: Container(
-                          child: SvgPicture.asset(UIData.btPlayerPrevious),
+                IconButton(
+                  icon: Icon(Icons.add),
+                  onPressed: () {
+                    _player.enqueueAll(
+                      [media1, media2, media3, media4],
+                      autoPlay: true,
+                    );
+                  },
+                  tooltip: 'Add media',
+                ),
+                IconButton(
+                  icon: Icon(Icons.queue),
+                  onPressed: () {
+                    _player.enqueueAll(
+                      [media1, media2, media3, media4],
+                    );
+                  },
+                  tooltip: 'Add media',
+                ),
+                IconButton(
+                  icon: Icon(Icons.folder),
+                  onPressed: pickLocalFile,
+                  tooltip: 'Add local file',
+                ),
+                IconButton(
+                  icon: Icon(Icons.play_arrow),
+                  onPressed: () => _player.playFromQueue(1,
+                      loadOnly: true, position: Duration(seconds: 50)),
+                  tooltip: 'Play from queue',
+                ),
+              ],
+            ),
+            Stack(
+              children: <Widget>[
+                Wrap(
+                  direction: Axis.horizontal,
+                  children: <Widget>[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: <Widget>[
+                        Padding(
+                          padding: EdgeInsets.only(left: 20.0),
+                          child: Text(positionText,
+                              style: TextStyle(fontSize: 14.0)),
                         ),
-                      ),
+                        Padding(
+                          padding: EdgeInsets.only(right: 20.0),
+                          child: Text(durationText,
+                              style: TextStyle(fontSize: 14.0)),
+                        )
+                      ],
+                    ),
+                  ],
+                ),
+                Container(
+                  width: double.infinity,
+                  margin: EdgeInsets.only(top: 5.0),
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      trackHeight: 2.0,
+                      thumbShape:
+                          const RoundSliderThumbShape(enabledThumbRadius: 7.0),
+                      showValueIndicator: ShowValueIndicator.always,
+                    ),
+                    child: Slider(
+                      activeColor: AppColors.redPink,
+                      inactiveColor: AppColors.inactiveColor,
+                      min: 0.0,
+                      max: duration.inMilliseconds.toDouble(),
+                      value: position.inMilliseconds.toDouble(),
+                      onChanged: (double value) {
+                        seek(value);
+                      },
                     ),
                   ),
-                  Material(
-                      borderRadius: BorderRadius.circular(58.0),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                Container(
+                  margin: EdgeInsets.only(left: 8),
+                  child: Material(
+                      borderRadius: BorderRadius.circular(25.0),
                       clipBehavior: Clip.hardEdge,
                       child: IconButton(
-                        iconSize: 58,
-                        icon: _player.state == PlayerState.PLAYING
-                            ? SvgPicture.asset(UIData.btPlayerPause)
-                            : SvgPicture.asset(UIData.btPlayerPlay),
-                        onPressed: playOrPause,
+                        iconSize: 25,
+                        icon: SvgPicture.asset(UIData.btPlayerSuffle,
+                            color: _shuffled
+                                ? AppColors.darkPink
+                                : AppColors.primary),
+                        onPressed: shuffleOrUnshuffle,
                       )),
-                  Container(
-                    margin: EdgeInsets.only(left: 8, right: 8),
-                    child: Material(
+                ),
+                Expanded(
+                    child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Container(
+                      margin: EdgeInsets.only(left: 8, right: 8),
+                      child: Material(
                         borderRadius: BorderRadius.circular(40.0),
                         clipBehavior: Clip.hardEdge,
                         child: IconButton(
-                            onPressed: next,
-                            iconSize: 40,
-                            icon: Container(
-                              child: SvgPicture.asset(UIData.btPlayerNext),
-                            ))),
-                  ),
-                ],
-              )),
-              Container(
-                margin: EdgeInsets.only(right: 8),
-                child: Material(
-                    borderRadius: BorderRadius.circular(25.0),
-                    clipBehavior: Clip.hardEdge,
-                    child: IconButton(
-                      iconSize: 25,
-                      icon: SvgPicture.asset(UIData.btPlayerRepeat,
-                          color: _repeatModeToColor()),
-                      onPressed: _player.toggleRepeatMode,
-                    )),
-              ),
-            ],
-          ),
-          SizedBox(height: 30),
-          Text(mediaLabel),
-          SizedBox(height: 30),
-          Expanded(
-            child: SizedBox(
-              height: 200,
-              child: ReorderableListView(
-                onReorder: (int oldIndex, int newIndex) {
-                  if (newIndex > _player.items.length) {
-                    newIndex = _player.items.length;
-                  }
-                  if (oldIndex < newIndex) {
-                    newIndex--;
-                  }
-                  _player.reorder(oldIndex, newIndex);
-                },
-                children: _player.items
-                    .mapIndexed(
-                      (index, media) => GestureDetector(
-                        key: Key('queueItemWidgetKey$index'),
-                        child: Container(
-                          height: 50,
-                          color: Colors.blue[colorCodes[index % 3]],
-                          child: Center(
-                              child: Text('${media.id} - ${media.name}')),
+                          onPressed: previous,
+                          iconSize: 40,
+                          icon: Container(
+                            child: SvgPicture.asset(UIData.btPlayerPrevious),
+                          ),
                         ),
-                        onTap: () {
-                          _player.playFromQueue(index);
-                        },
                       ),
-                    )
-                    .toList(),
-              ),
+                    ),
+                    Material(
+                        borderRadius: BorderRadius.circular(58.0),
+                        clipBehavior: Clip.hardEdge,
+                        child: IconButton(
+                          iconSize: 58,
+                          icon: _player.state == PlayerState.PLAYING
+                              ? SvgPicture.asset(UIData.btPlayerPause)
+                              : SvgPicture.asset(UIData.btPlayerPlay),
+                          onPressed: playOrPause,
+                        )),
+                    Container(
+                      margin: EdgeInsets.only(left: 8, right: 8),
+                      child: Material(
+                          borderRadius: BorderRadius.circular(40.0),
+                          clipBehavior: Clip.hardEdge,
+                          child: IconButton(
+                              onPressed: next,
+                              iconSize: 40,
+                              icon: Container(
+                                child: SvgPicture.asset(UIData.btPlayerNext),
+                              ))),
+                    ),
+                  ],
+                )),
+                Container(
+                  margin: EdgeInsets.only(right: 8),
+                  child: Material(
+                      borderRadius: BorderRadius.circular(25.0),
+                      clipBehavior: Clip.hardEdge,
+                      child: IconButton(
+                        iconSize: 25,
+                        icon: SvgPicture.asset(UIData.btPlayerRepeat,
+                            color: _repeatModeToColor()),
+                        onPressed: _player.toggleRepeatMode,
+                      )),
+                ),
+              ],
             ),
-          )
-        ],
+            SizedBox(height: 30),
+            Text(mediaLabel),
+            SizedBox(height: 30),
+            Expanded(
+              child: SizedBox(
+                height: 200,
+                child: ReorderableListView(
+                  onReorder: (int oldIndex, int newIndex) {
+                    if (newIndex > _player.items.length) {
+                      newIndex = _player.items.length;
+                    }
+                    if (oldIndex < newIndex) {
+                      newIndex--;
+                    }
+                    _player.reorder(oldIndex, newIndex);
+                  },
+                  children: _player.items
+                      .mapIndexed(
+                        (index, media) => GestureDetector(
+                          key: Key('queueItemWidgetKey$index'),
+                          child: Container(
+                            height: 50,
+                            color: Colors.blue[colorCodes[index % 3]],
+                            child: Center(
+                                child: Text('${media.id} - ${media.name}')),
+                          ),
+                          onTap: () {
+                            _player.playFromQueue(index);
+                          },
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+            )
+          ],
+        ),
       ),
     );
   }

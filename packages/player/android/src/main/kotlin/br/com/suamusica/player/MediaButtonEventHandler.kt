@@ -94,6 +94,7 @@ class MediaButtonEventHandler(
                 add(SessionCommand("onTogglePlayPause", Bundle.EMPTY))
                 add(SessionCommand(UPDATE_MEDIA_URI, session.token.extras))
                 add(SessionCommand(UPDATE_IS_PLAYING, session.token.extras))
+                add(SessionCommand("cast", session.token.extras))
             }.build()
 
         val playerCommands =
@@ -122,6 +123,10 @@ class MediaButtonEventHandler(
             val isFavorite = customCommand.customAction == "notification_favoritar"
             PlayerSingleton.favorite(isFavorite)
             buildIcons()
+        }
+
+        if(customCommand.customAction == "cast"){
+            mediaService.cast(args.getString("cast_id"))
         }
 
         if(customCommand.customAction == UPDATE_IS_PLAYING){
