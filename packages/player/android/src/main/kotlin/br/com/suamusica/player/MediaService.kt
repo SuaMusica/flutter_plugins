@@ -90,9 +90,7 @@ class MediaService : MediaSessionService() {
     private var seekToLoadOnly: Boolean = false
 
     //    private var enqueueLoadOnly: Boolean = false
-
     private var autoPlay: Boolean = true
-
 
     private val channel = Channel<List<Media>>(Channel.BUFFERED)
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
