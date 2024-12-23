@@ -1,5 +1,6 @@
 package br.com.suamusica.player
 
+import android.content.pm.ApplicationInfo
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -89,10 +90,11 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
         Log.d(TAG, "onAttachedToActivity")
-//        val isStopped = (binding.activity.applicationInfo.flags and ApplicationInfo.FLAG_STOPPED) == ApplicationInfo.FLAG_STOPPED
-//        if(!isStopped){
-        alreadyAttachedToActivity = true
-//        }
+        // val isStopped =
+            // (binding.activity.applicationInfo.flags and ApplicationInfo.FLAG_STOPPED) == ApplicationInfo.FLAG_STOPPED
+        // if (!isStopped) {
+            alreadyAttachedToActivity = true
+        // }
     }
 
     override fun onDetachedFromActivityForConfigChanges() {
@@ -213,7 +215,11 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
                     val idFavorite = call.argument<Int?>(ID_FAVORITE_ARGUMENT) ?: 0
                     PlayerSingleton.mediaSessionConnection?.updateFavorite(isFavorite, idFavorite)
                 } else {
-                    PlayerSingleton.mediaSessionConnection?.updatePlayState(call.argument<Boolean?>(IS_PLAYING_ARGUMENT) ?: false)
+                    PlayerSingleton.mediaSessionConnection?.updatePlayState(
+                        call.argument<Boolean?>(
+                            IS_PLAYING_ARGUMENT
+                        ) ?: false
+                    )
                 }
             }
 

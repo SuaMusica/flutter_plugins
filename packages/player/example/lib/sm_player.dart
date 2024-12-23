@@ -48,7 +48,7 @@ var media3 = Media(
   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
   coverUrl: "https://picsum.photos/500/500",
   bigCoverUrl: "https://picsum.photos/500/500",
-  author: "Xand Avião",
+  author: "Unknown",
   fallbackUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
   isLocal: false,
   isVerified: true,

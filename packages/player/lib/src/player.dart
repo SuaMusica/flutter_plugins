@@ -470,7 +470,7 @@ class Player {
   static Future<void> _doHandlePlatformCall(MethodCall call) async {
     final currentMedia = _queue.current;
     final currentIndex = _queue.index;
-    print('call.arguments: ${call.arguments}');
+    // print('call.arguments: ${call.arguments}');
     final Map<dynamic, dynamic> callArgs = call.arguments as Map;
     if (call.method != 'audio.onCurrentPosition') {
       _log('_platformCallHandler call ${call.method} $callArgs');

@@ -1,7 +1,7 @@
 package br.com.suamusica.player
 
+import PlayerSwitcher
 import android.app.ActivityManager
-import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
@@ -10,7 +10,8 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.support.v4.media.session.PlaybackStateCompat
-import androidx.core.app.NotificationManagerCompat
+import androidx.media3.cast.CastPlayer
+import androidx.media3.cast.DefaultMediaItemConverter
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -19,13 +20,11 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.Player.DISCONTINUITY_REASON_SEEK
-import androidx.media3.common.Player.EVENT_MEDIA_ITEM_TRANSITION
 import androidx.media3.common.Player.MediaItemTransitionReason
 import androidx.media3.common.Player.REPEAT_MODE_ALL
 import androidx.media3.common.Player.REPEAT_MODE_OFF
 import androidx.media3.common.Player.REPEAT_MODE_ONE
 import androidx.media3.common.Player.STATE_ENDED
-import androidx.media3.common.Timeline
 import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.util.Util
@@ -38,31 +37,20 @@ import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.source.ShuffleOrder.DefaultShuffleOrder
-import androidx.media3.exoplayer.source.preload.BasePreloadManager
 import androidx.media3.session.CacheBitmapLoader
 import androidx.media3.session.CommandButton
 import androidx.media3.session.DefaultMediaNotificationProvider
-import androidx.media3.session.LibraryResult
-import androidx.media3.session.MediaConstants
 import androidx.media3.session.MediaController
-import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaNotification
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
-import androidx.media3.session.SessionError
-import androidx.mediarouter.media.MediaRouteSelector
-import androidx.mediarouter.media.MediaRouter
 import br.com.suamusica.player.PlayerPlugin.Companion.FALLBACK_URL
 import br.com.suamusica.player.PlayerPlugin.Companion.IS_FAVORITE_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.cookie
 import br.com.suamusica.player.PlayerSingleton.playerChangeNotifier
 import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
-import com.google.android.gms.cast.CastMediaControlIntent
 import com.google.android.gms.cast.framework.CastContext
-import com.google.android.gms.cast.framework.CastSession
-import com.google.android.gms.cast.framework.SessionManagerListener
 import com.google.common.collect.ImmutableList
-import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -72,7 +60,6 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.Collections
-import java.util.WeakHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
 const val NOW_PLAYING_CHANNEL: String = "br.com.suamusica.media.NOW_PLAYING"
@@ -93,34 +80,33 @@ class MediaService : MediaSessionService() {
         AudioAttributes.Builder().setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).setUsage(C.USAGE_MEDIA)
             .build()
 
-    var player: ExoPlayer? = null
-
-    private var progressTracker: ProgressTracker? = null
+    var player: PlayerSwitcher? = null
+    var exoPlayer: ExoPlayer? = null
 
     private lateinit var dataSourceBitmapLoader: DataSourceBitmapLoader
     private lateinit var mediaButtonEventHandler: MediaButtonEventHandler
     private var shuffleOrder: DefaultShuffleOrder? = null
 
     private var seekToLoadOnly: Boolean = false
-//    private var enqueueLoadOnly: Boolean = false
-    private var shuffledIndices = mutableListOf<Int>()
+
+    //    private var enqueueLoadOnly: Boolean = false
+
     private var autoPlay: Boolean = true
-    var shouldNotifyTransition: Boolean = true
+
 
     private val channel = Channel<List<Media>>(Channel.BUFFERED)
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    private val mediaItemMediaAssociations = WeakHashMap<MediaItem, Media>()
 
     //CAST
-    private var cast:Cast? = null
+    private var cast: CastManager? = null
+    private var castContext: CastContext? = null
     override fun onCreate() {
         super.onCreate()
         mediaButtonEventHandler = MediaButtonEventHandler(this)
-
-
-        player = ExoPlayer.Builder(this).build().apply {
+        castContext = CastContext.getSharedInstance(this)
+        exoPlayer = ExoPlayer.Builder(this).build().apply {
             setAudioAttributes(uAmpAudioAttributes, true)
-            addListener(playerEventListener())
+//            addListener(playerEventListener())
             setWakeMode(C.WAKE_MODE_NETWORK)
             setHandleAudioBecomingNoisy(true)
             preloadConfiguration = ExoPlayer.PreloadConfiguration(
@@ -131,7 +117,7 @@ class MediaService : MediaSessionService() {
         dataSourceBitmapLoader =
             DataSourceBitmapLoader(applicationContext)
 
-        player?.let {
+        exoPlayer?.let {
             mediaSession = MediaSession.Builder(this, it)
                 .setBitmapLoader(CacheBitmapLoader(dataSourceBitmapLoader))
                 .setCallback(mediaButtonEventHandler)
@@ -174,17 +160,61 @@ class MediaService : MediaSessionService() {
                 }
             })
         }
+        player = PlayerSwitcher(exoPlayer!!, mediaButtonEventHandler , applicationContext)
+        castContext?.let {
+            cast = CastManager(it, this, exoPlayer!!, mediaItemMediaAssociations)
+        }
     }
 
     fun cast(castId: String?) {
-        cast = Cast(this, player,cookie, mediaItemMediaAssociations)
-        cast?.discoveryCast()
-        cast?.connectToCast(castId!!)
+        cast?.connectToCast(castId!!, cookie)
+        cast?.setOnConnectCallback {
+//            player?.pause()
+            Log.d(CastManager.TAG, "#NATIVE LOGS ==> CAST: OnConnectCallback")
+            val mediaItems = player!!.getAllMediaItems()
+            cast?.queueLoadCast(mediaItems)
+//            cast?.loadMediaOld()
+        }
+        cast?.setOnSessionEndedCallback {
+//            cast?.remoteMediaClient.currentItem.
+            player?.wrappedPlayer?.play()
+        }
+    }
+
+    fun castWithCastPlayer(castId: String?) {
+        if(cast?.isConnected == true) {
+            return
+        }
+        val items = player!!.getAllMediaItems()
+        cast?.connectToCast(castId!!, cookie)
+        var castPlayer : CastPlayer? = null
+        cast?.setOnConnectCallback {
+            castPlayer = CastPlayer(castContext!!, DefaultMediaItemConverter())
+            mediaSession.player = castPlayer!!
+            player?.setCurrentPlayer(castPlayer!!)
+            player?.wrappedPlayer?.setMediaItems(items)
+            player?.wrappedPlayer?.prepare()
+            player?.wrappedPlayer?.play()
+            Log.d(CastManager.TAG, "#NATIVE LOGS ==> CAST: mediaItemCounts ${castPlayer?.mediaItemCount}")
+            Log.d(CastManager.TAG, "#NATIVE LOGS ==> CAST: IS CAST ${player!!.wrappedPlayer is CastPlayer}")
+        }
+
+        cast?.setOnSessionEndedCallback {
+            val currentPosition: Long = player?.wrappedPlayer?.currentPosition!!
+            val currentMediaItem: MediaItem = player?.wrappedPlayer?.currentMediaItem!!
+
+            player?.wrappedPlayer!!.setMediaItem(currentMediaItem)
+            player?.wrappedPlayer!!.seekTo(currentPosition)
+            player?.wrappedPlayer!!.play()
+            mediaSession.player = player!!
+            player?.setCurrentPlayer(exoPlayer!!)
+        }
+
     }
 
     fun removeNotification() {
         Log.d("Player", "removeNotification")
-        player?.stop()
+        player?.wrappedPlayer?.stop()
 //        NotificationManagerCompat.from(applicationContext).cancelAll()
     }
 
@@ -213,10 +243,9 @@ class MediaService : MediaSessionService() {
     ): MediaSession = mediaSession
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        player?.clearMediaItems()
+        player?.wrappedPlayer?.clearMediaItems()
         Log.d(TAG, "onTaskRemoved")
-        player?.stop()
-        stopTrackingProgress()
+        player?.wrappedPlayer?.stop()
         stopSelf()
         super.onTaskRemoved(rootIntent)
     }
@@ -236,7 +265,7 @@ class MediaService : MediaSessionService() {
     }
 
     private fun releasePossibleLeaks() {
-        player?.release()
+        player?.wrappedPlayer?.release()
         mediaSession.release()
         mediaController = null
     }
@@ -253,9 +282,9 @@ class MediaService : MediaSessionService() {
 
     fun updateMediaUri(index: Int, uri: String?) {
 //        if (index != player?.currentMediaItemIndex) {
-        val media = player?.getMediaItemAt(index)
+        val media = player?.wrappedPlayer?.getMediaItemAt(index)
         media?.associatedMedia?.let {
-            player?.removeMediaItem(index)
+            player?.wrappedPlayer?.removeMediaItem(index)
             player?.addMediaSource(
                 index, prepare(
                     cookie,
@@ -269,20 +298,20 @@ class MediaService : MediaSessionService() {
     }
 
     fun toggleShuffle(positionsList: List<Map<String, Int>>) {
-        player?.shuffleModeEnabled = !(player?.shuffleModeEnabled ?: false)
-        player?.shuffleModeEnabled?.let {
+        player?.wrappedPlayer?.shuffleModeEnabled = !(player?.shuffleModeEnabled ?: false)
+        player?.wrappedPlayer?.shuffleModeEnabled?.let {
             if (it) {
-                shuffledIndices.clear()
+                PlayerSingleton.shuffledIndices.clear()
                 for (e in positionsList) {
-                    shuffledIndices.add(e["originalPosition"] ?: 0)
+                    PlayerSingleton.shuffledIndices.add(e["originalPosition"] ?: 0)
                 }
                 shuffleOrder = DefaultShuffleOrder(
-                    shuffledIndices.toIntArray(),
+                    PlayerSingleton.shuffledIndices.toIntArray(),
                     System.currentTimeMillis()
                 )
                 Log.d(
                     TAG,
-                    "toggleShuffle - shuffleOrder is null: ${shuffleOrder == null} | shuffledIndices: ${shuffledIndices.size} - ${player?.mediaItemCount}"
+                    "toggleShuffle - shuffleOrder is null: ${shuffleOrder == null} | shuffledIndices: ${PlayerSingleton.shuffledIndices.size} - ${player?.mediaItemCount}"
                 )
                 player!!.setShuffleOrder(shuffleOrder!!)
             }
@@ -316,9 +345,9 @@ class MediaService : MediaSessionService() {
             "enqueue: mediaItemCount: ${player?.mediaItemCount} | autoPlay: $autoPlay"
         )
         this.autoPlay = autoPlay
-        this.shouldNotifyTransition = shouldNotifyTransition
-        if (player?.mediaItemCount == 0) {
-            player?.playWhenReady = autoPlay
+        PlayerSingleton.shouldNotifyTransition = shouldNotifyTransition
+        if (player?.wrappedPlayer?.mediaItemCount == 0) {
+            player?.wrappedPlayer?.playWhenReady = autoPlay
         }
 //        enqueueLoadOnly = autoPlay
         android.util.Log.d(
@@ -335,14 +364,14 @@ class MediaService : MediaSessionService() {
                 mediaSources.add(prepare(cookie, medias[i], ""))
             }
             player?.addMediaSources(mediaSources)
-            player?.prepare()
+            player?.wrappedPlayer?.prepare()
 //            PlayerSingleton.playerChangeNotifier?.notifyItemTransition("createMediaSource")
 //            playerChangeNotifier?.currentMediaIndex(
 //                currentIndex(),
 //                "createMediaSource",
 //            )
         }
-        if(shouldNotifyTransition){
+        if (PlayerSingleton.shouldNotifyTransition) {
             playerChangeNotifier?.notifyItemTransition("Enqueue - createMediaSource")
         }
     }
@@ -361,12 +390,14 @@ class MediaService : MediaSessionService() {
         } else {
             Uri.parse(urlToPrepare)
         }
-        val mediaItem = MediaItem.Builder().setUri(uri).setMediaMetadata(metadata)
-            .setMediaId(media.id.toString()).build()
+        val mediaItem = MediaItem.Builder()
+            .setUri(uri)
+            .setMediaMetadata(metadata)
+            .setMediaId(media.id.toString())
+            .setMimeType("audio/mpeg")
+            .build()
         mediaItem.associatedMedia = media
-        @C.ContentType val type = Util.inferContentType(uri)
-
-        return when (type) {
+        return when (@C.ContentType val type = Util.inferContentType(uri)) {
             C.CONTENT_TYPE_HLS -> {
                 HlsMediaSource.Factory(dataSourceFactory)
                     .setPlaylistParserFactory(SMHlsPlaylistParserFactory())
@@ -397,7 +428,7 @@ class MediaService : MediaSessionService() {
         positionsList: List<Map<String, Int>>
     ) {
         if (player?.shuffleModeEnabled == true) {
-            val list = shuffledIndices.ifEmpty {
+            val list = PlayerSingleton.shuffledIndices.ifEmpty {
                 positionsList.map { it["originalPosition"] ?: 0 }.toMutableList()
             }
             Collections.swap(list, oldIndex, newIndex)
@@ -405,7 +436,7 @@ class MediaService : MediaSessionService() {
                 DefaultShuffleOrder(list.toIntArray(), System.currentTimeMillis())
             player?.setShuffleOrder(shuffleOrder!!)
         } else {
-            player?.moveMediaItem(oldIndex, newIndex)
+            player?.wrappedPlayer?.moveMediaItem(oldIndex, newIndex)
         }
     }
 
@@ -414,10 +445,10 @@ class MediaService : MediaSessionService() {
         if (sortedIndexes.isNotEmpty()) {
             sortedIndexes.forEach {
                 player?.removeMediaItem(it)
-                if (shuffledIndices.isNotEmpty()) {
-                    shuffledIndices.removeAt(
-                        shuffledIndices.indexOf(
-                            player?.currentMediaItemIndex ?: 0
+                if (PlayerSingleton.shuffledIndices.isNotEmpty()) {
+                    PlayerSingleton.shuffledIndices.removeAt(
+                        PlayerSingleton.shuffledIndices.indexOf(
+                            player?.wrappedPlayer?.currentMediaItemIndex ?: 0
                         )
                     )
                 }
@@ -425,7 +456,7 @@ class MediaService : MediaSessionService() {
         }
         if (player?.shuffleModeEnabled == true) {
             shuffleOrder = DefaultShuffleOrder(
-                shuffledIndices.toIntArray(),
+                PlayerSingleton.shuffledIndices.toIntArray(),
                 System.currentTimeMillis()
             )
             player?.setShuffleOrder(shuffleOrder!!)
@@ -433,11 +464,11 @@ class MediaService : MediaSessionService() {
     }
 
     fun disableRepeatMode() {
-        player?.repeatMode = REPEAT_MODE_OFF
+        player?.wrappedPlayer?.repeatMode = REPEAT_MODE_OFF
     }
 
     fun repeatMode() {
-        player?.let {
+        player?.wrappedPlayer?.let {
             when (it.repeatMode) {
                 REPEAT_MODE_OFF -> {
                     it.repeatMode = REPEAT_MODE_ALL
@@ -463,6 +494,7 @@ class MediaService : MediaSessionService() {
         metadataBuilder.apply {
             setAlbumTitle(media.name)
             setArtist(media.author)
+            //TODO: verificar cover sem internet e null e empty
             setArtworkUri(Uri.parse(media.bigCoverUrl))
             setArtist(media.author)
             setTitle(media.name)
@@ -474,16 +506,16 @@ class MediaService : MediaSessionService() {
     }
 
     fun play(shouldPrepare: Boolean = false) {
-        performAndEnableTracking {
+//        PlayerSingleton.performAndEnableTracking {
             if (shouldPrepare) {
-                player?.prepare()
+                player?.wrappedPlayer?.prepare()
             }
-            player?.play()
-        }
+            player?.wrappedPlayer?.play()
+//        }
     }
 
     fun setRepeatMode(mode: String) {
-        player?.repeatMode = when (mode) {
+        player?.wrappedPlayer?.repeatMode = when (mode) {
             "off" -> REPEAT_MODE_OFF
             "one" -> REPEAT_MODE_ONE
             "all" -> REPEAT_MODE_ALL
@@ -492,47 +524,43 @@ class MediaService : MediaSessionService() {
     }
 
     fun playFromQueue(position: Int, timePosition: Long, loadOnly: Boolean = false) {
-        player?.playWhenReady = !loadOnly
+        player?.wrappedPlayer?.playWhenReady = !loadOnly
 
         if (loadOnly) {
             seekToLoadOnly = true
         }
 
-        player?.seekTo(
-            if (player?.shuffleModeEnabled == true) shuffledIndices[position] else position,
+        player?.wrappedPlayer?.seekTo(
+            if (player?.wrappedPlayer?.shuffleModeEnabled == true) PlayerSingleton.shuffledIndices[position] else position,
             timePosition,
         )
         if (!loadOnly) {
-            player?.prepare()
+            player?.wrappedPlayer?.prepare()
             playerChangeNotifier?.notifyItemTransition("playFromQueue")
         }
     }
 
     fun removeAll() {
-        player?.stop()
-        player?.clearMediaItems()
+        player?.wrappedPlayer?.stop()
+        player?.wrappedPlayer?.clearMediaItems()
     }
 
 
     fun seek(position: Long, playWhenReady: Boolean) {
-        player?.seekTo(position)
-        player?.playWhenReady = playWhenReady
+        player?.wrappedPlayer?.seekTo(position)
+        player?.wrappedPlayer?.playWhenReady = playWhenReady
     }
 
     fun pause() {
-        performAndDisableTracking {
-            player?.pause()
-        }
+        player?.wrappedPlayer?.pause()
     }
 
     fun stop() {
-        performAndDisableTracking {
-            player?.stop()
-        }
+        player?.wrappedPlayer?.stop()
     }
 
     fun togglePlayPause() {
-        if (player?.isPlaying == true) {
+        if (player?.wrappedPlayer?.isPlaying == true) {
             pause()
         } else {
             play()
@@ -540,190 +568,7 @@ class MediaService : MediaSessionService() {
     }
 
     private fun releaseAndPerformAndDisableTracking() {
-        performAndDisableTracking {
-            player?.stop()
-        }
+        player?.wrappedPlayer?.stop()
     }
 
-
-    private fun notifyPositionChange() {
-        var position = player?.currentPosition ?: 0L
-        val duration = player?.duration ?: 0L
-        position = if (position > duration) duration else position
-        playerChangeNotifier?.notifyPositionChange(position, duration)
-    }
-
-    private fun startTrackingProgress() {
-        if (progressTracker != null) {
-            return
-        }
-        this.progressTracker = ProgressTracker(Handler())
-    }
-
-    private fun stopTrackingProgress() {
-        progressTracker?.stopTracking()
-        progressTracker = null
-    }
-
-    private fun stopTrackingProgressAndPerformTask(callable: () -> Unit) {
-        if (progressTracker != null) {
-            progressTracker!!.stopTracking(callable)
-        } else {
-            callable()
-        }
-        progressTracker = null
-    }
-
-    private fun performAndEnableTracking(callable: () -> Unit) {
-        callable()
-        startTrackingProgress()
-    }
-
-    private fun performAndDisableTracking(callable: () -> Unit) {
-        callable()
-        stopTrackingProgress()
-    }
-
-    fun currentIndex(): Int {
-        val position = if (player?.shuffleModeEnabled == true) {
-            shuffledIndices.indexOf(
-                player?.currentMediaItemIndex ?: 0
-            )
-        } else {
-            player?.currentMediaItemIndex ?: 0
-        }
-        return position
-    }
-
-    private fun playerEventListener(): Player.Listener {
-        return object : Player.Listener {
-            override fun onPositionDiscontinuity(
-                oldPosition: Player.PositionInfo,
-                newPosition: Player.PositionInfo,
-                reason: Int
-            ) {
-                if (reason == DISCONTINUITY_REASON_SEEK) {
-                    playerChangeNotifier?.notifySeekEnd()
-                }
-            }
-
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
-                super.onIsPlayingChanged(isPlaying)
-                playerChangeNotifier?.notifyPlaying(isPlaying)
-                if (isPlaying) {
-//                    PlayerSingleton.playerChangeNotifier?.notifyStateChange(PlaybackStateCompat.STATE_PLAYING)
-                    startTrackingProgress()
-                } else {
-//                    PlayerSingleton.playerChangeNotifier?.notifyStateChange(PlaybackStateCompat.STATE_PAUSED)
-                    stopTrackingProgressAndPerformTask {}
-                }
-            }
-
-            override fun onMediaItemTransition(
-                mediaItem: MediaItem?,
-                reason: @MediaItemTransitionReason Int
-            ) {
-                super.onMediaItemTransition(mediaItem, reason)
-                Log.d(TAG, "#NATIVE LOGS ==> onMediaItemTransition reason: $reason")
-                if ((player?.mediaItemCount ?: 0) > 0) {
-                    playerChangeNotifier?.currentMediaIndex(
-                        currentIndex(),
-                        "onMediaItemTransition",
-                    )
-                }
-                mediaButtonEventHandler.buildIcons()
-                if(reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED || !shouldNotifyTransition){
-                    return
-                }
-                playerChangeNotifier?.notifyItemTransition("onMediaItemTransition  reason: ${reason} | shouldNotifyTransition: ${shouldNotifyTransition}")
-                shouldNotifyTransition = false
-            }
-
-            var lastState = PlaybackStateCompat.STATE_NONE - 1
-
-            override fun onPlaybackStateChanged(playbackState: @Player.State Int) {
-                super.onPlaybackStateChanged(playbackState)
-                if (lastState != playbackState) {
-                    lastState = playbackState
-                    playerChangeNotifier?.notifyStateChange(playbackState)
-                }
-
-                if (playbackState == STATE_ENDED) {
-                    stopTrackingProgressAndPerformTask {}
-                }
-                Log.d(TAG, "##onPlaybackStateChanged $playbackState")
-            }
-
-            override fun onPlayerErrorChanged(error: PlaybackException?) {
-                super.onPlayerErrorChanged(error)
-                Log.d(TAG, "##onPlayerErrorChanged ${error}")
-
-            }
-
-            override fun onRepeatModeChanged(repeatMode: @Player.RepeatMode Int) {
-                super.onRepeatModeChanged(repeatMode)
-                playerChangeNotifier?.onRepeatChanged(repeatMode)
-            }
-
-            override fun onPlayerError(error: PlaybackException) {
-                android.util.Log.d(
-                    "#NATIVE LOGS ==>",
-                    "onPlayerError cause ${error.cause.toString()}"
-                )
-
-                playerChangeNotifier?.notifyError(
-                    if (error.cause.toString()
-                            .contains("Permission denied")
-                    ) "Permission denied" else error.message
-                )
-            }
-
-            override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters) {
-            }
-        }
-    }
-
-    var MediaItem.associatedMedia: Media?
-        get() = mediaItemMediaAssociations[this]
-        set(value) {
-            mediaItemMediaAssociations[this] = value
-        }
-
-    private inner class ProgressTracker(val handler: Handler) : Runnable {
-        private val shutdownRequest = AtomicBoolean(false)
-        private var shutdownTask: (() -> Unit)? = null
-
-        init {
-            handler.post(this)
-        }
-
-        override fun run() {
-            val position = player?.currentPosition ?: 0L
-            val duration = player?.duration ?: 0L
-
-            if (duration > 0 && position >= duration - 800) {
-                playerChangeNotifier?.notifyStateChange(STATE_ENDED)
-                Log.d(TAG, "#NATIVE LOGS ==> Notifying COMPLETED print ONLY")
-            }
-
-            notifyPositionChange()
-
-            if (!shutdownRequest.get()) {
-                handler.postDelayed(this, 800 /* ms */)
-            } else {
-                shutdownTask?.let {
-                    it()
-                }
-            }
-        }
-
-        fun stopTracking() {
-            shutdownRequest.set(true)
-        }
-
-        fun stopTracking(callable: () -> Unit) {
-            shutdownTask = callable
-            stopTracking()
-        }
-    }
 }

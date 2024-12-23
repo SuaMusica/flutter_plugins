@@ -11,6 +11,11 @@ object PlayerSingleton {
     private const val TAG = "Player"
     var playerChangeNotifier: PlayerChangeNotifier? = null
 
+    var shouldNotifyTransition: Boolean = true
+
+
+    var shuffledIndices = mutableListOf<Int>()
+
     fun setChannel(c: MethodChannel, context: Context) {
         channel = c
         playerChangeNotifier =   PlayerChangeNotifier(MethodChannelManager(c))

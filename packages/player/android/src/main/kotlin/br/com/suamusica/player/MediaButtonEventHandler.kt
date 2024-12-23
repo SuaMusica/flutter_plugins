@@ -126,7 +126,8 @@ class MediaButtonEventHandler(
         }
 
         if(customCommand.customAction == "cast"){
-            mediaService.cast(args.getString("cast_id"))
+//            mediaService.cast(args.getString("cast_id"))
+            mediaService.castWithCastPlayer(args.getString("cast_id"))
         }
 
         if(customCommand.customAction == UPDATE_IS_PLAYING){
@@ -207,10 +208,10 @@ class MediaButtonEventHandler(
             }else{
                 session.player.seekToPrevious()
             }
-            mediaService.shouldNotifyTransition = true
+            PlayerSingleton.shouldNotifyTransition = true
         }
         if (customCommand.customAction == "notification_next" || customCommand.customAction == "next") {
-            mediaService.shouldNotifyTransition = true
+            PlayerSingleton.shouldNotifyTransition = true
             session.player.seekToNextMediaItem()
         }
         if (customCommand.customAction == "pause") {
