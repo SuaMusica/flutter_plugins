@@ -181,39 +181,37 @@ class MediaService : MediaSessionService() {
 
     fun castWithCastPlayer(castId: String?) {
         if(cast?.isConnected == true) {
+            cast?.disconnect()
             return
         }
         val items = player!!.getAllMediaItems()
         cast?.connectToCast(castId!!, cookie)
         var castPlayer : CastPlayer? = null
         cast?.setOnConnectCallback {
+            val index = player?.wrappedPlayer?.currentMediaItemIndex ?: 0
+            val currentPosition: Long = player?.wrappedPlayer?.currentPosition!!
             castPlayer = CastPlayer(castContext!!, DefaultMediaItemConverter())
             mediaSession.player = castPlayer!!
             player?.setCurrentPlayer(castPlayer!!)
-            player?.wrappedPlayer?.setMediaItems(items)
+            //o seek to foi mais rapido, testar
+            player?.wrappedPlayer?.setMediaItems(items,index,currentPosition)
             player?.wrappedPlayer?.prepare()
             player?.wrappedPlayer?.play()
-            Log.d(CastManager.TAG, "#NATIVE LOGS ==> CAST: mediaItemCounts ${castPlayer?.mediaItemCount}")
-            Log.d(CastManager.TAG, "#NATIVE LOGS ==> CAST: IS CAST ${player!!.wrappedPlayer is CastPlayer}")
         }
 
         cast?.setOnSessionEndedCallback {
-            val currentPosition: Long = player?.wrappedPlayer?.currentPosition!!
-            val currentMediaItem: MediaItem = player?.wrappedPlayer?.currentMediaItem!!
-
-            player?.wrappedPlayer!!.setMediaItem(currentMediaItem)
-            player?.wrappedPlayer!!.seekTo(currentPosition)
-            player?.wrappedPlayer!!.play()
-            mediaSession.player = player!!
+            val currentPosition = player?.wrappedPlayer?.currentPosition!!
+            val index = player?.wrappedPlayer?.currentMediaItemIndex!!
+            mediaSession.player = exoPlayer!!
             player?.setCurrentPlayer(exoPlayer!!)
+            player?.wrappedPlayer?.prepare()
+            player?.wrappedPlayer?.seekTo(index,currentPosition)
         }
-
     }
 
     fun removeNotification() {
         Log.d("Player", "removeNotification")
         player?.wrappedPlayer?.stop()
-//        NotificationManagerCompat.from(applicationContext).cancelAll()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

@@ -14,6 +14,7 @@ import androidx.mediarouter.media.MediaControlIntent.CATEGORY_REMOTE_PLAYBACK
 import androidx.mediarouter.media.MediaRouteSelector
 import androidx.mediarouter.media.MediaRouter
 import androidx.mediarouter.media.MediaRouter.UNSELECT_REASON_DISCONNECTED
+import androidx.mediarouter.media.MediaRouter.UNSELECT_REASON_STOPPED
 import com.google.android.gms.cast.*
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.CastSession
@@ -141,6 +142,14 @@ class CastManager(
             }
         } else {
             mediaRouter.unselect(UNSELECT_REASON_DISCONNECTED)
+        }
+    }
+
+    fun disconnect() {
+        if (isConnected) {
+            sessionManager?.endCurrentSession(true)
+            onSessionEndedCallback?.invoke()
+            isConnected = false
         }
     }
 

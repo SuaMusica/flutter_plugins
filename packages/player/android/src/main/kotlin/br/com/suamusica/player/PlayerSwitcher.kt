@@ -20,10 +20,15 @@ import br.com.suamusica.player.PlayerSingleton
 import br.com.suamusica.player.PlayerSingleton.playerChangeNotifier
 import java.util.concurrent.atomic.AtomicBoolean
 import android.os.Looper
+import androidx.media3.cast.CastPlayer
 
 
 @UnstableApi
-class PlayerSwitcher(private var currentPlayer: Player, private var mediaButtonEventHandler: MediaButtonEventHandler, private var context: Context) : ForwardingPlayer(currentPlayer) {
+class PlayerSwitcher(
+    private var currentPlayer: Player,
+    private var mediaButtonEventHandler: MediaButtonEventHandler,
+    private var context: Context
+) : ForwardingPlayer(currentPlayer) {
     private var playerEventListener: Player.Listener? = null
     private val TAG = "PlayerSwitcher"
     private var progressTracker: ProgressTracker? = null
@@ -51,7 +56,9 @@ class PlayerSwitcher(private var currentPlayer: Player, private var mediaButtonE
         this.currentPlayer = newPlayer
 
         // Restaura o estado no novo player
-        restorePlayerState(playerState)
+        if(currentPlayer is CastPlayer) {
+            restorePlayerState(playerState)
+        }
 
         // Adiciona listener no novo player
         setupPlayerListener()
@@ -75,7 +82,9 @@ class PlayerSwitcher(private var currentPlayer: Player, private var mediaButtonE
 
     private fun stopAndClearCurrentPlayer() {
         currentPlayer.stop()
-        currentPlayer.clearMediaItems()
+        if (currentPlayer is CastPlayer) {
+            currentPlayer.clearMediaItems()
+        }
     }
 
     private fun restorePlayerState(state: PlayerState) {
