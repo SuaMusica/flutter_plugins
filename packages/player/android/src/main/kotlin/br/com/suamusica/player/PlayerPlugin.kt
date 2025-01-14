@@ -51,7 +51,6 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
         const val TOGGLE_SHUFFLE = "toggle_shuffle"
         const val REPEAT_MODE = "repeat_mode"
         const val DISABLE_REPEAT_MODE = "disable_repeat_mode"
-        const val UPDATE_NOTIFICATION = "update_notification"
         const val UPDATE_FAVORITE = "update_favorite"
         const val UPDATE_IS_PLAYING = "update_is_playing"
         const val UPDATE_MEDIA_URI = "update_media_uri"
@@ -91,9 +90,9 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
         Log.d(TAG, "onAttachedToActivity")
         // val isStopped =
-            // (binding.activity.applicationInfo.flags and ApplicationInfo.FLAG_STOPPED) == ApplicationInfo.FLAG_STOPPED
+        // (binding.activity.applicationInfo.flags and ApplicationInfo.FLAG_STOPPED) == ApplicationInfo.FLAG_STOPPED
         // if (!isStopped) {
-            alreadyAttachedToActivity = true
+        alreadyAttachedToActivity = true
         // }
     }
 
@@ -123,11 +122,8 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
         if (call.method == ENQUEUE) {
             val batch: Map<String, Any> = call.arguments()!!
             cookie = if (batch.containsKey("cookie")) batch["cookie"] as String else cookie
-            PlayerSingleton.externalPlayback =
-                if (batch.containsKey("externalplayback")) batch["externalplayback"].toString() == "true" else PlayerSingleton.externalPlayback
         } else {
             cookie = call.argument<String>("cookie") ?: cookie
-            PlayerSingleton.externalPlayback = call.argument<Boolean>("externalplayback")
         }
         Log.d(
             TAG,
@@ -153,8 +149,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
                 PlayerSingleton.mediaSessionConnection?.cast(id)
             }
             PLAY_METHOD -> {
-                val shouldPrepare = call.argument<Boolean?>("shouldPrepare") ?: false
-                PlayerSingleton.mediaSessionConnection?.play(shouldPrepare)
+                PlayerSingleton.mediaSessionConnection?.play()
             }
 
             SET_REPEAT_MODE -> {
@@ -209,17 +204,11 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
                 PlayerSingleton.mediaSessionConnection?.previous()
             }
 
-            UPDATE_NOTIFICATION -> {
+            UPDATE_FAVORITE -> {
                 val isFavorite = call.argument<Boolean?>(IS_FAVORITE_ARGUMENT)
                 if (isFavorite != null) {
                     val idFavorite = call.argument<Int?>(ID_FAVORITE_ARGUMENT) ?: 0
                     PlayerSingleton.mediaSessionConnection?.updateFavorite(isFavorite, idFavorite)
-                } else {
-                    PlayerSingleton.mediaSessionConnection?.updatePlayState(
-                        call.argument<Boolean?>(
-                            IS_PLAYING_ARGUMENT
-                        ) ?: false
-                    )
                 }
             }
 

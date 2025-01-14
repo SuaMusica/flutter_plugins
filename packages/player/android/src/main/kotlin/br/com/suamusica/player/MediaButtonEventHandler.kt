@@ -187,8 +187,7 @@ class MediaButtonEventHandler(
             mediaService.stop()
         }
         if (customCommand.customAction == "play") {
-            val shouldPrepare = args.getBoolean("shouldPrepare")
-            mediaService.play(shouldPrepare)
+            mediaService.play()
         }
         if (customCommand.customAction == SET_REPEAT_MODE) {
             val mode = args.getString("mode")

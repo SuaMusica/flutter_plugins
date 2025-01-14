@@ -7,7 +7,6 @@ import io.flutter.plugin.common.MethodChannel
 object PlayerSingleton {
     var channel: MethodChannel? = null
     var mediaSessionConnection: MediaSessionConnection? = null
-    var externalPlayback: Boolean? = false
     private const val TAG = "Player"
     var playerChangeNotifier: PlayerChangeNotifier? = null
 
@@ -26,28 +25,19 @@ object PlayerSingleton {
     }
 
     fun play() {
-        if (externalPlayback!!) {
-            channel?.invokeMethod("externalPlayback.play", emptyMap<String, String>())
-        } else {
+
             mediaSessionConnection?.play()
             channel?.invokeMethod("commandCenter.onPlay", emptyMap<String, String>())
-        }
     }
 
     fun togglePlayPause(){
         mediaSessionConnection?.togglePlayPause()
         channel?.invokeMethod("commandCenter.onTogglePlayPause", emptyMap<String, String>())
     }
-//    fun adsPlaying(){
-//        mediaSessionConnection?.adsPlaying()
-//    }
+
     fun pause() {
-        if (externalPlayback!!) {
-            channel?.invokeMethod("externalPlayback.pause", emptyMap<String, String>())
-        } else {
             mediaSessionConnection?.pause()
             channel?.invokeMethod("commandCenter.onPause", emptyMap<String, String>())
-        }
     }
 
     fun previous() {

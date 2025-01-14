@@ -82,10 +82,8 @@ class MediaSessionConnection(
         sendCommand(PLAY_FROM_QUEUE_METHOD, bundle)
     }
 
-    fun play(shouldPrepare: Boolean = false) {
-        val bundle = Bundle()
-        bundle.putBoolean("shouldPrepare", shouldPrepare)
-        sendCommand("play", bundle)
+    fun play() {
+        sendCommand("play", null)
     }
 
     fun cast(id: String){

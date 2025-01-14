@@ -270,13 +270,8 @@ class Player {
 
   int get currentIndex => _queue.index;
 
-  Future<int> play({bool shouldPrepare = false}) async {
-    await _invokeMethod(
-      'play',
-      {
-        'shouldPrepare': shouldPrepare,
-      },
-    );
+  Future<int> play() async {
+    await _invokeMethod('play');
     return Ok;
   }
 
@@ -384,16 +379,11 @@ class Player {
     }
   }
 
-  Future<int> updateNotification({
+  Future<int> updateFavorite({
     required bool isFavorite,
     required int id,
   }) async {
-    // final index = _queue.items.indexWhere((item) => item.id == id);
-    // if (index != -1) {
-    //   _queue.items[index] =
-    //       _queue.items[index].copyWith(isFavorite: isFavorite);
-    // }
-    return _channel.invokeMethod('update_notification', {
+    return _channel.invokeMethod('update_favorite', {
       'isFavorite': isFavorite,
       'idFavorite': id,
     }).then((result) => result);
@@ -407,16 +397,15 @@ class Player {
   void addUsingPlayer(Event event) => _addUsingPlayer(player, event);
 
   Future<int> stop() async {
-    // _notifyPlayerStatusChangeEvent(EventType.STOP_REQUESTED);
-    // final int result = await _invokeMethod('stop');
+    _notifyPlayerStatusChangeEvent(EventType.STOP_REQUESTED);
+    final int result = await _invokeMethod('stop');
 
-    // if (result == Ok) {
-    //   state = PlayerState.STOPPED;
-    //   _notifyPlayerStatusChangeEvent(EventType.STOPPED);
-    // }
+    if (result == Ok) {
+      state = PlayerState.STOPPED;
+      _notifyPlayerStatusChangeEvent(EventType.STOPPED);
+    }
 
-    // return result;
-    return Ok;
+    return result;
   }
 
   Future<int> release() async {
@@ -507,6 +496,12 @@ class Player {
         player.state = PlayerState.values[state];
         switch (player.state) {
           case PlayerState.STATE_READY:
+            _notifyPlayerStateChangeEvent(
+              player,
+              EventType.STATE_READY,
+              error,
+            );
+            break;
           case PlayerState.IDLE:
             _notifyPlayerStateChangeEvent(
               player,

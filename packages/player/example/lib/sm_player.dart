@@ -41,7 +41,7 @@ var media1 = Media(
 );
 
 var media3 = Media(
-  id: 1,
+  id: 3,
   albumTitle: "Album unsigned",
   albumId: 1,
   name: "Track unsigned",
@@ -59,7 +59,7 @@ var media3 = Media(
 );
 
 var media4 = Media(
-  id: 1,
+  id: 4,
   albumTitle: "É o Grelo",
   albumId: 1,
   name: "01 - VIDA LOK4 part.1",

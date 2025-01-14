@@ -21,46 +21,36 @@ import br.com.suamusica.player.PlayerSingleton.playerChangeNotifier
 import java.util.concurrent.atomic.AtomicBoolean
 import android.os.Looper
 import androidx.media3.cast.CastPlayer
+import com.google.android.gms.cast.framework.media.RemoteMediaClient
 
 
 @UnstableApi
 class PlayerSwitcher(
     private var currentPlayer: Player,
     private var mediaButtonEventHandler: MediaButtonEventHandler,
-    private var context: Context
 ) : ForwardingPlayer(currentPlayer) {
     private var playerEventListener: Player.Listener? = null
     private val TAG = "PlayerSwitcher"
     private var progressTracker: ProgressTracker? = null
+    var remoteMediaClient: RemoteMediaClient? = null
 
     init {
         playerEventListener?.let { currentPlayer.removeListener(it) }
         setupPlayerListener()
     }
 
-    fun setCurrentPlayer(newPlayer: Player) {
+    fun setCurrentPlayer(newPlayer: Player, remoteMediaClient: RemoteMediaClient? = null) {
         if (this.currentPlayer === newPlayer) {
             return
         }
-
-        // Salva o estado atual do player
-        val playerState = capturePlayerState()
-
-        // Remove listener do player anterior
+        this.remoteMediaClient = remoteMediaClient
+        val playerState = savePlayerState()
         playerEventListener?.let { currentPlayer.removeListener(it) }
-
-        // Para e limpa o player anterior
         stopAndClearCurrentPlayer()
-
-        // Atualiza para o novo player
         this.currentPlayer = newPlayer
-
-        // Restaura o estado no novo player
-        if(currentPlayer is CastPlayer) {
+        if (currentPlayer is CastPlayer) {
             restorePlayerState(playerState)
         }
-
-        // Adiciona listener no novo player
         setupPlayerListener()
     }
 
@@ -68,10 +58,10 @@ class PlayerSwitcher(
         val playbackPositionMs: Long = C.TIME_UNSET,
         val currentItemIndex: Int = C.INDEX_UNSET,
         val playWhenReady: Boolean = false,
-        val mediaItems: List<MediaItem> = emptyList()
+        val mediaItems: List<MediaItem> = emptyList(),
     )
 
-    private fun capturePlayerState(): PlayerState {
+    private fun savePlayerState(): PlayerState {
         return PlayerState(
             playbackPositionMs = if (currentPlayer.playbackState != STATE_ENDED) currentPlayer.currentPosition else C.TIME_UNSET,
             currentItemIndex = currentPlayer.currentMediaItemIndex,
@@ -110,13 +100,15 @@ class PlayerSwitcher(
             }
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
-                super.onIsPlayingChanged(isPlaying)
-                playerChangeNotifier?.notifyPlaying(isPlaying)
-                if (isPlaying) {
-                    startTrackingProgress()
-                } else {
-                    stopTrackingProgress()
+               super.onIsPlayingChanged(isPlaying)
+                if(lastState != STATE_BUFFERING) {
+                    playerChangeNotifier?.notifyPlaying(isPlaying)
                 }
+                    if (isPlaying) {
+                        startTrackingProgress()
+                    } else {
+                        stopTrackingProgress()
+                    }
             }
 
             override fun onMediaItemTransition(
@@ -161,7 +153,7 @@ class PlayerSwitcher(
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                android.util.Log.d(
+                Log.d(
                     "#NATIVE LOGS ==>",
                     "onPlayerError cause ${error.cause.toString()}"
                 )
@@ -192,12 +184,12 @@ class PlayerSwitcher(
     }
 
     fun currentIndex(): Int {
-        val position = if (currentPlayer.shuffleModeEnabled == true) {
+        val position = if (currentPlayer.shuffleModeEnabled) {
             PlayerSingleton.shuffledIndices.indexOf(
-                currentPlayer.currentMediaItemIndex ?: 0
+                currentPlayer.currentMediaItemIndex
             )
         } else {
-            currentPlayer.currentMediaItemIndex ?: 0
+            currentPlayer.currentMediaItemIndex
         }
         return position
     }
@@ -205,6 +197,18 @@ class PlayerSwitcher(
     private fun stopTrackingProgress() {
         progressTracker?.stopTracking()
         progressTracker = null
+    }
+
+    fun customShuffleModeEnabled(shuffleModeEnabled: Boolean) {
+        when (currentPlayer) {
+            is ExoPlayer -> {
+                (currentPlayer as ExoPlayer).shuffleModeEnabled = shuffleModeEnabled
+            }
+
+            is CastPlayer -> {
+                currentPlayer.shuffleModeEnabled = shuffleModeEnabled
+            }
+        }
     }
 
     fun setShuffleOrder(shuffleOrder: ShuffleOrder) {

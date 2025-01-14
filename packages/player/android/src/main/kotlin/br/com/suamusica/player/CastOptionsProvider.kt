@@ -14,21 +14,21 @@ class CastOptionsProvider : OptionsProvider {
     override fun getCastOptions(context: Context): CastOptions {
         Log.d("Player","#NATIVE LOGS ==> CAST getCastOptions ")
 
-        val buttonActions = listOf(
-            MediaIntentReceiver.ACTION_SKIP_NEXT,
-            MediaIntentReceiver.ACTION_TOGGLE_PLAYBACK,
-            MediaIntentReceiver.ACTION_SKIP_PREV,
-            MediaIntentReceiver.ACTION_STOP_CASTING
-        )
+//        val buttonActions = listOf(
+//            MediaIntentReceiver.ACTION_SKIP_NEXT,
+//            MediaIntentReceiver.ACTION_TOGGLE_PLAYBACK,
+//            MediaIntentReceiver.ACTION_SKIP_PREV,
+//            MediaIntentReceiver.ACTION_STOP_CASTING
+//        )
 
-        val compatButtonAction = intArrayOf(1, 3)
-        val notificationOptions =
-            NotificationOptions.Builder()
-                .setActions(buttonActions, compatButtonAction)
-                .setSkipStepMs(30000)
-                .build()
+//        val compatButtonAction = intArrayOf(1, 3)
+//        val notificationOptions =
+//            NotificationOptions.Builder()
+//                .setActions(buttonActions, compatButtonAction)
+//                .setSkipStepMs(30000)
+//                .build()
         val mediaOptions = CastMediaOptions.Builder()
-            .setNotificationOptions(notificationOptions)
+//            .setNotificationOptions(notificationOptions)
             .setMediaSessionEnabled(false)
             .setNotificationOptions(null)
             .build()

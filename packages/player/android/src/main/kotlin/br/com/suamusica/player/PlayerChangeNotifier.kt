@@ -8,7 +8,7 @@ import androidx.media3.common.Player.*
 class PlayerChangeNotifier(private val channelManager: MethodChannelManager) {
     fun notifyStateChange(state: @State Int) {
         val playerState = when (state) {
-            STATE_IDLE, STATE_READY -> PlayerState.IDLE
+            STATE_IDLE -> PlayerState.IDLE
             STATE_BUFFERING -> PlayerState.BUFFERING
             STATE_ENDED -> PlayerState.COMPLETED
             STATE_READY -> PlayerState.STATE_READY
