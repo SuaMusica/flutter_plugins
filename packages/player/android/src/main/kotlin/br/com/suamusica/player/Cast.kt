@@ -55,17 +55,17 @@ class CastManager(
         mediaRouterCallback = object : MediaRouter.Callback() {
             override fun onRouteAdded(router: MediaRouter, route: MediaRouter.RouteInfo) {
                 super.onRouteAdded(router, route)
-                Log.d(TAG, "#NATIVE LOGS ==> CAST: Route added: " + route.getName())
+                Log.d(TAG, "#NATIVE LOGS CAST ==> Route added: " + route.getName())
             }
 
             override fun onRouteRemoved(router: MediaRouter, route: MediaRouter.RouteInfo) {
                 super.onRouteRemoved(router, route)
-                Log.d(TAG, "#NATIVE LOGS ==> CAST: Route removed: " + route.getName())
+                Log.d(TAG, "#NATIVE LOGS CAST ==> Route removed: " + route.getName())
             }
 
             override fun onRouteChanged(router: MediaRouter, route: MediaRouter.RouteInfo) {
                 super.onRouteChanged(router, route)
-                Log.d(TAG, "#NATIVE LOGS ==> CAST: Route changed: " + route.getName())
+                Log.d(TAG, "#NATIVE LOGS CAST ==> Route changed: " + route.getName())
             }
 
             override fun onRouteSelected(
@@ -75,7 +75,7 @@ class CastManager(
             ) {
                 Log.d(
                     TAG,
-                    "#NATIVE LOGS ==> CAST: Route selected: " + route.getName() + ", reason: " + reason
+                    "#NATIVE LOGS CAST ==> Route selected: " + route.getName() + ", reason: " + reason
                 )
             }
 
@@ -86,7 +86,7 @@ class CastManager(
             ) {
                 Log.d(
                     TAG,
-                    "#NATIVE LOGS ==> CAST: Route unselected: " + route.getName() + ", reason: " + reason
+                    "#NATIVE LOGS CAST ==> Route unselected: " + route.getName() + ", reason: " + reason
                 )
             }
         }
@@ -243,7 +243,7 @@ class CastManager(
     override fun onCastStateChanged(state: Int) {
         Log.d(
             TAG,
-            "#NATIVE LOGS ==> CAST: RECEIVER UPDATE AVAILABLE ${CastState.toString(state)}"
+            "#NATIVE LOGS CAST ==> RECEIVER UPDATE AVAILABLE ${CastState.toString(state)}"
         )
 
         if (alreadyConnected && state == CastState.NOT_CONNECTED) {
@@ -261,56 +261,56 @@ class CastManager(
 
     //SessionAvailabilityListener
     override fun onCastSessionAvailable() {
-        Log.d(TAG, "#NATIVE LOGS ==> CAST - SessionAvailabilityListener: onCastSessionAvailable")
+        Log.d(TAG, "#NATIVE LOGS CAST ==>- SessionAvailabilityListener: onCastSessionAvailable")
     }
 
     override fun onCastSessionUnavailable() {
-        Log.d(TAG, "#NATIVE LOGS ==> CAST - SessionAvailabilityListener: onCastSessionUnavailable")
+        Log.d(TAG, "#NATIVE LOGS CAST ==>- SessionAvailabilityListener: onCastSessionUnavailable")
     }
 
     //PendingResult.StatusListener
     override fun onComplete(status: Status) {
-        Log.d(TAG, "#NATIVE LOGS ==> CAST: onComplete $status")
+        Log.d(TAG, "#NATIVE LOGS CAST ==> onComplete $status")
     }
 
 
     //SESSION MANAGER LISTENER
     override fun onSessionEnded(p0: Session, p1: Int) {
-        Log.d(TAG, "#NATIVE LOGS ==> CAST: onSessionEnded")
+        Log.d(TAG, "#NATIVE LOGS CAST ==> onSessionEnded")
     }
 
     override fun onSessionEnding(p0: Session) {
-        Log.d(TAG, "#NATIVE LOGS ==> CAST: onSessionEnding")
+        Log.d(TAG, "#NATIVE LOGS CAST ==> onSessionEnding")
     }
 
     override fun onSessionResumeFailed(p0: Session, p1: Int) {
-        Log.d(TAG, "#NATIVE LOGS ==> CAST: onSessionResumeFailed")
+        Log.d(TAG, "#NATIVE LOGS CAST ==> onSessionResumeFailed")
     }
 
     override fun onSessionResumed(p0: Session, p1: Boolean) {
-        Log.d(TAG, "#NATIVE LOGS ==> CAST: onSessionResumed")
+        Log.d(TAG, "#NATIVE LOGS CAST ==> onSessionResumed")
     }
 
     override fun onSessionResuming(p0: Session, p1: String) {
-        Log.d(TAG, "#NATIVE LOGS ==> CAST: onSessionResuming")
+        Log.d(TAG, "#NATIVE LOGS CAST ==> onSessionResuming")
     }
 
     override fun onSessionStartFailed(p0: Session, p1: Int) {
-        Log.d(TAG, "#NATIVE LOGS ==> CAST: onSessionStartFailed $p0, $p1")
+        Log.d(TAG, "#NATIVE LOGS CAST ==> onSessionStartFailed $p0, $p1")
     }
 
     override fun onSessionStarted(p0: Session, p1: String) {
-        Log.d(TAG, "#NATIVE LOGS ==> CAST: onCastSessionUnavailable")
+        Log.d(TAG, "#NATIVE LOGS CAST ==> onCastSessionUnavailable")
         onSessionEndedCallback?.invoke()
     }
 
     override fun onSessionStarting(p0: Session) {
-        Log.d(TAG, "#NATIVE LOGS ==> CAST: $p0 onSessionStarting")
+        Log.d(TAG, "#NATIVE LOGS CAST ==> $p0 onSessionStarting")
 //        OnePlayerSingleton.toggleCurrentPlayer(true)
     }
 
     override fun onSessionSuspended(p0: Session, p1: Int) {
-        Log.d(TAG, "#NATIVE LOGS ==> CAST: onSessionSuspended")
+        Log.d(TAG, "#NATIVE LOGS CAST ==> onSessionSuspended")
     }
 
 //    var MediaItem.associatedMedia: Media?

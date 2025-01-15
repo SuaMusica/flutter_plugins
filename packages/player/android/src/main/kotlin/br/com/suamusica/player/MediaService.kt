@@ -393,9 +393,9 @@ class MediaService : MediaSessionService(){
             smPlayer?.playWhenReady = autoPlay
         }
 //        enqueueLoadOnly = autoPlay
-        android.util.Log.d(
-            "#NATIVE LOGS ==>",
-            "enqueue  $autoPlay | mediaItemCount: ${player?.mediaItemCount} | shouldNotifyTransition: $shouldNotifyTransition"
+        Log.d(
+            TAG,
+            "#NATIVE LOGS MEDIA SERVICE ==> enqueue  $autoPlay | mediaItemCount: ${player?.mediaItemCount} | shouldNotifyTransition: $shouldNotifyTransition"
         )
         addToQueue(medias)
     }

@@ -14,7 +14,7 @@ class PlayerChangeNotifier(private val channelManager: MethodChannelManager) {
             STATE_READY -> PlayerState.STATE_READY
             else -> PlayerState.IDLE
         }
-        Log.i("Player", "#NATIVE LOGS ==> Notifying Player State change: $playerState | $state")
+        Log.i("Player", "#NATIVE LOGS Notify ==> Notifying Player State change: $playerState | $state")
         channelManager.notifyPlayerStateChange("sua-musica-player", playerState)
     }
 
@@ -23,7 +23,7 @@ class PlayerChangeNotifier(private val channelManager: MethodChannelManager) {
     }
 
     fun notifyError(message: String? = null){
-        Log.i("Player", "Notifying Error: $message")
+        Log.i("Player", "#NATIVE LOGS Notify ==> Notifying Error: $message")
         channelManager.notifyError("sua-musica-player", PlayerState.ERROR, message)
     }
 
@@ -41,11 +41,11 @@ class PlayerChangeNotifier(private val channelManager: MethodChannelManager) {
         channelManager.notifyPrevious("sua-musica-player")
     }
     fun notifyItemTransition(from:String) {
-        Log.i("Player", "#NATIVE LOGS ==> notifyItemTransition | FROM: $from")
+        Log.i("Player", "#NATIVE LOGS Notify ==> notifyItemTransition | FROM: $from")
         channelManager.notifyItemTransition("sua-musica-player")
     }
     fun currentMediaIndex(currentMediaIndex: Int, from: String) {
-        Log.i("Player", "#NATIVE LOGS ==> currentMediaIndex | FROM: $from | $currentMediaIndex")
+        Log.i("Player", "#NATIVE LOGS Notify ==> currentMediaIndex | FROM: $from | $currentMediaIndex")
         channelManager.currentMediaIndex("sua-musica-player", currentMediaIndex)
     }
     fun notifyPositionChange(position: Long, duration: Long) {
