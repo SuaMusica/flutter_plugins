@@ -456,6 +456,11 @@ class Player {
     }
   }
 
+  static Future<void> _handleOnComplete(Player player) async {
+    player.state = PlayerState.COMPLETED;
+    _notifyPlayerStateChangeEvent(player, EventType.FINISHED_PLAYING, "");
+  }
+
   static Future<void> _doHandlePlatformCall(MethodCall call) async {
     final currentMedia = _queue.current;
     final currentIndex = _queue.index;
@@ -563,7 +568,7 @@ class Player {
             break;
 
           case PlayerState.COMPLETED:
-            // _handleOnComplete(player);
+            _handleOnComplete(player);
             break;
 
           case PlayerState.STATE_ENDED:
