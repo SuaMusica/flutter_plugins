@@ -16,7 +16,7 @@ import br.com.suamusica.player.PlayerPlugin.Companion.ID_URI_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.INDEXES_TO_REMOVE
 import br.com.suamusica.player.PlayerPlugin.Companion.IS_FAVORITE_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.IS_PLAYING_ARGUMENT
-import br.com.suamusica.player.PlayerPlugin.Companion.LOAD_ONLY
+import br.com.suamusica.player.PlayerPlugin.Companion.LOAD_ONLY_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.NEW_URI_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.PLAY_FROM_QUEUE_METHOD
 import br.com.suamusica.player.PlayerPlugin.Companion.POSITIONS_LIST
@@ -25,6 +25,7 @@ import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_ALL
 import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_IN
 import br.com.suamusica.player.PlayerPlugin.Companion.REORDER
 import br.com.suamusica.player.PlayerPlugin.Companion.REPEAT_MODE
+import br.com.suamusica.player.PlayerPlugin.Companion.SEEK_METHOD
 import br.com.suamusica.player.PlayerPlugin.Companion.SET_REPEAT_MODE
 import br.com.suamusica.player.PlayerPlugin.Companion.TIME_POSITION_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.TOGGLE_SHUFFLE
@@ -78,7 +79,7 @@ class MediaSessionConnection(
         val bundle = Bundle()
         bundle.putInt(POSITION_ARGUMENT, index)
         bundle.putLong(TIME_POSITION_ARGUMENT, timePosition)
-        bundle.putBoolean(LOAD_ONLY, loadOnly)
+        bundle.putBoolean(LOAD_ONLY_ARGUMENT, loadOnly)
         sendCommand(PLAY_FROM_QUEUE_METHOD, bundle)
     }
 
@@ -183,11 +184,12 @@ class MediaSessionConnection(
         sendCommand("stop", null)
     }
 
-    fun seek(position: Long, playWhenReady: Boolean) {
+    fun seek(position: Long, playWhenReady: Boolean, shouldNotifyTransition:Boolean) {
         val bundle = Bundle()
         bundle.putLong("position", position)
         bundle.putBoolean("playWhenReady", playWhenReady)
-        sendCommand("seek", bundle)
+        bundle.putBoolean("shouldNotifyTransition", shouldNotifyTransition)
+        sendCommand(SEEK_METHOD, bundle)
     }
 
     fun release() {

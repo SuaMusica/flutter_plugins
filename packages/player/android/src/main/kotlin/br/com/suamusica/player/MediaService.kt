@@ -43,8 +43,9 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.MediaNotification
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
-import br.com.suamusica.player.PlayerPlugin.Companion.FALLBACK_URL
+import br.com.suamusica.player.PlayerPlugin.Companion.FALLBACK_URL_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.IS_FAVORITE_ARGUMENT
+import br.com.suamusica.player.PlayerPlugin.Companion.SEEK_METHOD
 import br.com.suamusica.player.PlayerPlugin.Companion.cookie
 import br.com.suamusica.player.PlayerSingleton.playerChangeNotifier
 import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
@@ -325,7 +326,7 @@ class MediaService : MediaSessionService(){
                 index, prepare(
                     cookie,
                     it,
-                    uri ?: media.mediaMetadata.extras?.getString(FALLBACK_URL) ?: ""
+                    uri ?: media.mediaMetadata.extras?.getString(FALLBACK_URL_ARGUMENT) ?: ""
                 )
             )
 //                player?.prepare()
@@ -543,7 +544,7 @@ class MediaService : MediaSessionService(){
 
         val bundle = Bundle()
         bundle.putBoolean(IS_FAVORITE_ARGUMENT, media.isFavorite ?: false)
-        bundle.putString(FALLBACK_URL, media.fallbackUrl)
+        bundle.putString(FALLBACK_URL_ARGUMENT, media.fallbackUrl)
         metadataBuilder.apply {
             setAlbumTitle(media.name)
             setArtist(media.author)
@@ -599,9 +600,12 @@ class MediaService : MediaSessionService(){
     }
 
 
-    fun seek(position: Long, playWhenReady: Boolean) {
+    fun seek(position: Long, playWhenReady: Boolean, shouldNotifyTransition:Boolean) {
         smPlayer?.seekTo(position)
         smPlayer?.playWhenReady = playWhenReady
+        if(shouldNotifyTransition){
+            playerChangeNotifier?.notifyItemTransition(SEEK_METHOD)
+        }
     }
 
     fun pause() {

@@ -32,14 +32,14 @@ class PlayerChangeNotifier(private val channelManager: MethodChannelManager) {
         channelManager.notifyPlayerStateChange("sua-musica-player", PlayerState.SEEK_END)
     }
 
-    fun notifyNext() {
-        Log.i("Player", "Notifying Player Next")
-        channelManager.notifyNext("sua-musica-player")
-    }
-    fun notifyPrevious() {
-        Log.i("Player", "Notifying Player Previous")
-        channelManager.notifyPrevious("sua-musica-player")
-    }
+//    fun notifyNext() {
+//        Log.i("Player", "Notifying Player Next")
+//        channelManager.notifyNext("sua-musica-player")
+//    }
+//    fun notifyPrevious() {
+//        Log.i("Player", "Notifying Player Previous")
+//        channelManager.notifyPrevious("sua-musica-player")
+//    }
     fun notifyItemTransition(from:String) {
         Log.i("Player", "#NATIVE LOGS Notify ==> notifyItemTransition | FROM: $from")
         channelManager.notifyItemTransition("sua-musica-player")

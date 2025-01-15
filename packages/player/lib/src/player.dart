@@ -346,7 +346,8 @@ class Player {
 
   Future<int?> previous({bool isFromChromecast = false}) async {
     if (_queue.shouldRewind()) {
-      seek(Duration(milliseconds: 0));
+      //If is rewind, we need to notify the transition, following the current behavior
+      seek(Duration(milliseconds: 0), shouldNotifyTransition: true);
       print("#APP LOGS ==> shouldRewind");
       return Ok;
     }
@@ -431,9 +432,17 @@ class Player {
         .invokeMethod('toggle_shuffle', {'positionsList': getPositionsList()});
   }
 
-  Future<int> seek(Duration position) {
+  Future<int> seek(
+    Duration position, {
+    bool playWhenReady = true,
+    bool shouldNotifyTransition = false,
+  }) {
     _notifyPlayerStateChangeEvent(this, EventType.SEEK_START, "");
-    return _invokeMethod('seek', {'position': position.inMilliseconds});
+    return _invokeMethod('seek', {
+      'position': position.inMilliseconds,
+      'playWhenReady': playWhenReady,
+      'shouldNotifyTransition': shouldNotifyTransition,
+    });
   }
 
   Future<int> setVolume(double volume) {

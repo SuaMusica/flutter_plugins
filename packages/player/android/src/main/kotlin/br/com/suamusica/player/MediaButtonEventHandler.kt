@@ -27,7 +27,7 @@ import br.com.suamusica.player.PlayerPlugin.Companion.ID_FAVORITE_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.ID_URI_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.INDEXES_TO_REMOVE
 import br.com.suamusica.player.PlayerPlugin.Companion.IS_FAVORITE_ARGUMENT
-import br.com.suamusica.player.PlayerPlugin.Companion.LOAD_ONLY
+import br.com.suamusica.player.PlayerPlugin.Companion.LOAD_ONLY_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.NEW_URI_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.PLAY_FROM_QUEUE_METHOD
 import br.com.suamusica.player.PlayerPlugin.Companion.POSITIONS_LIST
@@ -36,6 +36,7 @@ import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_ALL
 import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_IN
 import br.com.suamusica.player.PlayerPlugin.Companion.REORDER
 import br.com.suamusica.player.PlayerPlugin.Companion.REPEAT_MODE
+import br.com.suamusica.player.PlayerPlugin.Companion.SEEK_METHOD
 import br.com.suamusica.player.PlayerPlugin.Companion.SET_REPEAT_MODE
 import br.com.suamusica.player.PlayerPlugin.Companion.TIME_POSITION_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.TOGGLE_SHUFFLE
@@ -70,7 +71,7 @@ class MediaButtonEventHandler(
                 }
                 add(SessionCommand("notification_favoritar", Bundle.EMPTY))
                 add(SessionCommand("notification_desfavoritar", Bundle.EMPTY))
-                add(SessionCommand("seek", session.token.extras))
+                add(SessionCommand(SEEK_METHOD, session.token.extras))
                 add(SessionCommand("pause", Bundle.EMPTY))
                 add(SessionCommand("stop", Bundle.EMPTY))
                 add(SessionCommand("next", Bundle.EMPTY))
@@ -125,26 +126,30 @@ class MediaButtonEventHandler(
             buildIcons()
         }
 
-        if(customCommand.customAction == "cast"){
+        if (customCommand.customAction == "cast") {
 //            mediaService.cast(args.getString("cast_id"))
             mediaService.castWithCastPlayer(args.getString("cast_id"))
         }
 
-        if(customCommand.customAction == UPDATE_IS_PLAYING){
+        if (customCommand.customAction == UPDATE_IS_PLAYING) {
             buildIcons()
         }
 
-        if (customCommand.customAction == "seek") {
-            mediaService.seek(args.getLong("position"), args.getBoolean("playWhenReady"))
+        if (customCommand.customAction == SEEK_METHOD) {
+            mediaService.seek(
+                args.getLong("position"),
+                args.getBoolean("playWhenReady"),
+                args.getBoolean("shouldNotifyTransition")
+            )
         }
         if (customCommand.customAction == FAVORITE) {
-            val isFavorite =  args.getBoolean(IS_FAVORITE_ARGUMENT)
+            val isFavorite = args.getBoolean(IS_FAVORITE_ARGUMENT)
             val mediaItem = session.player.currentMediaItem!!
             updateFavoriteMetadata(
                 session.player,
                 session.player.currentMediaItemIndex,
                 mediaItem,
-               isFavorite,
+                isFavorite,
             )
             buildIcons()
         }
@@ -191,20 +196,20 @@ class MediaButtonEventHandler(
         }
         if (customCommand.customAction == SET_REPEAT_MODE) {
             val mode = args.getString("mode")
-            mediaService.setRepeatMode(mode ?:"")
+            mediaService.setRepeatMode(mode ?: "")
         }
         if (customCommand.customAction == PLAY_FROM_QUEUE_METHOD) {
             mediaService.playFromQueue(
                 args.getInt(POSITION_ARGUMENT), args.getLong(TIME_POSITION_ARGUMENT),
                 args.getBoolean(
-                    LOAD_ONLY
+                    LOAD_ONLY_ARGUMENT
                 ),
             )
         }
         if (customCommand.customAction == "notification_previous" || customCommand.customAction == "previous") {
-            if(session.player.hasPreviousMediaItem()){
-            session.player.seekToPreviousMediaItem()
-            }else{
+            if (session.player.hasPreviousMediaItem()) {
+                session.player.seekToPreviousMediaItem()
+            } else {
                 session.player.seekToPrevious()
             }
             PlayerSingleton.shouldNotifyTransition = true
@@ -376,9 +381,9 @@ class MediaButtonEventHandler(
 
                 KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
                     Log.d("Player", "Player: Key Code : PlayPause")
-                    if(session.player.isPlaying){
+                    if (session.player.isPlaying) {
                         PlayerSingleton.pause()
-                    }else{
+                    } else {
                         PlayerSingleton.play()
                     }
                 }

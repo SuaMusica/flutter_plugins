@@ -15,15 +15,13 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
 
     companion object {
+        private const val CHANNEL = "suamusica.com.br/player"
         // Argument names
-        const val NAME_ARGUMENT = "name"
-        const val AUTHOR_ARGUMENT = "author"
-        const val URL_ARGUMENT = "url"
-        const val COVER_URL_ARGUMENT = "coverUrl"
-        const val BIG_COVER_URL_ARGUMENT = "bigCoverUrl"
         const val IS_PLAYING_ARGUMENT = "isPlaying"
+        const val SHOULD_NOTIFY_TRANSITION_ARGUMENT  = "shouldNotifyTransition"
+        const val PLAY_WHEN_READY_ARGUMENT  = "playWhenReady"
         const val IS_FAVORITE_ARGUMENT = "isFavorite"
-        const val FALLBACK_URL = "fallbackURL"
+        const val FALLBACK_URL_ARGUMENT = "fallbackURL"
         const val ID_FAVORITE_ARGUMENT = "idFavorite"
         const val NEW_URI_ARGUMENT = "newUri"
         const val ID_URI_ARGUMENT = "idUri"
@@ -31,9 +29,9 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
         const val TIME_POSITION_ARGUMENT = "timePosition"
         const val INDEXES_TO_REMOVE = "indexesToDelete"
         const val POSITIONS_LIST = "positionsList"
-        const val LOAD_ONLY = "loadOnly"
+        const val LOAD_ONLY_ARGUMENT = "loadOnly"
         const val RELEASE_MODE_ARGUMENT = "releaseMode"
-        private const val CHANNEL = "suamusica.com.br/player"
+
         const val FAVORITE: String = "favorite"
 
         // Method names
@@ -215,7 +213,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
             PLAY_FROM_QUEUE_METHOD -> {
                 val position = call.argument<Int>(POSITION_ARGUMENT) ?: 0
                 val timePosition = call.argument<Int>(TIME_POSITION_ARGUMENT) ?: 0
-                val loadOnly = call.argument<Boolean>(LOAD_ONLY) ?: false
+                val loadOnly = call.argument<Boolean>(LOAD_ONLY_ARGUMENT) ?: false
                 PlayerSingleton.mediaSessionConnection?.playFromQueue(
                     position,
                     timePosition.toLong(),
@@ -245,7 +243,9 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
 
             SEEK_METHOD -> {
                 val position = call.argument<Long>(POSITION_ARGUMENT)!!
-                PlayerSingleton.mediaSessionConnection?.seek(position, true)
+                val shouldNotifyTransition = call.argument<Boolean>(SHOULD_NOTIFY_TRANSITION_ARGUMENT)!!
+                val playWhenReady = call.argument<Boolean>(PLAY_WHEN_READY_ARGUMENT)!!
+                PlayerSingleton.mediaSessionConnection?.seek(position, playWhenReady, shouldNotifyTransition)
             }
 
             REMOVE_NOTIFICATION_METHOD -> {
