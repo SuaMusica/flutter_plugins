@@ -384,10 +384,6 @@ class MediaService : MediaSessionService(){
         autoPlay: Boolean,
         shouldNotifyTransition: Boolean,
     ) {
-        Log.d(
-            TAG,
-            "enqueue: mediaItemCount: ${player?.mediaItemCount} | autoPlay: $autoPlay"
-        )
         this.autoPlay = autoPlay
         PlayerSingleton.shouldNotifyTransition = shouldNotifyTransition
         if (smPlayer?.mediaItemCount == 0) {
@@ -410,8 +406,8 @@ class MediaService : MediaSessionService(){
             player?.addMediaSources(mediaSources)
             smPlayer?.prepare()
         }
-        if (PlayerSingleton.shouldNotifyTransition) {
-            playerChangeNotifier?.notifyItemTransition("Enqueue - createMediaSource")
+        if (autoPlay) {
+            playerChangeNotifier?.notifyItemTransition("#NATIVE LOGS MEDIA SERVICE ==> Enqueue - createMediaSource")
         }
     }
 

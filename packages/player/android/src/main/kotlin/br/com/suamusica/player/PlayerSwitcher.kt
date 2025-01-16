@@ -125,7 +125,6 @@ class PlayerSwitcher(
                 }
                 mediaButtonEventHandler.buildIcons()
 
-                //TODO: verificar o motivo, tinha um, mas não lembro
                 if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED || !PlayerSingleton.shouldNotifyTransition) {
                     return
                 }
