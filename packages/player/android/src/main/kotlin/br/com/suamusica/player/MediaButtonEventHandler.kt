@@ -21,7 +21,7 @@ import androidx.media3.session.R.drawable
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import br.com.suamusica.player.PlayerPlugin.Companion.DISABLE_REPEAT_MODE
-import br.com.suamusica.player.PlayerPlugin.Companion.ENQUEUE
+import br.com.suamusica.player.PlayerPlugin.Companion.ENQUEUE_METHOD
 import br.com.suamusica.player.PlayerPlugin.Companion.FAVORITE
 import br.com.suamusica.player.PlayerPlugin.Companion.ID_FAVORITE_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.ID_URI_ARGUMENT
@@ -81,7 +81,7 @@ class MediaButtonEventHandler(
                 add(SessionCommand(TOGGLE_SHUFFLE, Bundle.EMPTY))
                 add(SessionCommand(REPEAT_MODE, Bundle.EMPTY))
                 add(SessionCommand(DISABLE_REPEAT_MODE, Bundle.EMPTY))
-                add(SessionCommand(ENQUEUE, session.token.extras))
+                add(SessionCommand(ENQUEUE_METHOD, session.token.extras))
                 add(SessionCommand(REMOVE_ALL, Bundle.EMPTY))
                 add(SessionCommand(REORDER, session.token.extras))
                 add(SessionCommand(REMOVE_IN, session.token.extras))
@@ -139,7 +139,6 @@ class MediaButtonEventHandler(
             mediaService.seek(
                 args.getLong("position"),
                 args.getBoolean("playWhenReady"),
-                args.getBoolean("shouldNotifyTransition")
             )
         }
         if (customCommand.customAction == FAVORITE) {
@@ -212,10 +211,8 @@ class MediaButtonEventHandler(
             } else {
                 session.player.seekToPrevious()
             }
-            PlayerSingleton.shouldNotifyTransition = true
         }
         if (customCommand.customAction == "notification_next" || customCommand.customAction == "next") {
-            PlayerSingleton.shouldNotifyTransition = true
             session.player.seekToNextMediaItem()
         }
         if (customCommand.customAction == "pause") {
@@ -252,14 +249,11 @@ class MediaButtonEventHandler(
                 }
             }
             PlayerSingleton.favorite(isFavorite)
-//            }
         }
         if (customCommand.customAction == "ads_playing") {
-//            mediaService.player?.pause()
-//            mediaService.adsPlaying()
             mediaService.removeNotification()
         }
-        if (customCommand.customAction == ENQUEUE) {
+        if (customCommand.customAction == ENQUEUE_METHOD) {
             val json = args.getString("json")
             val gson = GsonBuilder().create()
             val mediaListType = object : TypeToken<List<Media>>() {}.type

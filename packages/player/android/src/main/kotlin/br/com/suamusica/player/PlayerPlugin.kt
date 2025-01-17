@@ -37,7 +37,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
         // Method names
         const val PLAY_METHOD = "play"
         const val SET_REPEAT_MODE = "set_repeat_mode"
-        const val ENQUEUE = "enqueue"
+        const val ENQUEUE_METHOD = "enqueue"
         const val REMOVE_ALL = "remove_all"
         const val REMOVE_IN = "remove_in"
         const val REORDER = "reorder"
@@ -117,7 +117,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
     }
 
     private fun handleMethodCall(call: MethodCall, response: MethodChannel.Result) {
-        if (call.method == ENQUEUE) {
+        if (call.method == ENQUEUE_METHOD) {
             val batch: Map<String, Any> = call.arguments()!!
             cookie = if (batch.containsKey("cookie")) batch["cookie"] as String else cookie
         } else {
@@ -128,7 +128,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
             "method: ${call.method}"
         )
         when (call.method) {
-            ENQUEUE -> {
+            ENQUEUE_METHOD -> {
                 val batch: Map<String, Any> = call.arguments() ?: emptyMap()
                 val listMedia: List<Map<String, String>> =
                     batch["batch"] as List<Map<String, String>>
@@ -243,9 +243,8 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
 
             SEEK_METHOD -> {
                 val position = call.argument<Long>(POSITION_ARGUMENT)!!
-                val shouldNotifyTransition = call.argument<Boolean>(SHOULD_NOTIFY_TRANSITION_ARGUMENT)!!
                 val playWhenReady = call.argument<Boolean>(PLAY_WHEN_READY_ARGUMENT)!!
-                PlayerSingleton.mediaSessionConnection?.seek(position, playWhenReady, shouldNotifyTransition)
+                PlayerSingleton.mediaSessionConnection?.seek(position, playWhenReady)
             }
 
             REMOVE_NOTIFICATION_METHOD -> {

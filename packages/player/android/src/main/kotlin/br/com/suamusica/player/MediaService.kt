@@ -5,14 +5,9 @@ import android.app.ActivityManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
-import android.media.AudioFocusRequest
-import android.media.AudioManager
-import android.media.AudioManager.OnAudioFocusChangeListener
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import androidx.media.AudioFocusRequestCompat
-import androidx.media.AudioManagerCompat
 import androidx.media3.cast.CastPlayer
 import androidx.media3.cast.DefaultMediaItemConverter
 import androidx.media3.cast.MediaItemConverter
@@ -64,7 +59,6 @@ import java.io.File
 import java.util.Collections
 
 
-const val NOW_PLAYING_CHANNEL: String = "br.com.suamusica.media.NOW_PLAYING"
 const val NOW_PLAYING_NOTIFICATION: Int = 0xb339
 
 @UnstableApi
@@ -89,12 +83,8 @@ class MediaService : MediaSessionService(){
     private lateinit var dataSourceBitmapLoader: DataSourceBitmapLoader
     private lateinit var mediaButtonEventHandler: MediaButtonEventHandler
     private var shuffleOrder: DefaultShuffleOrder? = null
-
     private var seekToLoadOnly: Boolean = false
-
-    //    private var enqueueLoadOnly: Boolean = false
     private var autoPlay: Boolean = true
-
     private val channel = Channel<List<Media>>(Channel.BUFFERED)
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
@@ -294,16 +284,6 @@ class MediaService : MediaSessionService(){
         mediaController = null
     }
 
-    private fun isServiceRunning(): Boolean {
-        val manager = getSystemService(ACTIVITY_SERVICE) as ActivityManager
-        for (service in manager.getRunningServices(Int.MAX_VALUE)) {
-            if ("br.com.suamusica.player.MediaService" == service.service.className) {
-                return true
-            }
-        }
-        return false
-    }
-
     class CustomMediaItemConverter : MediaItemConverter {
         override fun toMediaQueueItem(mediaItem: MediaItem): MediaQueueItem {
             val queueItem = DefaultMediaItemConverter().toMediaQueueItem(mediaItem)
@@ -318,7 +298,6 @@ class MediaService : MediaSessionService(){
     }
 
     fun updateMediaUri(index: Int, uri: String?) {
-//        if (index != player?.currentMediaItemIndex) {
         val media = smPlayer?.getMediaItemAt(index)
         media?.associatedMedia?.let {
             smPlayer?.removeMediaItem(index)
@@ -329,9 +308,7 @@ class MediaService : MediaSessionService(){
                     uri ?: media.mediaMetadata.extras?.getString(FALLBACK_URL_ARGUMENT) ?: ""
                 )
             )
-//                player?.prepare()
         }
-//        }
     }
 
     fun toggleShuffle(positionsList: List<Map<String, Int>>) {
@@ -389,10 +366,9 @@ class MediaService : MediaSessionService(){
         if (smPlayer?.mediaItemCount == 0) {
             smPlayer?.playWhenReady = autoPlay
         }
-//        enqueueLoadOnly = autoPlay
         Log.d(
             TAG,
-            "#NATIVE LOGS MEDIA SERVICE ==> enqueue  $autoPlay | mediaItemCount: ${player?.mediaItemCount} | shouldNotifyTransition: $shouldNotifyTransition"
+            "#NATIVE LOGS MEDIA SERVICE ==> enqueue  $autoPlay | mediaItemCount: ${player?.mediaItemCount}"
         )
         addToQueue(medias)
     }
@@ -584,6 +560,10 @@ class MediaService : MediaSessionService(){
             if (smPlayer?.shuffleModeEnabled == true) PlayerSingleton.shuffledIndices[position] else position,
             timePosition,
         )
+
+        if(position > 0) {
+            playerChangeNotifier?.notifyPositionChange(timePosition, smPlayer?.duration ?: 0)
+        }
         if (!loadOnly) {
             smPlayer?.prepare()
             playerChangeNotifier?.notifyItemTransition("playFromQueue")
@@ -593,15 +573,13 @@ class MediaService : MediaSessionService(){
     fun removeAll() {
         smPlayer?.stop()
         smPlayer?.clearMediaItems()
+        playerChangeNotifier?.notifyStateChange(STATE_IDLE)
     }
 
 
-    fun seek(position: Long, playWhenReady: Boolean, shouldNotifyTransition:Boolean) {
+    fun seek(position: Long, playWhenReady: Boolean) {
         smPlayer?.seekTo(position)
         smPlayer?.playWhenReady = playWhenReady
-        if(shouldNotifyTransition){
-            playerChangeNotifier?.notifyItemTransition(SEEK_METHOD)
-        }
     }
 
     fun pause() {

@@ -177,6 +177,8 @@ class Player {
             'playerId': playerId,
             'shallSendEvents': _shallSendEvents,
             'externalplayback': externalPlayback,
+            //If the batch has more than one item, we don't need to notify
+            //the transition, because it will be notified when the first item is played
             'shouldNotifyTransition':
                 batch.length > 1 ? false : shouldNotifyTransition,
             if (i == 0) ...{
@@ -346,8 +348,7 @@ class Player {
 
   Future<int?> previous({bool isFromChromecast = false}) async {
     if (_queue.shouldRewind()) {
-      //If is rewind, we need to notify the transition, following the current behavior
-      seek(Duration(milliseconds: 0), shouldNotifyTransition: true);
+      seek(Duration(milliseconds: 0));
       print("#APP LOGS ==> shouldRewind");
       return Ok;
     }
@@ -435,13 +436,11 @@ class Player {
   Future<int> seek(
     Duration position, {
     bool playWhenReady = true,
-    bool shouldNotifyTransition = false,
   }) {
     _notifyPlayerStateChangeEvent(this, EventType.SEEK_START, "");
     return _invokeMethod('seek', {
       'position': position.inMilliseconds,
       'playWhenReady': playWhenReady,
-      'shouldNotifyTransition': shouldNotifyTransition,
     });
   }
 

@@ -10,7 +10,7 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import br.com.suamusica.player.PlayerPlugin.Companion.DISABLE_REPEAT_MODE
-import br.com.suamusica.player.PlayerPlugin.Companion.ENQUEUE
+import br.com.suamusica.player.PlayerPlugin.Companion.ENQUEUE_METHOD
 import br.com.suamusica.player.PlayerPlugin.Companion.ID_FAVORITE_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.ID_URI_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.INDEXES_TO_REMOVE
@@ -72,7 +72,7 @@ class MediaSessionConnection(
         bundle.putString("json", medias)
         bundle.putBoolean("autoPlay", autoPlay)
         bundle.putBoolean("shouldNotifyTransition", shouldNotifyTransition)
-        sendCommand(ENQUEUE, bundle)
+        sendCommand(ENQUEUE_METHOD, bundle)
     }
 
     fun playFromQueue(index: Int, timePosition: Long, loadOnly: Boolean) {
@@ -184,11 +184,10 @@ class MediaSessionConnection(
         sendCommand("stop", null)
     }
 
-    fun seek(position: Long, playWhenReady: Boolean, shouldNotifyTransition:Boolean) {
+    fun seek(position: Long, playWhenReady: Boolean) {
         val bundle = Bundle()
         bundle.putLong("position", position)
         bundle.putBoolean("playWhenReady", playWhenReady)
-        bundle.putBoolean("shouldNotifyTransition", shouldNotifyTransition)
         sendCommand(SEEK_METHOD, bundle)
     }
 

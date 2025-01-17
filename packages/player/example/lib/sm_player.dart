@@ -101,10 +101,11 @@ var media2 = Media(
 class _SMPlayerState extends State<SMPlayer> {
   late Player _player;
   Media? currentMedia;
-  String mediaLabel = '';
   Duration duration = Duration(seconds: 0);
   Duration position = Duration(seconds: 0);
   var _shuffled = false;
+  bool _loading = false;
+  int _currentIndex = 0;
 
   @override
   void initState() {
@@ -122,10 +123,14 @@ class _SMPlayerState extends State<SMPlayer> {
         initializeIsar: false,
       );
       player.onEvent.listen((Event event) async {
-        // print(
-        //     "Event: [${event.type}] [${event.media.author}-${event.media.name}] [${event.position}] [${event.duration}]");
-
+        print("Event: ${event.type}");
         switch (event.type) {
+          case EventType.IDLE:
+            setState(() {
+              position = Duration(seconds: 0);
+              duration = Duration(seconds: 0);
+            });
+            break;
           case EventType.BEFORE_PLAY:
             if (event is BeforePlayEvent) {
               // event.continueWithLoadingOnly();
@@ -139,32 +144,33 @@ class _SMPlayerState extends State<SMPlayer> {
                 setState(() {
                   position = event.position;
                   duration = event.duration;
-                  currentMedia = event.media;
-                  mediaLabel = toMediaLabel();
                 });
               }
             }
             break;
+
+          case EventType.STATE_READY:
+            setState(() {
+              _loading = false;
+            });
+            break;
           case EventType.PLAYING:
-            setState(() {
-              currentMedia = event.media;
-              mediaLabel = toMediaLabel();
-            });
             break;
 
+          case EventType.SET_CURRENT_MEDIA_INDEX:
+            setState(() {
+              _currentIndex = event.queuePosition;
+            });
+            break;
           case EventType.PAUSED:
+            break;
+          case EventType.BUFFERING:
             setState(() {
-              currentMedia = event.media;
-              mediaLabel = toMediaLabel();
+              _loading = true;
             });
             break;
-
           case EventType.NEXT:
           case EventType.PREVIOUS:
-            setState(() {
-              currentMedia = event.media;
-              mediaLabel = toMediaLabel();
-            });
             break;
           default:
         }
@@ -216,14 +222,7 @@ class _SMPlayerState extends State<SMPlayer> {
   void playOrPause() async {
     print("Player State: ${_player.state}");
 
-    if (_player.state == PlayerState.IDLE && _player.currentMedia != null) {
-      int result = await _player.play();
-      if (result == Player.Ok) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Audio is now playing!!!!')));
-      }
-    } else if (_player.state == PlayerState.BUFFERING &&
-        _player.currentMedia != null) {
+    if (_player.state == PlayerState.STATE_READY) {
       int result = await _player.play();
       if (result == Player.Ok) {
         ScaffoldMessenger.of(context)
@@ -241,22 +240,18 @@ class _SMPlayerState extends State<SMPlayer> {
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Audio is now playing again!!!!')));
       }
-    } else {
-      int? result = await _player.next();
-      if (result == Player.Ok) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Audio is now playing again!!!!')));
-      }
     }
   }
 
   void seek(double p) {
-    setState(() {
-      position = Duration(milliseconds: p.round());
-      if (_player.state != PlayerState.STOPPED) {
-        _player.seek(position);
-      }
-    });
+    setState(
+      () {
+        position = Duration(milliseconds: p.round());
+        if (_player.state != PlayerState.STOPPED) {
+          _player.seek(position);
+        }
+      },
+    );
   }
 
   void next() {
@@ -346,6 +341,82 @@ class _SMPlayerState extends State<SMPlayer> {
     List<MDNSService> foundServices = [];
 
     return Scaffold(
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+              ),
+              child: Text(
+                'Media Controls',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: Icon(Icons.delete),
+              title: Text('Remove all'),
+              onTap: () {
+                _player.stop();
+                _player.removeAll();
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.queue),
+              title: Text('Add all medias (AutoPlay)'),
+              onTap: () {
+                setState(() {
+                  _player.enqueueAll(
+                    [media1, media2, media3, media4],
+                    autoPlay: true,
+                  );
+                });
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.queue),
+              title: Text('Add all medias'),
+              onTap: () {
+                _player.enqueueAll(
+                  [media1, media2, media3, media4],
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.folder),
+              title: Text('Add local file'),
+              onTap: () {
+                pickLocalFile();
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.play_arrow),
+              title: Text('Play from queue (second - 50 seconds)'),
+              onTap: () {
+                _player.playFromQueue(
+                  1,
+                  loadOnly: true,
+                  position: Duration(seconds: 50),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.add),
+              title: Text('Add media1'),
+              onTap: () {
+                _player.enqueueAll([media1]);
+              },
+            ),
+          ],
+        ),
+      ),
       appBar: AppBar(
         title: Text('SM Player'),
         actions: [
@@ -368,48 +439,6 @@ class _SMPlayerState extends State<SMPlayer> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: Icon(Icons.delete),
-                  onPressed: () {
-                    _player.removeAll();
-                  },
-                  tooltip: 'Remove all',
-                ),
-                IconButton(
-                  icon: Icon(Icons.add),
-                  onPressed: () {
-                    _player.enqueueAll(
-                      [media1, media2, media3, media4],
-                      autoPlay: true,
-                    );
-                  },
-                  tooltip: 'Add media',
-                ),
-                IconButton(
-                  icon: Icon(Icons.queue),
-                  onPressed: () {
-                    _player.enqueueAll(
-                      [media1, media2, media3, media4],
-                    );
-                  },
-                  tooltip: 'Add media',
-                ),
-                IconButton(
-                  icon: Icon(Icons.folder),
-                  onPressed: pickLocalFile,
-                  tooltip: 'Add local file',
-                ),
-                IconButton(
-                  icon: Icon(Icons.play_arrow),
-                  onPressed: () => _player.playFromQueue(1,
-                      loadOnly: true, position: Duration(seconds: 50)),
-                  tooltip: 'Play from queue',
-                ),
-              ],
-            ),
             Stack(
               children: <Widget>[
                 Wrap(
@@ -473,47 +502,58 @@ class _SMPlayerState extends State<SMPlayer> {
                       )),
                 ),
                 Expanded(
-                    child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Container(
-                      margin: EdgeInsets.only(left: 8, right: 8),
-                      child: Material(
-                        borderRadius: BorderRadius.circular(40.0),
-                        clipBehavior: Clip.hardEdge,
-                        child: IconButton(
-                          onPressed: previous,
-                          iconSize: 40,
-                          icon: Container(
-                            child: SvgPicture.asset(UIData.btPlayerPrevious),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Material(
-                        borderRadius: BorderRadius.circular(58.0),
-                        clipBehavior: Clip.hardEdge,
-                        child: IconButton(
-                          iconSize: 58,
-                          icon: _player.state == PlayerState.PLAYING
-                              ? SvgPicture.asset(UIData.btPlayerPause)
-                              : SvgPicture.asset(UIData.btPlayerPlay),
-                          onPressed: playOrPause,
-                        )),
-                    Container(
-                      margin: EdgeInsets.only(left: 8, right: 8),
-                      child: Material(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Container(
+                        margin: EdgeInsets.only(left: 8, right: 8),
+                        child: Material(
                           borderRadius: BorderRadius.circular(40.0),
                           clipBehavior: Clip.hardEdge,
                           child: IconButton(
-                              onPressed: next,
-                              iconSize: 40,
-                              icon: Container(
-                                child: SvgPicture.asset(UIData.btPlayerNext),
-                              ))),
-                    ),
-                  ],
-                )),
+                            onPressed: previous,
+                            iconSize: 40,
+                            icon: Container(
+                              child: SvgPicture.asset(UIData.btPlayerPrevious),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Material(
+                          borderRadius: BorderRadius.circular(58.0),
+                          clipBehavior: Clip.hardEdge,
+                          child: IconButton(
+                            iconSize: 58,
+                            icon: _loading
+                                ? Container(
+                                    width: 58,
+                                    height: 58,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 5,
+                                    ),
+                                  )
+                                : _player.state == PlayerState.PLAYING
+                                    ? SvgPicture.asset(UIData.btPlayerPause)
+                                    : SvgPicture.asset(UIData.btPlayerPlay),
+                            onPressed: playOrPause,
+                          )),
+                      Container(
+                        margin: EdgeInsets.only(left: 8, right: 8),
+                        child: Material(
+                          borderRadius: BorderRadius.circular(40.0),
+                          clipBehavior: Clip.hardEdge,
+                          child: IconButton(
+                            onPressed: next,
+                            iconSize: 40,
+                            icon: Container(
+                              child: SvgPicture.asset(UIData.btPlayerNext),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 Container(
                   margin: EdgeInsets.only(right: 8),
                   child: Material(
@@ -529,7 +569,8 @@ class _SMPlayerState extends State<SMPlayer> {
               ],
             ),
             SizedBox(height: 30),
-            Text(mediaLabel),
+            if (_player.items.isNotEmpty)
+              Text('Tocando: ${_player.items[_currentIndex].name}'),
             SizedBox(height: 30),
             Expanded(
               child: SizedBox(
@@ -550,7 +591,14 @@ class _SMPlayerState extends State<SMPlayer> {
                           key: Key('queueItemWidgetKey$index'),
                           child: Container(
                             height: 50,
-                            color: Colors.blue[colorCodes[index % 3]],
+                            decoration: BoxDecoration(
+                              border: index == _currentIndex
+                                  ? Border.all(color: Colors.red, width: 2.0)
+                                  : null,
+                              color: HSLColor.fromAHSL(
+                                      0.8, (index * 137.5) % 360, 0.7, 0.8)
+                                  .toColor(),
+                            ),
                             child: Center(
                                 child: Text('${media.id} - ${media.name}')),
                           ),

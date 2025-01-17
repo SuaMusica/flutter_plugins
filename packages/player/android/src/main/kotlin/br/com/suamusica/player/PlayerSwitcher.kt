@@ -116,21 +116,26 @@ class PlayerSwitcher(
                 reason: @Player.MediaItemTransitionReason Int
             ) {
                 super.onMediaItemTransition(mediaItem, reason)
-                Log.d(TAG, "#NATIVE LOGS ==> onMediaItemTransition reason: $reason")
-                if ((currentPlayer.mediaItemCount ?: 0) > 0) {
+                val hasItems = (currentPlayer.mediaItemCount ?: 0) > 0
+
+                val shouldNotify = (reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED && hasItems) && !PlayerSingleton.shouldNotifyTransition
+                Log.d(TAG, "#NATIVE LOGS ==> onMediaItemTransition reason: $reason | shouldNotify: $shouldNotify")
+
+                if (shouldNotify) {
+                    return
+                }
+
+                if (hasItems) {
                     playerChangeNotifier?.currentMediaIndex(
                         currentIndex(),
                         "onMediaItemTransition",
                     )
                 }
+
                 mediaButtonEventHandler.buildIcons()
 
-                if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED || !PlayerSingleton.shouldNotifyTransition) {
-                    return
-                }
-
                 playerChangeNotifier?.notifyItemTransition("onMediaItemTransition  reason: $reason | shouldNotifyTransition: ${PlayerSingleton.shouldNotifyTransition}")
-                PlayerSingleton.shouldNotifyTransition = false
+//                PlayerSingleton.shouldNotifyTransition = false
             }
 
             var lastState = PlaybackStateCompat.STATE_NONE - 1
