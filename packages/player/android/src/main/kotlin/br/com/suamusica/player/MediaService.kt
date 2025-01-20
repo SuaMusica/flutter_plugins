@@ -573,7 +573,6 @@ class MediaService : MediaSessionService(){
     fun removeAll() {
         smPlayer?.stop()
         smPlayer?.clearMediaItems()
-        playerChangeNotifier?.notifyStateChange(STATE_IDLE)
     }
 
 

@@ -182,7 +182,7 @@ class _SMPlayerState extends State<SMPlayer> {
       listOfMedias.addAll([media1, media2, media3, media4]);
       // }
 
-      player.enqueueAll(listOfMedias, autoPlay: false);
+      // player.enqueueAll(listOfMedias, autoPlay: false);
 
       if (!mounted) return;
 

@@ -177,8 +177,6 @@ class Player {
             'playerId': playerId,
             'shallSendEvents': _shallSendEvents,
             'externalplayback': externalPlayback,
-            //If the batch has more than one item, we don't need to notify
-            //the transition, because it will be notified when the first item is played
             'shouldNotifyTransition':
                 batch.length > 1 ? false : shouldNotifyTransition,
             if (i == 0) ...{

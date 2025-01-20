@@ -1,12 +1,14 @@
 package br.com.suamusica.player
-
-import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.media3.common.Player
-import androidx.media3.common.Player.*
+import androidx.media3.common.Player.STATE_IDLE
+import androidx.media3.common.Player.STATE_BUFFERING
+import androidx.media3.common.Player.STATE_ENDED
+import androidx.media3.common.Player.STATE_READY
+
 
 class PlayerChangeNotifier(private val channelManager: MethodChannelManager) {
-    fun notifyStateChange(state: @State Int) {
+    fun notifyStateChange(state: @Player.State Int) {
         val playerState = when (state) {
             STATE_IDLE -> PlayerState.IDLE
             STATE_BUFFERING -> PlayerState.BUFFERING
@@ -32,14 +34,6 @@ class PlayerChangeNotifier(private val channelManager: MethodChannelManager) {
         channelManager.notifyPlayerStateChange("sua-musica-player", PlayerState.SEEK_END)
     }
 
-//    fun notifyNext() {
-//        Log.i("Player", "Notifying Player Next")
-//        channelManager.notifyNext("sua-musica-player")
-//    }
-//    fun notifyPrevious() {
-//        Log.i("Player", "Notifying Player Previous")
-//        channelManager.notifyPrevious("sua-musica-player")
-//    }
     fun notifyItemTransition(from:String) {
         Log.i("Player", "#NATIVE LOGS Notify ==> notifyItemTransition | FROM: $from")
         channelManager.notifyItemTransition("sua-musica-player")

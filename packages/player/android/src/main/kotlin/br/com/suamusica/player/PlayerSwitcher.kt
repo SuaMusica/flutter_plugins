@@ -100,15 +100,15 @@ class PlayerSwitcher(
             }
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
-               super.onIsPlayingChanged(isPlaying)
-                if(lastState != STATE_BUFFERING) {
+                super.onIsPlayingChanged(isPlaying)
+                if (lastState != STATE_BUFFERING) {
                     playerChangeNotifier?.notifyPlaying(isPlaying)
                 }
-                    if (isPlaying) {
-                        startTrackingProgress()
-                    } else {
-                        stopTrackingProgress()
-                    }
+                if (isPlaying) {
+                    startTrackingProgress()
+                } else {
+                    stopTrackingProgress()
+                }
             }
 
             override fun onMediaItemTransition(
@@ -116,26 +116,46 @@ class PlayerSwitcher(
                 reason: @Player.MediaItemTransitionReason Int
             ) {
                 super.onMediaItemTransition(mediaItem, reason)
-                val hasItems = (currentPlayer.mediaItemCount ?: 0) > 0
+//                oldTransition(mediaItem, reason)
+                newTransition(reason)
+            }
 
-                val shouldNotify = (reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED && hasItems) && !PlayerSingleton.shouldNotifyTransition
-                Log.d(TAG, "#NATIVE LOGS ==> onMediaItemTransition reason: $reason | shouldNotify: $shouldNotify")
+            fun newTransition(
+                reason: @Player.MediaItemTransitionReason Int
+            ) {
+                val shouldNotify =
+                    reason == Player.MEDIA_ITEM_TRANSITION_REASON_SEEK || reason == MEDIA_ITEM_TRANSITION_REASON_AUTO
 
-                if (shouldNotify) {
+                Log.d(
+                    TAG,
+                    "#NATIVE LOGS ==> onMediaItemTransition reason: $reason | shouldNotNotify: $shouldNotify"
+                )
+
+                if (!shouldNotify) {
                     return
                 }
-
-                if (hasItems) {
-                    playerChangeNotifier?.currentMediaIndex(
-                        currentIndex(),
-                        "onMediaItemTransition",
-                    )
-                }
+                
+                playerChangeNotifier?.currentMediaIndex(
+                    currentIndex(),
+                    "onMediaItemTransition",
+                )
 
                 mediaButtonEventHandler.buildIcons()
 
                 playerChangeNotifier?.notifyItemTransition("onMediaItemTransition  reason: $reason | shouldNotifyTransition: ${PlayerSingleton.shouldNotifyTransition}")
-//                PlayerSingleton.shouldNotifyTransition = false
+            }
+
+            fun oldTransition(
+                mediaItem: MediaItem?,
+                reason: @Player.MediaItemTransitionReason Int
+            ) {
+                super.onMediaItemTransition(mediaItem, reason)
+                Log.d(TAG, "#NATIVE LOGS ==> onMediaItemTransition reason: $reason")
+                mediaButtonEventHandler.buildIcons()
+                //TODO: verificar o motivo, tinha um, mas não lembro
+                if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED || !PlayerSingleton.shouldNotifyTransition) {
+                    return
+                }
             }
 
             var lastState = PlaybackStateCompat.STATE_NONE - 1
@@ -150,6 +170,7 @@ class PlayerSwitcher(
                 if (playbackState == STATE_ENDED) {
                     stopTrackingProgressAndPerformTask {}
                 }
+
                 Log.d(TAG, "##onPlaybackStateChanged $playbackState")
             }
 
@@ -191,14 +212,17 @@ class PlayerSwitcher(
     }
 
     fun currentIndex(): Int {
-        val position = if (currentPlayer.shuffleModeEnabled) {
-            PlayerSingleton.shuffledIndices.indexOf(
+        if ((currentPlayer.mediaItemCount) > 0) {
+            val position = if (currentPlayer.shuffleModeEnabled) {
+                PlayerSingleton.shuffledIndices.indexOf(
+                    currentPlayer.currentMediaItemIndex
+                )
+            } else {
                 currentPlayer.currentMediaItemIndex
-            )
-        } else {
-            currentPlayer.currentMediaItemIndex
+            }
+            return position
         }
-        return position
+        return 0
     }
 
     private fun stopTrackingProgress() {
