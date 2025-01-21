@@ -31,7 +31,6 @@ class Player {
         await enqueueAll(
           items,
           alreadyAddedToStorage: true,
-          shouldNotifyTransition: false,
         );
       },
     );
@@ -141,7 +140,6 @@ class Player {
     bool autoPlay = false,
     bool saveOnTop = false,
     bool alreadyAddedToStorage = false,
-    bool shouldNotifyTransition = false,
   }) async {
     if (!alreadyAddedToStorage) {
       _queue.addAll(items, saveOnTop: saveOnTop);
@@ -177,8 +175,6 @@ class Player {
             'playerId': playerId,
             'shallSendEvents': _shallSendEvents,
             'externalplayback': externalPlayback,
-            'shouldNotifyTransition':
-                batch.length > 1 ? false : shouldNotifyTransition,
             if (i == 0) ...{
               'cookie': cookie,
             },

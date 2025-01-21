@@ -133,13 +133,10 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
                 val listMedia: List<Map<String, String>> =
                     batch["batch"] as List<Map<String, String>>
                 val autoPlay: Boolean = (batch["autoPlay"] ?: false) as Boolean
-                val shouldNotifyTransition: Boolean =
-                    (batch["shouldNotifyTransition"] ?: false) as Boolean
                 val json = Gson().toJson(listMedia)
                 PlayerSingleton.mediaSessionConnection?.enqueue(
                     json,
                     autoPlay,
-                    shouldNotifyTransition,
                 )
             }
             "cast" -> {

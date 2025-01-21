@@ -130,11 +130,15 @@ class PlayerSwitcher(
                     TAG,
                     "#NATIVE LOGS ==> onMediaItemTransition reason: $reason | shouldNotNotify: $shouldNotify"
                 )
-
+                //We not notify when playFromQueue is loadOnly
                 if (!shouldNotify) {
                     return
                 }
-                
+
+                if(!PlayerSingleton.shouldNotifyTransition){
+                    return
+                }
+
                 playerChangeNotifier?.currentMediaIndex(
                     currentIndex(),
                     "onMediaItemTransition",
@@ -143,19 +147,7 @@ class PlayerSwitcher(
                 mediaButtonEventHandler.buildIcons()
 
                 playerChangeNotifier?.notifyItemTransition("onMediaItemTransition  reason: $reason | shouldNotifyTransition: ${PlayerSingleton.shouldNotifyTransition}")
-            }
-
-            fun oldTransition(
-                mediaItem: MediaItem?,
-                reason: @Player.MediaItemTransitionReason Int
-            ) {
-                super.onMediaItemTransition(mediaItem, reason)
-                Log.d(TAG, "#NATIVE LOGS ==> onMediaItemTransition reason: $reason")
-                mediaButtonEventHandler.buildIcons()
-                //TODO: verificar o motivo, tinha um, mas não lembro
-                if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED || !PlayerSingleton.shouldNotifyTransition) {
-                    return
-                }
+                PlayerSingleton.shouldNotifyTransition = true
             }
 
             var lastState = PlaybackStateCompat.STATE_NONE - 1

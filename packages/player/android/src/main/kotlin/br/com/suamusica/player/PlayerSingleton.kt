@@ -10,7 +10,7 @@ object PlayerSingleton {
     private const val TAG = "Player"
     var playerChangeNotifier: PlayerChangeNotifier? = null
 
-    var shouldNotifyTransition: Boolean = true
+    var shouldNotifyTransition: Boolean = false
 
 
     var shuffledIndices = mutableListOf<Int>()

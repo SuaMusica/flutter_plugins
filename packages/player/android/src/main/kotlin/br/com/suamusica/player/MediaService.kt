@@ -44,6 +44,7 @@ import br.com.suamusica.player.PlayerPlugin.Companion.SEEK_METHOD
 import br.com.suamusica.player.PlayerPlugin.Companion.cookie
 import br.com.suamusica.player.PlayerSingleton.playerChangeNotifier
 import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
+import com.google.android.gms.cast.MediaLoadRequestData
 import com.google.android.gms.cast.MediaQueueItem
 import com.google.android.gms.cast.framework.CastContext
 import com.google.common.collect.ImmutableList
@@ -62,7 +63,7 @@ import java.util.Collections
 const val NOW_PLAYING_NOTIFICATION: Int = 0xb339
 
 @UnstableApi
-class MediaService : MediaSessionService(){
+class MediaService : MediaSessionService() {
     private val TAG = "MediaService"
     private val userAgent =
         "SuaMusica/player (Linux; Android ${Build.VERSION.SDK_INT}; ${Build.BRAND}/${Build.MODEL})"
@@ -83,7 +84,6 @@ class MediaService : MediaSessionService(){
     private lateinit var dataSourceBitmapLoader: DataSourceBitmapLoader
     private lateinit var mediaButtonEventHandler: MediaButtonEventHandler
     private var shuffleOrder: DefaultShuffleOrder? = null
-    private var seekToLoadOnly: Boolean = false
     private var autoPlay: Boolean = true
     private val channel = Channel<List<Media>>(Channel.BUFFERED)
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -313,7 +313,7 @@ class MediaService : MediaSessionService(){
 
     fun toggleShuffle(positionsList: List<Map<String, Int>>) {
         //TODO: AJUSTAR COM CAST
-        if(smPlayer is CastPlayer){
+        if (smPlayer is CastPlayer) {
             player?.remoteMediaClient?.queueShuffle(JSONObject())
             val queue = player?.remoteMediaClient?.mediaQueue
             val items = queue?.getItemAtIndex(0)
@@ -359,10 +359,8 @@ class MediaService : MediaSessionService(){
     fun enqueue(
         medias: List<Media>,
         autoPlay: Boolean,
-        shouldNotifyTransition: Boolean,
     ) {
         this.autoPlay = autoPlay
-        PlayerSingleton.shouldNotifyTransition = shouldNotifyTransition
         if (smPlayer?.mediaItemCount == 0) {
             smPlayer?.playWhenReady = autoPlay
         }
@@ -381,9 +379,6 @@ class MediaService : MediaSessionService(){
             }
             player?.addMediaSources(mediaSources)
             smPlayer?.prepare()
-        }
-        if (autoPlay) {
-            playerChangeNotifier?.notifyItemTransition("#NATIVE LOGS MEDIA SERVICE ==> Enqueue - createMediaSource")
         }
     }
 
@@ -533,7 +528,7 @@ class MediaService : MediaSessionService(){
 
     fun play() {
 //        PlayerSingleton.performAndEnableTracking {
-        if (smPlayer?.playbackState == STATE_IDLE ) {
+        if (smPlayer?.playbackState == STATE_IDLE) {
             smPlayer?.prepare()
         }
         smPlayer?.play()
@@ -551,22 +546,16 @@ class MediaService : MediaSessionService(){
 
     fun playFromQueue(position: Int, timePosition: Long, loadOnly: Boolean = false) {
         smPlayer?.playWhenReady = !loadOnly
-
-        if (loadOnly) {
-            seekToLoadOnly = true
-        }
-
+        PlayerSingleton.shouldNotifyTransition = smPlayer?.playWhenReady ?: false
         smPlayer?.seekTo(
             if (smPlayer?.shuffleModeEnabled == true) PlayerSingleton.shuffledIndices[position] else position,
             timePosition,
         )
-
-        if(position > 0) {
-            playerChangeNotifier?.notifyPositionChange(timePosition, smPlayer?.duration ?: 0)
-        }
+        //  if (timePosition > 0) {
+        //     playerChangeNotifier?.notifyPositionChange(timePosition, smPlayer?.duration ?: 0)
+        // }
         if (!loadOnly) {
             smPlayer?.prepare()
-            playerChangeNotifier?.notifyItemTransition("playFromQueue")
         }
     }
 

@@ -67,11 +67,10 @@ class MediaSessionConnection(
         }
     }
 
-    fun enqueue(medias: String, autoPlay: Boolean,shouldNotifyTransition:Boolean) {
+    fun enqueue(medias: String, autoPlay: Boolean,) {
         val bundle = Bundle()
         bundle.putString("json", medias)
         bundle.putBoolean("autoPlay", autoPlay)
-        bundle.putBoolean("shouldNotifyTransition", shouldNotifyTransition)
         sendCommand(ENQUEUE_METHOD, bundle)
     }
 
@@ -87,7 +86,7 @@ class MediaSessionConnection(
         sendCommand("play", null)
     }
 
-    fun cast(id: String){
+    fun cast(id: String) {
         val bundle = Bundle()
         bundle.putString("cast_id", id)
         sendCommand("cast", bundle)
@@ -126,16 +125,17 @@ class MediaSessionConnection(
         bundle.putInt(ID_FAVORITE_ARGUMENT, idFavorite)
         sendCommand(UPDATE_FAVORITE, bundle)
     }
+
     fun updatePlayState(isPlaying: Boolean) {
         val bundle = Bundle()
         bundle.putBoolean(IS_PLAYING_ARGUMENT, isPlaying)
         sendCommand(UPDATE_IS_PLAYING, bundle)
     }
 
-    fun updateMediaUri(id:Int,newUri:String?){
+    fun updateMediaUri(id: Int, newUri: String?) {
         val bundle = Bundle()
-        bundle.putString(NEW_URI_ARGUMENT,newUri)
-        bundle.putInt(ID_URI_ARGUMENT,id)
+        bundle.putString(NEW_URI_ARGUMENT, newUri)
+        bundle.putInt(ID_URI_ARGUMENT, id)
         sendCommand(UPDATE_MEDIA_URI, bundle)
     }
 
