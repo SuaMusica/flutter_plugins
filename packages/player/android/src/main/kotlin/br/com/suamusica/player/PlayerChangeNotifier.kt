@@ -46,11 +46,11 @@ class PlayerChangeNotifier(private val channelManager: MethodChannelManager) {
         channelManager.notifyPositionChange("sua-musica-player", position, duration)
     }
     fun onRepeatChanged(repeatMode: Int) {
-        Log.i("Player", "Notifying Player onRepeatChanged: $repeatMode")
+        Log.i("Player", "#NATIVE LOGS Notify ==> onRepeatChanged: $repeatMode")
         channelManager.onRepeatChanged("sua-musica-player", repeatMode)
     }
     fun onShuffleModeEnabled(shuffleModeEnabled: Boolean) {
-        Log.i("Player", "Notifying Player onRepeatChanged: $shuffleModeEnabled")
+        Log.i("Player", "#NATIVE LOGS Notify ==> onRepeatChanged: $shuffleModeEnabled")
         channelManager.onShuffleModeEnabled("sua-musica-player", shuffleModeEnabled)
     }
 

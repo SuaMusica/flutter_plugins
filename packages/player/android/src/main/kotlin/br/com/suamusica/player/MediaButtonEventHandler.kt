@@ -5,6 +5,7 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
+import androidx.media3.cast.CastPlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.Player.COMMAND_GET_TIMELINE
@@ -12,6 +13,10 @@ import androidx.media3.common.Player.COMMAND_SEEK_TO_NEXT
 import androidx.media3.common.Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM
 import androidx.media3.common.Player.COMMAND_SEEK_TO_PREVIOUS
 import androidx.media3.common.Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM
+import androidx.media3.common.Player.REPEAT_MODE_ALL
+import androidx.media3.common.Player.REPEAT_MODE_OFF
+import androidx.media3.common.Player.REPEAT_MODE_ONE
+import androidx.media3.common.Player.STATE_IDLE
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.CommandButton
 import androidx.media3.session.LibraryResult
@@ -43,6 +48,7 @@ import br.com.suamusica.player.PlayerPlugin.Companion.TOGGLE_SHUFFLE
 import br.com.suamusica.player.PlayerPlugin.Companion.UPDATE_FAVORITE
 import br.com.suamusica.player.PlayerPlugin.Companion.UPDATE_IS_PLAYING
 import br.com.suamusica.player.PlayerPlugin.Companion.UPDATE_MEDIA_URI
+import br.com.suamusica.player.PlayerSingleton.playerChangeNotifier
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
@@ -96,6 +102,7 @@ class MediaButtonEventHandler(
                 add(SessionCommand(UPDATE_MEDIA_URI, session.token.extras))
                 add(SessionCommand(UPDATE_IS_PLAYING, session.token.extras))
                 add(SessionCommand("cast", session.token.extras))
+                add(SessionCommand("cast_next_media", session.token.extras))
             }.build()
 
         val playerCommands =
@@ -127,7 +134,6 @@ class MediaButtonEventHandler(
         }
 
         if (customCommand.customAction == "cast") {
-//            mediaService.cast(args.getString("cast_id"))
             mediaService.castWithCastPlayer(args.getString("cast_id"))
         }
 
@@ -136,10 +142,10 @@ class MediaButtonEventHandler(
         }
 
         if (customCommand.customAction == SEEK_METHOD) {
-            mediaService.seek(
-                args.getLong("position"),
-                args.getBoolean("playWhenReady"),
-            )
+            val position = args.getLong("position")
+            val playWhenReady = args.getBoolean("playWhenReady")
+            session.player.seekTo(position)
+            session.player.playWhenReady = playWhenReady
         }
         if (customCommand.customAction == FAVORITE) {
             val isFavorite = args.getBoolean(IS_FAVORITE_ARGUMENT)
@@ -170,9 +176,15 @@ class MediaButtonEventHandler(
 
             mediaService.reorder(oldIndex, newIndex, positionsList)
         }
+
         if (customCommand.customAction == "onTogglePlayPause") {
-            mediaService.togglePlayPause()
+            if (session.player.isPlaying) {
+                session.player.pause()
+            } else {
+                session.player.play()
+            }
         }
+
         if (customCommand.customAction == TOGGLE_SHUFFLE) {
 //            val list = args.getSerializable("list",ArrayList<Map<String, Int>>()::class.java)
             val json = args.getString(POSITIONS_LIST)
@@ -182,41 +194,91 @@ class MediaButtonEventHandler(
             mediaService.toggleShuffle(positionsList)
         }
         if (customCommand.customAction == REPEAT_MODE) {
-            mediaService.repeatMode()
+            session.player.let {
+                when (it.repeatMode) {
+                    REPEAT_MODE_OFF -> {
+                        it.repeatMode = REPEAT_MODE_ALL
+                    }
+
+                    REPEAT_MODE_ONE -> {
+                        it.repeatMode = REPEAT_MODE_OFF
+                    }
+
+                    else -> {
+                        it.repeatMode = REPEAT_MODE_ONE
+                    }
+                }
+            }
         }
         if (customCommand.customAction == DISABLE_REPEAT_MODE) {
             mediaService.disableRepeatMode()
         }
         if (customCommand.customAction == "stop") {
-            mediaService.stop()
+            session.player.stop()
         }
         if (customCommand.customAction == "play") {
-            mediaService.play()
+            if (session.player.playbackState == STATE_IDLE) {
+                session.player.prepare()
+            }
+            session.player.play()
         }
+
         if (customCommand.customAction == SET_REPEAT_MODE) {
             val mode = args.getString("mode")
-            mediaService.setRepeatMode(mode ?: "")
+            val convertedMode = when (mode) {
+                "off" -> REPEAT_MODE_OFF
+                "one" -> REPEAT_MODE_ONE
+                "all" -> REPEAT_MODE_ALL
+                else -> REPEAT_MODE_OFF
+            }
+            if (session.player is CastPlayer) {
+                playerChangeNotifier?.onRepeatChanged(convertedMode)
+            }else {
+                session.player.repeatMode = convertedMode
+            }
         }
+
+        if (customCommand.customAction == "cast_next_media") {
+            val json = args.getString("media")
+            val gson = GsonBuilder().create()
+            val mediaListType = object : TypeToken<Media>() {}.type
+            val media: Media = gson.fromJson(json, mediaListType)
+            session.player.setMediaItem(mediaService.createMediaItem(media))
+        }
+
         if (customCommand.customAction == PLAY_FROM_QUEUE_METHOD) {
-            mediaService.playFromQueue(
-                args.getInt(POSITION_ARGUMENT), args.getLong(TIME_POSITION_ARGUMENT),
-                args.getBoolean(
-                    LOAD_ONLY_ARGUMENT
-                ),
-            )
+            if (session.player is CastPlayer) {
+                PlayerSingleton.getMediaFromQueue(args.getInt(POSITION_ARGUMENT))
+            } else {
+                mediaService.playFromQueue(
+                    args.getInt(POSITION_ARGUMENT), args.getLong(TIME_POSITION_ARGUMENT),
+                    args.getBoolean(
+                        LOAD_ONLY_ARGUMENT
+                    ),
+                )
+            }
         }
         if (customCommand.customAction == "notification_previous" || customCommand.customAction == "previous") {
-            if (session.player.hasPreviousMediaItem()) {
-                session.player.seekToPreviousMediaItem()
+            if (session.player is CastPlayer) {
+                PlayerSingleton.getPreviousMedia()
             } else {
-                session.player.seekToPrevious()
+                if (session.player.hasPreviousMediaItem()) {
+                    session.player.seekToPreviousMediaItem()
+                } else {
+                    session.player.seekToPrevious()
+                }
             }
         }
         if (customCommand.customAction == "notification_next" || customCommand.customAction == "next") {
-            session.player.seekToNextMediaItem()
+            if (session.player is CastPlayer) {
+                PlayerSingleton.getNextMedia()
+            } else {
+                session.player.seekToNextMediaItem()
+            }
         }
+
         if (customCommand.customAction == "pause") {
-            mediaService.pause()
+            session.player.pause()
         }
 
         if (customCommand.customAction == UPDATE_MEDIA_URI) {
@@ -289,7 +351,7 @@ class MediaButtonEventHandler(
 
     fun buildIcons() {
         val isFavorite =
-            mediaService.player?.currentMediaItem?.mediaMetadata?.extras?.getBoolean(
+            mediaService.smPlayer?.currentMediaItem?.mediaMetadata?.extras?.getBoolean(
                 IS_FAVORITE_ARGUMENT
             ) ?: false
 

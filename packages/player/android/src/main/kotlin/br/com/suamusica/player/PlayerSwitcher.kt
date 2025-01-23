@@ -33,6 +33,9 @@ class PlayerSwitcher(
     private val TAG = "PlayerSwitcher"
     private var progressTracker: ProgressTracker? = null
     var remoteMediaClient: RemoteMediaClient? = null
+    private var playerState: PlayerState? = null
+
+    var oldPlayer: Player? = null
 
     init {
         playerEventListener?.let { currentPlayer.removeListener(it) }
@@ -43,13 +46,14 @@ class PlayerSwitcher(
         if (this.currentPlayer === newPlayer) {
             return
         }
+        oldPlayer = currentPlayer
         this.remoteMediaClient = remoteMediaClient
-        val playerState = savePlayerState()
+        playerState = savePlayerState()
         playerEventListener?.let { currentPlayer.removeListener(it) }
         stopAndClearCurrentPlayer()
         this.currentPlayer = newPlayer
         if (currentPlayer is CastPlayer) {
-            restorePlayerState(playerState)
+            restorePlayerState(playerState!!)
         }
         setupPlayerListener()
     }
@@ -130,12 +134,17 @@ class PlayerSwitcher(
                     TAG,
                     "#NATIVE LOGS ==> onMediaItemTransition reason: $reason | shouldNotNotify: $shouldNotify"
                 )
+
+                if (currentPlayer is CastPlayer && reason == MEDIA_ITEM_TRANSITION_REASON_AUTO) {
+                    PlayerSingleton.getNextMedia()
+                }
+
                 //We not notify when playFromQueue is loadOnly
                 if (!shouldNotify) {
                     return
                 }
 
-                if(!PlayerSingleton.shouldNotifyTransition){
+                if (!PlayerSingleton.shouldNotifyTransition) {
                     return
                 }
 
@@ -147,6 +156,7 @@ class PlayerSwitcher(
                 mediaButtonEventHandler.buildIcons()
 
                 playerChangeNotifier?.notifyItemTransition("onMediaItemTransition  reason: $reason | shouldNotifyTransition: ${PlayerSingleton.shouldNotifyTransition}")
+
                 PlayerSingleton.shouldNotifyTransition = true
             }
 
@@ -161,6 +171,11 @@ class PlayerSwitcher(
 
                 if (playbackState == STATE_ENDED) {
                     stopTrackingProgressAndPerformTask {}
+                }
+
+                if (playbackState == STATE_READY && currentPlayer is CastPlayer) {
+                    currentPlayer.repeatMode = REPEAT_MODE_ALL
+                    playerChangeNotifier?.onRepeatChanged(currentPlayer.repeatMode)
                 }
 
                 Log.d(TAG, "##onPlaybackStateChanged $playbackState")
@@ -222,17 +237,6 @@ class PlayerSwitcher(
         progressTracker = null
     }
 
-    fun customShuffleModeEnabled(shuffleModeEnabled: Boolean) {
-        when (currentPlayer) {
-            is ExoPlayer -> {
-                (currentPlayer as ExoPlayer).shuffleModeEnabled = shuffleModeEnabled
-            }
-
-            is CastPlayer -> {
-                currentPlayer.shuffleModeEnabled = shuffleModeEnabled
-            }
-        }
-    }
 
     fun setShuffleOrder(shuffleOrder: ShuffleOrder) {
         if (currentPlayer is ExoPlayer) {
@@ -264,7 +268,7 @@ class PlayerSwitcher(
 
     private fun notifyPositionChange() {
         val position = currentPlayer.currentPosition.coerceAtMost(currentPlayer.duration ?: 0L)
-        val duration = currentPlayer.duration ?: 0L
+        val duration = currentPlayer.duration
         playerChangeNotifier?.notifyPositionChange(position, duration)
     }
 }

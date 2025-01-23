@@ -1,7 +1,6 @@
 package br.com.suamusica.player
 
 import PlayerSwitcher
-import android.app.ActivityManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
@@ -17,8 +16,6 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player.REPEAT_MODE_ALL
 import androidx.media3.common.Player.REPEAT_MODE_OFF
-import androidx.media3.common.Player.REPEAT_MODE_ONE
-import androidx.media3.common.Player.STATE_IDLE
 import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.util.Util
@@ -40,11 +37,9 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import br.com.suamusica.player.PlayerPlugin.Companion.FALLBACK_URL_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.IS_FAVORITE_ARGUMENT
-import br.com.suamusica.player.PlayerPlugin.Companion.SEEK_METHOD
 import br.com.suamusica.player.PlayerPlugin.Companion.cookie
 import br.com.suamusica.player.PlayerSingleton.playerChangeNotifier
 import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
-import com.google.android.gms.cast.MediaLoadRequestData
 import com.google.android.gms.cast.MediaQueueItem
 import com.google.android.gms.cast.framework.CastContext
 import com.google.common.collect.ImmutableList
@@ -78,8 +73,10 @@ class MediaService : MediaSessionService() {
         .setUsage(C.USAGE_MEDIA)
         .build()
 
-    var player: PlayerSwitcher? = null
+    var playerSwitcher: PlayerSwitcher? = null
     var exoPlayer: ExoPlayer? = null
+
+    var castPlayer: CastPlayer? = null
 
     private lateinit var dataSourceBitmapLoader: DataSourceBitmapLoader
     private lateinit var mediaButtonEventHandler: MediaButtonEventHandler
@@ -92,7 +89,7 @@ class MediaService : MediaSessionService() {
     private var cast: CastManager? = null
     private var castContext: CastContext? = null
 
-    private val smPlayer get() = player?.wrappedPlayer
+    val smPlayer get() = exoPlayer
 
     override fun onCreate() {
         super.onCreate()
@@ -188,7 +185,7 @@ class MediaService : MediaSessionService() {
                 }
             })
         }
-        player = PlayerSwitcher(exoPlayer!!, mediaButtonEventHandler)
+        playerSwitcher = PlayerSwitcher(exoPlayer!!, mediaButtonEventHandler)
         castContext?.let {
             cast = CastManager(it, this)
         }
@@ -199,33 +196,38 @@ class MediaService : MediaSessionService() {
             cast?.disconnect()
             return
         }
-        val items = player?.getAllMediaItems()
-        cast?.connectToCast(castId!!)
-        var castPlayer: CastPlayer?
-        cast?.setOnConnectCallback {
-            val index = smPlayer?.currentMediaItemIndex ?: 0
-            val currentPosition: Long = smPlayer?.currentPosition ?: 0
-            castPlayer = CastPlayer(castContext!!, CustomMediaItemConverter())
-            mediaSession.player = castPlayer!!
-            player?.setCurrentPlayer(castPlayer!!,castContext?.sessionManager?.currentCastSession?.remoteMediaClient)
-            if (items != null) {
-                smPlayer?.setMediaItems(items, index, currentPosition)
+        val items = smPlayer?.getAllMediaItems()
+        if (!items.isNullOrEmpty()) {
+            cast?.connectToCast(castId!!)
+            cast?.setOnConnectCallback {
+                val index = smPlayer?.currentMediaItemIndex ?: 0
+                val currentPosition: Long = smPlayer?.currentPosition ?: 0
+                //TODO: verificar playback error do exoplayer ao conectar castPlayer
+                castPlayer = CastPlayer(castContext!!, CustomMediaItemConverter())
+                mediaSession.player = castPlayer!!
+                playerSwitcher?.setCurrentPlayer(
+                    castPlayer!!,
+                    castContext?.sessionManager?.currentCastSession?.remoteMediaClient
+                )
+                smPlayer?.setMediaItem(items[index])
+                smPlayer?.seekTo(currentPosition)
                 smPlayer?.prepare()
                 smPlayer?.play()
             }
-        }
 
-        cast?.setOnSessionEndedCallback {
-            val currentPosition = smPlayer?.currentPosition ?: 0L
-            val index = smPlayer?.currentMediaItemIndex ?: 0
-            exoPlayer?.let {
-                mediaSession.player = it
-                player?.setCurrentPlayer(it)
-                smPlayer?.prepare()
-                smPlayer?.seekTo(index, currentPosition)
+            cast?.setOnSessionEndedCallback {
+                val currentPosition = smPlayer?.currentPosition ?: 0L
+                val index = smPlayer?.currentMediaItemIndex ?: 0
+                exoPlayer?.let {
+                    mediaSession.player = it
+                    playerSwitcher?.setCurrentPlayer(it)
+                    smPlayer?.prepare()
+                    smPlayer?.seekTo(index, currentPosition)
+                }
             }
         }
     }
+
     //TODO: testar se vai dar o erro de startForeground no caso de audioAd
     fun removeNotification() {
         Log.d("Player", "removeNotification")
@@ -301,7 +303,7 @@ class MediaService : MediaSessionService() {
         val media = smPlayer?.getMediaItemAt(index)
         media?.associatedMedia?.let {
             smPlayer?.removeMediaItem(index)
-            player?.addMediaSource(
+            smPlayer?.addMediaSource(
                 index, prepare(
                     cookie,
                     it,
@@ -312,31 +314,26 @@ class MediaService : MediaSessionService() {
     }
 
     fun toggleShuffle(positionsList: List<Map<String, Int>>) {
-        //TODO: AJUSTAR COM CAST
-        if (smPlayer is CastPlayer) {
-            player?.remoteMediaClient?.queueShuffle(JSONObject())
-            val queue = player?.remoteMediaClient?.mediaQueue
-            val items = queue?.getItemAtIndex(0)
-            return
-        }
-        smPlayer?.shuffleModeEnabled = !(smPlayer?.shuffleModeEnabled ?: false)
-        smPlayer?.shuffleModeEnabled?.let {
-            if (it) {
-                PlayerSingleton.shuffledIndices.clear()
-                for (e in positionsList) {
-                    PlayerSingleton.shuffledIndices.add(e["originalPosition"] ?: 0)
+        if (mediaSession.player !is CastPlayer) {
+            smPlayer?.shuffleModeEnabled = !(smPlayer?.shuffleModeEnabled ?: false)
+            smPlayer?.shuffleModeEnabled?.let {
+                if (it) {
+                    PlayerSingleton.shuffledIndices.clear()
+                    for (e in positionsList) {
+                        PlayerSingleton.shuffledIndices.add(e["originalPosition"] ?: 0)
+                    }
+                    shuffleOrder = DefaultShuffleOrder(
+                        PlayerSingleton.shuffledIndices.toIntArray(),
+                        System.currentTimeMillis()
+                    )
+                    Log.d(
+                        TAG,
+                        "toggleShuffle - shuffledIndices: ${PlayerSingleton.shuffledIndices.size}"
+                    )
+                    smPlayer?.setShuffleOrder(shuffleOrder!!)
                 }
-                shuffleOrder = DefaultShuffleOrder(
-                    PlayerSingleton.shuffledIndices.toIntArray(),
-                    System.currentTimeMillis()
-                )
-                Log.d(
-                    TAG,
-                    "toggleShuffle - shuffledIndices: ${PlayerSingleton.shuffledIndices.size} - ${player?.mediaItemCount}"
-                )
-                player?.setShuffleOrder(shuffleOrder!!)
+                playerChangeNotifier?.onShuffleModeEnabled(it)
             }
-            playerChangeNotifier?.onShuffleModeEnabled(it)
         }
     }
 
@@ -366,7 +363,7 @@ class MediaService : MediaSessionService() {
         }
         Log.d(
             TAG,
-            "#NATIVE LOGS MEDIA SERVICE ==> enqueue  $autoPlay | mediaItemCount: ${player?.mediaItemCount}"
+            "#NATIVE LOGS MEDIA SERVICE ==> enqueue  $autoPlay | mediaItemCount: ${smPlayer?.mediaItemCount}"
         )
         addToQueue(medias)
     }
@@ -377,9 +374,20 @@ class MediaService : MediaSessionService() {
             for (i in medias.indices) {
                 mediaSources.add(prepare(cookie, medias[i], ""))
             }
-            player?.addMediaSources(mediaSources)
+            smPlayer?.addMediaSources(mediaSources)
             smPlayer?.prepare()
         }
+    }
+
+    fun createMediaItem(media: Media, uri: Uri? = null): MediaItem {
+        val metadata = buildMetaData(media)
+        return MediaItem.Builder()
+            .setMediaId(media.id.toString())
+            .setUri(uri ?: Uri.parse(media.url))
+            .setMediaMetadata(metadata)
+            .setMimeType("audio/mpeg")
+            .build()
+            .also { it.associatedMedia = media }
     }
 
     private fun prepare(cookie: String, media: Media, urlToPrepare: String): MediaSource {
@@ -389,21 +397,16 @@ class MediaService : MediaSessionService() {
         dataSourceFactory.setUserAgent(userAgent)
         dataSourceFactory.setAllowCrossProtocolRedirects(true)
         dataSourceFactory.setDefaultRequestProperties(mapOf("Cookie" to cookie))
-        val metadata = buildMetaData(media)
+
         val uri = if (urlToPrepare.isEmpty()) {
             val url = media.url
             if (url.startsWith("/")) Uri.fromFile(File(url)) else Uri.parse(url)
         } else {
             Uri.parse(urlToPrepare)
         }
-        val mediaItem = MediaItem.Builder()
-            .setMediaId(media.id.toString())
-            .setUri(uri)
-            .setMediaMetadata(metadata)
-            .setMediaId(media.id.toString())
-            .setMimeType("audio/mpeg")
-            .build()
-        mediaItem.associatedMedia = media
+
+        val mediaItem = createMediaItem(media, uri)
+
         return when (@C.ContentType val type = Util.inferContentType(uri)) {
             C.CONTENT_TYPE_HLS -> {
                 HlsMediaSource.Factory(dataSourceFactory)
@@ -434,30 +437,18 @@ class MediaService : MediaSessionService() {
         newIndex: Int,
         positionsList: List<Map<String, Int>>
     ) {
-        //TODO: Criei issue no media3 pq esta crashando no reorder do cast
-        if(smPlayer is CastPlayer){
-            val mediaItems = player?.remoteMediaClient?.mediaQueue
-            val mediaIds = mediaItems?.itemIds
-            val reorderedIds = mediaIds?.toMutableList()
-            if (reorderedIds != null) {
-                val item = reorderedIds.removeAt(oldIndex)
-                reorderedIds.add(newIndex, item)
+        if (mediaSession.player !is CastPlayer) {
+            if (smPlayer?.shuffleModeEnabled == true) {
+                val list = PlayerSingleton.shuffledIndices.ifEmpty {
+                    positionsList.map { it["originalPosition"] ?: 0 }.toMutableList()
+                }
+                Collections.swap(list, oldIndex, newIndex)
+                shuffleOrder =
+                    DefaultShuffleOrder(list.toIntArray(), System.currentTimeMillis())
+                smPlayer?.setShuffleOrder(shuffleOrder!!)
+            } else {
+                smPlayer?.moveMediaItem(oldIndex, newIndex)
             }
-
-            player?.remoteMediaClient?.queueReorderItems(reorderedIds?.toIntArray()!!, newIndex, JSONObject())
-            return
-        }
-
-        if (smPlayer?.shuffleModeEnabled == true) {
-            val list = PlayerSingleton.shuffledIndices.ifEmpty {
-                positionsList.map { it["originalPosition"] ?: 0 }.toMutableList()
-            }
-            Collections.swap(list, oldIndex, newIndex)
-            shuffleOrder =
-                DefaultShuffleOrder(list.toIntArray(), System.currentTimeMillis())
-            player?.setShuffleOrder(shuffleOrder!!)
-        } else {
-            smPlayer?.moveMediaItem(oldIndex, newIndex)
         }
     }
 
@@ -465,7 +456,7 @@ class MediaService : MediaSessionService() {
         val sortedIndexes = indexes.sortedDescending()
         if (sortedIndexes.isNotEmpty()) {
             sortedIndexes.forEach {
-                player?.removeMediaItem(it)
+                smPlayer?.removeMediaItem(it)
                 if (PlayerSingleton.shuffledIndices.isNotEmpty()) {
                     PlayerSingleton.shuffledIndices.removeAt(
                         PlayerSingleton.shuffledIndices.indexOf(
@@ -475,35 +466,17 @@ class MediaService : MediaSessionService() {
                 }
             }
         }
-        if (player?.shuffleModeEnabled == true) {
+        if (smPlayer?.shuffleModeEnabled == true) {
             shuffleOrder = DefaultShuffleOrder(
                 PlayerSingleton.shuffledIndices.toIntArray(),
                 System.currentTimeMillis()
             )
-            player?.setShuffleOrder(shuffleOrder!!)
+            smPlayer?.setShuffleOrder(shuffleOrder!!)
         }
     }
 
     fun disableRepeatMode() {
         smPlayer?.repeatMode = REPEAT_MODE_OFF
-    }
-
-    fun repeatMode() {
-        smPlayer?.let {
-            when (it.repeatMode) {
-                REPEAT_MODE_OFF -> {
-                    it.repeatMode = REPEAT_MODE_ALL
-                }
-
-                REPEAT_MODE_ONE -> {
-                    it.repeatMode = REPEAT_MODE_OFF
-                }
-
-                else -> {
-                    it.repeatMode = REPEAT_MODE_ONE
-                }
-            }
-        }
     }
 
     private fun buildMetaData(media: Media): MediaMetadata {
@@ -526,24 +499,6 @@ class MediaService : MediaSessionService() {
         return metadata
     }
 
-    fun play() {
-//        PlayerSingleton.performAndEnableTracking {
-        if (smPlayer?.playbackState == STATE_IDLE) {
-            smPlayer?.prepare()
-        }
-        smPlayer?.play()
-//        }
-    }
-
-    fun setRepeatMode(mode: String) {
-        smPlayer?.repeatMode = when (mode) {
-            "off" -> REPEAT_MODE_OFF
-            "one" -> REPEAT_MODE_ONE
-            "all" -> REPEAT_MODE_ALL
-            else -> REPEAT_MODE_OFF
-        }
-    }
-
     fun playFromQueue(position: Int, timePosition: Long, loadOnly: Boolean = false) {
         smPlayer?.playWhenReady = !loadOnly
         PlayerSingleton.shouldNotifyTransition = smPlayer?.playWhenReady ?: false
@@ -551,9 +506,7 @@ class MediaService : MediaSessionService() {
             if (smPlayer?.shuffleModeEnabled == true) PlayerSingleton.shuffledIndices[position] else position,
             timePosition,
         )
-        //  if (timePosition > 0) {
-        //     playerChangeNotifier?.notifyPositionChange(timePosition, smPlayer?.duration ?: 0)
-        // }
+
         if (!loadOnly) {
             smPlayer?.prepare()
         }
@@ -564,26 +517,9 @@ class MediaService : MediaSessionService() {
         smPlayer?.clearMediaItems()
     }
 
-
     fun seek(position: Long, playWhenReady: Boolean) {
         smPlayer?.seekTo(position)
         smPlayer?.playWhenReady = playWhenReady
-    }
-
-    fun pause() {
-        smPlayer?.pause()
-    }
-
-    fun stop() {
-        smPlayer?.stop()
-    }
-
-    fun togglePlayPause() {
-        if (smPlayer?.isPlaying == true) {
-            pause()
-        } else {
-            play()
-        }
     }
 
     private fun releaseAndPerformAndDisableTracking() {

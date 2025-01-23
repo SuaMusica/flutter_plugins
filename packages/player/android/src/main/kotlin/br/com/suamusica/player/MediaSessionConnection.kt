@@ -92,6 +92,12 @@ class MediaSessionConnection(
         sendCommand("cast", bundle)
     }
 
+    fun setCastMedia(media: String) {
+        val bundle = Bundle()
+        bundle.putString("media", media)
+        sendCommand("cast_next_media", bundle)
+    }
+
     fun setRepeatMode(mode: String) {
         val bundle = Bundle()
         bundle.putString("mode", mode)

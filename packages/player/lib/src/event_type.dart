@@ -39,6 +39,7 @@ enum EventType {
   STATE_ENDED,
   IDLE,
   STATE_READY,
+  CAST_NEXT_MEDIA,
 }
 
 enum PlayerErrorType {

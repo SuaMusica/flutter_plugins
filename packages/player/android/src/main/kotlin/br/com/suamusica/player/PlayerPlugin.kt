@@ -143,6 +143,12 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
                 val id = call.argument<String?>("castId") ?: ""
                 PlayerSingleton.mediaSessionConnection?.cast(id)
             }
+            "cast_next_media" -> {
+                val media: Map<String, Any> = call.arguments() ?: emptyMap()
+                val json = Gson().toJson(media)
+                Log.d(TAG,"NEXT MEDIA: $json")
+                PlayerSingleton.mediaSessionConnection?.setCastMedia(json)
+            }
             PLAY_METHOD -> {
                 PlayerSingleton.mediaSessionConnection?.play()
             }

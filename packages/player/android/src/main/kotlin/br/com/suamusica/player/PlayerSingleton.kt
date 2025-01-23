@@ -48,6 +48,23 @@ object PlayerSingleton {
         channel?.invokeMethod("commandCenter.onNext", emptyMap<String, String>())
     }
 
+    fun getNextMedia() {
+        channel?.invokeMethod("cast.nextMedia", emptyMap<String, String>())
+        Log.d(TAG, "#NATIVE LOGS Notify ==> getNextMedia")
+    }
+
+    fun getPreviousMedia() {
+        channel?.invokeMethod("cast.previousMedia", emptyMap<String, String>())
+        Log.d(TAG, "#NATIVE LOGS Notify ==> getPreviousMedia")
+    }
+
+    fun getMediaFromQueue(index: Int) {
+       val args = mutableMapOf<String, Any>()
+        args["index"] = index
+        channel?.invokeMethod("cast.mediaFromQueue", args)
+        Log.d(TAG, "#NATIVE LOGS Notify ==> getMediaFromQueue | $index")
+    }
+
     fun stop() {
         mediaSessionConnection?.stop()
     }

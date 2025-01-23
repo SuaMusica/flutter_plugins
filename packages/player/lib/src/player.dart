@@ -680,15 +680,35 @@ class Player {
           favorite ? EventType.FAVORITE_MUSIC : EventType.UNFAVORITE_MUSIC,
           "",
         );
-
+        break;
+      case 'cast.mediaFromQueue':
+        final index = callArgs['index'];
+        _channel.invokeMethod('cast_next_media', player.items[index].toJson());
+        _updateQueueIndexAndNotify(
+          player: player,
+          index: index,
+        );
+        break;
+      case 'cast.nextMedia':
+      case 'cast.previousMedia':
+        final media = call.method == 'cast.nextMedia'
+            ? _queue.possibleNext(_repeatMode)
+            : _queue.possiblePrevious();
+        if (media != null) {
+          _channel.invokeMethod(
+            'cast_next_media',
+            media.toJson(),
+          );
+          _updateQueueIndexAndNotify(
+            player: player,
+            index: player.items.indexOf(media),
+          );
+        }
         break;
       case 'SET_CURRENT_MEDIA_INDEX':
-        _queue.setIndex = callArgs['CURRENT_MEDIA_INDEX'];
-        _queue.updateIsarIndex(currentMedia!.id, _queue.index);
-        _notifyPlayerStateChangeEvent(
-          player,
-          EventType.SET_CURRENT_MEDIA_INDEX,
-          "",
+        _updateQueueIndexAndNotify(
+          player: player,
+          index: callArgs['CURRENT_MEDIA_INDEX'],
         );
         break;
       case 'REPEAT_CHANGED':
@@ -865,5 +885,18 @@ class Player {
       futures.add(_eventStreamController.close());
     }
     await Future.wait(futures);
+  }
+
+  static void _updateQueueIndexAndNotify({
+    required Player player,
+    required index,
+  }) {
+    _queue.setIndex = index;
+    _queue.updateIsarIndex(player.currentMedia!.id, _queue.index);
+    _notifyPlayerStateChangeEvent(
+      player,
+      EventType.SET_CURRENT_MEDIA_INDEX,
+      "",
+    );
   }
 }
