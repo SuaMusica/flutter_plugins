@@ -314,26 +314,28 @@ class MediaService : MediaSessionService() {
     }
 
     fun toggleShuffle(positionsList: List<Map<String, Int>>) {
-        if (mediaSession.player !is CastPlayer) {
-            smPlayer?.shuffleModeEnabled = !(smPlayer?.shuffleModeEnabled ?: false)
-            smPlayer?.shuffleModeEnabled?.let {
-                if (it) {
-                    PlayerSingleton.shuffledIndices.clear()
-                    for (e in positionsList) {
-                        PlayerSingleton.shuffledIndices.add(e["originalPosition"] ?: 0)
-                    }
-                    shuffleOrder = DefaultShuffleOrder(
-                        PlayerSingleton.shuffledIndices.toIntArray(),
-                        System.currentTimeMillis()
-                    )
-                    Log.d(
-                        TAG,
-                        "toggleShuffle - shuffledIndices: ${PlayerSingleton.shuffledIndices.size}"
-                    )
-                    smPlayer?.setShuffleOrder(shuffleOrder!!)
+        smPlayer?.shuffleModeEnabled = !(smPlayer?.shuffleModeEnabled ?: false)
+        smPlayer?.shuffleModeEnabled?.let {
+            if (it) {
+                PlayerSingleton.shuffledIndices.clear()
+                for (e in positionsList) {
+                    PlayerSingleton.shuffledIndices.add(e["originalPosition"] ?: 0)
                 }
-                playerChangeNotifier?.onShuffleModeEnabled(it)
+                shuffleOrder = DefaultShuffleOrder(
+                    PlayerSingleton.shuffledIndices.toIntArray(),
+                    System.currentTimeMillis()
+                )
+                Log.d(
+                    TAG,
+                    "toggleShuffle - shuffledIndices: ${PlayerSingleton.shuffledIndices.size}"
+                )
+                if(mediaSession.player !is CastPlayer){
+                    shuffleOrder?.let { shuffleOrder ->
+                        smPlayer?.setShuffleOrder(shuffleOrder)
+                    }
+                }
             }
+            playerChangeNotifier?.onShuffleModeEnabled(it)
         }
     }
 
