@@ -31,7 +31,6 @@ class Player {
         await enqueueAll(
           items,
           alreadyAddedToStorage: true,
-          shouldNotifyTransition: false,
         );
       },
     );
@@ -131,12 +130,16 @@ class Player {
     return Ok;
   }
 
+  Future<int> cast(String castId) async {
+    await _channel.invokeMethod('cast', {'castId': castId});
+    return Ok;
+  }
+
   Future<int> enqueueAll(
     List<Media> items, {
     bool autoPlay = false,
     bool saveOnTop = false,
     bool alreadyAddedToStorage = false,
-    bool shouldNotifyTransition = true,
   }) async {
     if (!alreadyAddedToStorage) {
       _queue.addAll(items, saveOnTop: saveOnTop);
@@ -172,8 +175,6 @@ class Player {
             'playerId': playerId,
             'shallSendEvents': _shallSendEvents,
             'externalplayback': externalPlayback,
-            'shouldNotifyTransition':
-                batch.length > 1 ? false : shouldNotifyTransition,
             if (i == 0) ...{
               'cookie': cookie,
             },
@@ -265,13 +266,8 @@ class Player {
 
   int get currentIndex => _queue.index;
 
-  Future<int> play({bool shouldPrepare = false}) async {
-    await _invokeMethod(
-      'play',
-      {
-        'shouldPrepare': shouldPrepare,
-      },
-    );
+  Future<int> play() async {
+    await _invokeMethod('play');
     return Ok;
   }
 
@@ -379,11 +375,11 @@ class Player {
     }
   }
 
-  Future<int> updateNotification({
+  Future<int> updateFavorite({
     required bool isFavorite,
     required int id,
   }) async {
-    return _channel.invokeMethod('update_notification', {
+    return _channel.invokeMethod('update_favorite', {
       'isFavorite': isFavorite,
       'idFavorite': id,
     }).then((result) => result);
@@ -397,16 +393,15 @@ class Player {
   void addUsingPlayer(Event event) => _addUsingPlayer(player, event);
 
   Future<int> stop() async {
-    // _notifyPlayerStatusChangeEvent(EventType.STOP_REQUESTED);
-    // final int result = await _invokeMethod('stop');
+    _notifyPlayerStatusChangeEvent(EventType.STOP_REQUESTED);
+    final int result = await _invokeMethod('stop');
 
-    // if (result == Ok) {
-    //   state = PlayerState.STOPPED;
-    //   _notifyPlayerStatusChangeEvent(EventType.STOPPED);
-    // }
+    if (result == Ok) {
+      state = PlayerState.STOPPED;
+      _notifyPlayerStatusChangeEvent(EventType.STOPPED);
+    }
 
-    // return result;
-    return Ok;
+    return result;
   }
 
   Future<int> release() async {
@@ -432,9 +427,15 @@ class Player {
         .invokeMethod('toggle_shuffle', {'positionsList': getPositionsList()});
   }
 
-  Future<int> seek(Duration position) {
+  Future<int> seek(
+    Duration position, {
+    bool playWhenReady = true,
+  }) {
     _notifyPlayerStateChangeEvent(this, EventType.SEEK_START, "");
-    return _invokeMethod('seek', {'position': position.inMilliseconds});
+    return _invokeMethod('seek', {
+      'position': position.inMilliseconds,
+      'playWhenReady': playWhenReady,
+    });
   }
 
   Future<int> setVolume(double volume) {
@@ -457,10 +458,15 @@ class Player {
     }
   }
 
+  static Future<void> _handleOnComplete(Player player) async {
+    player.state = PlayerState.COMPLETED;
+    _notifyPlayerStateChangeEvent(player, EventType.FINISHED_PLAYING, "");
+  }
+
   static Future<void> _doHandlePlatformCall(MethodCall call) async {
     final currentMedia = _queue.current;
     final currentIndex = _queue.index;
-    print('call.arguments: ${call.arguments}');
+    // print('call.arguments: ${call.arguments}');
     final Map<dynamic, dynamic> callArgs = call.arguments as Map;
     if (call.method != 'audio.onCurrentPosition') {
       _log('_platformCallHandler call ${call.method} $callArgs');
@@ -497,6 +503,12 @@ class Player {
         player.state = PlayerState.values[state];
         switch (player.state) {
           case PlayerState.STATE_READY:
+            _notifyPlayerStateChangeEvent(
+              player,
+              EventType.STATE_READY,
+              error,
+            );
+            break;
           case PlayerState.IDLE:
             _notifyPlayerStateChangeEvent(
               player,
@@ -558,7 +570,7 @@ class Player {
             break;
 
           case PlayerState.COMPLETED:
-            // _handleOnComplete(player);
+            _handleOnComplete(player);
             break;
 
           case PlayerState.STATE_ENDED:
@@ -668,15 +680,35 @@ class Player {
           favorite ? EventType.FAVORITE_MUSIC : EventType.UNFAVORITE_MUSIC,
           "",
         );
-
+        break;
+      case 'cast.mediaFromQueue':
+        final index = callArgs['index'];
+        _channel.invokeMethod('cast_next_media', player.items[index].toJson());
+        _updateQueueIndexAndNotify(
+          player: player,
+          index: index,
+        );
+        break;
+      case 'cast.nextMedia':
+      case 'cast.previousMedia':
+        final media = call.method == 'cast.nextMedia'
+            ? _queue.possibleNext(_repeatMode)
+            : _queue.possiblePrevious();
+        if (media != null) {
+          _channel.invokeMethod(
+            'cast_next_media',
+            media.toJson(),
+          );
+          _updateQueueIndexAndNotify(
+            player: player,
+            index: player.items.indexOf(media),
+          );
+        }
         break;
       case 'SET_CURRENT_MEDIA_INDEX':
-        _queue.setIndex = callArgs['CURRENT_MEDIA_INDEX'];
-        _queue.updateIsarIndex(currentMedia!.id, _queue.index);
-        _notifyPlayerStateChangeEvent(
-          player,
-          EventType.SET_CURRENT_MEDIA_INDEX,
-          "",
+        _updateQueueIndexAndNotify(
+          player: player,
+          index: callArgs['CURRENT_MEDIA_INDEX'],
         );
         break;
       case 'REPEAT_CHANGED':
@@ -838,7 +870,7 @@ class Player {
 
   static void _addUsingPlayer(Player player, Event event) {
     if (event.type != EventType.POSITION_CHANGE) {
-      debugPrint("_platformCallHandler _addUsingPlayer $event");
+      debugPrint("_platformCallHandler _addUsingPlayer ${event.type}");
     }
     if (!player._eventStreamController.isClosed &&
         (player._shallSendEvents ||
@@ -853,5 +885,18 @@ class Player {
       futures.add(_eventStreamController.close());
     }
     await Future.wait(futures);
+  }
+
+  static void _updateQueueIndexAndNotify({
+    required Player player,
+    required index,
+  }) {
+    _queue.setIndex = index;
+    _queue.updateIsarIndex(player.currentMedia!.id, _queue.index);
+    _notifyPlayerStateChangeEvent(
+      player,
+      EventType.SET_CURRENT_MEDIA_INDEX,
+      "",
+    );
   }
 }

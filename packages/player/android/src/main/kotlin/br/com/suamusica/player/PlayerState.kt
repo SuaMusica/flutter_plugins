@@ -12,4 +12,5 @@ enum class PlayerState {
     BUFFER_EMPTY,
     ITEM_TRANSITION,
     STATE_READY,
+    STATE_ENDED,
 }

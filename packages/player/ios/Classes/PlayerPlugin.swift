@@ -28,10 +28,9 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
                let listMedia = batch["batch"] as? [[String: Any]] {
                 let autoPlay = batch["autoPlay"] as? Bool ?? false
                 let cookie = batch["cookie"] as? String ?? ""
-                let shouldNotifyTransition = batch["shouldNotifyTransition"] as? Bool ?? false
                 if let mediaList = convertToMedia(mediaArray: listMedia) {
                     MessageBuffer.shared.send(mediaList)
-                    smPlayer?.enqueue(medias: mediaList, autoPlay: autoPlay, cookie: cookie, shouldNotifyTransition: shouldNotifyTransition)
+                    smPlayer?.enqueue(medias: mediaList, autoPlay: autoPlay, cookie: cookie)
                 }
             }
             result(NSNumber(value: true))
@@ -150,6 +149,7 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
         _ = AudioSessionManager.inactivateSession()
         smPlayer?.clearNowPlayingInfo()
         smPlayer?.removeAll()
+        NotificationCenter.default.removeObserver(self, name: AVAudioSession.interruptionNotification, object: nil)
     }
     
 }

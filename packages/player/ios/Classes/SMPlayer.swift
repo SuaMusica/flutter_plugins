@@ -17,9 +17,8 @@ public class SMPlayer : NSObject  {
     private var isShuffleModeEnabled: Bool = false
     var shuffledQueue: [AVPlayerItem] = []
     private var listeners: SMPlayerListeners? = nil
-    private var seekToLoadOnly: Bool = false
     // Transition Control
-    private var shouldNotifyTransition: Bool = false
+    private var shouldNotifyTransition: Bool = true
     var areNotificationCommandsEnabled: Bool = true
     
     var fullQueue: [AVPlayerItem] {
@@ -38,7 +37,13 @@ public class SMPlayer : NSObject  {
         super.init()
         self.methodChannelManager = methodChannelManager
         listeners = SMPlayerListeners(smPlayer:smPlayer,methodChannelManager:methodChannelManager)
-        listeners?.addPlayerObservers()
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleInterruption(_:)),
+            name: AVAudioSession.interruptionNotification,
+            object: nil
+        )
     
         listeners?.onMediaChanged = { [self] in
             if(self.smPlayer.items().count > 0){
@@ -47,16 +52,33 @@ public class SMPlayer : NSObject  {
                 }
                 shouldNotifyTransition = true
                 self.updateEndPlaybackObserver()
-                seekToLoadOnly = !seekToLoadOnly
                 self.listeners?.addItemsObservers()
-                if(seekToLoadOnly){
-                    seekToLoadOnly = false
                     methodChannelManager?.currentMediaIndex(index: self.currentIndex)
-                }             
             }
         }
         setupNowPlayingInfoCenter()
         _ = AudioSessionManager.activeSession()
+    }
+
+    @objc private func handleInterruption(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeValue) else {
+            return
+        }
+        switch type {
+        case .began:
+            pause()
+        case .ended:
+            if let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt {
+                let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
+                if options.contains(.shouldResume) {
+                    play()
+                }
+            }
+        @unknown default:
+            break
+        }
     }
     
     func pause() {
@@ -111,6 +133,7 @@ public class SMPlayer : NSObject  {
         smPlayer.pause()
         smPlayer.replaceCurrentItem(with: nil)
         clearNowPlayingInfo()
+        methodChannelManager?.notifyPlayerStateChange(state: PlayerState.idle)
     }
     
     func clearNowPlayingInfo() {
@@ -118,10 +141,9 @@ public class SMPlayer : NSObject  {
         removeNotification()
     }
     
-    func enqueue(medias: [PlaylistItem], autoPlay: Bool, cookie: String, shouldNotifyTransition: Bool) {
+    func enqueue(medias: [PlaylistItem], autoPlay: Bool, cookie: String) {
         var playerItem: AVPlayerItem?
         guard let message = MessageBuffer.shared.receive() else { return }
-        self.shouldNotifyTransition = shouldNotifyTransition
         if(!cookie.isEmpty){
             self.cookie = cookie
         }
@@ -144,11 +166,8 @@ public class SMPlayer : NSObject  {
             self.setNowPlaying()
             self.enableCommands()
         }
-        print("#ENQUEUE: shouldNotifyTransition: \(shouldNotifyTransition)")
-        if(shouldNotifyTransition){
-            methodChannelManager?.notifyPlayerStateChange(state: PlayerState.itemTransition)
-        }
         self.enableCommands()
+        listeners?.addPlayerObservers()
     }
     
     func removeByPosition(indexes: [Int]) {
@@ -355,11 +374,6 @@ public class SMPlayer : NSObject  {
     }
 
     func playFromQueue(position: Int, timePosition: Int = 0, loadOnly: Bool = false) {
-        if (loadOnly) {
-            seekToLoadOnly = true
-            listeners?.mediaChange?.invalidate()
-        }
-        listeners?.removeItemObservers()
         distributeItemsInRightQueue(currentQueue: fullQueue, keepFirst: false, positionArg: position, completionHandler: {
             print("#NATIVE LOGS ==> completionHandler")
             self.methodChannelManager?.currentMediaIndex(index: self.currentIndex)
@@ -369,6 +383,7 @@ public class SMPlayer : NSObject  {
         })
         if(loadOnly){
             pause()
+            shouldNotifyTransition = false
         }else{
             play()
         }

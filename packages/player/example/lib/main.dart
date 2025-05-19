@@ -10,20 +10,10 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Player example app'),
-        ),
-        body: Material(
-          child: SMPlayer(),
-        ),
+      home: Material(
+        child: SMPlayer(),
       ),
     );
   }

@@ -18,6 +18,6 @@ enum PlayerState: Int {
     case seekEnd
     case bufferEmpty
     case itemTransition
-    case stateEnded
     case stateReady
+    case stateEnded
 }

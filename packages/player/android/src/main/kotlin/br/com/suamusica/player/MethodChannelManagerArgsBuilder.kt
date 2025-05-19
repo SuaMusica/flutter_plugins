@@ -1,7 +1,5 @@
 package br.com.suamusica.player
 
-import com.google.gson.Gson
-
 class MethodChannelManagerArgsBuilder {
 
     private val args = mutableMapOf<String, Any>()

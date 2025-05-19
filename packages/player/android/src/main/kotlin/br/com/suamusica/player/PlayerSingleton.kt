@@ -7,9 +7,13 @@ import io.flutter.plugin.common.MethodChannel
 object PlayerSingleton {
     var channel: MethodChannel? = null
     var mediaSessionConnection: MediaSessionConnection? = null
-    var externalPlayback: Boolean? = false
     private const val TAG = "Player"
     var playerChangeNotifier: PlayerChangeNotifier? = null
+
+    var shouldNotifyTransition: Boolean = false
+
+
+    var shuffledIndices = mutableListOf<Int>()
 
     fun setChannel(c: MethodChannel, context: Context) {
         channel = c
@@ -21,28 +25,19 @@ object PlayerSingleton {
     }
 
     fun play() {
-        if (externalPlayback!!) {
-            channel?.invokeMethod("externalPlayback.play", emptyMap<String, String>())
-        } else {
+
             mediaSessionConnection?.play()
             channel?.invokeMethod("commandCenter.onPlay", emptyMap<String, String>())
-        }
     }
 
     fun togglePlayPause(){
         mediaSessionConnection?.togglePlayPause()
         channel?.invokeMethod("commandCenter.onTogglePlayPause", emptyMap<String, String>())
     }
-//    fun adsPlaying(){
-//        mediaSessionConnection?.adsPlaying()
-//    }
+
     fun pause() {
-        if (externalPlayback!!) {
-            channel?.invokeMethod("externalPlayback.pause", emptyMap<String, String>())
-        } else {
             mediaSessionConnection?.pause()
             channel?.invokeMethod("commandCenter.onPause", emptyMap<String, String>())
-        }
     }
 
     fun previous() {
@@ -51,6 +46,23 @@ object PlayerSingleton {
 
     fun next() {
         channel?.invokeMethod("commandCenter.onNext", emptyMap<String, String>())
+    }
+
+    fun getNextMedia() {
+        channel?.invokeMethod("cast.nextMedia", emptyMap<String, String>())
+        Log.d(TAG, "#NATIVE LOGS Notify ==> getNextMedia")
+    }
+
+    fun getPreviousMedia() {
+        channel?.invokeMethod("cast.previousMedia", emptyMap<String, String>())
+        Log.d(TAG, "#NATIVE LOGS Notify ==> getPreviousMedia")
+    }
+
+    fun getMediaFromQueue(index: Int) {
+       val args = mutableMapOf<String, Any>()
+        args["index"] = index
+        channel?.invokeMethod("cast.mediaFromQueue", args)
+        Log.d(TAG, "#NATIVE LOGS Notify ==> getMediaFromQueue | $index")
     }
 
     fun stop() {

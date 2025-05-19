@@ -9,6 +9,6 @@ enum PlayerState {
   SEEK_END,
   BUFFER_EMPTY,
   ITEM_TRANSITION,
-  STATE_ENDED,
   STATE_READY,
+  STATE_ENDED,
 }
