@@ -132,26 +132,23 @@ class PlayerSwitcher(
 
                 Log.d(
                     TAG,
-                    "#NATIVE LOGS ==> onMediaItemTransition reason: $reason | shouldNotNotify: $shouldNotify"
+                    "#NATIVE LOGS ==> onMediaItemTransition reason: $reason | shouldNotNotify: $shouldNotify | shouldNotifyTransition ${PlayerSingleton.shouldNotifyTransition}"
                 )
 
                 if (currentPlayer is CastPlayer && reason == MEDIA_ITEM_TRANSITION_REASON_AUTO) {
                     PlayerSingleton.getNextMedia()
                 }
 
-                //We not notify when playFromQueue is loadOnly
-                if (!shouldNotify) {
-                    return
-                }
-
-                if (!PlayerSingleton.shouldNotifyTransition) {
-                    return
-                }
-
                 playerChangeNotifier?.currentMediaIndex(
                     currentIndex(),
                     "onMediaItemTransition",
                 )
+
+                //We not notify when playFromQueue is loadOnly
+                if (!PlayerSingleton.shouldNotifyTransition) {
+                    return
+                }
+
 
                 mediaButtonEventHandler.buildIcons()
 
@@ -229,7 +226,7 @@ class PlayerSwitcher(
             }
             return position
         }
-        return 0
+        return -1
     }
 
     private fun stopTrackingProgress() {

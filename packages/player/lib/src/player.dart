@@ -870,7 +870,7 @@ class Player {
 
   static void _addUsingPlayer(Player player, Event event) {
     if (event.type != EventType.POSITION_CHANGE) {
-      debugPrint("_platformCallHandler _addUsingPlayer $event");
+      debugPrint("_platformCallHandler _addUsingPlayer ${event.type}");
     }
     if (!player._eventStreamController.isClosed &&
         (player._shallSendEvents ||

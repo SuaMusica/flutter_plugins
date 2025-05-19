@@ -22,29 +22,46 @@ public class SMPlayerListeners : NSObject {
     private var notPlayingReason: NSKeyValueObservation?
     private var playback: NSKeyValueObservation?
     
+    private var lastState = PlayerState.idle
+    
     
     func addItemsObservers() {
         removeItemObservers()
         guard let currentItem = smPlayer.currentItem else { return }
         statusChange = currentItem.observe(\.status, options: [.new, .old]) { (playerItem, change) in
-            if playerItem.status == .failed {
-               if let error = playerItem.error {
+            switch playerItem.status {
+            case .failed:
+                if let error = playerItem.error {
                     print("#NATIVE LOGS ==> ERROR: \(String(describing: playerItem.error))")
                     self.methodChannelManager?.notifyError(error: "UNKNOW ERROR")
                 }
+            case .readyToPlay:
+                self.notifyPlayerStateChange(state: PlayerState.stateReady)
+            case .unknown:
+                break
+            @unknown default:
+                break
             }
         }
+        
 
         loading = currentItem.observe(\.isPlaybackBufferEmpty, options: [.new, .old]) { [weak self] (new, old) in
             guard let self = self else { return }
             print("#NATIVE LOGS ==> Listeners - observer - loading")
-            self.methodChannelManager?.notifyPlayerStateChange(state: PlayerState.buffering)
+            notifyPlayerStateChange(state: PlayerState.buffering)
         }
         
         loaded = currentItem.observe(\.isPlaybackLikelyToKeepUp, options: [.new]) { (player, _) in
             print("#NATIVE LOGS ==> Listeners - observer - loaded")
         }
     }
+    
+    func notifyPlayerStateChange(state: PlayerState){
+        if(lastState != state){
+            self.methodChannelManager?.notifyPlayerStateChange(state: state)
+            lastState = state
+        }
+     }
     
 
     func addMediaChangeObserver(){
@@ -92,13 +109,13 @@ public class SMPlayerListeners : NSObject {
             guard let self = self else { return }
             switch player.timeControlStatus {
             case .playing:
-                self.methodChannelManager?.notifyPlayerStateChange(state: PlayerState.playing)
+                notifyPlayerStateChange(state: PlayerState.playing)
                 print("#NATIVE LOGS ==> Listeners - Playing")
             case .paused:
-                self.methodChannelManager?.notifyPlayerStateChange(state: PlayerState.paused)
+                notifyPlayerStateChange(state: PlayerState.paused)
                 print("#NATIVE LOGS ==> Listeners - Paused")
             case .waitingToPlayAtSpecifiedRate:
-                self.methodChannelManager?.notifyPlayerStateChange(state: PlayerState.buffering)
+                notifyPlayerStateChange(state: PlayerState.buffering)
                 print("#NATIVE LOGS ==> Listeners - Buffering")
             @unknown default:
                 break
