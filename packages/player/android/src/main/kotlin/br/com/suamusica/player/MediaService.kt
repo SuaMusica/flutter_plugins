@@ -435,15 +435,24 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                     onGoing,
                     isPlayingExternal,
                     media.isFavorite,
-                    player?.duration, bitmap
+                    player?.duration,
+                    bitmap
                 )
-                notification?.let {
-                    notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
+                notification?.let { n->
+                    notificationManager?.notify(NOW_PLAYING_NOTIFICATION, n)
+                    rebuildNotificationAndroid15Plus()
                 }
             }
         }
     }
-
+    private fun rebuildNotificationAndroid15Plus(){
+        //Gambiarra on Android15+ to force rebuild notification.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            player?.currentPosition?.let { c ->
+                player?.seekTo(c)
+            }
+        }
+    }
     fun removeNotification() {
         removeNowPlayingNotification();
     }
