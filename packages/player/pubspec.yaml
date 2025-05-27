@@ -19,7 +19,6 @@ dependencies:
   file_picker:
     git:
       url: https://github.com/SuaMusica/flutter_file_picker.git
-      ref: 528cd01a317b45305d293c03e855ec7255c3ab59
   smaws:
     git:
       url: https://github.com/SuaMusica/flutter_plugins.git
