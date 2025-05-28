@@ -53,28 +53,28 @@ class Media {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'ownerId': ownerId,
-        'albumId': albumId,
-        'albumTitle': albumTitle,
-        'author': author,
-        'url': url,
-        'is_local': isLocal,
-        'cover_url': coverUrl,
-        'bigCover': bigCoverUrl,
-        'is_verified': isVerified,
-        'shared_url': shareUrl,
-        'playlist_id': playlistId,
-        'fallbackUrl': fallbackUrl,
-        'is_spot': isSpot,
-        'isFavorite': isFavorite,
-        'indexInPlaylist': indexInPlaylist,
-        'catid': categoryId,
-        'playlistTitle': playlistTitle,
-        'playlistCoverUrl': playlistCoverUrl,
-        'playlistOwnerId': playlistOwnerId,
-      };
+    'id': id,
+    'name': name,
+    'ownerId': ownerId,
+    'albumId': albumId,
+    'albumTitle': albumTitle,
+    'author': author,
+    'url': url,
+    'is_local': isLocal,
+    'cover_url': coverUrl,
+    'bigCover': bigCoverUrl,
+    'is_verified': isVerified,
+    'shared_url': shareUrl,
+    'playlist_id': playlistId,
+    'fallbackUrl': fallbackUrl,
+    'is_spot': isSpot,
+    'isFavorite': isFavorite,
+    'indexInPlaylist': indexInPlaylist,
+    'catid': categoryId,
+    'playlistTitle': playlistTitle,
+    'playlistCoverUrl': playlistCoverUrl,
+    'playlistOwnerId': playlistOwnerId,
+  };
 
   @override
   String toString() => jsonEncode(toJson());
@@ -102,21 +102,21 @@ class Media {
 
   @override
   int get hashCode => Object.hashAll([
-        id,
-        name,
-        albumId,
-        albumTitle,
-        ownerId,
-        author,
-        url,
-        isLocal,
-        coverUrl,
-        isVerified,
-        shareUrl,
-        playlistId,
-        isSpot,
-        isFavorite,
-      ]);
+    id,
+    name,
+    albumId,
+    albumTitle,
+    ownerId,
+    author,
+    url,
+    isLocal,
+    coverUrl,
+    isVerified,
+    shareUrl,
+    playlistId,
+    isSpot,
+    isFavorite,
+  ]);
 
   Media copyWith({
     int? id,
@@ -141,30 +141,29 @@ class Media {
     String? playlistTitle,
     String? playlistCoverUrl,
     int? playlistOwnerId,
-  }) =>
-      Media(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        ownerId: ownerId ?? this.ownerId,
-        albumId: albumId ?? this.albumId,
-        albumTitle: albumTitle ?? this.albumTitle,
-        author: author ?? this.author,
-        url: url ?? this.url,
-        isLocal: isLocal ?? this.isLocal,
-        coverUrl: coverUrl ?? this.coverUrl,
-        bigCoverUrl: bigCoverUrl ?? this.bigCoverUrl,
-        isVerified: isVerified ?? this.isVerified,
-        shareUrl: shareUrl ?? this.shareUrl,
-        playlistId: playlistId ?? this.playlistId,
-        fallbackUrl: fallbackUrl ?? this.fallbackUrl,
-        isSpot: isSpot ?? this.isSpot,
-        isFavorite: isFavorite ?? this.isFavorite,
-        indexInPlaylist: indexInPlaylist ?? this.indexInPlaylist,
-        categoryId: categoryId ?? this.categoryId,
-        playlistTitle: playlistTitle ?? this.playlistTitle,
-        playlistCoverUrl: playlistCoverUrl ?? this.playlistCoverUrl,
-        playlistOwnerId: playlistOwnerId ?? this.playlistOwnerId,
-      );
+  }) => Media(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    ownerId: ownerId ?? this.ownerId,
+    albumId: albumId ?? this.albumId,
+    albumTitle: albumTitle ?? this.albumTitle,
+    author: author ?? this.author,
+    url: url ?? this.url,
+    isLocal: isLocal ?? this.isLocal,
+    coverUrl: coverUrl ?? this.coverUrl,
+    bigCoverUrl: bigCoverUrl ?? this.bigCoverUrl,
+    isVerified: isVerified ?? this.isVerified,
+    shareUrl: shareUrl ?? this.shareUrl,
+    playlistId: playlistId ?? this.playlistId,
+    fallbackUrl: fallbackUrl ?? this.fallbackUrl,
+    isSpot: isSpot ?? this.isSpot,
+    isFavorite: isFavorite ?? this.isFavorite,
+    indexInPlaylist: indexInPlaylist ?? this.indexInPlaylist,
+    categoryId: categoryId ?? this.categoryId,
+    playlistTitle: playlistTitle ?? this.playlistTitle,
+    playlistCoverUrl: playlistCoverUrl ?? this.playlistCoverUrl,
+    playlistOwnerId: playlistOwnerId ?? this.playlistOwnerId,
+  );
   factory Media.fromJson(Map<String, dynamic> map) {
     return Media(
       id: map['id']?.toInt() ?? 0,
@@ -200,24 +199,19 @@ extension ListMediaToListStringCompressed on List<Media> {
 
 extension ListStringToListPlayable on List<String> {
   List<Media> get toListMedia => map((e) {
-        final media = Media.fromJson(
-          jsonDecode(
-            e,
-          ),
-        );
-        return media.copyWith(
-          coverUrl: media.coverUrl.isEmpty
-              ? 'https://suamusica.com.br/cover/cd/${media.albumId}'
-              : media.coverUrl,
-          bigCoverUrl: media.bigCoverUrl.isEmpty
-              ? 'https://suamusica.com.br/cover/cd/${media.albumId}'
-              : media.bigCoverUrl,
-          author: media.author.isEmpty ? 'Desconhecido' : media.author,
-          albumTitle:
-              media.albumTitle.isEmpty ? 'Desconhecido' : media.albumTitle,
-          name: media.name.isEmpty ? 'Desconhecido' : media.name,
-        );
-      }).toList();
+    final media = Media.fromJson(jsonDecode(e));
+    return media.copyWith(
+      coverUrl: media.coverUrl.isEmpty
+          ? 'https://suamusica.com.br/cover/cd/${media.albumId}'
+          : media.coverUrl,
+      bigCoverUrl: media.bigCoverUrl.isEmpty
+          ? 'https://suamusica.com.br/cover/cd/${media.albumId}'
+          : media.bigCoverUrl,
+      author: media.author.isEmpty ? 'Desconhecido' : media.author,
+      albumTitle: media.albumTitle.isEmpty ? 'Desconhecido' : media.albumTitle,
+      name: media.name.isEmpty ? 'Desconhecido' : media.name,
+    );
+  }).toList();
 }
 
 extension CompressRestoreWithGzipB64 on String {

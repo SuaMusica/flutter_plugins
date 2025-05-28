@@ -4,10 +4,7 @@ part 'previous_playlist_model.g.dart';
 
 @collection
 class PreviousPlaylistMusics {
-  PreviousPlaylistMusics({
-    this.id = 1,
-    this.musics,
-  });
+  PreviousPlaylistMusics({this.id = 1, this.musics});
   Id id = Isar.autoIncrement;
   List<String>? musics;
   @override

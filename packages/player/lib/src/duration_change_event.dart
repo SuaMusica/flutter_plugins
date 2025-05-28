@@ -11,10 +11,10 @@ class DurationChangeEvent extends Event {
     required this.duration,
     required queuePosition,
   }) : super(
-          type: EventType.DURATION_CHANGE,
-          media: media,
-          queuePosition: queuePosition,
-        );
+         type: EventType.DURATION_CHANGE,
+         media: media,
+         queuePosition: queuePosition,
+       );
 
   @override
   String toString() => "${super.toString()} duration: $duration";

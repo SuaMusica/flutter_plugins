@@ -2,10 +2,7 @@ import 'package:smplayer/src/event.dart';
 import 'package:smplayer/src/event_type.dart';
 import 'package:smplayer/src/media.dart';
 
-enum NetworkStatus {
-  CONNECTED,
-  DISCONNECTED,
-}
+enum NetworkStatus { CONNECTED, DISCONNECTED }
 
 class NetworkChangeEvent extends Event {
   NetworkChangeEvent({
@@ -14,10 +11,10 @@ class NetworkChangeEvent extends Event {
     required int queuePosition,
     required this.networkStatus,
   }) : super(
-          type: EventType.NETWORK_CHANGE,
-          media: media,
-          queuePosition: queuePosition,
-        );
+         type: EventType.NETWORK_CHANGE,
+         media: media,
+         queuePosition: queuePosition,
+       );
 
   final NetworkStatus networkStatus;
 

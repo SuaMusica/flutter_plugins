@@ -12,9 +12,10 @@ class PositionChangeEvent extends Event {
     required this.position,
     required this.duration,
   }) : super(
-            type: EventType.POSITION_CHANGE,
-            media: media,
-            queuePosition: queuePosition);
+         type: EventType.POSITION_CHANGE,
+         media: media,
+         queuePosition: queuePosition,
+       );
 
   @override
   String toString() =>

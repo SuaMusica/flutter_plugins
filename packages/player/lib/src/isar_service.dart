@@ -23,11 +23,13 @@ class IsarService {
       if (_isarStorage == null && _isIsarEnabled) {
         debugPrint('Initializing IsarStorage');
         if (Platform.isMacOS || Platform.isLinux) {
-          Isar.initializeIsarCore(libraries: {
-            Abi.macosArm64: 'libisar_macos.dylib',
-            Abi.macosX64: 'libisar_macos.dylib',
-            Abi.linuxX64: 'libisar_linux_x64.so',
-          });
+          Isar.initializeIsarCore(
+            libraries: {
+              Abi.macosArm64: 'libisar_macos.dylib',
+              Abi.macosX64: 'libisar_macos.dylib',
+              Abi.linuxX64: 'libisar_linux_x64.so',
+            },
+          );
         }
 
         if (!(_isarStorage?.isOpen ?? false)) {
@@ -58,13 +60,9 @@ class IsarService {
   ) async {
     await initializeIfNeeded();
     try {
-      await _isarStorage?.writeTxn(
-        () async {
-          await _isarStorage?.previousPlaylistMusics
-              .put(previousPlaylistMusics);
-        },
-        silent: kDebugMode,
-      );
+      await _isarStorage?.writeTxn(() async {
+        await _isarStorage?.previousPlaylistMusics.put(previousPlaylistMusics);
+      }, silent: kDebugMode);
     } catch (_) {}
   }
 
@@ -78,18 +76,16 @@ class IsarService {
   ) async {
     await initializeIfNeeded();
     try {
-      await _isarStorage?.writeTxn(
-        () async {
-          await _isarStorage?.previousPlaylistCurrentIndexs
-              .put(previousPlaylistCurrentIndex);
-        },
-        silent: kDebugMode,
-      );
+      await _isarStorage?.writeTxn(() async {
+        await _isarStorage?.previousPlaylistCurrentIndexs.put(
+          previousPlaylistCurrentIndex,
+        );
+      }, silent: kDebugMode);
     } catch (_) {}
   }
 
   Future<PreviousPlaylistCurrentIndex?>
-      getPreviousPlaylistCurrentIndex() async {
+  getPreviousPlaylistCurrentIndex() async {
     await initializeIfNeeded();
     return _isarStorage?.previousPlaylistCurrentIndexs.getSync(1);
   }
@@ -99,13 +95,11 @@ class IsarService {
   ) async {
     await initializeIfNeeded();
     try {
-      await _isarStorage?.writeTxn(
-        () async {
-          await _isarStorage?.previousPlaylistPositions
-              .put(previousPlaylistPosition);
-        },
-        silent: kDebugMode,
-      );
+      await _isarStorage?.writeTxn(() async {
+        await _isarStorage?.previousPlaylistPositions.put(
+          previousPlaylistPosition,
+        );
+      }, silent: kDebugMode);
     } catch (_) {}
   }
 
@@ -114,10 +108,8 @@ class IsarService {
     return _isarStorage?.previousPlaylistPositions.getSync(1);
   }
 
-  Future<void> removeAllMusics() async => await _isarStorage?.writeTxn(
-        () async {
-          await _isarStorage?.clear();
-        },
-        silent: kDebugMode,
-      );
+  Future<void> removeAllMusics() async =>
+      await _isarStorage?.writeTxn(() async {
+        await _isarStorage?.clear();
+      }, silent: kDebugMode);
 }

@@ -22,7 +22,7 @@ const PreviousPlaylistMusicsSchema = CollectionSchema(
       id: 0,
       name: r'musics',
       type: IsarType.stringList,
-    )
+    ),
   },
   estimateSize: _previousPlaylistMusicsEstimateSize,
   serialize: _previousPlaylistMusicsSerialize,
@@ -100,39 +100,53 @@ Id _previousPlaylistMusicsGetId(PreviousPlaylistMusics object) {
 }
 
 List<IsarLinkBase<dynamic>> _previousPlaylistMusicsGetLinks(
-    PreviousPlaylistMusics object) {
+  PreviousPlaylistMusics object,
+) {
   return [];
 }
 
 void _previousPlaylistMusicsAttach(
-    IsarCollection<dynamic> col, Id id, PreviousPlaylistMusics object) {
+  IsarCollection<dynamic> col,
+  Id id,
+  PreviousPlaylistMusics object,
+) {
   object.id = id;
 }
 
 extension PreviousPlaylistMusicsQueryWhereSort
     on QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics, QWhere> {
   QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics, QAfterWhere>
-      anyId() {
+  anyId() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(const IdWhereClause.any());
     });
   }
 }
 
-extension PreviousPlaylistMusicsQueryWhere on QueryBuilder<
-    PreviousPlaylistMusics, PreviousPlaylistMusics, QWhereClause> {
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterWhereClause> idEqualTo(Id id) {
+extension PreviousPlaylistMusicsQueryWhere
+    on
+        QueryBuilder<
+          PreviousPlaylistMusics,
+          PreviousPlaylistMusics,
+          QWhereClause
+        > {
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterWhereClause
+  >
+  idEqualTo(Id id) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IdWhereClause.between(
-        lower: id,
-        upper: id,
-      ));
+      return query.addWhereClause(IdWhereClause.between(lower: id, upper: id));
     });
   }
 
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterWhereClause> idNotEqualTo(Id id) {
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterWhereClause
+  >
+  idNotEqualTo(Id id) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
@@ -154,8 +168,12 @@ extension PreviousPlaylistMusicsQueryWhere on QueryBuilder<
     });
   }
 
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterWhereClause> idGreaterThan(Id id, {bool include = false}) {
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterWhereClause
+  >
+  idGreaterThan(Id id, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IdWhereClause.greaterThan(lower: id, includeLower: include),
@@ -163,8 +181,12 @@ extension PreviousPlaylistMusicsQueryWhere on QueryBuilder<
     });
   }
 
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterWhereClause> idLessThan(Id id, {bool include = false}) {
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterWhereClause
+  >
+  idLessThan(Id id, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IdWhereClause.lessThan(upper: id, includeUpper: include),
@@ -172,148 +194,201 @@ extension PreviousPlaylistMusicsQueryWhere on QueryBuilder<
     });
   }
 
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterWhereClause> idBetween(
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterWhereClause
+  >
+  idBetween(
     Id lowerId,
     Id upperId, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IdWhereClause.between(
-        lower: lowerId,
-        includeLower: includeLower,
-        upper: upperId,
-        includeUpper: includeUpper,
-      ));
+      return query.addWhereClause(
+        IdWhereClause.between(
+          lower: lowerId,
+          includeLower: includeLower,
+          upper: upperId,
+          includeUpper: includeUpper,
+        ),
+      );
     });
   }
 }
 
-extension PreviousPlaylistMusicsQueryFilter on QueryBuilder<
-    PreviousPlaylistMusics, PreviousPlaylistMusics, QFilterCondition> {
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterFilterCondition> idEqualTo(Id value) {
+extension PreviousPlaylistMusicsQueryFilter
+    on
+        QueryBuilder<
+          PreviousPlaylistMusics,
+          PreviousPlaylistMusics,
+          QFilterCondition
+        > {
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterFilterCondition
+  >
+  idEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'id', value: value),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterFilterCondition> idGreaterThan(
-    Id value, {
-    bool include = false,
-  }) {
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterFilterCondition
+  >
+  idGreaterThan(Id value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'id',
+          value: value,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterFilterCondition> idLessThan(
-    Id value, {
-    bool include = false,
-  }) {
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterFilterCondition
+  >
+  idLessThan(Id value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'id',
+          value: value,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterFilterCondition> idBetween(
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterFilterCondition
+  >
+  idBetween(
     Id lower,
     Id upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'id',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'id',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterFilterCondition> musicsIsNull() {
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterFilterCondition
+  >
+  musicsIsNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'musics',
-      ));
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'musics'),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterFilterCondition> musicsIsNotNull() {
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterFilterCondition
+  >
+  musicsIsNotNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'musics',
-      ));
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'musics'),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterFilterCondition> musicsElementEqualTo(
-    String value, {
-    bool caseSensitive = true,
-  }) {
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterFilterCondition
+  >
+  musicsElementEqualTo(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'musics',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'musics',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterFilterCondition> musicsElementGreaterThan(
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterFilterCondition
+  >
+  musicsElementGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'musics',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'musics',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterFilterCondition> musicsElementLessThan(
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterFilterCondition
+  >
+  musicsElementLessThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'musics',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'musics',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterFilterCondition> musicsElementBetween(
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterFilterCondition
+  >
+  musicsElementBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -321,162 +396,174 @@ extension PreviousPlaylistMusicsQueryFilter on QueryBuilder<
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'musics',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterFilterCondition> musicsElementStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'musics',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterFilterCondition> musicsElementEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'musics',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-          QAfterFilterCondition>
-      musicsElementContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'musics',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-          QAfterFilterCondition>
-      musicsElementMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'musics',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterFilterCondition> musicsElementIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'musics',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterFilterCondition> musicsElementIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'musics',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterFilterCondition> musicsLengthEqualTo(int length) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'musics',
-        length,
-        true,
-        length,
-        true,
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'musics',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
       );
     });
   }
 
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterFilterCondition> musicsIsEmpty() {
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterFilterCondition
+  >
+  musicsElementStartsWith(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'musics',
-        0,
-        true,
-        0,
-        true,
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'musics',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
       );
     });
   }
 
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterFilterCondition> musicsIsNotEmpty() {
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterFilterCondition
+  >
+  musicsElementEndsWith(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'musics',
-        0,
-        false,
-        999999,
-        true,
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'musics',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
       );
     });
   }
 
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterFilterCondition> musicsLengthLessThan(
-    int length, {
-    bool include = false,
-  }) {
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterFilterCondition
+  >
+  musicsElementContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'musics',
-        0,
-        true,
-        length,
-        include,
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'musics',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
       );
     });
   }
 
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterFilterCondition> musicsLengthGreaterThan(
-    int length, {
-    bool include = false,
-  }) {
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterFilterCondition
+  >
+  musicsElementMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'musics',
-        length,
-        include,
-        999999,
-        true,
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'musics',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
       );
     });
   }
 
-  QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics,
-      QAfterFilterCondition> musicsLengthBetween(
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterFilterCondition
+  >
+  musicsElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'musics', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterFilterCondition
+  >
+  musicsElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'musics', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterFilterCondition
+  >
+  musicsLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'musics', length, true, length, true);
+    });
+  }
+
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterFilterCondition
+  >
+  musicsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'musics', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterFilterCondition
+  >
+  musicsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'musics', 0, false, 999999, true);
+    });
+  }
+
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterFilterCondition
+  >
+  musicsLengthLessThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'musics', 0, true, length, include);
+    });
+  }
+
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterFilterCondition
+  >
+  musicsLengthGreaterThan(int length, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(r'musics', length, include, 999999, true);
+    });
+  }
+
+  QueryBuilder<
+    PreviousPlaylistMusics,
+    PreviousPlaylistMusics,
+    QAfterFilterCondition
+  >
+  musicsLengthBetween(
     int lower,
     int upper, {
     bool includeLower = true,
@@ -494,26 +581,41 @@ extension PreviousPlaylistMusicsQueryFilter on QueryBuilder<
   }
 }
 
-extension PreviousPlaylistMusicsQueryObject on QueryBuilder<
-    PreviousPlaylistMusics, PreviousPlaylistMusics, QFilterCondition> {}
+extension PreviousPlaylistMusicsQueryObject
+    on
+        QueryBuilder<
+          PreviousPlaylistMusics,
+          PreviousPlaylistMusics,
+          QFilterCondition
+        > {}
 
-extension PreviousPlaylistMusicsQueryLinks on QueryBuilder<
-    PreviousPlaylistMusics, PreviousPlaylistMusics, QFilterCondition> {}
+extension PreviousPlaylistMusicsQueryLinks
+    on
+        QueryBuilder<
+          PreviousPlaylistMusics,
+          PreviousPlaylistMusics,
+          QFilterCondition
+        > {}
 
 extension PreviousPlaylistMusicsQuerySortBy
     on QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics, QSortBy> {}
 
-extension PreviousPlaylistMusicsQuerySortThenBy on QueryBuilder<
-    PreviousPlaylistMusics, PreviousPlaylistMusics, QSortThenBy> {
+extension PreviousPlaylistMusicsQuerySortThenBy
+    on
+        QueryBuilder<
+          PreviousPlaylistMusics,
+          PreviousPlaylistMusics,
+          QSortThenBy
+        > {
   QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics, QAfterSortBy>
-      thenById() {
+  thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
     });
   }
 
   QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics, QAfterSortBy>
-      thenByIdDesc() {
+  thenByIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.desc);
     });
@@ -523,15 +625,20 @@ extension PreviousPlaylistMusicsQuerySortThenBy on QueryBuilder<
 extension PreviousPlaylistMusicsQueryWhereDistinct
     on QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics, QDistinct> {
   QueryBuilder<PreviousPlaylistMusics, PreviousPlaylistMusics, QDistinct>
-      distinctByMusics() {
+  distinctByMusics() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'musics');
     });
   }
 }
 
-extension PreviousPlaylistMusicsQueryProperty on QueryBuilder<
-    PreviousPlaylistMusics, PreviousPlaylistMusics, QQueryProperty> {
+extension PreviousPlaylistMusicsQueryProperty
+    on
+        QueryBuilder<
+          PreviousPlaylistMusics,
+          PreviousPlaylistMusics,
+          QQueryProperty
+        > {
   QueryBuilder<PreviousPlaylistMusics, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
@@ -539,7 +646,7 @@ extension PreviousPlaylistMusicsQueryProperty on QueryBuilder<
   }
 
   QueryBuilder<PreviousPlaylistMusics, List<String>?, QQueryOperations>
-      musicsProperty() {
+  musicsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'musics');
     });
@@ -551,7 +658,7 @@ extension PreviousPlaylistMusicsQueryProperty on QueryBuilder<
 
 extension GetPreviousPlaylistCurrentIndexCollection on Isar {
   IsarCollection<PreviousPlaylistCurrentIndex>
-      get previousPlaylistCurrentIndexs => this.collection();
+  get previousPlaylistCurrentIndexs => this.collection();
 }
 
 const PreviousPlaylistCurrentIndexSchema = CollectionSchema(
@@ -563,11 +670,7 @@ const PreviousPlaylistCurrentIndexSchema = CollectionSchema(
       name: r'currentIndex',
       type: IsarType.long,
     ),
-    r'mediaId': PropertySchema(
-      id: 1,
-      name: r'mediaId',
-      type: IsarType.long,
-    )
+    r'mediaId': PropertySchema(id: 1, name: r'mediaId', type: IsarType.long),
   },
   estimateSize: _previousPlaylistCurrentIndexEstimateSize,
   serialize: _previousPlaylistCurrentIndexSerialize,
@@ -637,39 +740,62 @@ Id _previousPlaylistCurrentIndexGetId(PreviousPlaylistCurrentIndex object) {
 }
 
 List<IsarLinkBase<dynamic>> _previousPlaylistCurrentIndexGetLinks(
-    PreviousPlaylistCurrentIndex object) {
+  PreviousPlaylistCurrentIndex object,
+) {
   return [];
 }
 
 void _previousPlaylistCurrentIndexAttach(
-    IsarCollection<dynamic> col, Id id, PreviousPlaylistCurrentIndex object) {
+  IsarCollection<dynamic> col,
+  Id id,
+  PreviousPlaylistCurrentIndex object,
+) {
   object.id = id;
 }
 
-extension PreviousPlaylistCurrentIndexQueryWhereSort on QueryBuilder<
-    PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex, QWhere> {
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterWhere> anyId() {
+extension PreviousPlaylistCurrentIndexQueryWhereSort
+    on
+        QueryBuilder<
+          PreviousPlaylistCurrentIndex,
+          PreviousPlaylistCurrentIndex,
+          QWhere
+        > {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterWhere
+  >
+  anyId() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(const IdWhereClause.any());
     });
   }
 }
 
-extension PreviousPlaylistCurrentIndexQueryWhere on QueryBuilder<
-    PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex, QWhereClause> {
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterWhereClause> idEqualTo(Id id) {
+extension PreviousPlaylistCurrentIndexQueryWhere
+    on
+        QueryBuilder<
+          PreviousPlaylistCurrentIndex,
+          PreviousPlaylistCurrentIndex,
+          QWhereClause
+        > {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterWhereClause
+  >
+  idEqualTo(Id id) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IdWhereClause.between(
-        lower: id,
-        upper: id,
-      ));
+      return query.addWhereClause(IdWhereClause.between(lower: id, upper: id));
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterWhereClause> idNotEqualTo(Id id) {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterWhereClause
+  >
+  idNotEqualTo(Id id) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
@@ -691,8 +817,12 @@ extension PreviousPlaylistCurrentIndexQueryWhere on QueryBuilder<
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterWhereClause> idGreaterThan(Id id, {bool include = false}) {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterWhereClause
+  >
+  idGreaterThan(Id id, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IdWhereClause.greaterThan(lower: id, includeLower: include),
@@ -700,8 +830,12 @@ extension PreviousPlaylistCurrentIndexQueryWhere on QueryBuilder<
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterWhereClause> idLessThan(Id id, {bool include = false}) {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterWhereClause
+  >
+  idLessThan(Id id, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IdWhereClause.lessThan(upper: id, includeUpper: include),
@@ -709,338 +843,472 @@ extension PreviousPlaylistCurrentIndexQueryWhere on QueryBuilder<
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterWhereClause> idBetween(
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterWhereClause
+  >
+  idBetween(
     Id lowerId,
     Id upperId, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IdWhereClause.between(
-        lower: lowerId,
-        includeLower: includeLower,
-        upper: upperId,
-        includeUpper: includeUpper,
-      ));
+      return query.addWhereClause(
+        IdWhereClause.between(
+          lower: lowerId,
+          includeLower: includeLower,
+          upper: upperId,
+          includeUpper: includeUpper,
+        ),
+      );
     });
   }
 }
 
-extension PreviousPlaylistCurrentIndexQueryFilter on QueryBuilder<
+extension PreviousPlaylistCurrentIndexQueryFilter
+    on
+        QueryBuilder<
+          PreviousPlaylistCurrentIndex,
+          PreviousPlaylistCurrentIndex,
+          QFilterCondition
+        > {
+  QueryBuilder<
     PreviousPlaylistCurrentIndex,
     PreviousPlaylistCurrentIndex,
-    QFilterCondition> {
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterFilterCondition> currentIndexIsNull() {
+    QAfterFilterCondition
+  >
+  currentIndexIsNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'currentIndex',
-      ));
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'currentIndex'),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterFilterCondition> currentIndexIsNotNull() {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterFilterCondition
+  >
+  currentIndexIsNotNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'currentIndex',
-      ));
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'currentIndex'),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterFilterCondition> currentIndexEqualTo(int? value) {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterFilterCondition
+  >
+  currentIndexEqualTo(int? value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'currentIndex',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'currentIndex', value: value),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterFilterCondition> currentIndexGreaterThan(
-    int? value, {
-    bool include = false,
-  }) {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterFilterCondition
+  >
+  currentIndexGreaterThan(int? value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'currentIndex',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'currentIndex',
+          value: value,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterFilterCondition> currentIndexLessThan(
-    int? value, {
-    bool include = false,
-  }) {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterFilterCondition
+  >
+  currentIndexLessThan(int? value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'currentIndex',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'currentIndex',
+          value: value,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterFilterCondition> currentIndexBetween(
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterFilterCondition
+  >
+  currentIndexBetween(
     int? lower,
     int? upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'currentIndex',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'currentIndex',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterFilterCondition> idEqualTo(Id value) {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterFilterCondition
+  >
+  idEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'id', value: value),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterFilterCondition> idGreaterThan(
-    Id value, {
-    bool include = false,
-  }) {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterFilterCondition
+  >
+  idGreaterThan(Id value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'id',
+          value: value,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterFilterCondition> idLessThan(
-    Id value, {
-    bool include = false,
-  }) {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterFilterCondition
+  >
+  idLessThan(Id value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'id',
+          value: value,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterFilterCondition> idBetween(
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterFilterCondition
+  >
+  idBetween(
     Id lower,
     Id upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'id',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'id',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterFilterCondition> mediaIdEqualTo(int value) {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterFilterCondition
+  >
+  mediaIdEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'mediaId',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'mediaId', value: value),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterFilterCondition> mediaIdGreaterThan(
-    int value, {
-    bool include = false,
-  }) {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterFilterCondition
+  >
+  mediaIdGreaterThan(int value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'mediaId',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'mediaId',
+          value: value,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterFilterCondition> mediaIdLessThan(
-    int value, {
-    bool include = false,
-  }) {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterFilterCondition
+  >
+  mediaIdLessThan(int value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'mediaId',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'mediaId',
+          value: value,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterFilterCondition> mediaIdBetween(
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterFilterCondition
+  >
+  mediaIdBetween(
     int lower,
     int upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'mediaId',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'mediaId',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
     });
   }
 }
 
-extension PreviousPlaylistCurrentIndexQueryObject on QueryBuilder<
-    PreviousPlaylistCurrentIndex,
-    PreviousPlaylistCurrentIndex,
-    QFilterCondition> {}
+extension PreviousPlaylistCurrentIndexQueryObject
+    on
+        QueryBuilder<
+          PreviousPlaylistCurrentIndex,
+          PreviousPlaylistCurrentIndex,
+          QFilterCondition
+        > {}
 
-extension PreviousPlaylistCurrentIndexQueryLinks on QueryBuilder<
-    PreviousPlaylistCurrentIndex,
-    PreviousPlaylistCurrentIndex,
-    QFilterCondition> {}
+extension PreviousPlaylistCurrentIndexQueryLinks
+    on
+        QueryBuilder<
+          PreviousPlaylistCurrentIndex,
+          PreviousPlaylistCurrentIndex,
+          QFilterCondition
+        > {}
 
-extension PreviousPlaylistCurrentIndexQuerySortBy on QueryBuilder<
-    PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex, QSortBy> {
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterSortBy> sortByCurrentIndex() {
+extension PreviousPlaylistCurrentIndexQuerySortBy
+    on
+        QueryBuilder<
+          PreviousPlaylistCurrentIndex,
+          PreviousPlaylistCurrentIndex,
+          QSortBy
+        > {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterSortBy
+  >
+  sortByCurrentIndex() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'currentIndex', Sort.asc);
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterSortBy> sortByCurrentIndexDesc() {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterSortBy
+  >
+  sortByCurrentIndexDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'currentIndex', Sort.desc);
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterSortBy> sortByMediaId() {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterSortBy
+  >
+  sortByMediaId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'mediaId', Sort.asc);
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterSortBy> sortByMediaIdDesc() {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterSortBy
+  >
+  sortByMediaIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'mediaId', Sort.desc);
     });
   }
 }
 
-extension PreviousPlaylistCurrentIndexQuerySortThenBy on QueryBuilder<
-    PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex, QSortThenBy> {
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterSortBy> thenByCurrentIndex() {
+extension PreviousPlaylistCurrentIndexQuerySortThenBy
+    on
+        QueryBuilder<
+          PreviousPlaylistCurrentIndex,
+          PreviousPlaylistCurrentIndex,
+          QSortThenBy
+        > {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterSortBy
+  >
+  thenByCurrentIndex() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'currentIndex', Sort.asc);
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterSortBy> thenByCurrentIndexDesc() {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterSortBy
+  >
+  thenByCurrentIndexDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'currentIndex', Sort.desc);
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterSortBy> thenById() {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterSortBy
+  >
+  thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterSortBy> thenByIdDesc() {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterSortBy
+  >
+  thenByIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.desc);
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterSortBy> thenByMediaId() {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterSortBy
+  >
+  thenByMediaId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'mediaId', Sort.asc);
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QAfterSortBy> thenByMediaIdDesc() {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QAfterSortBy
+  >
+  thenByMediaIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'mediaId', Sort.desc);
     });
   }
 }
 
-extension PreviousPlaylistCurrentIndexQueryWhereDistinct on QueryBuilder<
-    PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex, QDistinct> {
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QDistinct> distinctByCurrentIndex() {
+extension PreviousPlaylistCurrentIndexQueryWhereDistinct
+    on
+        QueryBuilder<
+          PreviousPlaylistCurrentIndex,
+          PreviousPlaylistCurrentIndex,
+          QDistinct
+        > {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QDistinct
+  >
+  distinctByCurrentIndex() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'currentIndex');
     });
   }
 
-  QueryBuilder<PreviousPlaylistCurrentIndex, PreviousPlaylistCurrentIndex,
-      QDistinct> distinctByMediaId() {
+  QueryBuilder<
+    PreviousPlaylistCurrentIndex,
+    PreviousPlaylistCurrentIndex,
+    QDistinct
+  >
+  distinctByMediaId() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'mediaId');
     });
   }
 }
 
-extension PreviousPlaylistCurrentIndexQueryProperty on QueryBuilder<
-    PreviousPlaylistCurrentIndex,
-    PreviousPlaylistCurrentIndex,
-    QQueryProperty> {
+extension PreviousPlaylistCurrentIndexQueryProperty
+    on
+        QueryBuilder<
+          PreviousPlaylistCurrentIndex,
+          PreviousPlaylistCurrentIndex,
+          QQueryProperty
+        > {
   QueryBuilder<PreviousPlaylistCurrentIndex, int, QQueryOperations>
-      idProperty() {
+  idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
     });
   }
 
   QueryBuilder<PreviousPlaylistCurrentIndex, int?, QQueryOperations>
-      currentIndexProperty() {
+  currentIndexProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'currentIndex');
     });
   }
 
   QueryBuilder<PreviousPlaylistCurrentIndex, int, QQueryOperations>
-      mediaIdProperty() {
+  mediaIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'mediaId');
     });
@@ -1064,16 +1332,12 @@ const PreviousPlaylistPositionSchema = CollectionSchema(
       name: r'duration',
       type: IsarType.double,
     ),
-    r'mediaId': PropertySchema(
-      id: 1,
-      name: r'mediaId',
-      type: IsarType.long,
-    ),
+    r'mediaId': PropertySchema(id: 1, name: r'mediaId', type: IsarType.long),
     r'position': PropertySchema(
       id: 2,
       name: r'position',
       type: IsarType.double,
-    )
+    ),
   },
   estimateSize: _previousPlaylistPositionEstimateSize,
   serialize: _previousPlaylistPositionSerialize,
@@ -1147,39 +1411,58 @@ Id _previousPlaylistPositionGetId(PreviousPlaylistPosition object) {
 }
 
 List<IsarLinkBase<dynamic>> _previousPlaylistPositionGetLinks(
-    PreviousPlaylistPosition object) {
+  PreviousPlaylistPosition object,
+) {
   return [];
 }
 
 void _previousPlaylistPositionAttach(
-    IsarCollection<dynamic> col, Id id, PreviousPlaylistPosition object) {
+  IsarCollection<dynamic> col,
+  Id id,
+  PreviousPlaylistPosition object,
+) {
   object.id = id;
 }
 
-extension PreviousPlaylistPositionQueryWhereSort on QueryBuilder<
-    PreviousPlaylistPosition, PreviousPlaylistPosition, QWhere> {
+extension PreviousPlaylistPositionQueryWhereSort
+    on
+        QueryBuilder<
+          PreviousPlaylistPosition,
+          PreviousPlaylistPosition,
+          QWhere
+        > {
   QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QAfterWhere>
-      anyId() {
+  anyId() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(const IdWhereClause.any());
     });
   }
 }
 
-extension PreviousPlaylistPositionQueryWhere on QueryBuilder<
-    PreviousPlaylistPosition, PreviousPlaylistPosition, QWhereClause> {
-  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
-      QAfterWhereClause> idEqualTo(Id id) {
+extension PreviousPlaylistPositionQueryWhere
+    on
+        QueryBuilder<
+          PreviousPlaylistPosition,
+          PreviousPlaylistPosition,
+          QWhereClause
+        > {
+  QueryBuilder<
+    PreviousPlaylistPosition,
+    PreviousPlaylistPosition,
+    QAfterWhereClause
+  >
+  idEqualTo(Id id) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IdWhereClause.between(
-        lower: id,
-        upper: id,
-      ));
+      return query.addWhereClause(IdWhereClause.between(lower: id, upper: id));
     });
   }
 
-  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
-      QAfterWhereClause> idNotEqualTo(Id id) {
+  QueryBuilder<
+    PreviousPlaylistPosition,
+    PreviousPlaylistPosition,
+    QAfterWhereClause
+  >
+  idNotEqualTo(Id id) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
@@ -1201,8 +1484,12 @@ extension PreviousPlaylistPositionQueryWhere on QueryBuilder<
     });
   }
 
-  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
-      QAfterWhereClause> idGreaterThan(Id id, {bool include = false}) {
+  QueryBuilder<
+    PreviousPlaylistPosition,
+    PreviousPlaylistPosition,
+    QAfterWhereClause
+  >
+  idGreaterThan(Id id, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IdWhereClause.greaterThan(lower: id, includeLower: include),
@@ -1210,8 +1497,12 @@ extension PreviousPlaylistPositionQueryWhere on QueryBuilder<
     });
   }
 
-  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
-      QAfterWhereClause> idLessThan(Id id, {bool include = false}) {
+  QueryBuilder<
+    PreviousPlaylistPosition,
+    PreviousPlaylistPosition,
+    QAfterWhereClause
+  >
+  idLessThan(Id id, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IdWhereClause.lessThan(upper: id, includeUpper: include),
@@ -1219,74 +1510,104 @@ extension PreviousPlaylistPositionQueryWhere on QueryBuilder<
     });
   }
 
-  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
-      QAfterWhereClause> idBetween(
+  QueryBuilder<
+    PreviousPlaylistPosition,
+    PreviousPlaylistPosition,
+    QAfterWhereClause
+  >
+  idBetween(
     Id lowerId,
     Id upperId, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IdWhereClause.between(
-        lower: lowerId,
-        includeLower: includeLower,
-        upper: upperId,
-        includeUpper: includeUpper,
-      ));
+      return query.addWhereClause(
+        IdWhereClause.between(
+          lower: lowerId,
+          includeLower: includeLower,
+          upper: upperId,
+          includeUpper: includeUpper,
+        ),
+      );
     });
   }
 }
 
-extension PreviousPlaylistPositionQueryFilter on QueryBuilder<
-    PreviousPlaylistPosition, PreviousPlaylistPosition, QFilterCondition> {
-  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
-      QAfterFilterCondition> durationEqualTo(
-    double value, {
-    double epsilon = Query.epsilon,
-  }) {
+extension PreviousPlaylistPositionQueryFilter
+    on
+        QueryBuilder<
+          PreviousPlaylistPosition,
+          PreviousPlaylistPosition,
+          QFilterCondition
+        > {
+  QueryBuilder<
+    PreviousPlaylistPosition,
+    PreviousPlaylistPosition,
+    QAfterFilterCondition
+  >
+  durationEqualTo(double value, {double epsilon = Query.epsilon}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'duration',
-        value: value,
-        epsilon: epsilon,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'duration',
+          value: value,
+          epsilon: epsilon,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
-      QAfterFilterCondition> durationGreaterThan(
-    double value, {
-    bool include = false,
-    double epsilon = Query.epsilon,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'duration',
-        value: value,
-        epsilon: epsilon,
-      ));
-    });
-  }
-
-  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
-      QAfterFilterCondition> durationLessThan(
+  QueryBuilder<
+    PreviousPlaylistPosition,
+    PreviousPlaylistPosition,
+    QAfterFilterCondition
+  >
+  durationGreaterThan(
     double value, {
     bool include = false,
     double epsilon = Query.epsilon,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'duration',
-        value: value,
-        epsilon: epsilon,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'duration',
+          value: value,
+          epsilon: epsilon,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
-      QAfterFilterCondition> durationBetween(
+  QueryBuilder<
+    PreviousPlaylistPosition,
+    PreviousPlaylistPosition,
+    QAfterFilterCondition
+  >
+  durationLessThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'duration',
+          value: value,
+          epsilon: epsilon,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    PreviousPlaylistPosition,
+    PreviousPlaylistPosition,
+    QAfterFilterCondition
+  >
+  durationBetween(
     double lower,
     double upper, {
     bool includeLower = true,
@@ -1294,177 +1615,228 @@ extension PreviousPlaylistPositionQueryFilter on QueryBuilder<
     double epsilon = Query.epsilon,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'duration',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        epsilon: epsilon,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'duration',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          epsilon: epsilon,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
-      QAfterFilterCondition> idEqualTo(Id value) {
+  QueryBuilder<
+    PreviousPlaylistPosition,
+    PreviousPlaylistPosition,
+    QAfterFilterCondition
+  >
+  idEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'id', value: value),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
-      QAfterFilterCondition> idGreaterThan(
-    Id value, {
-    bool include = false,
-  }) {
+  QueryBuilder<
+    PreviousPlaylistPosition,
+    PreviousPlaylistPosition,
+    QAfterFilterCondition
+  >
+  idGreaterThan(Id value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'id',
+          value: value,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
-      QAfterFilterCondition> idLessThan(
-    Id value, {
-    bool include = false,
-  }) {
+  QueryBuilder<
+    PreviousPlaylistPosition,
+    PreviousPlaylistPosition,
+    QAfterFilterCondition
+  >
+  idLessThan(Id value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'id',
+          value: value,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
-      QAfterFilterCondition> idBetween(
+  QueryBuilder<
+    PreviousPlaylistPosition,
+    PreviousPlaylistPosition,
+    QAfterFilterCondition
+  >
+  idBetween(
     Id lower,
     Id upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'id',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'id',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
-      QAfterFilterCondition> mediaIdEqualTo(int value) {
+  QueryBuilder<
+    PreviousPlaylistPosition,
+    PreviousPlaylistPosition,
+    QAfterFilterCondition
+  >
+  mediaIdEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'mediaId',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'mediaId', value: value),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
-      QAfterFilterCondition> mediaIdGreaterThan(
-    int value, {
-    bool include = false,
-  }) {
+  QueryBuilder<
+    PreviousPlaylistPosition,
+    PreviousPlaylistPosition,
+    QAfterFilterCondition
+  >
+  mediaIdGreaterThan(int value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'mediaId',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'mediaId',
+          value: value,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
-      QAfterFilterCondition> mediaIdLessThan(
-    int value, {
-    bool include = false,
-  }) {
+  QueryBuilder<
+    PreviousPlaylistPosition,
+    PreviousPlaylistPosition,
+    QAfterFilterCondition
+  >
+  mediaIdLessThan(int value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'mediaId',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'mediaId',
+          value: value,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
-      QAfterFilterCondition> mediaIdBetween(
+  QueryBuilder<
+    PreviousPlaylistPosition,
+    PreviousPlaylistPosition,
+    QAfterFilterCondition
+  >
+  mediaIdBetween(
     int lower,
     int upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'mediaId',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'mediaId',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
-      QAfterFilterCondition> positionEqualTo(
-    double value, {
-    double epsilon = Query.epsilon,
-  }) {
+  QueryBuilder<
+    PreviousPlaylistPosition,
+    PreviousPlaylistPosition,
+    QAfterFilterCondition
+  >
+  positionEqualTo(double value, {double epsilon = Query.epsilon}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'position',
-        value: value,
-        epsilon: epsilon,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'position',
+          value: value,
+          epsilon: epsilon,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
-      QAfterFilterCondition> positionGreaterThan(
-    double value, {
-    bool include = false,
-    double epsilon = Query.epsilon,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'position',
-        value: value,
-        epsilon: epsilon,
-      ));
-    });
-  }
-
-  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
-      QAfterFilterCondition> positionLessThan(
+  QueryBuilder<
+    PreviousPlaylistPosition,
+    PreviousPlaylistPosition,
+    QAfterFilterCondition
+  >
+  positionGreaterThan(
     double value, {
     bool include = false,
     double epsilon = Query.epsilon,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'position',
-        value: value,
-        epsilon: epsilon,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'position',
+          value: value,
+          epsilon: epsilon,
+        ),
+      );
     });
   }
 
-  QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition,
-      QAfterFilterCondition> positionBetween(
+  QueryBuilder<
+    PreviousPlaylistPosition,
+    PreviousPlaylistPosition,
+    QAfterFilterCondition
+  >
+  positionLessThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'position',
+          value: value,
+          epsilon: epsilon,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    PreviousPlaylistPosition,
+    PreviousPlaylistPosition,
+    QAfterFilterCondition
+  >
+  positionBetween(
     double lower,
     double upper, {
     bool includeLower = true,
@@ -1472,154 +1844,186 @@ extension PreviousPlaylistPositionQueryFilter on QueryBuilder<
     double epsilon = Query.epsilon,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'position',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        epsilon: epsilon,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'position',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          epsilon: epsilon,
+        ),
+      );
     });
   }
 }
 
-extension PreviousPlaylistPositionQueryObject on QueryBuilder<
-    PreviousPlaylistPosition, PreviousPlaylistPosition, QFilterCondition> {}
+extension PreviousPlaylistPositionQueryObject
+    on
+        QueryBuilder<
+          PreviousPlaylistPosition,
+          PreviousPlaylistPosition,
+          QFilterCondition
+        > {}
 
-extension PreviousPlaylistPositionQueryLinks on QueryBuilder<
-    PreviousPlaylistPosition, PreviousPlaylistPosition, QFilterCondition> {}
+extension PreviousPlaylistPositionQueryLinks
+    on
+        QueryBuilder<
+          PreviousPlaylistPosition,
+          PreviousPlaylistPosition,
+          QFilterCondition
+        > {}
 
-extension PreviousPlaylistPositionQuerySortBy on QueryBuilder<
-    PreviousPlaylistPosition, PreviousPlaylistPosition, QSortBy> {
+extension PreviousPlaylistPositionQuerySortBy
+    on
+        QueryBuilder<
+          PreviousPlaylistPosition,
+          PreviousPlaylistPosition,
+          QSortBy
+        > {
   QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QAfterSortBy>
-      sortByDuration() {
+  sortByDuration() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'duration', Sort.asc);
     });
   }
 
   QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QAfterSortBy>
-      sortByDurationDesc() {
+  sortByDurationDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'duration', Sort.desc);
     });
   }
 
   QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QAfterSortBy>
-      sortByMediaId() {
+  sortByMediaId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'mediaId', Sort.asc);
     });
   }
 
   QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QAfterSortBy>
-      sortByMediaIdDesc() {
+  sortByMediaIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'mediaId', Sort.desc);
     });
   }
 
   QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QAfterSortBy>
-      sortByPosition() {
+  sortByPosition() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'position', Sort.asc);
     });
   }
 
   QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QAfterSortBy>
-      sortByPositionDesc() {
+  sortByPositionDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'position', Sort.desc);
     });
   }
 }
 
-extension PreviousPlaylistPositionQuerySortThenBy on QueryBuilder<
-    PreviousPlaylistPosition, PreviousPlaylistPosition, QSortThenBy> {
+extension PreviousPlaylistPositionQuerySortThenBy
+    on
+        QueryBuilder<
+          PreviousPlaylistPosition,
+          PreviousPlaylistPosition,
+          QSortThenBy
+        > {
   QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QAfterSortBy>
-      thenByDuration() {
+  thenByDuration() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'duration', Sort.asc);
     });
   }
 
   QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QAfterSortBy>
-      thenByDurationDesc() {
+  thenByDurationDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'duration', Sort.desc);
     });
   }
 
   QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QAfterSortBy>
-      thenById() {
+  thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
     });
   }
 
   QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QAfterSortBy>
-      thenByIdDesc() {
+  thenByIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.desc);
     });
   }
 
   QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QAfterSortBy>
-      thenByMediaId() {
+  thenByMediaId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'mediaId', Sort.asc);
     });
   }
 
   QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QAfterSortBy>
-      thenByMediaIdDesc() {
+  thenByMediaIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'mediaId', Sort.desc);
     });
   }
 
   QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QAfterSortBy>
-      thenByPosition() {
+  thenByPosition() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'position', Sort.asc);
     });
   }
 
   QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QAfterSortBy>
-      thenByPositionDesc() {
+  thenByPositionDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'position', Sort.desc);
     });
   }
 }
 
-extension PreviousPlaylistPositionQueryWhereDistinct on QueryBuilder<
-    PreviousPlaylistPosition, PreviousPlaylistPosition, QDistinct> {
+extension PreviousPlaylistPositionQueryWhereDistinct
+    on
+        QueryBuilder<
+          PreviousPlaylistPosition,
+          PreviousPlaylistPosition,
+          QDistinct
+        > {
   QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QDistinct>
-      distinctByDuration() {
+  distinctByDuration() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'duration');
     });
   }
 
   QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QDistinct>
-      distinctByMediaId() {
+  distinctByMediaId() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'mediaId');
     });
   }
 
   QueryBuilder<PreviousPlaylistPosition, PreviousPlaylistPosition, QDistinct>
-      distinctByPosition() {
+  distinctByPosition() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'position');
     });
   }
 }
 
-extension PreviousPlaylistPositionQueryProperty on QueryBuilder<
-    PreviousPlaylistPosition, PreviousPlaylistPosition, QQueryProperty> {
+extension PreviousPlaylistPositionQueryProperty
+    on
+        QueryBuilder<
+          PreviousPlaylistPosition,
+          PreviousPlaylistPosition,
+          QQueryProperty
+        > {
   QueryBuilder<PreviousPlaylistPosition, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
@@ -1627,21 +2031,21 @@ extension PreviousPlaylistPositionQueryProperty on QueryBuilder<
   }
 
   QueryBuilder<PreviousPlaylistPosition, double, QQueryOperations>
-      durationProperty() {
+  durationProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'duration');
     });
   }
 
   QueryBuilder<PreviousPlaylistPosition, int, QQueryOperations>
-      mediaIdProperty() {
+  mediaIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'mediaId');
     });
   }
 
   QueryBuilder<PreviousPlaylistPosition, double, QQueryOperations>
-      positionProperty() {
+  positionProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'position');
     });

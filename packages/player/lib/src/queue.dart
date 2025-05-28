@@ -11,8 +11,7 @@ import 'package:smplayer/src/simple_shuffle.dart';
 
 class Queue {
   Queue({
-    shuffler,
-    mode,
+    Shuffler? shuffler,
     this.initializeIsar = false,
     this.onInitialize,
     this.beforeInitialize,
@@ -21,28 +20,36 @@ class Queue {
     itemsReady = !initializeIsar;
     _initialize();
   }
+
   Future<void> _initialize() async {
-    beforeInitialize?.call().then(
-      (_) async {
-        if (!itemsReady) {
-          try {
-            final items = await previousItems;
-            previousIndex = await previousPlaylistIndex;
-            previousPosition = await _previousPlaylistPosition;
-            int i = 0;
-            storage.addAll(items.map((e) => QueueItem(i++, i, e)));
-            if (items.isNotEmpty) {
-              debugPrint('#APP LOGS ==> onInitialize');
-              onInitialize?.call().then((_) => itemsReady = true);
-            } else {
-              itemsReady = true;
-            }
-          } catch (_) {
-            itemsReady = true;
-          }
+    if (!itemsReady) {
+      try {
+        await beforeInitialize?.call();
+
+        final results = await Future.wait([
+          previousItems,
+          previousPlaylistIndex,
+          _previousPlaylistPosition,
+        ]);
+
+        final items = results[0] as List<Media>;
+        previousIndex = results[1] as int;
+        previousPosition = results[2] as PreviousPlaylistPosition?;
+
+        if (items.isNotEmpty) {
+          playerQueue.addAll(
+            items.asMap().entries.map(
+              (entry) => QueueItem(entry.key, entry.key, entry.value),
+            ),
+          );
+          await onInitialize?.call(items);
         }
-      },
-    );
+        itemsReady = true;
+      } catch (e) {
+        debugPrint('#APP LOGS ==> Error initializing Queue: $e');
+        itemsReady = true;
+      }
+    }
   }
 
   var _index = 0;
@@ -50,112 +57,114 @@ class Queue {
   Media? _current;
 
   set setIndex(int index) {
-    if (storage.isEmpty || index < 0 || index >= storage.length) {
+    if (playerQueue.isEmpty || index < 0 || index >= playerQueue.length) {
       _index = -1;
       _current = null;
       return;
     }
 
     _index = index;
-    _current = storage[index].item;
+    _current = playerQueue[index].item;
   }
 
   final Shuffler _shuffler;
   final bool initializeIsar;
-  final Future<void> Function()? onInitialize, beforeInitialize;
+  final Future<void> Function(List<Media>)? onInitialize;
+  final Future<void> Function()? beforeInitialize;
   bool itemsReady = false;
   int previousIndex = 0;
   PreviousPlaylistPosition? previousPosition;
-  var storage = <QueueItem<Media>>[];
+  List<QueueItem<Media>> playerQueue = <QueueItem<Media>>[];
   PreviousPlaylistMusics? previousPlaylistMusics;
   DateTime? _lastPrevious;
   Media? get current =>
       _current ??
-      (index >= 0 && index < storage.length ? storage[index].item : null);
+      (index >= 0 && index < playerQueue.length
+          ? playerQueue[index].item
+          : null);
 
   List<Media> get items {
-    return storage.length > 0
-        ? List<Media>.unmodifiable((storage.map((i) => i.item).toList()))
+    return playerQueue.length > 0
+        ? List<Media>.unmodifiable((playerQueue.map((i) => i.item).toList()))
         : [];
   }
 
   Future<List<Media>> get previousItems async {
-    previousPlaylistMusics =
-        await IsarService.instance.getPreviousPlaylistMusics();
+    previousPlaylistMusics = await IsarService.instance
+        .getPreviousPlaylistMusics();
     return previousPlaylistMusics?.musics?.toListMedia ?? [];
   }
 
   Future<PreviousPlaylistPosition?> get _previousPlaylistPosition async {
-    final previousPlaylistPosition =
-        await IsarService.instance.getPreviousPlaylistPosition();
+    final previousPlaylistPosition = await IsarService.instance
+        .getPreviousPlaylistPosition();
     return previousPlaylistPosition?.position != null
         ? previousPlaylistPosition
         : null;
   }
 
   Future<int> get previousPlaylistIndex async {
-    final previousPlaylistCurrentIndex =
-        await IsarService.instance.getPreviousPlaylistCurrentIndex();
+    final previousPlaylistCurrentIndex = await IsarService.instance
+        .getPreviousPlaylistCurrentIndex();
     return previousPlaylistCurrentIndex?.currentIndex ?? 0;
   }
 
-  int get size => storage.length;
+  int get size => playerQueue.length;
 
   Media? get top {
     if (this.size > 0) {
-      return storage[0].item;
+      return playerQueue[0].item;
     }
     return null;
   }
 
   play(Media media) {
-    if (storage.length > 0) {
-      storage.replaceRange(0, 1, [QueueItem(0, 0, media)]);
+    if (playerQueue.length > 0) {
+      playerQueue.replaceRange(0, 1, [QueueItem(0, 0, media)]);
     } else {
       int pos = _nextPosition();
-      storage.add(QueueItem(pos, pos, media));
+      playerQueue.add(QueueItem(pos, pos, media));
     }
     _save(medias: [media]);
     setIndex = 0;
   }
 
   void replaceCurrent(Media media) {
-    if (storage.isNotEmpty && index > -1 && index <= (storage.length - 1)) {
-      storage[index] = storage[index].copyWith(item: media);
+    if (playerQueue.isNotEmpty &&
+        index > -1 &&
+        index <= (playerQueue.length - 1)) {
+      playerQueue[index] = playerQueue[index].copyWith(item: media);
     }
   }
 
   add(Media media) async {
     int pos = _nextPosition();
-    storage.add(QueueItem(pos, pos, media));
+    playerQueue.add(QueueItem(pos, pos, media));
     await _save(medias: [media]);
   }
 
   List<QueueItem<Media>> _toQueueItems(List<Media> items, int i) {
-    return items.map(
-      (e) {
-        i++;
-        return QueueItem(i, i, e);
-      },
-    ).toList();
+    return items.map((e) {
+      i++;
+      return QueueItem(i, i, e);
+    }).toList();
   }
 
-  addAll(
-    List<Media> items, {
-    bool saveOnTop = false,
-  }) async {
-    int i = storage.length == 1 ? 0 : storage.length - 1;
+  addAll(List<Media> items, {bool saveOnTop = false}) async {
+    int i = playerQueue.length == 1 ? 0 : playerQueue.length - 1;
     if (saveOnTop) {
-      storage.insertAll(0, _toQueueItems(items, i));
+      playerQueue.insertAll(0, _toQueueItems(items, i));
     } else {
-      storage.addAll(_toQueueItems(items, i));
+      playerQueue.addAll(_toQueueItems(items, i));
     }
 
     await _save(medias: items, saveOnTop: saveOnTop);
   }
 
-  Future<void> _save(
-      {required List<Media> medias, bool saveOnTop = false}) async {
+  Future<void> _save({
+    required List<Media> medias,
+    bool saveOnTop = false,
+  }) async {
     final items = await previousItems;
     debugPrint(
       '[TESTE] itemsFromStorage: ${items.length} - mediasToSave: ${medias.length}',
@@ -166,6 +175,39 @@ class Queue {
     );
   }
 
+  /// Organizes two media lists into a single list of compressed strings.
+  ///
+  /// This function is responsible for combining two media lists (`items` and `medias`) into a single
+  /// list of strings, determining the order based on the `saveOnTop` parameter.
+  ///
+  /// Parameters:
+  /// * [saveOnTop] - A boolean that determines the order of list combination:
+  ///   - If `true`: the `medias` list will be placed on top
+  ///   - If `false`: the `items` list will be placed on top
+  /// * [items] - First media list to be combined
+  /// * [medias] - Second media list to be combined
+  ///
+  /// Returns:
+  /// * A list of strings containing the compressed representations of the media in the determined order
+  ///
+  /// Usage example:
+  /// ```dart
+  /// final result = organizeLists(
+  ///   saveOnTop: true,
+  ///   items: [media1, media2],
+  ///   medias: [media3, media4]
+  /// );
+  /// // If saveOnTop is true, the result will be [media3, media4, media1, media2]
+  /// // If saveOnTop is false, the result will be [media1, media2, media3, media4]
+  /// ```
+  ///
+  /// Notes:
+  /// * The function uses the `toListStringCompressed` method of the media lists to convert
+  ///   Media objects into compressed strings
+  /// * The order of the lists is determined by the `saveOnTop` parameter, which controls which list
+  ///   will be placed at the beginning of the resulting list
+  /// * This function is commonly used to organize playlists and manage the playback order
+  ///   of media in the player
   List<String> organizeLists(
     bool saveOnTop,
     List<Media> items,
@@ -176,33 +218,36 @@ class Queue {
 
     return [
       ...topList.toListStringCompressed,
-      ...bottomList.toListStringCompressed
+      ...bottomList.toListStringCompressed,
     ];
   }
 
-  int removeByPosition(
-      {required List<int> positionsToDelete, required bool isShuffle}) {
+  int removeByPosition({
+    required List<int> positionsToDelete,
+    required bool isShuffle,
+  }) {
     try {
-      int lastLength = storage.length;
+      int lastLength = playerQueue.length;
       for (var i = 0; i < positionsToDelete.length; ++i) {
         final pos = positionsToDelete[i] - i;
         if (pos < index) {
           setIndex = index - 1;
         }
-        storage.removeAt(pos);
+        playerQueue.removeAt(pos);
       }
 
-      for (var j = 0; j < storage.length; ++j) {
-        storage[j].position = j;
+      for (var j = 0; j < playerQueue.length; ++j) {
+        playerQueue[j].position = j;
       }
 
       if (kDebugMode) {
-        for (var e in storage) {
+        for (var e in playerQueue) {
           debugPrint(
-              '=====> storage remove: ${e.item.name} - ${e.position} | ${e.originalPosition}');
+            '=====> storage remove: ${e.item.name} - ${e.position} | ${e.originalPosition}',
+          );
         }
       }
-      return lastLength - storage.length;
+      return lastLength - playerQueue.length;
     } catch (e) {
       return 0;
     }
@@ -211,35 +256,36 @@ class Queue {
   clear() => removeAll();
 
   removeAll() {
-    storage.clear();
+    playerQueue.clear();
     setIndex = 0;
   }
 
   shuffle() {
-    if (storage.length > 2) {
-      var current = storage[index];
-      _shuffler.shuffle(storage);
-      for (var i = 0; i < storage.length; ++i) {
-        storage[i].position = i;
+    if (playerQueue.length > 2) {
+      var current = playerQueue[index];
+      _shuffler.shuffle(playerQueue);
+      for (var i = 0; i < playerQueue.length; ++i) {
+        playerQueue[i].position = i;
       }
-      var currentIndex = storage.indexOf(current);
+      var currentIndex = playerQueue.indexOf(current);
       reorder(currentIndex, 0, true);
       setIndex = 0;
     }
   }
 
   unshuffle() {
-    if (storage.length > 2) {
-      var current = storage[index];
-      _shuffler.unshuffle(storage);
-      for (var i = 0; i < storage.length; ++i) {
-        final item = storage[i];
+    if (playerQueue.length > 2) {
+      var current = playerQueue[index];
+      _shuffler.unshuffle(playerQueue);
+      for (var i = 0; i < playerQueue.length; ++i) {
+        final item = playerQueue[i];
         item.position = i;
       }
       if (kDebugMode) {
-        for (var e in storage) {
+        for (var e in playerQueue) {
           debugPrint(
-              '=====> storage unshuffle: ${e.item.name} - ${e.position} | ${e.originalPosition}');
+            '=====> storage unshuffle: ${e.item.name} - ${e.position} | ${e.originalPosition}',
+          );
         }
       }
       setIndex = current.position;
@@ -247,8 +293,8 @@ class Queue {
   }
 
   _nextPosition() {
-    if (storage.length == 0) return 0;
-    return storage.length;
+    if (playerQueue.length == 0) return 0;
+    return playerQueue.length;
   }
 
   bool shouldRewind() {
@@ -272,18 +318,20 @@ class Queue {
       if (index > 0) {
         --workIndex;
       }
-      return storage[workIndex].item;
+      return playerQueue[workIndex].item;
     }
-    return storage.isNotEmpty && index >= 0 ? storage[index].item : null;
+    return playerQueue.isNotEmpty && index >= 0
+        ? playerQueue[index].item
+        : null;
   }
 
   // Media? next() {
-  //   if (storage.length == 0) {
+  //   if (playerQueue.length == 0) {
   //     throw AssertionError("Queue is empty");
-  //   } else if (storage.length > 0 && index < storage.length - 1) {
+  //   } else if (playerQueue.length > 0 && index < playerQueue.length - 1) {
   //     final newIndex = index + 1;
   //     setIndex = newIndex;
-  //     var media = storage[newIndex].item;
+  //     var media = playerQueue[newIndex].item;
   //     updateIsarIndex(media.id, newIndex);
   //     return media;
   //   } else {
@@ -296,8 +344,8 @@ class Queue {
         repeatMode == RepeatMode.REPEAT_MODE_ONE) {
       return _next();
     } else if (repeatMode == RepeatMode.REPEAT_MODE_ALL) {
-      if (storage.length - 1 == index) {
-        return storage[0].item;
+      if (playerQueue.length - 1 == index) {
+        return playerQueue[0].item;
       } else {
         return _next();
       }
@@ -307,10 +355,10 @@ class Queue {
   }
 
   Media? _next() {
-    if (storage.length == 0) {
+    if (playerQueue.length == 0) {
       return null;
-    } else if (storage.length > 0 && index < storage.length - 1) {
-      var media = storage[index + 1].item;
+    } else if (playerQueue.length > 0 && index < playerQueue.length - 1) {
+      var media = playerQueue[index + 1].item;
       return media;
     } else {
       return null;
@@ -318,10 +366,10 @@ class Queue {
   }
 
   Media? move(int pos) {
-    if (storage.length == 0) {
+    if (playerQueue.length == 0) {
       throw AssertionError("Queue is empty");
-    } else if (storage.length > 0 && pos <= storage.length - 1) {
-      var media = storage[pos].item;
+    } else if (playerQueue.length > 0 && pos <= playerQueue.length - 1) {
+      var media = playerQueue[pos].item;
       setIndex = pos;
       return media;
     } else {
@@ -336,11 +384,11 @@ class Queue {
   }
 
   // Media? item(int pos) {
-  //   final item = storage[pos].item;
+  //   final item = playerQueue[pos].item;
   //   updateIsarIndex(item.id, pos);
-  //   if (storage.length == 0) {
+  //   if (playerQueue.length == 0) {
   //     return null;
-  //   } else if (storage.length > 0 && pos <= storage.length - 1) {
+  //   } else if (playerQueue.length > 0 && pos <= playerQueue.length - 1) {
   //     return item;
   //   } else {
   //     return null;
@@ -349,42 +397,42 @@ class Queue {
 
   Media restart() {
     setIndex = 0;
-    return storage.first.item;
+    return playerQueue.first.item;
   }
 
   reorder(int oldIndex, int newIndex, [bool isShuffle = false]) {
-    final playingItem = storage.elementAt(index);
+    final playingItem = playerQueue.elementAt(index);
     if (newIndex > oldIndex) {
       for (int i = oldIndex + 1; i <= newIndex; i++) {
         if (!isShuffle) {
-          storage[i].originalPosition--;
+          playerQueue[i].originalPosition--;
         }
-        storage[i].position--;
+        playerQueue[i].position--;
       }
     } else {
       for (int i = newIndex; i < oldIndex; i++) {
         if (!isShuffle) {
-          storage[i].originalPosition++;
+          playerQueue[i].originalPosition++;
         }
-        storage[i].position++;
+        playerQueue[i].position++;
       }
     }
 
-    storage[oldIndex].position = newIndex;
+    playerQueue[oldIndex].position = newIndex;
     if (!isShuffle) {
-      storage[oldIndex].originalPosition = newIndex;
+      playerQueue[oldIndex].originalPosition = newIndex;
     }
-    storage.sort((a, b) => a.position.compareTo(b.position));
-    final playingIndex = storage.indexOf(playingItem);
+    playerQueue.sort((a, b) => a.position.compareTo(b.position));
+    final playingIndex = playerQueue.indexOf(playingItem);
 
     if (kDebugMode) {
       debugPrint(
-        '=====> ${storage[oldIndex].item.name} - storage[oldIndex]: ${storage[oldIndex].originalPosition}',
+        '=====> ${playerQueue[oldIndex].item.name} - playerQueue[oldIndex]: ${playerQueue[oldIndex].originalPosition}',
       );
       debugPrint(
-        '=====> ${storage[newIndex].item.name} - storage[newIndex]: ${storage[newIndex].originalPosition}',
+        '=====> ${playerQueue[newIndex].item.name} - playerQueue[newIndex]: ${playerQueue[newIndex].originalPosition}',
       );
-      for (var e in storage) {
+      for (var e in playerQueue) {
         debugPrint(
           '=====> storage Reorder: ${e.item.name} - ${e.position} - ${e.originalPosition}',
         );

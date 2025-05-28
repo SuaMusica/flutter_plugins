@@ -6,53 +6,56 @@ import 'package:smplayer/src/queue.dart';
 
 void main() {
   final media1 = Media(
-      id: 1,
-      albumTitle: "Album",
-      albumId: 2,
-      ownerId: 2,
-      name: "O Bebe",
-      url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
-      coverUrl:
-          "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
-      bigCoverUrl:
-          "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
-      author: "Xand Avião",
-      isLocal: false,
-      isVerified: true,
-      shareUrl: "");
+    id: 1,
+    albumTitle: "Album",
+    albumId: 2,
+    ownerId: 2,
+    name: "O Bebe",
+    url: "https://android.suamusica.com.br/373377/2238511/02+O+Bebe.mp3",
+    coverUrl:
+        "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+    bigCoverUrl:
+        "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+    author: "Xand Avião",
+    isLocal: false,
+    isVerified: true,
+    shareUrl: "",
+  );
 
   final media2 = Media(
-      id: 2,
-      albumTitle: "Album",
-      albumId: 2,
-      ownerId: 2,
-      name: "Solteiro Largado",
-      url:
-          "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
-      coverUrl:
-          "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
-      bigCoverUrl:
-          "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
-      author: "Xand Avião",
-      isLocal: false,
-      isVerified: true,
-      shareUrl: "");
+    id: 2,
+    albumTitle: "Album",
+    albumId: 2,
+    ownerId: 2,
+    name: "Solteiro Largado",
+    url:
+        "https://android.suamusica.com.br/373377/2238511/03+Solteiro+Largado.mp3",
+    coverUrl:
+        "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+    bigCoverUrl:
+        "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+    author: "Xand Avião",
+    isLocal: false,
+    isVerified: true,
+    shareUrl: "",
+  );
 
   final media3 = Media(
-      id: 3,
-      albumTitle: "Album",
-      albumId: 2,
-      ownerId: 2,
-      name: "Borrachinha",
-      url: "https://android.suamusica.com.br/373377/2238511/05+Borrachinha.mp3",
-      coverUrl:
-          "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
-      bigCoverUrl:
-          "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
-      author: "Xand Avião",
-      isLocal: false,
-      isVerified: false,
-      shareUrl: "");
+    id: 3,
+    albumTitle: "Album",
+    albumId: 2,
+    ownerId: 2,
+    name: "Borrachinha",
+    url: "https://android.suamusica.com.br/373377/2238511/05+Borrachinha.mp3",
+    coverUrl:
+        "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+    bigCoverUrl:
+        "https://images.suamusica.com.br/5hxcfuN3q0lXbSiWXaEwgRS55gQ=/240x240/373377/2238511/cd_cover.jpeg",
+    author: "Xand Avião",
+    isLocal: false,
+    isVerified: false,
+    shareUrl: "",
+  );
 
   group('Queue operations', () {
     test('Adding media to an empty queue shall make it the queue top', () {
@@ -90,7 +93,9 @@ void main() {
       subject.add(media3);
 
       subject.removeByPosition(
-          positionsToDelete: [subject.storage[1].position], isShuffle: false);
+        positionsToDelete: [subject.storage[1].position],
+        isShuffle: false,
+      );
 
       expect(subject.size, 2);
       expect(subject.top, media1);
@@ -145,16 +150,10 @@ void main() {
       expect(subject.items, items);
     });
 
-    test(
-      'Rewind on empty queue shall raise an error',
-      () {
-        final subject = Queue();
-        expect(
-          () => subject.rewind(),
-          throwsAssertionError,
-        );
-      },
-    );
+    test('Rewind on empty queue shall raise an error', () {
+      final subject = Queue();
+      expect(() => subject.rewind(), throwsAssertionError);
+    });
 
     test('Rewind on a queue that was not played shall raise an error', () {
       final subject = Queue();
@@ -207,79 +206,7 @@ void main() {
       expect(subject.items, [media1, media2, media3]);
     });
     test(
-        'Two consecutive previous invocation shall really go the previous track',
-        () {
-      final subject = Queue();
-      subject.add(media1);
-      subject.add(media2);
-      subject.add(media3);
-
-      final next1 = subject.next();
-      expect(subject.size, 3);
-      expect(subject.current, media2);
-      expect(next1, media2);
-      expect(subject.items, [media1, media2, media3]);
-
-      final next2 = subject.next();
-      expect(subject.size, 3);
-      expect(subject.current, media3);
-      expect(next2, media3);
-      expect(subject.items, [media1, media2, media3]);
-
-      subject.previous();
-      final previous = subject.previous();
-      expect(subject.size, 3);
-      expect(subject.current, media2);
-      expect(previous, media2);
-      expect(subject.items, [media1, media2, media3]);
-    });
-    test(
-        'Two consecutive previous invocation with interval greater than 1 sec shall solely rewind',
-        () {
-      final subject = Queue();
-      subject.add(media1);
-      subject.add(media2);
-      subject.add(media3);
-
-      final next1 = subject.next();
-      expect(subject.size, 3);
-      expect(subject.current, media2);
-      expect(next1, media2);
-      expect(subject.items, [media1, media2, media3]);
-
-      final next2 = subject.next();
-      expect(subject.size, 3);
-      expect(subject.current, media3);
-      expect(next2, media3);
-      expect(subject.items, [media1, media2, media3]);
-
-      subject.previous();
-      sleep(Duration(seconds: 3));
-      final previous = subject.previous();
-      expect(subject.size, 3);
-      expect(subject.current, media3);
-      expect(previous, media3);
-      expect(subject.items, [media1, media2, media3]);
-    });
-    test('Next on empty queue shall raise an error', () {
-      final subject = Queue();
-      expect(() => subject.next(), throwsAssertionError);
-    });
-    test('Next on a queue that was not played shall start playing it', () {
-      final subject = Queue();
-      subject.add(media1);
-      subject.add(media2);
-      subject.add(media3);
-
-      final next = subject.next();
-
-      expect(subject.size, 3);
-      expect(subject.top, media1);
-      expect(next, media2);
-      expect(subject.items, [media1, media2, media3]);
-    });
-    test(
-      'Next on a queue that is playing shall move to the next',
+      'Two consecutive previous invocation shall really go the previous track',
       () {
         final subject = Queue();
         subject.add(media1);
@@ -297,8 +224,79 @@ void main() {
         expect(subject.current, media3);
         expect(next2, media3);
         expect(subject.items, [media1, media2, media3]);
+
+        subject.previous();
+        final previous = subject.previous();
+        expect(subject.size, 3);
+        expect(subject.current, media2);
+        expect(previous, media2);
+        expect(subject.items, [media1, media2, media3]);
       },
     );
+    test(
+      'Two consecutive previous invocation with interval greater than 1 sec shall solely rewind',
+      () {
+        final subject = Queue();
+        subject.add(media1);
+        subject.add(media2);
+        subject.add(media3);
+
+        final next1 = subject.next();
+        expect(subject.size, 3);
+        expect(subject.current, media2);
+        expect(next1, media2);
+        expect(subject.items, [media1, media2, media3]);
+
+        final next2 = subject.next();
+        expect(subject.size, 3);
+        expect(subject.current, media3);
+        expect(next2, media3);
+        expect(subject.items, [media1, media2, media3]);
+
+        subject.previous();
+        sleep(Duration(seconds: 3));
+        final previous = subject.previous();
+        expect(subject.size, 3);
+        expect(subject.current, media3);
+        expect(previous, media3);
+        expect(subject.items, [media1, media2, media3]);
+      },
+    );
+    test('Next on empty queue shall raise an error', () {
+      final subject = Queue();
+      expect(() => subject.next(), throwsAssertionError);
+    });
+    test('Next on a queue that was not played shall start playing it', () {
+      final subject = Queue();
+      subject.add(media1);
+      subject.add(media2);
+      subject.add(media3);
+
+      final next = subject.next();
+
+      expect(subject.size, 3);
+      expect(subject.top, media1);
+      expect(next, media2);
+      expect(subject.items, [media1, media2, media3]);
+    });
+    test('Next on a queue that is playing shall move to the next', () {
+      final subject = Queue();
+      subject.add(media1);
+      subject.add(media2);
+      subject.add(media3);
+
+      final next1 = subject.next();
+      expect(subject.size, 3);
+      expect(subject.current, media2);
+      expect(next1, media2);
+      expect(subject.items, [media1, media2, media3]);
+
+      final next2 = subject.next();
+      expect(subject.size, 3);
+      expect(subject.current, media3);
+      expect(next2, media3);
+      expect(subject.items, [media1, media2, media3]);
+    });
     test('Next when reaching the end of the queue shall return null', () {
       final subject = Queue();
       subject.add(media1);

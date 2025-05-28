@@ -11,10 +11,10 @@ class BeforePlayEvent extends Event {
     required this.operation,
     required int queuePosition,
   }) : super(
-          type: EventType.BEFORE_PLAY,
-          media: media,
-          queuePosition: queuePosition,
-        );
+         type: EventType.BEFORE_PLAY,
+         media: media,
+         queuePosition: queuePosition,
+       );
 
   continueWithLoadingOnly() {
     this.operation(true);

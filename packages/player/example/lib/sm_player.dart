@@ -224,19 +224,19 @@ class _SMPlayerState extends State<SMPlayer> {
 
     if (_player.state == PlayerState.STATE_READY) {
       int result = await _player.play();
-      if (result == Player.Ok) {
+      if (result == Player.ok) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Audio is now playing!!!!')));
       }
     } else if (_player.state == PlayerState.PLAYING) {
       int result = await _player.pause();
-      if (result == Player.Ok) {
+      if (result == Player.ok) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Audio is now paused!!!!')));
       }
     } else if (_player.state == PlayerState.PAUSED) {
       int result = await _player.play();
-      if (result == Player.Ok) {
+      if (result == Player.ok) {
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Audio is now playing again!!!!')));
       }
@@ -362,7 +362,7 @@ class _SMPlayerState extends State<SMPlayer> {
               title: Text('Remove all'),
               onTap: () {
                 _player.stop();
-                _player.removeAll();
+                _player.removeAllMedias();
                 Navigator.pop(context);
               },
             ),

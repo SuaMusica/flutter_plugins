@@ -9,8 +9,6 @@ extension ParseToString on RepeatMode {
         return 'Queue';
       case RepeatMode.REPEAT_MODE_ONE:
         return 'Track';
-      default:
-        return "Unknown";
     }
   }
 }
