@@ -118,31 +118,6 @@ class Queue {
     return null;
   }
 
-  play(Media media) {
-    if (playerQueue.length > 0) {
-      playerQueue.replaceRange(0, 1, [QueueItem(0, 0, media)]);
-    } else {
-      int pos = _nextPosition();
-      playerQueue.add(QueueItem(pos, pos, media));
-    }
-    _save(medias: [media]);
-    setIndex = 0;
-  }
-
-  void replaceCurrent(Media media) {
-    if (playerQueue.isNotEmpty &&
-        index > -1 &&
-        index <= (playerQueue.length - 1)) {
-      playerQueue[index] = playerQueue[index].copyWith(item: media);
-    }
-  }
-
-  add(Media media) async {
-    int pos = _nextPosition();
-    playerQueue.add(QueueItem(pos, pos, media));
-    await _save(medias: [media]);
-  }
-
   List<QueueItem<Media>> _toQueueItems(List<Media> items, int i) {
     return items.map((e) {
       i++;
@@ -292,11 +267,6 @@ class Queue {
     }
   }
 
-  _nextPosition() {
-    if (playerQueue.length == 0) return 0;
-    return playerQueue.length;
-  }
-
   bool shouldRewind() {
     if (index >= 0) {
       final now = DateTime.now();
@@ -324,20 +294,6 @@ class Queue {
         ? playerQueue[index].item
         : null;
   }
-
-  // Media? next() {
-  //   if (playerQueue.length == 0) {
-  //     throw AssertionError("Queue is empty");
-  //   } else if (playerQueue.length > 0 && index < playerQueue.length - 1) {
-  //     final newIndex = index + 1;
-  //     setIndex = newIndex;
-  //     var media = playerQueue[newIndex].item;
-  //     updateIsarIndex(media.id, newIndex);
-  //     return media;
-  //   } else {
-  //     return null;
-  //   }
-  // }
 
   Media? possibleNext(RepeatMode repeatMode) {
     if (repeatMode == RepeatMode.REPEAT_MODE_OFF ||
@@ -382,18 +338,6 @@ class Queue {
       PreviousPlaylistCurrentIndex(mediaId: id, currentIndex: newIndex),
     );
   }
-
-  // Media? item(int pos) {
-  //   final item = playerQueue[pos].item;
-  //   updateIsarIndex(item.id, pos);
-  //   if (playerQueue.length == 0) {
-  //     return null;
-  //   } else if (playerQueue.length > 0 && pos <= playerQueue.length - 1) {
-  //     return item;
-  //   } else {
-  //     return null;
-  //   }
-  // }
 
   Media restart() {
     setIndex = 0;

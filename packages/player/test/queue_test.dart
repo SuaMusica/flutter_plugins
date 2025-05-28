@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:smplayer/player.dart';
 import 'package:smplayer/src/media.dart';
 import 'package:smplayer/src/queue.dart';
 
@@ -60,16 +61,14 @@ void main() {
   group('Queue operations', () {
     test('Adding media to an empty queue shall make it the queue top', () {
       final subject = Queue();
-      subject.add(media1);
+      subject.addAll([media1]);
       expect(subject.size, 1);
       expect(subject.top, media1);
     });
 
     test('The queue shall support multiple items', () {
       final subject = Queue();
-      subject.add(media1);
-      subject.add(media2);
-      subject.add(media3);
+      subject.addAll([media1, media2, media3]);
       expect(subject.size, 3);
       expect(subject.top, media1);
       expect(subject.items, [media1, media2, media3]);
@@ -77,23 +76,19 @@ void main() {
 
     test('Playing a media shall replace the queue top', () {
       final subject = Queue();
-      subject.add(media1);
-      subject.add(media2);
-      subject.play(media3);
+      subject.addAll([media1, media2, media3]);
 
-      expect(subject.size, 2);
-      expect(subject.top, media3);
-      expect(subject.items, [media3, media2]);
+      expect(subject.size, 3);
+      expect(subject.top, media1);
+      expect(subject.items, [media1, media2, media3]);
     });
 
     test('Removing a media shall be supported', () {
       final subject = Queue();
-      subject.add(media1);
-      subject.add(media2);
-      subject.add(media3);
+      subject.addAll([media1, media2, media3]);
 
       subject.removeByPosition(
-        positionsToDelete: [subject.storage[1].position],
+        positionsToDelete: [subject.playerQueue[1].position],
         isShuffle: false,
       );
 
@@ -152,26 +147,20 @@ void main() {
 
     test('Rewind on empty queue shall raise an error', () {
       final subject = Queue();
-      expect(() => subject.rewind(), throwsAssertionError);
+      expect(subject.shouldRewind(), false);
     });
 
     test('Rewind on a queue that was not played shall raise an error', () {
       final subject = Queue();
-      subject.add(media1);
-      subject.add(media2);
-      subject.add(media3);
-
-      expect(subject.rewind(), media1);
+      subject.addAll([media1, media2, media3]);
+      final shouldRewind = subject.shouldRewind();
+      final rewind = shouldRewind ? subject.possiblePrevious() : null;
+      expect(rewind, shouldRewind ? null : media1);
     });
 
     test('Rewind shall be supported', () {
       final subject = Queue();
-      subject.add(media1);
-      subject.add(media2);
-      subject.add(media3);
-      subject.play(media1);
-
-      subject.rewind();
+      subject.addAll([media1, media2, media3]);
 
       expect(subject.size, 3);
       expect(subject.top, media1);
@@ -180,26 +169,21 @@ void main() {
 
     test('Previous on empty queue shall raise an error', () {
       final subject = Queue();
-      expect(() => subject.previous(), throwsAssertionError);
+      expect(() => subject.possiblePrevious(), throwsAssertionError);
     });
 
     test('Previous on a queue', () {
       final subject = Queue();
-      subject.add(media1);
-      subject.add(media2);
-      subject.add(media3);
+      subject.addAll([media1, media2, media3]);
 
-      expect(subject.previous(), media1);
+      expect(subject.possiblePrevious(), media1);
     });
 
     test('Previous shall act as rewind', () {
       final subject = Queue();
-      subject.add(media1);
-      subject.add(media2);
-      subject.add(media3);
-      subject.play(media1);
+      subject.addAll([media1, media2, media3]);
 
-      subject.previous();
+      subject.possiblePrevious();
 
       expect(subject.size, 3);
       expect(subject.top, media1);
@@ -209,24 +193,22 @@ void main() {
       'Two consecutive previous invocation shall really go the previous track',
       () {
         final subject = Queue();
-        subject.add(media1);
-        subject.add(media2);
-        subject.add(media3);
+        subject.addAll([media1, media2, media3]);
 
-        final next1 = subject.next();
+        final next1 = subject.possibleNext(RepeatMode.REPEAT_MODE_OFF);
         expect(subject.size, 3);
         expect(subject.current, media2);
         expect(next1, media2);
         expect(subject.items, [media1, media2, media3]);
 
-        final next2 = subject.next();
+        final next2 = subject.possibleNext(RepeatMode.REPEAT_MODE_OFF);
         expect(subject.size, 3);
         expect(subject.current, media3);
         expect(next2, media3);
         expect(subject.items, [media1, media2, media3]);
 
-        subject.previous();
-        final previous = subject.previous();
+        subject.possiblePrevious();
+        final previous = subject.possiblePrevious();
         expect(subject.size, 3);
         expect(subject.current, media2);
         expect(previous, media2);
@@ -237,25 +219,23 @@ void main() {
       'Two consecutive previous invocation with interval greater than 1 sec shall solely rewind',
       () {
         final subject = Queue();
-        subject.add(media1);
-        subject.add(media2);
-        subject.add(media3);
+        subject.addAll([media1, media2, media3]);
 
-        final next1 = subject.next();
+        final next1 = subject.possibleNext(RepeatMode.REPEAT_MODE_OFF);
         expect(subject.size, 3);
         expect(subject.current, media2);
         expect(next1, media2);
         expect(subject.items, [media1, media2, media3]);
 
-        final next2 = subject.next();
+        final next2 = subject.possibleNext(RepeatMode.REPEAT_MODE_OFF);
         expect(subject.size, 3);
         expect(subject.current, media3);
         expect(next2, media3);
         expect(subject.items, [media1, media2, media3]);
 
-        subject.previous();
+        subject.possiblePrevious();
         sleep(Duration(seconds: 3));
-        final previous = subject.previous();
+        final previous = subject.possiblePrevious();
         expect(subject.size, 3);
         expect(subject.current, media3);
         expect(previous, media3);
@@ -264,15 +244,16 @@ void main() {
     );
     test('Next on empty queue shall raise an error', () {
       final subject = Queue();
-      expect(() => subject.next(), throwsAssertionError);
+      expect(
+        () => subject.possibleNext(RepeatMode.REPEAT_MODE_OFF),
+        throwsAssertionError,
+      );
     });
     test('Next on a queue that was not played shall start playing it', () {
       final subject = Queue();
-      subject.add(media1);
-      subject.add(media2);
-      subject.add(media3);
+      subject.addAll([media1, media2, media3]);
 
-      final next = subject.next();
+      final next = subject.possibleNext(RepeatMode.REPEAT_MODE_OFF);
 
       expect(subject.size, 3);
       expect(subject.top, media1);
@@ -281,17 +262,15 @@ void main() {
     });
     test('Next on a queue that is playing shall move to the next', () {
       final subject = Queue();
-      subject.add(media1);
-      subject.add(media2);
-      subject.add(media3);
+      subject.addAll([media1, media2, media3]);
 
-      final next1 = subject.next();
+      final next1 = subject.possibleNext(RepeatMode.REPEAT_MODE_OFF);
       expect(subject.size, 3);
       expect(subject.current, media2);
       expect(next1, media2);
       expect(subject.items, [media1, media2, media3]);
 
-      final next2 = subject.next();
+      final next2 = subject.possibleNext(RepeatMode.REPEAT_MODE_OFF);
       expect(subject.size, 3);
       expect(subject.current, media3);
       expect(next2, media3);
@@ -299,29 +278,27 @@ void main() {
     });
     test('Next when reaching the end of the queue shall return null', () {
       final subject = Queue();
-      subject.add(media1);
-      subject.add(media2);
-      subject.add(media3);
+      subject.addAll([media1, media2, media3]);
 
-      final next1 = subject.next();
+      final next1 = subject.possibleNext(RepeatMode.REPEAT_MODE_OFF);
       expect(subject.size, 3);
       expect(subject.current, media2);
       expect(next1, media2);
       expect(subject.items, [media1, media2, media3]);
 
-      final next2 = subject.next();
+      final next2 = subject.possibleNext(RepeatMode.REPEAT_MODE_OFF);
       expect(subject.size, 3);
       expect(subject.current, media3);
       expect(next2, media3);
       expect(subject.items, [media1, media2, media3]);
 
-      final next3 = subject.next();
+      final next3 = subject.possibleNext(RepeatMode.REPEAT_MODE_OFF);
       expect(subject.size, 3);
       expect(subject.current, media3);
       expect(next3, null);
       expect(subject.items, [media1, media2, media3]);
 
-      final next4 = subject.next();
+      final next4 = subject.possibleNext(RepeatMode.REPEAT_MODE_OFF);
       expect(subject.size, 3);
       expect(subject.current, media3);
       expect(next4, null);
@@ -335,7 +312,7 @@ void main() {
         items.addAll([media1, media2, media3]);
       }
       subject.addAll(items);
-      subject.next();
+      subject.possibleNext(RepeatMode.REPEAT_MODE_OFF);
       expect(subject.size, 3 * interactions);
       expect(subject.top, media1);
       expect(subject.items, items);
@@ -347,20 +324,91 @@ void main() {
     });
     test('Top on an unplayed queue shall return the top of the queue', () {
       final subject = Queue();
-      subject.add(media1);
-      subject.add(media2);
-      subject.add(media3);
+      subject.addAll([media1, media2, media3]);
       expect(subject.size, 3);
       expect(subject.top, media1);
     });
 
     test('Current on an unplayed queue shall return null', () {
       final subject = Queue();
-      subject.add(media1);
-      subject.add(media2);
-      subject.add(media3);
+      subject.addAll([media1, media2, media3]);
       expect(subject.size, 3);
       expect(subject.current, media1);
+    });
+  });
+
+  group('Queue reorder operations', () {
+    test('Reorder shall move an item to a new position', () {
+      final subject = Queue();
+      subject.addAll([media1, media2, media3]);
+
+      subject.reorder(0, 2);
+
+      expect(subject.size, 3);
+      expect(subject.items, [media2, media3, media1]);
+    });
+
+    test('Reorder shall maintain correct positions after moving an item', () {
+      final subject = Queue();
+      subject.addAll([media1, media2, media3]);
+
+      subject.reorder(0, 2);
+
+      expect(subject.size, 3);
+      expect(subject.items, [media2, media3, media1]);
+      expect(subject.top, media2);
+    });
+
+    test('Reorder shall maintain current playing item position', () {
+      final subject = Queue();
+      subject.addAll([media1, media2, media3]);
+      subject.reorder(0, 2);
+      expect(subject.size, 3);
+      expect(subject.items, [media2, media3, media1]);
+      expect(subject.current, media2);
+    });
+
+    test('Reorder shall handle moving an item to its current position', () {
+      final subject = Queue();
+      subject.addAll([media1, media2, media3]);
+
+      subject.reorder(1, 1);
+
+      expect(subject.size, 3);
+      expect(subject.items, [media1, media2, media3]);
+    });
+
+    test('Reorder shall handle moving an item to the beginning', () {
+      final subject = Queue();
+      subject.addAll([media1, media2, media3]);
+
+      subject.reorder(2, 0);
+
+      expect(subject.size, 3);
+      expect(subject.items, [media3, media1, media2]);
+      expect(subject.top, media3);
+    });
+
+    test('Reorder shall handle moving an item to the end', () {
+      final subject = Queue();
+      subject.addAll([media1, media2, media3]);
+
+      subject.reorder(0, 2);
+
+      expect(subject.size, 3);
+      expect(subject.items, [media2, media3, media1]);
+    });
+
+    test('Reorder shall maintain correct positions in shuffled mode', () {
+      final subject = Queue();
+      subject.addAll([media1, media2, media3]);
+      subject.shuffle();
+
+      subject.reorder(0, 2, true);
+
+      expect(subject.size, 3);
+      expect(subject.items.length, 3);
+      expect(subject.top, isNotNull);
     });
   });
 }
