@@ -2,16 +2,16 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:smaws/aws.dart';
-import 'package:smplayer/src/event.dart';
-import 'package:smplayer/src/event_type.dart';
-import 'package:smplayer/src/isar_service.dart';
-import 'package:smplayer/src/media.dart';
-import 'package:smplayer/src/position_change_event.dart';
-import 'package:smplayer/src/previous_playlist_model.dart';
-import 'package:smplayer/src/queue.dart';
-import 'package:smplayer/src/repeat_mode.dart';
-import 'package:smplayer/src/player_channel.dart';
-import 'package:smplayer/src/player_event_controller.dart';
+import 'package:smplayer/src/core/player_channel.dart';
+import 'package:smplayer/src/core/player_event_controller.dart';
+import 'package:smplayer/src/events/event.dart';
+import 'package:smplayer/src/events/event_type.dart';
+import 'package:smplayer/src/events/position_change_event.dart';
+import 'package:smplayer/src/models/media.dart';
+import 'package:smplayer/src/models/previous_playlist_model.dart';
+import 'package:smplayer/src/queue/queue.dart';
+import 'package:smplayer/src/queue/repeat_mode.dart';
+import 'package:smplayer/src/services/isar_service.dart';
 
 import 'player_state.dart';
 

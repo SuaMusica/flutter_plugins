@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:smplayer/src/event.dart';
-import 'package:smplayer/src/event_type.dart';
+
+import 'package:smplayer/src/events/event.dart';
+import 'package:smplayer/src/events/event_type.dart';
 
 class PlayerEventController {
   final StreamController<Event> _eventStreamController =

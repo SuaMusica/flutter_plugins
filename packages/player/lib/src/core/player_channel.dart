@@ -1,14 +1,14 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
-import 'package:smplayer/src/event.dart';
-import 'package:smplayer/src/event_type.dart';
-import 'package:smplayer/src/player.dart';
-import 'package:smplayer/src/player_state.dart';
-import 'package:smplayer/src/repeat_mode.dart';
-import 'package:smplayer/src/duration_change_event.dart';
-import 'package:smplayer/src/position_change_event.dart';
-import 'package:smplayer/src/isar_service.dart';
-import 'package:smplayer/src/previous_playlist_model.dart';
+import 'package:smplayer/src/events/event.dart';
+import 'package:smplayer/src/events/event_type.dart';
+import 'package:smplayer/src/core/player.dart';
+import 'package:smplayer/src/core/player_state.dart';
+import 'package:smplayer/src/queue/repeat_mode.dart';
+import 'package:smplayer/src/events/duration_change_event.dart';
+import 'package:smplayer/src/events/position_change_event.dart';
+import 'package:smplayer/src/services/isar_service.dart';
+import 'package:smplayer/src/models/previous_playlist_model.dart';
 import 'dart:async';
 
 class PlayerChannel {

@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:smplayer/src/isar_service.dart';
-import 'package:smplayer/src/media.dart';
-import 'package:smplayer/src/previous_playlist_model.dart';
-import 'package:smplayer/src/queue_item.dart';
-import 'package:smplayer/src/repeat_mode.dart';
-import 'package:smplayer/src/shuffler.dart';
-import 'package:smplayer/src/simple_shuffle.dart';
+import 'package:smplayer/src/models/media.dart';
+import 'package:smplayer/src/models/previous_playlist_model.dart';
+import 'package:smplayer/src/queue/queue_item.dart';
+import 'package:smplayer/src/queue/repeat_mode.dart';
+import 'package:smplayer/src/queue/shuffler.dart';
+import 'package:smplayer/src/queue/simple_shuffle.dart';
+import 'package:smplayer/src/services/isar_service.dart';
 
 class Queue {
   // ================ Constructor Parameters ================

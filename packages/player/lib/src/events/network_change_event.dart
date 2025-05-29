@@ -1,6 +1,6 @@
-import 'package:smplayer/src/event.dart';
-import 'package:smplayer/src/event_type.dart';
-import 'package:smplayer/src/media.dart';
+import 'package:smplayer/src/events/event.dart';
+import 'package:smplayer/src/events/event_type.dart';
+import 'package:smplayer/src/models/media.dart';
 
 enum NetworkStatus { CONNECTED, DISCONNECTED }
 
