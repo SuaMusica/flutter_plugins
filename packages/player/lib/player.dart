@@ -1,10 +1,10 @@
 export 'src/models/media.dart';
-export 'src/core/player_state.dart';
+export 'src/enums/player_state.dart';
 export 'src/core/player.dart';
-export 'src/events/event_type.dart';
-export 'src/events/event.dart';
+export 'src/enums/event_type.dart';
+export 'src/models/event.dart';
 export 'src/events/duration_change_event.dart';
 export 'src/events/position_change_event.dart';
 export 'src/events/before_play_event.dart';
 export 'src/events/current_queue_updated.dart';
-export 'src/queue/repeat_mode.dart';
+export 'src/enums/repeat_mode.dart';

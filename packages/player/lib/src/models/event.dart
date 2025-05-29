@@ -1,6 +1,6 @@
-import 'package:smplayer/src/events/event_type.dart';
+import 'package:smplayer/src/enums/event_type.dart';
 import 'package:smplayer/src/models/media.dart';
-import 'package:smplayer/src/queue/repeat_mode.dart';
+import 'package:smplayer/src/enums/repeat_mode.dart';
 
 class Event {
   Event({

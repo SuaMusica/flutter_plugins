@@ -1,10 +1,10 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
-import 'package:smplayer/src/events/event.dart';
-import 'package:smplayer/src/events/event_type.dart';
+import 'package:smplayer/src/models/event.dart';
+import 'package:smplayer/src/enums/event_type.dart';
 import 'package:smplayer/src/core/player.dart';
-import 'package:smplayer/src/core/player_state.dart';
-import 'package:smplayer/src/queue/repeat_mode.dart';
+import 'package:smplayer/src/enums/player_state.dart';
+import 'package:smplayer/src/enums/repeat_mode.dart';
 import 'package:smplayer/src/events/duration_change_event.dart';
 import 'package:smplayer/src/events/position_change_event.dart';
 import 'package:smplayer/src/services/isar_service.dart';

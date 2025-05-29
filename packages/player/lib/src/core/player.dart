@@ -4,16 +4,16 @@ import 'package:flutter/foundation.dart';
 import 'package:smaws/aws.dart';
 import 'package:smplayer/src/core/player_channel.dart';
 import 'package:smplayer/src/core/player_event_controller.dart';
-import 'package:smplayer/src/events/event.dart';
-import 'package:smplayer/src/events/event_type.dart';
+import 'package:smplayer/src/models/event.dart';
+import 'package:smplayer/src/enums/event_type.dart';
 import 'package:smplayer/src/events/position_change_event.dart';
 import 'package:smplayer/src/models/media.dart';
 import 'package:smplayer/src/models/previous_playlist_model.dart';
 import 'package:smplayer/src/queue/queue.dart';
-import 'package:smplayer/src/queue/repeat_mode.dart';
+import 'package:smplayer/src/enums/repeat_mode.dart';
 import 'package:smplayer/src/services/isar_service.dart';
 
-import 'player_state.dart';
+import '../enums/player_state.dart';
 
 class Player {
   Player({

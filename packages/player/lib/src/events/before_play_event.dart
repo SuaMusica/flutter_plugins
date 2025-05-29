@@ -1,5 +1,5 @@
-import 'package:smplayer/src/events/event.dart';
-import 'package:smplayer/src/events/event_type.dart';
+import 'package:smplayer/src/models/event.dart';
+import 'package:smplayer/src/enums/event_type.dart';
 import 'package:smplayer/src/models/media.dart';
 
 class BeforePlayEvent extends Event {

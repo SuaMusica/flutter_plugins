@@ -1,4 +1,4 @@
-import 'package:smplayer/src/events/event.dart';
+import 'package:smplayer/src/models/event.dart';
 import 'package:smplayer/src/models/media.dart';
 
 class CurrentQueueUpdated extends Event {

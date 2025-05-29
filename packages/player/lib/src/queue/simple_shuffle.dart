@@ -1,5 +1,5 @@
 import 'package:smplayer/src/models/media.dart';
-import 'package:smplayer/src/queue/queue_item.dart';
+import 'package:smplayer/src/models/queue_item.dart';
 import 'package:smplayer/src/queue/shuffler.dart';
 
 class SimpleShuffler extends Shuffler {
