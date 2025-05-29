@@ -14,7 +14,6 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
-import androidx.media3.common.Player.REPEAT_MODE_ALL
 import androidx.media3.common.Player.REPEAT_MODE_OFF
 import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
@@ -62,21 +61,16 @@ class MediaService : MediaSessionService() {
     private val TAG = "MediaService"
     private val userAgent =
         "SuaMusica/player (Linux; Android ${Build.VERSION.SDK_INT}; ${Build.BRAND}/${Build.MODEL})"
-
-    private var isForegroundService = false
-
     lateinit var mediaSession: MediaSession
     private var mediaController: ListenableFuture<MediaController>? = null
-
     private val uAmpAudioAttributes = AudioAttributes.Builder()
         .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
         .setUsage(C.USAGE_MEDIA)
         .build()
 
-    var playerSwitcher: PlayerSwitcher? = null
-    var exoPlayer: ExoPlayer? = null
-
-    var castPlayer: CastPlayer? = null
+    private var playerSwitcher: PlayerSwitcher? = null
+    private var exoPlayer: ExoPlayer? = null
+    private var castPlayer: CastPlayer? = null
 
     private lateinit var dataSourceBitmapLoader: DataSourceBitmapLoader
     private lateinit var mediaButtonEventHandler: MediaButtonEventHandler
@@ -267,6 +261,8 @@ class MediaService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        exoPlayer?.release()
+        exoPlayer = null
         mediaSession.run {
             releaseAndPerformAndDisableTracking()
             player.release()
