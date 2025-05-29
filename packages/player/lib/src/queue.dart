@@ -10,6 +10,74 @@ import 'package:smplayer/src/shuffler.dart';
 import 'package:smplayer/src/simple_shuffle.dart';
 
 class Queue {
+  // ================ Constructor Parameters ================
+  final Shuffler _shuffler;
+  final bool initializeIsar;
+  final Future<void> Function(List<Media>)? onInitialize;
+  final Future<void> Function()? beforeInitialize;
+
+  // ================ Queue State ================
+  var _index = 0;
+  Media? _current;
+  bool itemsReady = false;
+  List<QueueItem<Media>> playerQueue = <QueueItem<Media>>[];
+
+  // ================ Previous State ================
+  int previousIndex = 0;
+  PreviousPlaylistPosition? previousPosition;
+  PreviousPlaylistMusics? previousPlaylistMusics;
+  DateTime? _lastPrevious;
+
+  // ================ Getters and Setters ================
+  int get index => _index;
+
+  Media? get current =>
+      _current ??
+      (index >= 0 && index < playerQueue.length
+          ? playerQueue[index].item
+          : null);
+
+  List<Media> get items => playerQueue.length > 0
+      ? List<Media>.unmodifiable((playerQueue.map((i) => i.item).toList()))
+      : [];
+
+  int get size => playerQueue.length;
+
+  Media? get top => this.size > 0 ? playerQueue[0].item : null;
+
+  set setIndex(int index) {
+    if (playerQueue.isEmpty || index < 0 || index >= playerQueue.length) {
+      _index = -1;
+      _current = null;
+      return;
+    }
+
+    _index = index;
+    _current = playerQueue[index].item;
+  }
+
+  // ================ ISAR ================
+
+  Future<List<Media>> get previousItems async {
+    previousPlaylistMusics = await IsarService.instance
+        .getPreviousPlaylistMusics();
+    return previousPlaylistMusics?.musics?.toListMedia ?? [];
+  }
+
+  Future<PreviousPlaylistPosition?> get _previousPlaylistPosition async {
+    final previousPlaylistPosition = await IsarService.instance
+        .getPreviousPlaylistPosition();
+    return previousPlaylistPosition?.position != null
+        ? previousPlaylistPosition
+        : null;
+  }
+
+  Future<int> get previousPlaylistIndex async {
+    final previousPlaylistCurrentIndex = await IsarService.instance
+        .getPreviousPlaylistCurrentIndex();
+    return previousPlaylistCurrentIndex?.currentIndex ?? 0;
+  }
+
   Queue({
     Shuffler? shuffler,
     this.initializeIsar = false,
@@ -50,72 +118,6 @@ class Queue {
         itemsReady = true;
       }
     }
-  }
-
-  var _index = 0;
-  int get index => _index;
-  Media? _current;
-
-  set setIndex(int index) {
-    if (playerQueue.isEmpty || index < 0 || index >= playerQueue.length) {
-      _index = -1;
-      _current = null;
-      return;
-    }
-
-    _index = index;
-    _current = playerQueue[index].item;
-  }
-
-  final Shuffler _shuffler;
-  final bool initializeIsar;
-  final Future<void> Function(List<Media>)? onInitialize;
-  final Future<void> Function()? beforeInitialize;
-  bool itemsReady = false;
-  int previousIndex = 0;
-  PreviousPlaylistPosition? previousPosition;
-  List<QueueItem<Media>> playerQueue = <QueueItem<Media>>[];
-  PreviousPlaylistMusics? previousPlaylistMusics;
-  DateTime? _lastPrevious;
-  Media? get current =>
-      _current ??
-      (index >= 0 && index < playerQueue.length
-          ? playerQueue[index].item
-          : null);
-
-  List<Media> get items {
-    return playerQueue.length > 0
-        ? List<Media>.unmodifiable((playerQueue.map((i) => i.item).toList()))
-        : [];
-  }
-
-  Future<List<Media>> get previousItems async {
-    previousPlaylistMusics = await IsarService.instance
-        .getPreviousPlaylistMusics();
-    return previousPlaylistMusics?.musics?.toListMedia ?? [];
-  }
-
-  Future<PreviousPlaylistPosition?> get _previousPlaylistPosition async {
-    final previousPlaylistPosition = await IsarService.instance
-        .getPreviousPlaylistPosition();
-    return previousPlaylistPosition?.position != null
-        ? previousPlaylistPosition
-        : null;
-  }
-
-  Future<int> get previousPlaylistIndex async {
-    final previousPlaylistCurrentIndex = await IsarService.instance
-        .getPreviousPlaylistCurrentIndex();
-    return previousPlaylistCurrentIndex?.currentIndex ?? 0;
-  }
-
-  int get size => playerQueue.length;
-
-  Media? get top {
-    if (this.size > 0) {
-      return playerQueue[0].item;
-    }
-    return null;
   }
 
   List<QueueItem<Media>> _toQueueItems(List<Media> items, int i) {
@@ -236,7 +238,7 @@ class Queue {
   }
 
   shuffle() {
-    if (playerQueue.length > 2) {
+    if (playerQueue.length > 1) {
       var current = playerQueue[index];
       _shuffler.shuffle(playerQueue);
       for (var i = 0; i < playerQueue.length; ++i) {
@@ -249,7 +251,7 @@ class Queue {
   }
 
   unshuffle() {
-    if (playerQueue.length > 2) {
+    if (playerQueue.length > 1) {
       var current = playerQueue[index];
       _shuffler.unshuffle(playerQueue);
       for (var i = 0; i < playerQueue.length; ++i) {

@@ -387,7 +387,9 @@ class Player {
 
   void setIndexAndUpdateIsar(int index) {
     _queue.setIndex = index;
-    _queue.updateIsarIndex(currentMedia!.id, currentIndex);
+    if (currentMedia != null) {
+      _queue.updateIsarIndex(currentMedia!.id, currentIndex);
+    }
   }
 
   List<Map<String, int>> getPositionsList() {

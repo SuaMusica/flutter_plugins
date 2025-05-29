@@ -35,27 +35,46 @@ class PlayerSwitcher(
     var remoteMediaClient: RemoteMediaClient? = null
     private var playerState: PlayerState? = null
 
+    companion object {
+        private const val ERROR_PERMISSION_DENIED = "Permission denied"
+        private const val ERROR_UNKNOWN = "Unknown error occurred"
+        private const val ERROR_PLAYER_NOT_READY = "Player not ready"
+        private const val ERROR_RESTORE_STATE = "Restore state error"
+        private const val ERROR_STOP_AND_CLEAR_PLAYER = "Stop and clear player error"
+        private const val ERROR_SET_CURRENT_PLAYER = "Set current player error"
+    }
+
     var oldPlayer: Player? = null
 
     init {
-        playerEventListener?.let { currentPlayer.removeListener(it) }
-        setupPlayerListener()
+        try {
+            playerEventListener?.let { currentPlayer.removeListener(it) }
+            setupPlayerListener()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error initializing PlayerSwitcher", e)
+            throw IllegalStateException(ERROR_PLAYER_NOT_READY, e)
+        }
     }
 
     fun setCurrentPlayer(newPlayer: Player, remoteMediaClient: RemoteMediaClient? = null) {
-        if (this.currentPlayer === newPlayer) {
-            return
+        try {
+            if (this.currentPlayer === newPlayer) {
+                return
+            }
+            oldPlayer = currentPlayer
+            this.remoteMediaClient = remoteMediaClient
+            playerState = savePlayerState()
+            playerEventListener?.let { currentPlayer.removeListener(it) }
+            stopAndClearCurrentPlayer()
+            this.currentPlayer = newPlayer
+            if (currentPlayer is CastPlayer) {
+                restorePlayerState(playerState!!)
+            }
+            setupPlayerListener()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error setting current player", e)
+            playerChangeNotifier?.notifyError(ERROR_SET_CURRENT_PLAYER)
         }
-        oldPlayer = currentPlayer
-        this.remoteMediaClient = remoteMediaClient
-        playerState = savePlayerState()
-        playerEventListener?.let { currentPlayer.removeListener(it) }
-        stopAndClearCurrentPlayer()
-        this.currentPlayer = newPlayer
-        if (currentPlayer is CastPlayer) {
-            restorePlayerState(playerState!!)
-        }
-        setupPlayerListener()
     }
 
     private data class PlayerState(
@@ -75,20 +94,30 @@ class PlayerSwitcher(
     }
 
     private fun stopAndClearCurrentPlayer() {
-        currentPlayer.stop()
-        if (currentPlayer is CastPlayer) {
-            currentPlayer.clearMediaItems()
+        try {
+            currentPlayer.stop()
+            if (currentPlayer is CastPlayer) {
+                currentPlayer.clearMediaItems()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error stopping and clearing current player", e)
+            playerChangeNotifier?.notifyError(ERROR_STOP_AND_CLEAR_PLAYER)
         }
     }
 
     private fun restorePlayerState(state: PlayerState) {
-        currentPlayer.setMediaItems(
-            state.mediaItems,
-            state.currentItemIndex,
-            state.playbackPositionMs
-        )
-        currentPlayer.playWhenReady = state.playWhenReady
-        currentPlayer.prepare()
+        try {
+            currentPlayer.setMediaItems(
+                state.mediaItems,
+                state.currentItemIndex,
+                state.playbackPositionMs
+            )
+            currentPlayer.playWhenReady = state.playWhenReady
+            currentPlayer.prepare()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error restoring player state", e)
+            playerChangeNotifier?.notifyError(ERROR_RESTORE_STATE)
+        }
     }
 
     private fun setupPlayerListener() {
