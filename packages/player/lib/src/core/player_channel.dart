@@ -27,10 +27,28 @@ class PlayerChannel {
     String method, [
     Map<String, dynamic>? arguments,
   ]) async {
-    arguments ??= const {};
-    return _channel
-        .invokeMethod(method, arguments)
-        .then((result) => result ?? Future.value(ok));
+    try {
+      final result = await _channel.invokeMethod(method, arguments ?? const {});
+
+      if (result is int) {
+        return result;
+      }
+
+      if (result is bool) {
+        return result ? ok : notOk;
+      }
+
+      throw PlatformException(
+        code: 'INVALID_RESULT_TYPE',
+        message: 'Expected int or bool result, got ${result.runtimeType}',
+      );
+    } on PlatformException catch (e) {
+      _log('Platform error in $method: ${e.message}');
+      return notOk;
+    } catch (e) {
+      _log('Unexpected error in $method: $e');
+      return notOk;
+    }
   }
 
   Future<void> platformCallHandler(MethodCall call) async {
