@@ -52,6 +52,7 @@ class QueueManager {
             }
             distributeItemsInRightQueue(currentQueue: queueAfterRemovedItems, keepFirst: true)
         }
+        printStatus(from: "removeByPosition")
     }
     
     func toggleShuffle(positionsList: [[String: Int]]) {
@@ -108,6 +109,8 @@ class QueueManager {
                 futureQueue.removeFirst()
             }
         }
+        Logger.debugLog("#NATIVE LOGS insertIntoPlayerIfNeeded ==> \(String(describing: smPlayer.currentItem?.playlistItem?.title))")
+         printStatus(from:"insertIntoPlayerIfNeeded")
     }
     
     func removeAll() {
@@ -133,7 +136,7 @@ class QueueManager {
         }
     }
     
-    func playFromQueue(position: Int, timePosition: Int = 0, loadOnly: Bool = false, seekToPosition: ((Int) -> Void)? = nil, pause: (() -> Void)? = nil, play: (() -> Void)? = nil, notifyCurrentMediaIndex: ((Int) -> Void)? = nil, addMediaChangeObserver: (() -> Void)? = nil, shouldNotifyTransition: inout Bool) {
+    func playFromQueue(position: Int, timePosition: Int = 0, loadOnly: Bool = false, seekToPosition: ((Int) -> Void)? = nil, pause: (() -> Void)? = nil, play: (() -> Void)? = nil, notifyCurrentMediaIndex: ((Int) -> Void)? = nil, addMediaChangeObserver: (() -> Void)? = nil) {
         distributeItemsInRightQueue(currentQueue: fullQueue, keepFirst: false, positionArg: position, completionHandler: {
             notifyCurrentMediaIndex?(self.currentIndex)
             if timePosition > 0 {
@@ -142,11 +145,11 @@ class QueueManager {
         })
         if loadOnly {
             pause?()
-            shouldNotifyTransition = false
+//            shouldNotifyTransition = false
         } else {
             play?()
         }
-        addMediaChangeObserver?()
+//        addMediaChangeObserver?()
     }
     
     func nextTrack(from: String, playFromQueue: ((Int) -> Void)? = nil, play: (() -> Void)? = nil) {
@@ -191,7 +194,28 @@ class QueueManager {
     }
     
     func printStatus(from: String) {
-        // Implementação opcional para debug
+        Logger.debugLog("QueueActivity #################################################")
+        Logger.debugLog("QueueActivity  \(from) ")
+        Logger.debugLog("QueueActivity Current Index: \(String(describing: currentIndex))")
+        Logger.debugLog("QueueActivity ------------------------------------------")
+        Logger.debugLog("QueueActivity printStatus History: \(historyQueue.count) items")
+        
+        for item in historyQueue {
+            Logger.debugLog("QueueActivity printStatus History: \(String(describing: item.playlistItem?.title))")
+        }
+        Logger.debugLog("QueueActivity printStatus ------------------------------------------")
+        Logger.debugLog("QueueActivity printStatus futureQueue Items: \(futureQueue.count) items")
+        
+        for item in futureQueue {
+            Logger.debugLog("QueueActivity printStatus Upcoming: \(String(describing: item.playlistItem?.title))")
+        }
+        Logger.debugLog("QueueActivity printStatus ------------------------------------------")
+        Logger.debugLog("QueueActivity printStatus AVQueuePlayer items: \(smPlayer.items().count)")
+        
+        for item in smPlayer.items() {
+            Logger.debugLog("QueueActivity printStatus AVQueuePlayer: \(String(describing: item.playlistItem?.title))")
+        }
+        Logger.debugLog("QueueActivity printStatus #################################################")
     }
     
     func enqueue(item: AVPlayerItem) {

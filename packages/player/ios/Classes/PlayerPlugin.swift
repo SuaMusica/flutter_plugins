@@ -35,7 +35,7 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
             }
             result(NSNumber(value: true))
         case "next":
-            smPlayer?.nextTrack(from:"next call")
+            smPlayer?.queueManager.nextTrack(from:"next call")
             result(NSNumber(value: 1))
         case  "disable_notification_commands":
             smPlayer?.areNotificationCommandsEnabled = false
@@ -48,7 +48,7 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
             smPlayer?.removeNotification()
             result(NSNumber(value: 1))
         case "previous":
-            smPlayer?.previousTrack()
+            smPlayer?.queueManager.previousTrack()
             result(NSNumber(value: 1))
         case "play":
             smPlayer?.play()
@@ -66,7 +66,7 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
             result(NSNumber(value: 1))
         case "playFromQueue":
             if let args = call.arguments as? [String: Any] {
-                smPlayer?.playFromQueue(position: args["position"] as? Int ?? 0, timePosition: args["timePosition"] as? Int ?? 0, loadOnly: args["loadOnly"] as? Bool ?? false)
+                smPlayer?.queueManager.playFromQueue(position: args["position"] as? Int ?? 0, timePosition: args["timePosition"] as? Int ?? 0, loadOnly: args["loadOnly"] as? Bool ?? false)
             }
             result(NSNumber(value: 1))
         case "remove_all":
@@ -77,14 +77,13 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
             result(NSNumber(value: 1))
         case "remove_in":
             let args = call.arguments as? [String: Any]
-            smPlayer?.removeByPosition(indexes:args?["indexesToDelete"] as? [Int] ?? [])
+            smPlayer?.queueManager.removeByPosition(indexes:args?["indexesToDelete"] as? [Int] ?? [])
             result(NSNumber(value: 1))
         case "reorder":
             if let args = call.arguments as? [String: Any],
                let oldIndex = args["oldIndex"] as? Int,
-               let newIndex = args["newIndex"] as? Int,
-               let positionsList = args["positionsList"] as? [[String : Int]] {
-                smPlayer?.reorder(fromIndex: oldIndex, toIndex: newIndex,positionsList: positionsList)
+               let newIndex = args["newIndex"] as? Int {
+                smPlayer?.queueManager.reorder(fromIndex: oldIndex, toIndex: newIndex)
             }
             result(NSNumber(value: true))
         case "update_media_uri":

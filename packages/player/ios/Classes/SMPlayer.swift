@@ -8,10 +8,9 @@ public class SMPlayer : NSObject  {
     private var cookie: String = ""
     //Queue handle
     private var smPlayer: AVQueuePlayer
-    private var queueManager: QueueManager
+    var queueManager: QueueManager
     private var listeners: SMPlayerListeners? = nil
     // Transition Control
-    private var shouldNotifyTransition: Bool = true
     var areNotificationCommandsEnabled: Bool = true
     
     private var notificationManager: NotificationManager!
@@ -40,24 +39,27 @@ public class SMPlayer : NSObject  {
         self.methodChannelManager = methodChannelManager
         listeners = SMPlayerListeners(smPlayer:smPlayer,methodChannelManager:methodChannelManager)
         notificationManager.addAudioInterruptionObserver(selector: #selector(handleInterruption(_:)))
-        listeners?.onMediaChanged = { [weak self] in
+        listeners?.onMediaChanged = { [weak self] shouldNotify in
             guard let self = self else { return }
-            if(self.smPlayer.items().count > 0){
-                if(self.smPlayer.currentItem != self.fullQueue.first && self.queueManager.historyQueue.count > 0 && shouldNotifyTransition){
-                    methodChannelManager?.notifyPlayerStateChange(state: PlayerState.itemTransition)
-                }
-                shouldNotifyTransition = true
-                self.updateEndPlaybackObserver()
-                self.listeners?.addItemsObservers()
-                methodChannelManager?.currentMediaIndex(index: self.currentIndex)
+            guard self.smPlayer.items().count > 0 else { return }
+
+            let isNotFirstItem = self.smPlayer.currentItem != self.fullQueue.first
+            let hasHistory = self.queueManager.historyQueue.count > 0
+
+            if isNotFirstItem && hasHistory && shouldNotify {
+                self.methodChannelManager?.notifyPlayerStateChange(state: PlayerState.itemTransition)
             }
+
+            self.updateEndPlaybackObserver()
+            self.listeners?.addItemsObservers()
+            self.methodChannelManager?.currentMediaIndex(index: self.currentIndex)
         }
         nowPlayingInfoManager.setupNowPlayingInfoCenter(
             areNotificationCommandsEnabled: { [weak self] in self?.areNotificationCommandsEnabled ?? true },
             play: { [weak self] in self?.play() },
             pause: { [weak self] in self?.pause() },
-            nextTrack: { [weak self] in self?.nextTrack(from: "commandCenter.nextTrackCommand") },
-            previousTrack: { [weak self] in self?.previousTrack() },
+            nextTrack: { [weak self] in self?.queueManager.nextTrack(from: "commandCenter.nextTrackCommand") },
+            previousTrack: { [weak self] in self?.queueManager.previousTrack() },
             seekToPosition: { [weak self] pos in self?.seekToPosition(position: pos) }
         )
         _ = AudioSessionManager.activeSession()
@@ -167,7 +169,7 @@ public class SMPlayer : NSObject  {
                 queueManager.enqueue(item: playerItem!)
             }
         }
-        insertIntoPlayerIfNeeded()
+        queueManager.insertIntoPlayerIfNeeded()
         if autoPlay && isFirstBatch {
             self.smPlayer.play()
             self.setNowPlaying()
@@ -177,90 +179,18 @@ public class SMPlayer : NSObject  {
         listeners?.addPlayerObservers()
     }
     
-    func removeByPosition(indexes: [Int]) {
-        queueManager.removeByPosition(indexes: indexes)
-        printStatus(from: "removeByPosition")
-    }
-    
     func toggleShuffle(positionsList: [[String: Int]]) {
         queueManager.toggleShuffle(positionsList: positionsList)
         methodChannelManager?.shuffleChanged(shuffleIsActive: queueManager.isShuffleModeEnabled)
     }
     
-    func reorder(fromIndex: Int, toIndex: Int, positionsList: [[String: Int]]) {
-        queueManager.reorder(fromIndex: fromIndex, toIndex: toIndex)
-    }
-    
-    func nextTrack(from:String) {
-        smPlayer.pause()
-        Logger.debugLog("#print nextTrack \(from)")
-        if let currentItem = smPlayer.currentItem {
-            queueManager.historyQueue.append(currentItem)
-        }
-        
-        if(smPlayer.currentItem == fullQueue.last && smPlayer.repeatMode == .REPEAT_MODE_ALL){
-            playFromQueue(position: 0)
-        }
-        smPlayer.advanceToNextItem()
-        smPlayer.seek(to: CMTime.zero)
-        insertIntoPlayerIfNeeded()
-        smPlayer.play()
-        printStatus(from:"NEXT")
-    }
-    
-    func previousTrack() {
-        smPlayer.pause()
-
-        guard let lastHistoryItem = queueManager.historyQueue.popLast() else {
-            seekToPosition(position: 0)
-            return
-        }
-        guard let currentItem = smPlayer.currentItem else { return}
-        guard let lastItemInPlayer = smPlayer.items().last else { return }
-        
-        if(currentItem != lastItemInPlayer) {
-            smPlayer.remove(lastItemInPlayer)
-            queueManager.futureQueue.insert(lastItemInPlayer, at: 0)
-        }
-        
-        smPlayer.insert(lastHistoryItem, after: currentItem)
-        smPlayer.advanceToNextItem()
-        smPlayer.insert(currentItem, after: smPlayer.currentItem)
-        
-        smPlayer.seek(to: CMTime.zero)
-        insertIntoPlayerIfNeeded()
-        smPlayer.play()
-        printStatus(from:"previousTrack")
-    }
-    
     func setNowPlaying(){
-        NowPlayingCenter.set(item: getCurrentPlaylistItem())
-    }
-    
-    private func insertIntoPlayerIfNeeded() {
-        let maxTotalItems = Constants.maxTotalItems
-        let itemsToAdd = min(maxTotalItems - smPlayer.items().count, queueManager.futureQueue.count)
-        
-        for _ in 0..<itemsToAdd {
-            if let item = queueManager.futureQueue.first {
-//                print("#NATIVE LOGS insertIntoPlayerIfNeeded count ==> \(String(describing: smPlayer.items()))")
-                smPlayer.insert(item, after: nil)
-                queueManager.futureQueue.removeFirst()
-            }
-        }
-        Logger.debugLog("#NATIVE LOGS insertIntoPlayerIfNeeded ==> \(String(describing: smPlayer.currentItem?.playlistItem?.title))")
-         printStatus(from:"insertIntoPlayerIfNeeded")
+        NowPlayingCenter.set(item: queueManager.getCurrentPlaylistItem())
     }
     
     
     func removeAll(){
-        smPlayer.pause()
-        smPlayer.seek(to: CMTime.zero)
-        smPlayer.removeAllItems()
-        queueManager.historyQueue.removeAll()
-        queueManager.futureQueue.removeAll()
-        queueManager.originalQueue.removeAll()
-        queueManager.shuffledQueue.removeAll()
+        queueManager.removeAll()
         methodChannelManager?.notifyPlayerStateChange(state:PlayerState.idle)
     }
     
@@ -281,47 +211,6 @@ public class SMPlayer : NSObject  {
         } )
     }
     
-    func getCurrentPlaylistItem() -> PlaylistItem? {
-        guard let currentItem = smPlayer.currentItem else {
-            return nil
-        }
-        return currentItem.playlistItem
-    }
-    
-    private func distributeItemsInRightQueue(currentQueue: [AVPlayerItem], keepFirst: Bool = true, positionArg: Int = -1, completionHandler completion: (() -> Void)? = nil) {
-        let startTime = CFAbsoluteTimeGetCurrent()
-        guard currentQueue.count > 0 else { return }
-        var position = positionArg
-        queueManager.historyQueue.removeAll()
-        queueManager.futureQueue.removeAll()
-        
-        if(keepFirst){
-            position =  smPlayer.currentItem != nil ? currentQueue.firstIndex(of:smPlayer.currentItem!)  ?? -1 : -1
-            let itemsToRemove = smPlayer.items().dropFirst()
-            for item in itemsToRemove {
-                smPlayer.remove(item)
-            }
-        }else{
-            smPlayer.removeAllItems()
-            queueManager.futureQueue.append(currentQueue[position])
-        }
-        
-        for (index, item) in currentQueue.enumerated() {
-            if(index != position){
-                if index < position  {
-                    queueManager.historyQueue.append(item)
-                } else  {
-                    queueManager.futureQueue.append(item)
-                }
-            }
-        }
-        insertIntoPlayerIfNeeded()
-        completion?()
-        
-        let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
-        print("TIME distributeItemsInRightQueue execution time: \(timeElapsed) seconds")
-    }
-    
     func updateMediaUri(id: Int, uri: String?){
         var fullQueueUpdated = fullQueue
         if let index = fullQueue.firstIndex(where: { $0.playlistItem?.mediaId == id }){
@@ -333,57 +222,13 @@ public class SMPlayer : NSObject  {
                 for item in fullQueueUpdated {
                     print("#updateMediaUri QUEUE: \(String(describing: item.playlistItem?.title)) | \(item.asset) | \(currentIndex)")
                 }
-                distributeItemsInRightQueue(currentQueue: fullQueueUpdated)
+                queueManager.distributeItemsInRightQueue(currentQueue: fullQueueUpdated)
             }
         }
-    }
-
-    func playFromQueue(position: Int, timePosition: Int = 0, loadOnly: Bool = false) {
-        distributeItemsInRightQueue(currentQueue: fullQueue, keepFirst: false, positionArg: position, completionHandler: {
-            print("#NATIVE LOGS ==> completionHandler")
-            self.methodChannelManager?.currentMediaIndex(index: self.currentIndex)
-            if(timePosition > 0){
-                self.seekToPosition(position: timePosition)
-            }
-        })
-        if(loadOnly){
-            pause()
-            shouldNotifyTransition = false
-        }else{
-            play()
-        }
-        listeners?.addMediaChangeObserver()
     }
     
     func enableCommands(){
         nowPlayingInfoManager.enableCommands()
-    }
-    
-    
-    func printStatus(from:String) {
-            Logger.debugLog("QueueActivity #################################################")
-            Logger.debugLog("QueueActivity  \(from) ")
-            Logger.debugLog("QueueActivity Current Index: \(String(describing: currentIndex))")
-            Logger.debugLog("QueueActivity ------------------------------------------")
-            Logger.debugLog("QueueActivity printStatus History: \(queueManager.historyQueue.count) items")
-            
-            for item in queueManager.historyQueue {
-                Logger.debugLog("QueueActivity printStatus History: \(String(describing: item.playlistItem?.title))")
-            }
-            Logger.debugLog("QueueActivity printStatus ------------------------------------------")
-            Logger.debugLog("QueueActivity printStatus futureQueue Items: \(queueManager.futureQueue.count) items")
-            
-            for item in queueManager.futureQueue {
-                Logger.debugLog("QueueActivity printStatus Upcoming: \(String(describing: item.playlistItem?.title))")
-            }
-            Logger.debugLog("QueueActivity printStatus ------------------------------------------")
-            Logger.debugLog("QueueActivity printStatus AVQueuePlayer items: \(smPlayer.items().count)")
-            
-            for item in smPlayer.items() {
-                Logger.debugLog("QueueActivity printStatus AVQueuePlayer: \(String(describing: item.playlistItem?.title))")
-            }
-            Logger.debugLog("QueueActivity printStatus #################################################")
-
     }
     
     //override automatic next
@@ -392,14 +237,14 @@ public class SMPlayer : NSObject  {
         switch smPlayer.repeatMode {
         case .REPEAT_MODE_ALL:
             if(smPlayer.currentItem == fullQueue.last){
-                playFromQueue(position: 0)
+                queueManager.playFromQueue(position: 0)
                 break
             }
-            nextTrack(from:"REPEAT_MODE_ALL")
+            queueManager.nextTrack(from:"REPEAT_MODE_ALL")
         case .REPEAT_MODE_ONE:
             seekToPosition(position: 0)
         case .REPEAT_MODE_OFF:
-            nextTrack(from: "REPEAT_MODE_OFF")
+            queueManager.nextTrack(from: "REPEAT_MODE_OFF")
         }
         play()
     }
@@ -407,6 +252,15 @@ public class SMPlayer : NSObject  {
     private func removeAllObservers() {
         notificationManager.removeAllObservers()
         // Remover outros observadores
+    }
+    
+    private func notifyMediaChangedIfNeeded() {
+        let isNotFirstItem = smPlayer.currentItem != fullQueue.first
+        let hasHistory = queueManager.historyQueue.count > 0
+
+        if isNotFirstItem && hasHistory {
+            methodChannelManager?.notifyPlayerStateChange(state: PlayerState.itemTransition)
+        }
     }
 }
 

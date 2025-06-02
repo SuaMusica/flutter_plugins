@@ -1,11 +1,18 @@
 import Foundation
 import AVFoundation
 
-public class SMPlayerListeners : NSObject {
+private enum ObserverKey: String {
+    case status, isPlaybackBufferEmpty, isPlaybackLikelyToKeepUp, currentItem, reasonForWaitingToPlay, timeControlStatus
+}
+
+public class SMPlayerListeners: NSObject {
     let smPlayer: AVQueuePlayer
-    let methodChannelManager: MethodChannelManager?
+    weak var methodChannelManager: MethodChannelManager?
     
-    var onMediaChanged: (() -> Void)?
+    var onMediaChanged: ((Bool) -> Void)?
+    private var itemObservations = [NSKeyValueObservation]()
+    private var playerObservations = [NSKeyValueObservation]()
+    private var lastState = PlayerState.idle
     
     init(smPlayer: AVQueuePlayer, methodChannelManager: MethodChannelManager?) {
         self.smPlayer = smPlayer
@@ -14,26 +21,19 @@ public class SMPlayerListeners : NSObject {
         addPlayerObservers()
     }
     
-    var mediaChange: NSKeyValueObservation?
-    private var statusChange: NSKeyValueObservation?
-    private var loading: NSKeyValueObservation?
-    private var loaded: NSKeyValueObservation?
-    private var error: NSKeyValueObservation?
-    private var notPlayingReason: NSKeyValueObservation?
-    private var playback: NSKeyValueObservation?
-    
-    private var lastState = PlayerState.idle
-    
-    
     func addItemsObservers() {
         removeItemObservers()
         guard let currentItem = smPlayer.currentItem else { return }
-        statusChange = currentItem.observe(\.status, options: [.new, .old]) { (playerItem, change) in
+        
+        let statusObs = currentItem.observe(\AVPlayerItem.status, options: [.new, .old]) { [weak self] playerItem, _ in
+            guard let self = self else { return }
             switch playerItem.status {
             case .failed:
                 if let error = playerItem.error {
-                    print("#NATIVE LOGS ==> ERROR: \(String(describing: playerItem.error))")
-                    self.methodChannelManager?.notifyError(error: "UNKNOWN ERROR")
+                    Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] ERROR: \(error.localizedDescription)")
+                    self.methodChannelManager?.notifyError(error: error.localizedDescription)
+                } else {
+                    self.methodChannelManager?.notifyError(error: "Unknown error")
                 }
             case .readyToPlay:
                 self.notifyPlayerStateChange(state: PlayerState.stateReady)
@@ -43,96 +43,106 @@ public class SMPlayerListeners : NSObject {
                 break
             }
         }
+        itemObservations.append(statusObs)
         
-
-        loading = currentItem.observe(\.isPlaybackBufferEmpty, options: [.new, .old]) { [weak self] (new, old) in
+        let loadingObs = currentItem.observe(\AVPlayerItem.isPlaybackBufferEmpty, options: [.new, .old]) { [weak self] _, _ in
             guard let self = self else { return }
-            print("#NATIVE LOGS ==> Listeners - observer - loading")
-            notifyPlayerStateChange(state: PlayerState.buffering)
+            Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Buffering (isPlaybackBufferEmpty)")
+            self.notifyPlayerStateChange(state: PlayerState.buffering)
         }
+        itemObservations.append(loadingObs)
         
-        loaded = currentItem.observe(\.isPlaybackLikelyToKeepUp, options: [.new]) { (player, _) in
-            print("#NATIVE LOGS ==> Listeners - observer - loaded")
+        let loadedObs = currentItem.observe(\AVPlayerItem.isPlaybackLikelyToKeepUp, options: [.new]) { [weak self] _, _ in
+            guard let self = self else { return }
+            Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Loaded (isPlaybackLikelyToKeepUp)")
+        }
+        itemObservations.append(loadedObs)
+    }
+    
+    func notifyPlayerStateChange(state: PlayerState) {
+        if lastState != state {
+            methodChannelManager?.notifyPlayerStateChange(state: state)
+            lastState = state
         }
     }
     
-    func notifyPlayerStateChange(state: PlayerState){
-        if(lastState != state){
-            self.methodChannelManager?.notifyPlayerStateChange(state: state)
-            lastState = state
-        }
-     }
-    
-
-    func addMediaChangeObserver(){
-        mediaChange = smPlayer.observe(\.currentItem, options: [.new, .old]) { [weak self] (player, change) in
+    func addMediaChangeObserver() {
+        removeMediaChangeObserver()
+        let mediaChangeObs = smPlayer.observe(\AVQueuePlayer.currentItem, options: [.new, .old]) { [weak self] _, change in
             guard let self = self else { return }
             let oldItemExists = change.oldValue != nil
-            print("#NATIVE LOGS ==> onMediaChanged: \(oldItemExists)")
-            
+            Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Media changed. Old item exists: \(oldItemExists)")
             if let newItem = change.newValue, newItem != change.oldValue {
-                self.onMediaChanged?()
+                self.onMediaChanged?(true)
                 self.addItemsObservers()
             }
         }
+        playerObservations.append(mediaChangeObs)
     }
+    
     func addPlayerObservers() {
         addMediaChangeObserver()
         
         let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
-        smPlayer.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
+        smPlayer.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] _ in
             guard let self = self else { return }
             let position: Float64 = CMTimeGetSeconds(self.smPlayer.currentTime())
             if let currentItem = self.smPlayer.currentItem {
                 let duration: Float64 = CMTimeGetSeconds(currentItem.duration)
                 if position < duration {
                     self.methodChannelManager?.notifyPositionChange(position: position, duration: duration)
-                    NowPlayingCenter.update(item: currentItem.playlistItem, rate: 1.0, position: position, duration: duration)
+                    if let playlistItem = currentItem.playlistItem {
+                        NowPlayingCenter.update(item: playlistItem, rate: 1.0, position: position, duration: duration)
+                    }
                 }
             }
         }
         
-        notPlayingReason = smPlayer.observe(\.reasonForWaitingToPlay, options: [.new]) { (playerItem, change) in
-            switch self.smPlayer.reasonForWaitingToPlay {
+        let notPlayingReasonObs = smPlayer.observe(\AVQueuePlayer.reasonForWaitingToPlay, options: [.new]) { [weak self] player, _ in
+            guard let self = self else { return }
+            switch player.reasonForWaitingToPlay {
             case .evaluatingBufferingRate:
-                print("#NATIVE LOGS ==> Listeners reasonForWaitingToPlay - evaluatingBufferingRate")
+                Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Reason: evaluatingBufferingRate")
             case .toMinimizeStalls:
-                print("#NATIVE LOGS ==> Listeners reasonForWaitingToPlay - toMinimizeStalls")
+                Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Reason: toMinimizeStalls")
             case .noItemToPlay:
-                print("#NATIVE LOGS ==> Listeners reasonForWaitingToPlay - noItemToPlay")
+                Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Reason: noItemToPlay")
             default:
-                print("#NATIVE LOGS ==> Listeners reasonForWaitingToPlay - default")
+                Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Reason: default")
             }
         }
+        playerObservations.append(notPlayingReasonObs)
         
-        playback = smPlayer.observe(\.timeControlStatus, options: [.new, .old]) { [weak self] (player, change) in
+        let playbackObs = smPlayer.observe(\AVQueuePlayer.timeControlStatus, options: [.new, .old]) { [weak self] player, _ in
             guard let self = self else { return }
             switch player.timeControlStatus {
             case .playing:
-                notifyPlayerStateChange(state: PlayerState.playing)
-                print("#NATIVE LOGS ==> Listeners - Playing")
+                self.notifyPlayerStateChange(state: PlayerState.playing)
+                Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Playing")
             case .paused:
-                notifyPlayerStateChange(state: PlayerState.paused)
-                print("#NATIVE LOGS ==> Listeners - Paused")
+                self.notifyPlayerStateChange(state: PlayerState.paused)
+                Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Paused")
             case .waitingToPlayAtSpecifiedRate:
-                notifyPlayerStateChange(state: PlayerState.buffering)
-                print("#NATIVE LOGS ==> Listeners - Buffering")
+                self.notifyPlayerStateChange(state: PlayerState.buffering)
+                Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Buffering")
             @unknown default:
                 break
             }
         }
+        playerObservations.append(playbackObs)
     }
     
     func removeItemObservers() {
-        statusChange?.invalidate()
-        loading?.invalidate()
-        loaded?.invalidate()
-        
-        statusChange = nil
-        loading = nil
-        loaded = nil
-        
+        itemObservations.forEach { $0.invalidate() }
+        itemObservations.removeAll()
         removeErrorObserver()
+    }
+    
+    func removeMediaChangeObserver() {
+        playerObservations = playerObservations.filter { obs in
+            obs.invalidate()
+            return false
+        }
     }
     
     func removeErrorObserver() {
@@ -145,18 +155,15 @@ public class SMPlayerListeners : NSObject {
         }
     }
     
-
+    /// Removes all player observers.
     func removePlayerObservers() {
-        notPlayingReason?.invalidate()
-        playback?.invalidate()
-        mediaChange?.invalidate()
-        mediaChange = nil
-        notPlayingReason = nil
-        playback = nil
+        playerObservations.forEach { $0.invalidate() }
+        playerObservations.removeAll()
+        removeItemObservers()
     }
     
     deinit {
         removePlayerObservers()
-        removeItemObservers()
     }
 }
+
