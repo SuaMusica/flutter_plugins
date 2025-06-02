@@ -33,7 +33,7 @@ public class SMPlayerListeners : NSObject {
             case .failed:
                 if let error = playerItem.error {
                     print("#NATIVE LOGS ==> ERROR: \(String(describing: playerItem.error))")
-                    self.methodChannelManager?.notifyError(error: "UNKNOW ERROR")
+                    self.methodChannelManager?.notifyError(error: "UNKNOWN ERROR")
                 }
             case .readyToPlay:
                 self.notifyPlayerStateChange(state: PlayerState.stateReady)
