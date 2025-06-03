@@ -90,7 +90,7 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
             if let args = call.arguments as? [String: Any],
                let id = args["id"] as? Int,
                let uri = args["uri"] as? String {
-                smPlayer?.updateMediaUri(id: id, uri: uri)
+                smPlayer?.queueManager.updateMediaUri(id: id, uri: uri)
             }
             result(NSNumber(value: true))
         case "seek":

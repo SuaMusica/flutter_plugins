@@ -47,6 +47,8 @@ class NowPlayingInfoManager {
         let commandCenter = MPRemoteCommandCenter.shared()
         commandCenter.nextTrackCommand.isEnabled = true
         commandCenter.previousTrackCommand.isEnabled = true
+        commandCenter.pauseCommand.isEnabled = true
+        commandCenter.playCommand.isEnabled = true
         commandCenter.changePlaybackPositionCommand.isEnabled = true
     }
     

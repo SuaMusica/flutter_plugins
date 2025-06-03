@@ -21,7 +21,7 @@ public class SMPlayer : NSObject  {
         static let defaultTimescale: CMTimeScale = 60000
     }
     
-    var fullQueue: [AVPlayerItem] {
+    var fullQueue: [PlaylistItem] {
         return queueManager.fullQueue
     }
     
@@ -136,38 +136,15 @@ public class SMPlayer : NSObject  {
         nowPlayingInfoManager.clearNowPlayingInfo()
     }
     
-    private func createPlayerItem(with url: URL, cookie: String?) -> AVPlayerItem {
-        let assetOptions = ["AVURLAssetHTTPHeaderFieldsKey": ["Cookie": cookie ?? ""]]
-        return AVPlayerItem(asset: AVURLAsset(url: url, options: assetOptions))
-    }
-    
-    private func createLocalPlayerItem(with path: String) -> AVPlayerItem {
-        return AVPlayerItem(asset: AVAsset(url: NSURL(fileURLWithPath: path) as URL))
-    }
-    
-    private func createPlayerItemFromUri(_ uri: String?, fallbackUrl: String?, cookie: String?) -> AVPlayerItem? {
-        if uri?.contains("https") ?? true {
-            guard let url = URL(string: (uri ?? fallbackUrl!) ?? "") else { return nil }
-            return createPlayerItem(with: url, cookie: cookie)
-        } else {
-            return createLocalPlayerItem(with: uri!)
-        }
-    }
-    
     func enqueue(medias: [PlaylistItem], autoPlay: Bool, cookie: String) {
-        var playerItem: AVPlayerItem?
         guard let message = MessageBuffer.shared.receive() else { return }
         if(!cookie.isEmpty){
             self.cookie = cookie
         }
         let isFirstBatch = self.smPlayer.items().count == 0
         for media in message {
-            playerItem = createPlayerItemFromUri(media.url, fallbackUrl: nil, cookie: self.cookie)
             media.cookie = cookie
-            if playerItem != nil {
-                playerItem!.playlistItem = media
-                queueManager.enqueue(item: playerItem!)
-            }
+                queueManager.enqueue(item: media)
         }
         queueManager.insertIntoPlayerIfNeeded()
         if autoPlay && isFirstBatch {
@@ -175,7 +152,6 @@ public class SMPlayer : NSObject  {
             self.setNowPlaying()
         }
         self.enableCommands()
-        //TODO: precisa adicionar em todos os batches?
         listeners?.addPlayerObservers()
     }
     
@@ -209,22 +185,6 @@ public class SMPlayer : NSObject  {
                 self.methodChannelManager?.notifyPlayerStateChange(state: PlayerState.seekEnd)
             }
         } )
-    }
-    
-    func updateMediaUri(id: Int, uri: String?){
-        var fullQueueUpdated = fullQueue
-        if let index = fullQueue.firstIndex(where: { $0.playlistItem?.mediaId == id }){
-            let oldItem = fullQueueUpdated[index]
-            if let playerItem = createPlayerItemFromUri(uri, fallbackUrl: oldItem.playlistItem?.fallbackUrl, cookie: oldItem.playlistItem?.cookie) {
-                playerItem.playlistItem = oldItem.playlistItem
-                fullQueueUpdated[index] = playerItem
-                print("updateMediaUri: \(String(describing: uri))")
-                for item in fullQueueUpdated {
-                    print("#updateMediaUri QUEUE: \(String(describing: item.playlistItem?.title)) | \(item.asset) | \(currentIndex)")
-                }
-                queueManager.distributeItemsInRightQueue(currentQueue: fullQueueUpdated)
-            }
-        }
     }
     
     func enableCommands(){
