@@ -138,7 +138,8 @@ class QueueManager {
         let oldItem = fullQueue[index]
         if oldItem.url == newUri { return }
         let updatedItem = createUpdatedPlaylistItem(from: oldItem, newUri: newUri)
-        fullQueue[index] = updatedItem
+        var updatedQueue = fullQueue
+        updatedQueue[index] = updatedItem
         distributeItemsInRightQueue(currentQueue: updatedQueue)
     }
     

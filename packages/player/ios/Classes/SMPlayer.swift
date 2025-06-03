@@ -137,12 +137,11 @@ public class SMPlayer : NSObject  {
     }
     
     func enqueue(medias: [PlaylistItem], autoPlay: Bool, cookie: String) {
-        guard let message = MessageBuffer.shared.receive() else { return }
         if(!cookie.isEmpty){
             self.cookie = cookie
         }
         let isFirstBatch = self.smPlayer.items().count == 0
-        for media in message {
+        for media in medias {
             media.cookie = cookie
                 queueManager.enqueue(item: media)
         }

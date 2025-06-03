@@ -29,8 +29,7 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
                 let autoPlay = batch["autoPlay"] as? Bool ?? false
                 let cookie = batch["cookie"] as? String ?? ""
                 if let mediaList = convertToMedia(mediaArray: listMedia) {
-                    MessageBuffer.shared.send(mediaList)
-                    smPlayer?.enqueue(medias: mediaList, autoPlay: autoPlay, cookie: cookie)
+                   smPlayer?.enqueue(medias: mediaList, autoPlay: autoPlay, cookie: cookie)
                 }
             }
             result(NSNumber(value: true))
