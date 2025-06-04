@@ -7,6 +7,8 @@ class NowPlayingInfoManager {
         let commandCenter = MPRemoteCommandCenter.shared()
         commandCenter.nextTrackCommand.isEnabled = true
         commandCenter.previousTrackCommand.isEnabled = true
+        commandCenter.pauseCommand.isEnabled = true
+        commandCenter.playCommand.isEnabled = true
         commandCenter.changePlaybackPositionCommand.isEnabled = true
         
         commandCenter.pauseCommand.addTarget { _ in
@@ -57,8 +59,6 @@ class NowPlayingInfoManager {
         commandCenter.nextTrackCommand.isEnabled = false
         commandCenter.previousTrackCommand.isEnabled = false
         commandCenter.changePlaybackPositionCommand.isEnabled = false
-        commandCenter.playCommand.removeTarget(nil)
-        commandCenter.pauseCommand.removeTarget(nil)
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
         try? AVAudioSession.sharedInstance().setActive(false)
         UIApplication.shared.endReceivingRemoteControlEvents()

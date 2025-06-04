@@ -7,19 +7,15 @@ public class SMPlayer : NSObject  {
     var methodChannelManager: MethodChannelManager?
     private var cookie: String = ""
     //Queue handle
-    private var smPlayer: AVQueuePlayer
-    var queueManager: QueueManager
+    var smPlayer: AVQueuePlayer
+    var queueManager: QueueManager!
     private var listeners: SMPlayerListeners? = nil
     // Transition Control
     var areNotificationCommandsEnabled: Bool = true
     
     private var notificationManager: NotificationManager!
     private var nowPlayingInfoManager: NowPlayingInfoManager!
-    
-    private enum Constants {
-        static let maxTotalItems = 5
-        static let defaultTimescale: CMTimeScale = 60000
-    }
+
     
     var fullQueue: [PlaylistItem] {
         return queueManager.fullQueue
@@ -31,13 +27,14 @@ public class SMPlayer : NSObject  {
     
     init(methodChannelManager: MethodChannelManager?) {
         smPlayer = AVQueuePlayer()
-        queueManager = QueueManager(smPlayer: smPlayer, maxTotalItems: Constants.maxTotalItems)
-        
         super.init()
-        nowPlayingInfoManager = NowPlayingInfoManager()
-        notificationManager = NotificationManager(target: self)
         self.methodChannelManager = methodChannelManager
         listeners = SMPlayerListeners(smPlayer:smPlayer,methodChannelManager:methodChannelManager)
+        queueManager = QueueManager(smPlayer: smPlayer,listeners:listeners!, methodChannelManager: methodChannelManager!)
+        nowPlayingInfoManager = NowPlayingInfoManager()
+        notificationManager = NotificationManager(target: self)
+        
+        
         notificationManager.addAudioInterruptionObserver(selector: #selector(handleInterruption(_:)))
         listeners?.onMediaChanged = { [weak self] shouldNotify in
             guard let self = self else { return }
@@ -56,11 +53,11 @@ public class SMPlayer : NSObject  {
         }
         nowPlayingInfoManager.setupNowPlayingInfoCenter(
             areNotificationCommandsEnabled: { [weak self] in self?.areNotificationCommandsEnabled ?? true },
-            play: { [weak self] in self?.play() },
-            pause: { [weak self] in self?.pause() },
+            play: { [weak self] in self?.smPlayer.play() },
+            pause: { [weak self] in self?.smPlayer.pause() },
             nextTrack: { [weak self] in self?.queueManager.nextTrack(from: "commandCenter.nextTrackCommand") },
             previousTrack: { [weak self] in self?.queueManager.previousTrack() },
-            seekToPosition: { [weak self] pos in self?.seekToPosition(position: pos) }
+            seekToPosition: { [weak self] pos in self?.queueManager.seekToTimePosition(position: pos) }
         )
         _ = AudioSessionManager.activeSession()
     }
@@ -78,16 +75,12 @@ public class SMPlayer : NSObject  {
             if let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt {
                 let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
                 if options.contains(.shouldResume) {
-                    play()
+                    smPlayer.play()
                 }
             }
         @unknown default:
             break
         }
-    }
-    
-    func pause() {
-        smPlayer.pause()
     }
     
     func addEndPlaybackObserver() {
@@ -151,7 +144,6 @@ public class SMPlayer : NSObject  {
             self.setNowPlaying()
         }
         self.enableCommands()
-        listeners?.addPlayerObservers()
     }
     
     func toggleShuffle(positionsList: [[String: Int]]) {
@@ -173,18 +165,7 @@ public class SMPlayer : NSObject  {
         nowPlayingInfoManager.removeNotification()
     }
     
-    func play(){
-        smPlayer.play()
-    }
-    
-    func seekToPosition(position:Int){
-        let positionInSec = CMTime(seconds: Double(position/1000), preferredTimescale: Constants.defaultTimescale)
-        smPlayer.currentItem?.seek(to: positionInSec, toleranceBefore: .zero, toleranceAfter: .zero, completionHandler: { completed in
-            if completed {
-                self.methodChannelManager?.notifyPlayerStateChange(state: PlayerState.seekEnd)
-            }
-        } )
-    }
+ 
     
     func enableCommands(){
         nowPlayingInfoManager.enableCommands()
@@ -201,16 +182,15 @@ public class SMPlayer : NSObject  {
             }
             queueManager.nextTrack(from:"REPEAT_MODE_ALL")
         case .REPEAT_MODE_ONE:
-            seekToPosition(position: 0)
+            queueManager.seekToTimePosition(position: 0)
         case .REPEAT_MODE_OFF:
             queueManager.nextTrack(from: "REPEAT_MODE_OFF")
         }
-        play()
+        smPlayer.play()
     }
     
     private func removeAllObservers() {
         notificationManager.removeAllObservers()
-        // Remover outros observadores
     }
     
     private func notifyMediaChangedIfNeeded() {

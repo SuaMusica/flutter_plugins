@@ -12,6 +12,7 @@ public class SMPlayerListeners: NSObject {
     var onMediaChanged: ((Bool) -> Void)?
     private var itemObservations = [NSKeyValueObservation]()
     private var playerObservations = [NSKeyValueObservation]()
+    private var periodicTimeObserver: Any?
     private var lastState = PlayerState.idle
     
     init(smPlayer: AVQueuePlayer, methodChannelManager: MethodChannelManager?) {
@@ -53,10 +54,28 @@ public class SMPlayerListeners: NSObject {
         itemObservations.append(loadingObs)
         
         let loadedObs = currentItem.observe(\AVPlayerItem.isPlaybackLikelyToKeepUp, options: [.new]) { [weak self] _, _ in
-            guard let self = self else { return }
+            guard self != nil else { return }
             Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Loaded (isPlaybackLikelyToKeepUp)")
         }
         itemObservations.append(loadedObs)
+        
+        addErrorObserver(for: currentItem)
+    }
+    
+    private func addErrorObserver(for item: AVPlayerItem) {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handlePlayerItemError(_:)),
+            name: .AVPlayerItemFailedToPlayToEndTime,
+            object: item
+        )
+    }
+    
+    @objc private func handlePlayerItemError(_ notification: Notification) {
+        if let error = notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error {
+            Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Player Item Error: \(error.localizedDescription)")
+            methodChannelManager?.notifyError(error: error.localizedDescription)
+        }
     }
     
     func notifyPlayerStateChange(state: PlayerState) {
@@ -82,24 +101,10 @@ public class SMPlayerListeners: NSObject {
     
     func addPlayerObservers() {
         addMediaChangeObserver()
-        
-        let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
-        smPlayer.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] _ in
-            guard let self = self else { return }
-            let position: Float64 = CMTimeGetSeconds(self.smPlayer.currentTime())
-            if let currentItem = self.smPlayer.currentItem {
-                let duration: Float64 = CMTimeGetSeconds(currentItem.duration)
-                if position < duration {
-                    self.methodChannelManager?.notifyPositionChange(position: position, duration: duration)
-                    if let playlistItem = currentItem.playlistItem {
-                        NowPlayingCenter.update(item: playlistItem, rate: 1.0, position: position, duration: duration)
-                    }
-                }
-            }
-        }
+        addPeriodicTimeObserver()
         
         let notPlayingReasonObs = smPlayer.observe(\AVQueuePlayer.reasonForWaitingToPlay, options: [.new]) { [weak self] player, _ in
-            guard let self = self else { return }
+            guard self != nil else { return }
             switch player.reasonForWaitingToPlay {
             case .evaluatingBufferingRate:
                 Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Reason: evaluatingBufferingRate")
@@ -132,6 +137,31 @@ public class SMPlayerListeners: NSObject {
         playerObservations.append(playbackObs)
     }
     
+    private func addPeriodicTimeObserver() {
+        removePeriodicTimeObserver()
+        let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        periodicTimeObserver = smPlayer.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] _ in
+            guard let self = self else { return }
+            let position: Float64 = CMTimeGetSeconds(self.smPlayer.currentTime())
+            if let currentItem = self.smPlayer.currentItem {
+                let duration: Float64 = CMTimeGetSeconds(currentItem.duration)
+                if position < duration {
+                    self.methodChannelManager?.notifyPositionChange(position: position, duration: duration)
+                    if let playlistItem = currentItem.playlistItem {
+                        NowPlayingCenter.update(item: playlistItem, rate: 1.0, position: position, duration: duration)
+                    }
+                }
+            }
+        }
+    }
+    
+    private func removePeriodicTimeObserver() {
+        if let observer = periodicTimeObserver {
+            smPlayer.removeTimeObserver(observer)
+            periodicTimeObserver = nil
+        }
+    }
+    
     func removeItemObservers() {
         itemObservations.forEach { $0.invalidate() }
         itemObservations.removeAll()
@@ -139,9 +169,9 @@ public class SMPlayerListeners: NSObject {
     }
     
     func removeMediaChangeObserver() {
-        playerObservations = playerObservations.filter { obs in
-            obs.invalidate()
-            return false
+        if !playerObservations.isEmpty {
+            let mediaChangeObserver = playerObservations.removeFirst()
+            mediaChangeObserver.invalidate()
         }
     }
     
@@ -159,6 +189,7 @@ public class SMPlayerListeners: NSObject {
     func removePlayerObservers() {
         playerObservations.forEach { $0.invalidate() }
         playerObservations.removeAll()
+        removePeriodicTimeObserver()
         removeItemObservers()
     }
     

@@ -50,10 +50,10 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
             smPlayer?.queueManager.previousTrack()
             result(NSNumber(value: 1))
         case "play":
-            smPlayer?.play()
+            smPlayer?.smPlayer.play()
             result(NSNumber(value: 1))
         case "pause":
-            smPlayer?.pause()
+            smPlayer?.smPlayer.pause()
             result(NSNumber(value: 1))
         case "toggle_shuffle":
             if let args = call.arguments as? [String: Any]{
@@ -95,7 +95,7 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
         case "seek":
             if let args = call.arguments as? [String: Any] {
                 let position = args["position"] as? Int ?? 0
-                smPlayer?.seekToPosition(position: position)
+                smPlayer?.queueManager.seekToTimePosition(position: position)
             }
             result(NSNumber(value: 1))
         default:

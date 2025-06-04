@@ -9,11 +9,19 @@ class QueueManager {
     var shuffledIndices: [Int] = []
     var isShuffleModeEnabled: Bool = false
     private let smPlayer: AVQueuePlayer
-    private let maxTotalItems: Int
+
+    private let listeners: SMPlayerListeners
+    private let methodChannelManager: MethodChannelManager
     
-    init(smPlayer: AVQueuePlayer, maxTotalItems: Int = 5) {
+    private enum Constants {
+        static let maxTotalItems = 5
+        static let defaultTimescale: CMTimeScale = 60000
+    }
+    
+    init(smPlayer: AVQueuePlayer, listeners: SMPlayerListeners, methodChannelManager: MethodChannelManager) {
         self.smPlayer = smPlayer
-        self.maxTotalItems = maxTotalItems
+        self.listeners = listeners
+        self.methodChannelManager = methodChannelManager
     }
     
     
@@ -23,6 +31,15 @@ class QueueManager {
     
     var fullQueue: [PlaylistItem] {
         return historyQueue + mirrorPlayerQueue + futureQueue
+    }
+    
+    func seekToTimePosition(position:Int){
+        let positionInSec = CMTime(seconds: Double(position/1000), preferredTimescale: Constants.defaultTimescale)
+        smPlayer.currentItem?.seek(to: positionInSec, toleranceBefore: .zero, toleranceAfter: .zero, completionHandler: { completed in
+            if completed {
+                self.methodChannelManager.notifyPlayerStateChange(state: PlayerState.seekEnd)
+            }
+        } )
     }
     
     var currentIndex: Int {
@@ -108,7 +125,7 @@ class QueueManager {
     }
     
     func insertIntoPlayerIfNeeded() {
-        let itemsToAdd = min(maxTotalItems - smPlayer.items().count, futureQueue.count)
+        let itemsToAdd = min(Constants.maxTotalItems - smPlayer.items().count, futureQueue.count)
         for _ in 0..<itemsToAdd {
             if let item = futureQueue.first {
                 let aVPlayerItem = createPlayerItemFromUri(item.url, fallbackUrl:item.fallbackUrl,cookie:item.cookie)
@@ -123,7 +140,7 @@ class QueueManager {
     
     func removeAll() {
         smPlayer.pause()
-        smPlayer.seek(to: CMTime.zero)
+        seekToTimePosition(position:0)
         smPlayer.removeAllItems()
         historyQueue.removeAll()
         futureQueue.removeAll()
@@ -158,54 +175,68 @@ class QueueManager {
         )
     }
     
-    func playFromQueue(position: Int, timePosition: Int = 0, loadOnly: Bool = false, seekToPosition: ((Int) -> Void)? = nil, pause: (() -> Void)? = nil, play: (() -> Void)? = nil, notifyCurrentMediaIndex: ((Int) -> Void)? = nil, addMediaChangeObserver: (() -> Void)? = nil) {
+    func playFromQueue(position: Int, timePosition: Int = 0, loadOnly: Bool = false) {
         distributeItemsInRightQueue(currentQueue: fullQueue, keepFirst: false, positionArg: position, completionHandler: {
-            notifyCurrentMediaIndex?(self.currentIndex)
+            self.methodChannelManager.currentMediaIndex(index: self.currentIndex)
             if timePosition > 0 {
-                seekToPosition?(timePosition)
+                self.seekToTimePosition(position:timePosition)
             }
         })
         if loadOnly {
-            pause?()
+            smPlayer.pause()
 //            shouldNotifyTransition = false
         } else {
-            play?()
+            smPlayer.play()
         }
-//        addMediaChangeObserver?()
     }
     
-    func nextTrack(from: String, playFromQueue: ((Int) -> Void)? = nil) {
+    func nextTrack(from: String) {
         smPlayer.pause()
         if let currentItem = smPlayer.currentItem?.playlistItem{
             historyQueue.append(currentItem)
         }
         if smPlayer.currentItem?.playlistItem == fullQueue.last && smPlayer.repeatMode == .REPEAT_MODE_ALL {
-            playFromQueue?(0)
+            playFromQueue(position:0)
         }
         smPlayer.advanceToNextItem()
-        smPlayer.seek(to: CMTime.zero)
+        seekToTimePosition(position:0)
         insertIntoPlayerIfNeeded()
         smPlayer.play()
     }
     
-    func previousTrack(seekToPosition: ((Int) -> Void)? = nil) {
+    func previousTrack() {
         smPlayer.pause()
         guard let lastHistoryItem = historyQueue.popLast() else {
-            seekToPosition?(0)
+            seekToTimePosition(position:0)
+            smPlayer.play()
             return
         }
-        guard let currentItem = smPlayer.currentItem else { return }
-        guard let lastItemInPlayer = smPlayer.items().last else { return }
+        
+        guard let currentItem = smPlayer.currentItem else {
+            return 
+        }
+        
+        guard let lastItemInPlayer = smPlayer.items().last else {
+            return 
+        }
+        
         if currentItem != lastItemInPlayer {
             smPlayer.remove(lastItemInPlayer)
             futureQueue.insert(lastItemInPlayer.playlistItem!, at: 0)
         }
+        
         let historyAVPlayerItem = createPlayerItemFromUri(lastHistoryItem.url, fallbackUrl:lastHistoryItem.fallbackUrl,cookie:lastHistoryItem.cookie)
-        smPlayer.insert(historyAVPlayerItem!, after: currentItem)
-        smPlayer.advanceToNextItem()
-        smPlayer.insert(currentItem, after: smPlayer.currentItem)
-        smPlayer.seek(to: CMTime.zero)
+        
+        if historyAVPlayerItem != nil {
+            historyAVPlayerItem!.playlistItem = lastHistoryItem
+            smPlayer.insert(historyAVPlayerItem!, after: currentItem)
+            smPlayer.advanceToNextItem()
+            smPlayer.insert(currentItem, after: smPlayer.currentItem)
+        }
+        
+        seekToTimePosition(position:0)
         insertIntoPlayerIfNeeded()
+        listeners.addItemsObservers()
         smPlayer.play()
     }
     
@@ -256,7 +287,7 @@ class QueueManager {
     
     func createPlayerItemFromUri(_ uri: String?, fallbackUrl: String?, cookie: String?) -> AVPlayerItem? {
         if uri?.contains("https") ?? true {
-            guard let url = URL(string: (uri ?? fallbackUrl!) ?? "") else { return nil }
+            guard let url = URL(string: (uri ?? fallbackUrl) ?? "") else { return nil }
             return createPlayerItem(with: url, cookie: cookie)
         } else {
             return createLocalPlayerItem(with: uri!)

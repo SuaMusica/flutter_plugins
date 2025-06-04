@@ -2,8 +2,8 @@ import Foundation
 
 public class Logger {
     public static func debugLog(_ message: String) {
-        #if DEBUG
+//        #if DEBUG
         print(message)
-        #endif
+//        #endif
     }
 } 
