@@ -38,7 +38,6 @@ class QueueManager {
                 self.methodChannelManager.notifyPlayerStateChange(state: PlayerState.seekEnd)
             }
         }
-        smPlayer.play()
     }
     
     var currentIndex: Int {
