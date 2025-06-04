@@ -37,4 +37,16 @@ class NotificationManager {
     func removeAllObservers() {
         NotificationCenter.default.removeObserver(target as Any)
     }
+    
+    func removeAudioInterruptionObserver() {
+        NotificationCenter.default.removeObserver(
+            target as Any,
+            name: AVAudioSession.interruptionNotification,
+            object: nil
+        )
+    }
+    
+    deinit {
+        removeAllObservers()
+    }
 } 

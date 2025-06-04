@@ -136,7 +136,7 @@ public class SMPlayer : NSObject  {
         let isFirstBatch = self.smPlayer.items().count == 0
         for media in medias {
             media.cookie = cookie
-                queueManager.enqueue(item: media)
+            queueManager.enqueue(item: media)
         }
         queueManager.insertIntoPlayerIfNeeded()
         if autoPlay && isFirstBatch {
@@ -171,7 +171,6 @@ public class SMPlayer : NSObject  {
         nowPlayingInfoManager.enableCommands()
     }
     
-    //override automatic next
     @objc func itemDidFinishPlaying(_ notification: Notification) {
         pause()
         switch smPlayer.repeatMode {
@@ -189,10 +188,6 @@ public class SMPlayer : NSObject  {
         smPlayer.play()
     }
     
-    private func removeAllObservers() {
-        notificationManager.removeAllObservers()
-    }
-    
     private func notifyMediaChangedIfNeeded() {
         let isNotFirstItem = smPlayer.currentItem != fullQueue.first
         let hasHistory = queueManager.historyQueue.count > 0
@@ -200,6 +195,18 @@ public class SMPlayer : NSObject  {
         if isNotFirstItem && hasHistory {
             methodChannelManager?.notifyPlayerStateChange(state: PlayerState.itemTransition)
         }
+    }
+    
+    deinit {
+        removeEndPlaybackObserver()
+        notificationManager.removeAudioInterruptionObserver()
+        listeners?.removePlayerObservers()
+        listeners = nil
+        queueManager.removeAll()
+        nowPlayingInfoManager.removeNotification()
+        clearNowPlayingInfo()
+        smPlayer.pause()
+        smPlayer.removeAllItems()
     }
 }
 
@@ -244,5 +251,4 @@ public extension AVQueuePlayer {
     var repeatModeIndex: Int {
         return RepeatMode.allCases.firstIndex(of: repeatMode) ?? -1
     }
-    
 }

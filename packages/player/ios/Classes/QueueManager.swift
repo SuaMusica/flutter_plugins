@@ -293,4 +293,8 @@ class QueueManager {
             return createLocalPlayerItem(with: uri!)
         }
     }
+    
+    deinit {
+        removeAll()
+    }
 }

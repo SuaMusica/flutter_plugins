@@ -68,4 +68,8 @@ class NowPlayingInfoManager {
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
         removeNotification()
     }
+    
+    deinit {
+        removeNotification()
+    }
 } 
