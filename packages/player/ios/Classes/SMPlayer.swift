@@ -132,7 +132,7 @@ public class SMPlayer : NSObject  {
         }
         let isFirstBatch = self.smPlayer.items().count == 0
         for media in medias {
-            media.cookie = cookie
+            media.cookie = self.cookie
             queueManager.enqueue(item: media)
         }
         queueManager.insertIntoPlayerIfNeeded()
