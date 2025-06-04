@@ -39,14 +39,11 @@ public class SMPlayer : NSObject  {
         listeners?.onMediaChanged = { [weak self] shouldNotify in
             guard let self = self else { return }
             guard self.smPlayer.items().count > 0 else { return }
-
             let isNotFirstItem = self.smPlayer.currentItem != self.fullQueue.first
             let hasHistory = self.queueManager.historyQueue.count > 0
-
             if isNotFirstItem && hasHistory && shouldNotify {
                 self.methodChannelManager?.notifyPlayerStateChange(state: PlayerState.itemTransition)
             }
-
             self.updateEndPlaybackObserver()
             self.listeners?.addItemsObservers()
             self.methodChannelManager?.currentMediaIndex(index: self.currentIndex)
@@ -55,7 +52,7 @@ public class SMPlayer : NSObject  {
             areNotificationCommandsEnabled: { [weak self] in self?.areNotificationCommandsEnabled ?? true },
             play: { [weak self] in self?.smPlayer.play() },
             pause: { [weak self] in self?.smPlayer.pause() },
-            nextTrack: { [weak self] in self?.queueManager.nextTrack(from: "commandCenter.nextTrackCommand") },
+            nextTrack: { [weak self] in self?.queueManager.nextTrack() },
             previousTrack: { [weak self] in self?.queueManager.previousTrack() },
             seekToPosition: { [weak self] pos in self?.queueManager.seekToTimePosition(position: pos) }
         )
@@ -70,7 +67,7 @@ public class SMPlayer : NSObject  {
         }
         switch type {
         case .began:
-            pause()
+            smPlayer.pause()
         case .ended:
             if let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt {
                 let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
@@ -172,18 +169,18 @@ public class SMPlayer : NSObject  {
     }
     
     @objc func itemDidFinishPlaying(_ notification: Notification) {
-        pause()
+        smPlayer.pause()
         switch smPlayer.repeatMode {
         case .REPEAT_MODE_ALL:
             if(smPlayer.currentItem == fullQueue.last){
                 queueManager.playFromQueue(position: 0)
                 break
             }
-            queueManager.nextTrack(from:"REPEAT_MODE_ALL")
+            queueManager.nextTrack()
         case .REPEAT_MODE_ONE:
             queueManager.seekToTimePosition(position: 0)
         case .REPEAT_MODE_OFF:
-            queueManager.nextTrack(from: "REPEAT_MODE_OFF")
+            queueManager.nextTrack()
         }
         smPlayer.play()
     }

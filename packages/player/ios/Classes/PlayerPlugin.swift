@@ -34,7 +34,7 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
             }
             result(NSNumber(value: true))
         case "next":
-            smPlayer?.queueManager.nextTrack(from:"next call")
+            smPlayer?.queueManager.nextTrack()
             result(NSNumber(value: 1))
         case  "disable_notification_commands":
             smPlayer?.areNotificationCommandsEnabled = false
