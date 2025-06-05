@@ -28,15 +28,13 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
                let listMedia = batch["batch"] as? [[String: Any]] {
                 let autoPlay = batch["autoPlay"] as? Bool ?? false
                 let cookie = batch["cookie"] as? String ?? ""
-                let shouldNotifyTransition = batch["shouldNotifyTransition"] as? Bool ?? false
                 if let mediaList = convertToMedia(mediaArray: listMedia) {
-                    MessageBuffer.shared.send(mediaList)
-                    smPlayer?.enqueue(medias: mediaList, autoPlay: autoPlay, cookie: cookie, shouldNotifyTransition: shouldNotifyTransition)
+                   smPlayer?.enqueue(medias: mediaList, autoPlay: autoPlay, cookie: cookie)
                 }
             }
             result(NSNumber(value: true))
         case "next":
-            smPlayer?.nextTrack(from:"next call")
+            smPlayer?.queueManager.nextTrack()
             result(NSNumber(value: 1))
         case  "disable_notification_commands":
             smPlayer?.areNotificationCommandsEnabled = false
@@ -49,13 +47,13 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
             smPlayer?.removeNotification()
             result(NSNumber(value: 1))
         case "previous":
-            smPlayer?.previousTrack()
+            smPlayer?.queueManager.previousTrack()
             result(NSNumber(value: 1))
         case "play":
-            smPlayer?.play()
+            smPlayer?.smPlayer.play()
             result(NSNumber(value: 1))
         case "pause":
-            smPlayer?.pause()
+            smPlayer?.smPlayer.pause()
             result(NSNumber(value: 1))
         case "toggle_shuffle":
             if let args = call.arguments as? [String: Any]{
@@ -67,7 +65,7 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
             result(NSNumber(value: 1))
         case "playFromQueue":
             if let args = call.arguments as? [String: Any] {
-                smPlayer?.playFromQueue(position: args["position"] as? Int ?? 0, timePosition: args["timePosition"] as? Int ?? 0, loadOnly: args["loadOnly"] as? Bool ?? false)
+                smPlayer?.queueManager.playFromQueue(position: args["position"] as? Int ?? 0, timePosition: args["timePosition"] as? Int ?? 0, loadOnly: args["loadOnly"] as? Bool ?? false)
             }
             result(NSNumber(value: 1))
         case "remove_all":
@@ -78,27 +76,26 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
             result(NSNumber(value: 1))
         case "remove_in":
             let args = call.arguments as? [String: Any]
-            smPlayer?.removeByPosition(indexes:args?["indexesToDelete"] as? [Int] ?? [])
+            smPlayer?.queueManager.removeByPosition(indexes:args?["indexesToDelete"] as? [Int] ?? [])
             result(NSNumber(value: 1))
         case "reorder":
             if let args = call.arguments as? [String: Any],
                let oldIndex = args["oldIndex"] as? Int,
-               let newIndex = args["newIndex"] as? Int,
-               let positionsList = args["positionsList"] as? [[String : Int]] {
-                smPlayer?.reorder(fromIndex: oldIndex, toIndex: newIndex,positionsList: positionsList)
+               let newIndex = args["newIndex"] as? Int {
+                smPlayer?.queueManager.reorder(fromIndex: oldIndex, toIndex: newIndex)
             }
             result(NSNumber(value: true))
         case "update_media_uri":
             if let args = call.arguments as? [String: Any],
                let id = args["id"] as? Int,
                let uri = args["uri"] as? String {
-                smPlayer?.updateMediaUri(id: id, uri: uri)
+                smPlayer?.queueManager.updateMediaUri(id: id, uri: uri)
             }
             result(NSNumber(value: true))
         case "seek":
             if let args = call.arguments as? [String: Any] {
                 let position = args["position"] as? Int ?? 0
-                smPlayer?.seekToPosition(position: position)
+                smPlayer?.queueManager.seekToTimePosition(position: position)
             }
             result(NSNumber(value: 1))
         default:
@@ -150,6 +147,7 @@ public class PlayerPlugin: NSObject, FlutterPlugin {
         _ = AudioSessionManager.inactivateSession()
         smPlayer?.clearNowPlayingInfo()
         smPlayer?.removeAll()
+        NotificationCenter.default.removeObserver(self, name: AVAudioSession.interruptionNotification, object: nil)
     }
     
 }

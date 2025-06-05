@@ -10,13 +10,13 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import br.com.suamusica.player.PlayerPlugin.Companion.DISABLE_REPEAT_MODE
-import br.com.suamusica.player.PlayerPlugin.Companion.ENQUEUE
+import br.com.suamusica.player.PlayerPlugin.Companion.ENQUEUE_METHOD
 import br.com.suamusica.player.PlayerPlugin.Companion.ID_FAVORITE_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.ID_URI_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.INDEXES_TO_REMOVE
 import br.com.suamusica.player.PlayerPlugin.Companion.IS_FAVORITE_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.IS_PLAYING_ARGUMENT
-import br.com.suamusica.player.PlayerPlugin.Companion.LOAD_ONLY
+import br.com.suamusica.player.PlayerPlugin.Companion.LOAD_ONLY_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.NEW_URI_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.PLAY_FROM_QUEUE_METHOD
 import br.com.suamusica.player.PlayerPlugin.Companion.POSITIONS_LIST
@@ -25,6 +25,7 @@ import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_ALL
 import br.com.suamusica.player.PlayerPlugin.Companion.REMOVE_IN
 import br.com.suamusica.player.PlayerPlugin.Companion.REORDER
 import br.com.suamusica.player.PlayerPlugin.Companion.REPEAT_MODE
+import br.com.suamusica.player.PlayerPlugin.Companion.SEEK_METHOD
 import br.com.suamusica.player.PlayerPlugin.Companion.SET_REPEAT_MODE
 import br.com.suamusica.player.PlayerPlugin.Companion.TIME_POSITION_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.TOGGLE_SHUFFLE
@@ -66,26 +67,35 @@ class MediaSessionConnection(
         }
     }
 
-    fun enqueue(medias: String, autoPlay: Boolean,shouldNotifyTransition:Boolean) {
+    fun enqueue(medias: String, autoPlay: Boolean,) {
         val bundle = Bundle()
         bundle.putString("json", medias)
         bundle.putBoolean("autoPlay", autoPlay)
-        bundle.putBoolean("shouldNotifyTransition", shouldNotifyTransition)
-        sendCommand(ENQUEUE, bundle)
+        sendCommand(ENQUEUE_METHOD, bundle)
     }
 
     fun playFromQueue(index: Int, timePosition: Long, loadOnly: Boolean) {
         val bundle = Bundle()
         bundle.putInt(POSITION_ARGUMENT, index)
         bundle.putLong(TIME_POSITION_ARGUMENT, timePosition)
-        bundle.putBoolean(LOAD_ONLY, loadOnly)
+        bundle.putBoolean(LOAD_ONLY_ARGUMENT, loadOnly)
         sendCommand(PLAY_FROM_QUEUE_METHOD, bundle)
     }
 
-    fun play(shouldPrepare: Boolean = false) {
+    fun play() {
+        sendCommand("play", null)
+    }
+
+    fun cast(id: String) {
         val bundle = Bundle()
-        bundle.putBoolean("shouldPrepare", shouldPrepare)
-        sendCommand("play", bundle)
+        bundle.putString("cast_id", id)
+        sendCommand("cast", bundle)
+    }
+
+    fun setCastMedia(media: String) {
+        val bundle = Bundle()
+        bundle.putString("media", media)
+        sendCommand("cast_next_media", bundle)
     }
 
     fun setRepeatMode(mode: String) {
@@ -121,16 +131,17 @@ class MediaSessionConnection(
         bundle.putInt(ID_FAVORITE_ARGUMENT, idFavorite)
         sendCommand(UPDATE_FAVORITE, bundle)
     }
+
     fun updatePlayState(isPlaying: Boolean) {
         val bundle = Bundle()
         bundle.putBoolean(IS_PLAYING_ARGUMENT, isPlaying)
         sendCommand(UPDATE_IS_PLAYING, bundle)
     }
 
-    fun updateMediaUri(id:Int,newUri:String?){
+    fun updateMediaUri(id: Int, newUri: String?) {
         val bundle = Bundle()
-        bundle.putString(NEW_URI_ARGUMENT,newUri)
-        bundle.putInt(ID_URI_ARGUMENT,id)
+        bundle.putString(NEW_URI_ARGUMENT, newUri)
+        bundle.putInt(ID_URI_ARGUMENT, id)
         sendCommand(UPDATE_MEDIA_URI, bundle)
     }
 
@@ -183,7 +194,7 @@ class MediaSessionConnection(
         val bundle = Bundle()
         bundle.putLong("position", position)
         bundle.putBoolean("playWhenReady", playWhenReady)
-        sendCommand("seek", bundle)
+        sendCommand(SEEK_METHOD, bundle)
     }
 
     fun release() {

@@ -1,6 +1,6 @@
-import 'package:smplayer/src/event.dart';
-import 'package:smplayer/src/event_type.dart';
-import 'package:smplayer/src/media.dart';
+import 'package:smplayer/src/models/event.dart';
+import 'package:smplayer/src/enums/event_type.dart';
+import 'package:smplayer/src/models/media.dart';
 
 class BeforePlayEvent extends Event {
   Function(bool) operation;
@@ -11,10 +11,10 @@ class BeforePlayEvent extends Event {
     required this.operation,
     required int queuePosition,
   }) : super(
-          type: EventType.BEFORE_PLAY,
-          media: media,
-          queuePosition: queuePosition,
-        );
+         type: EventType.BEFORE_PLAY,
+         media: media,
+         queuePosition: queuePosition,
+       );
 
   continueWithLoadingOnly() {
     this.operation(true);

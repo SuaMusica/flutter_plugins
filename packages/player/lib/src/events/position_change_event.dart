@@ -1,6 +1,6 @@
-import 'package:smplayer/src/event.dart';
-import 'package:smplayer/src/event_type.dart';
-import 'package:smplayer/src/media.dart';
+import 'package:smplayer/src/models/event.dart';
+import 'package:smplayer/src/enums/event_type.dart';
+import 'package:smplayer/src/models/media.dart';
 
 class PositionChangeEvent extends Event {
   final Duration position;
@@ -12,9 +12,10 @@ class PositionChangeEvent extends Event {
     required this.position,
     required this.duration,
   }) : super(
-            type: EventType.POSITION_CHANGE,
-            media: media,
-            queuePosition: queuePosition);
+         type: EventType.POSITION_CHANGE,
+         media: media,
+         queuePosition: queuePosition,
+       );
 
   @override
   String toString() =>

@@ -1,145 +1,208 @@
 import Foundation
 import AVFoundation
 
-public class SMPlayerListeners : NSObject {
+public class SMPlayerListeners: NSObject {
     let smPlayer: AVQueuePlayer
-    let methodChannelManager: MethodChannelManager?
+    weak var methodChannelManager: MethodChannelManager?
     
-    var onMediaChanged: (() -> Void)?
+    var onMediaChanged: ((Bool) -> Void)?
+    private var itemObservations = Set<NSKeyValueObservation>()
+    private var playerObservations = Set<NSKeyValueObservation>()
+    private var periodicTimeObserver: Any?
+    private var notificationObservers = [NSObjectProtocol]()
+    
+    private var lastState = PlayerState.idle
+    private var lastNotificationTime = Date()
+    private let notificationThrottleInterval: TimeInterval = 0.1
+    
+    private let positionUpdateInterval: TimeInterval = 0.8
     
     init(smPlayer: AVQueuePlayer, methodChannelManager: MethodChannelManager?) {
         self.smPlayer = smPlayer
         self.methodChannelManager = methodChannelManager
         super.init()
         addPlayerObservers()
+        addItemsObservers()
     }
-    
-    var mediaChange: NSKeyValueObservation?
-    private var statusChange: NSKeyValueObservation?
-    private var loading: NSKeyValueObservation?
-    private var loaded: NSKeyValueObservation?
-    private var error: NSKeyValueObservation?
-    private var notPlayingReason: NSKeyValueObservation?
-    private var playback: NSKeyValueObservation?
-    
     
     func addItemsObservers() {
-        removeItemObservers()
+        cleanupItemObservers()
         guard let currentItem = smPlayer.currentItem else { return }
-        statusChange = currentItem.observe(\.status, options: [.new, .old]) { (playerItem, change) in
-            if playerItem.status == .failed {
-                if let error = playerItem.error {
-                    self.methodChannelManager?.notifyError(error: "UNKNOW ERROR")
+        
+        let statusObservation = currentItem.observe(
+            \AVPlayerItem.status,
+            options: [.new, .initial]
+        ) { [weak self] playerItem, _ in
+            switch playerItem.status {
+            case .failed:
+                let errorMessage = playerItem.error?.localizedDescription ?? "Unknown playback error"
+                Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] ERROR: \(errorMessage)")
+                self?.methodChannelManager?.notifyError(error: errorMessage)
+            case .readyToPlay:
+                self?.notifyPlayerStateChange(state: .stateReady)
+            case .unknown:
+                Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Player status unknown")
+            @unknown default:
+                Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Player status unknown default")
+            }
+        }
+        itemObservations.insert(statusObservation)
+        
+        let bufferEmptyObservation = currentItem.observe(
+            \AVPlayerItem.isPlaybackBufferEmpty,
+            options: [.new]
+        ) { [weak self] _, change in
+            if change.newValue == true {
+                Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Buffering (buffer empty)")
+                self?.notifyPlayerStateChange(state: .buffering)
+            }
+        }
+        itemObservations.insert(bufferEmptyObservation)
+        
+        let bufferKeepUpObservation = currentItem.observe(
+            \AVPlayerItem.isPlaybackLikelyToKeepUp,
+            options: [.new]
+        ) { _, change in
+            if change.newValue == true {
+                Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Buffer ready (likely to keep up)")
+            }
+        }
+        itemObservations.insert(bufferKeepUpObservation)
+        
+        let observer = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemFailedToPlayToEndTime,
+            object: currentItem,
+            queue: .main
+        ) { [weak self] notification in
+            if let error = notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error {
+                Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Player Item Error: \(error.localizedDescription)")
+                self?.methodChannelManager?.notifyError(error: error.localizedDescription)
+            }
+        }
+        notificationObservers.append(observer)
+    }
+    
+    func notifyPlayerStateChange(state: PlayerState) {
+        let now = Date()
+        guard lastState != state && (now.timeIntervalSince(lastNotificationTime) >= notificationThrottleInterval || lastState != state) else { 
+            return 
+        }
+        
+        lastNotificationTime = now
+        methodChannelManager?.notifyPlayerStateChange(state: state)
+        lastState = state
+    }
+    
+    func addMediaChangeObserver() {
+        let mediaChangeObservation = smPlayer.observe(
+            \AVQueuePlayer.currentItem,
+            options: [.new, .old]
+        ) { [weak self] _, change in
+            if let newItem = change.newValue, newItem != change.oldValue {
+                Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Media changed")
+                self?.onMediaChanged?(true)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                    self?.addItemsObservers()
                 }
             }
         }
-
-        loading = currentItem.observe(\.isPlaybackBufferEmpty, options: [.new, .old]) { [weak self] (new, old) in
-            guard let self = self else { return }
-            print("#NATIVE LOGS ==> Listeners - observer - loading")
-            self.methodChannelManager?.notifyPlayerStateChange(state: PlayerState.buffering)
-        }
-        
-        loaded = currentItem.observe(\.isPlaybackLikelyToKeepUp, options: [.new]) { (player, _) in
-            print("#NATIVE LOGS ==> Listeners - observer - loaded")
-        }
+        playerObservations.insert(mediaChangeObservation)
     }
     
-
-    func addMediaChangeObserver(){
-        mediaChange = smPlayer.observe(\.currentItem, options: [.new, .old]) { [weak self] (player, change) in
-            guard let self = self else { return }
-            let oldItemExists = change.oldValue != nil
-            print("#NATIVE LOGS ==> onMediaChanged: \(oldItemExists)")
-            
-            if let newItem = change.newValue, newItem != change.oldValue {
-                self.onMediaChanged?()
-                self.addItemsObservers()
-            }
-        }
-    }
     func addPlayerObservers() {
         addMediaChangeObserver()
+        addPeriodicTimeObserver()
         
-        let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
-        smPlayer.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
-            guard let self = self else { return }
-            let position: Float64 = CMTimeGetSeconds(self.smPlayer.currentTime())
-            if let currentItem = self.smPlayer.currentItem {
-                let duration: Float64 = CMTimeGetSeconds(currentItem.duration)
-                if position < duration {
-                    self.methodChannelManager?.notifyPositionChange(position: position, duration: duration)
-                    NowPlayingCenter.update(item: currentItem.playlistItem, rate: 1.0, position: position, duration: duration)
-                }
+        let reasonObservation = smPlayer.observe(
+            \AVQueuePlayer.reasonForWaitingToPlay,
+            options: [.new]
+        ) { player, _ in
+            if let reason = player.reasonForWaitingToPlay {
+                Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Waiting reason: \(String(describing: reason))")
             }
         }
+        playerObservations.insert(reasonObservation)
         
-        notPlayingReason = smPlayer.observe(\.reasonForWaitingToPlay, options: [.new]) { (playerItem, change) in
-            switch self.smPlayer.reasonForWaitingToPlay {
-            case .evaluatingBufferingRate:
-                print("#NATIVE LOGS ==> Listeners reasonForWaitingToPlay - evaluatingBufferingRate")
-            case .toMinimizeStalls:
-                print("#NATIVE LOGS ==> Listeners reasonForWaitingToPlay - toMinimizeStalls")
-            case .noItemToPlay:
-                print("#NATIVE LOGS ==> Listeners reasonForWaitingToPlay - noItemToPlay")
-            default:
-                print("#NATIVE LOGS ==> Listeners reasonForWaitingToPlay - default")
-            }
-        }
-        
-        playback = smPlayer.observe(\.timeControlStatus, options: [.new, .old]) { [weak self] (player, change) in
-            guard let self = self else { return }
+        let playbackObservation = smPlayer.observe(
+            \AVQueuePlayer.timeControlStatus,
+            options: [.new, .old]
+        ) { [weak self] player, _ in
             switch player.timeControlStatus {
             case .playing:
-                self.methodChannelManager?.notifyPlayerStateChange(state: PlayerState.playing)
-                print("#NATIVE LOGS ==> Listeners - Playing")
+                self?.notifyPlayerStateChange(state: .playing)
+                Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Playing")
             case .paused:
-                self.methodChannelManager?.notifyPlayerStateChange(state: PlayerState.paused)
-                print("#NATIVE LOGS ==> Listeners - Paused")
+                self?.notifyPlayerStateChange(state: .paused)
+                Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Paused")
             case .waitingToPlayAtSpecifiedRate:
-                self.methodChannelManager?.notifyPlayerStateChange(state: PlayerState.buffering)
-                print("#NATIVE LOGS ==> Listeners - Buffering")
+                self?.notifyPlayerStateChange(state: .buffering)
+                Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Buffering")
             @unknown default:
-                break
+                Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Unknown time control status")
             }
         }
+        playerObservations.insert(playbackObservation)
     }
     
-    func removeItemObservers() {
-        statusChange?.invalidate()
-        loading?.invalidate()
-        loaded?.invalidate()
+    private func addPeriodicTimeObserver() {
+        removePeriodicTimeObserver()
         
-        statusChange = nil
-        loading = nil
-        loaded = nil
-        
-        removeErrorObserver()
-    }
-    
-    func removeErrorObserver() {
-        if let currentItem = smPlayer.currentItem {
-            NotificationCenter.default.removeObserver(
-                self,
-                name: .AVPlayerItemFailedToPlayToEndTime,
-                object: currentItem
-            )
+        let interval = CMTime(seconds: positionUpdateInterval, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        periodicTimeObserver = smPlayer.addPeriodicTimeObserver(
+            forInterval: interval,
+            queue: .main
+        ) { [weak self] _ in
+            self?.handlePeriodicTimeUpdate()
         }
     }
     
-
-    func removePlayerObservers() {
-        notPlayingReason?.invalidate()
-        playback?.invalidate()
-        mediaChange?.invalidate()
+    private func handlePeriodicTimeUpdate() {
+        let position = CMTimeGetSeconds(smPlayer.currentTime())
         
-        mediaChange = nil
-        notPlayingReason = nil
-        playback = nil
+        guard let currentItem = smPlayer.currentItem else { return }
+        let duration = CMTimeGetSeconds(currentItem.duration)
+        
+        guard duration.isFinite && duration > 0 && position.isFinite && position >= 0 && position <= duration else {
+            return
+        }
+        
+        methodChannelManager?.notifyPositionChange(position: position, duration: duration)
+        
+        if let playlistItem = currentItem.playlistItem {
+            NowPlayingCenter.update(item: playlistItem, rate: 1.0, position: position, duration: duration)
+        }
+    }
+    
+    private func removePeriodicTimeObserver() {
+        if let observer = periodicTimeObserver {
+            smPlayer.removeTimeObserver(observer)
+            periodicTimeObserver = nil
+        }
+    }
+    
+    private func cleanupItemObservers() {
+        itemObservations.forEach { $0.invalidate() }
+        itemObservations.removeAll()
+        cleanupNotificationObservers()
+    }
+    
+    private func cleanupNotificationObservers() {
+        notificationObservers.forEach { observer in
+            NotificationCenter.default.removeObserver(observer)
+        }
+        notificationObservers.removeAll()
+    }
+    
+    func removePlayerObservers() {
+        playerObservations.forEach { $0.invalidate() }
+        playerObservations.removeAll()
+        removePeriodicTimeObserver()
+        cleanupItemObservers()
     }
     
     deinit {
         removePlayerObservers()
-        removeItemObservers()
+        Logger.debugLog("#NATIVE LOGS ==> [SMPlayerListeners] Deinitializing")
     }
 }
+
