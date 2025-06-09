@@ -781,7 +781,7 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
             }
         }
 
-        return new HlsMediaPlaylist(
+                return new HlsMediaPlaylist(
                 playlistType,
                 baseUri,
                 tags,
@@ -798,7 +798,9 @@ public class CustomHlsPlaylistParser implements ParsingLoadable.Parser<HlsPlayli
                 hasEndTag,
                 /* hasProgramDateTime= */ playlistStartTimeUs != 0,
                 playlistProtectionSchemes,
-                segments, trailingParts, serverControl, renditionReports);
+                segments, trailingParts, serverControl, renditionReports
+//                /* interstitial= */ null
+                );
     }
 
     @C.SelectionFlags

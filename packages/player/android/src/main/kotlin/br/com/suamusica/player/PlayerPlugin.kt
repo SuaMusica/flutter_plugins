@@ -2,6 +2,8 @@ package br.com.suamusica.player
 
 import android.content.pm.ApplicationInfo
 import android.util.Log
+import androidx.annotation.OptIn
+import androidx.media3.common.util.UnstableApi
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -17,8 +19,6 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
     companion object {
         private const val CHANNEL = "suamusica.com.br/player"
         // Argument names
-        const val IS_PLAYING_ARGUMENT = "isPlaying"
-        const val SHOULD_NOTIFY_TRANSITION_ARGUMENT  = "shouldNotifyTransition"
         const val PLAY_WHEN_READY_ARGUMENT  = "playWhenReady"
         const val IS_FAVORITE_ARGUMENT = "isFavorite"
         const val FALLBACK_URL_ARGUMENT = "fallbackURL"
@@ -50,7 +50,6 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
         const val REPEAT_MODE = "repeat_mode"
         const val DISABLE_REPEAT_MODE = "disable_repeat_mode"
         const val UPDATE_FAVORITE = "update_favorite"
-        const val UPDATE_IS_PLAYING = "update_is_playing"
         const val UPDATE_MEDIA_URI = "update_media_uri"
         const val STOP_METHOD = "stop"
         const val RELEASE_METHOD = "release"
@@ -79,6 +78,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
         PlayerSingleton.setChannel(channel, context)
     }
 
+    @OptIn(UnstableApi::class)
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         Log.d(TAG, "onDetachedFromEngine")
         PlayerSingleton.channel?.setMethodCallHandler(null)
@@ -116,6 +116,7 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
         }
     }
 
+    @OptIn(UnstableApi::class)
     private fun handleMethodCall(call: MethodCall, response: MethodChannel.Result) {
         if (call.method == ENQUEUE_METHOD) {
             val batch: Map<String, Any> = call.arguments()!!

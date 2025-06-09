@@ -127,6 +127,10 @@ public class SMPlayer : NSObject  {
     }
     
     func enqueue(medias: [PlaylistItem], autoPlay: Bool, cookie: String) {
+
+        if(fullQueue.count == 0 && !autoPlay && !NetworkManager.shared.isConnectedToNetwork() ){
+            return
+        }
         if(!cookie.isEmpty){
             self.cookie = cookie
         }

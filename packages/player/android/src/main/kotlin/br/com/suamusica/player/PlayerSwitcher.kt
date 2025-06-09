@@ -15,7 +15,7 @@ import br.com.suamusica.player.getAllMediaItems
 import android.util.Log
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player.STATE_ENDED
-import br.com.suamusica.player.MediaButtonEventHandler
+import br.com.suamusica.player.AndroidAutoLibraryCallback
 import br.com.suamusica.player.PlayerSingleton
 import br.com.suamusica.player.PlayerSingleton.playerChangeNotifier
 import java.util.concurrent.atomic.AtomicBoolean
@@ -27,7 +27,7 @@ import com.google.android.gms.cast.framework.media.RemoteMediaClient
 @UnstableApi
 class PlayerSwitcher(
     private var currentPlayer: Player,
-    private var mediaButtonEventHandler: MediaButtonEventHandler,
+    private var androidAutoCallback: AndroidAutoLibraryCallback,
 ) : ForwardingPlayer(currentPlayer) {
     private var playerEventListener: Player.Listener? = null
     private val TAG = "PlayerSwitcher"
@@ -179,7 +179,7 @@ class PlayerSwitcher(
                 }
 
 
-                mediaButtonEventHandler.buildIcons()
+                androidAutoCallback.buildIcons()
 
                 playerChangeNotifier?.notifyItemTransition("onMediaItemTransition  reason: $reason | shouldNotifyTransition: ${PlayerSingleton.shouldNotifyTransition}")
 

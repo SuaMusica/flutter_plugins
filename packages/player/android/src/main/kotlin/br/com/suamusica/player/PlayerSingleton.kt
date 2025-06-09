@@ -2,8 +2,10 @@ package br.com.suamusica.player
 
 import android.content.Context
 import android.util.Log
+import androidx.media3.common.util.UnstableApi
 import io.flutter.plugin.common.MethodChannel
 
+@UnstableApi
 object PlayerSingleton {
     var channel: MethodChannel? = null
     var mediaSessionConnection: MediaSessionConnection? = null
@@ -20,7 +22,6 @@ object PlayerSingleton {
         playerChangeNotifier =   PlayerChangeNotifier(MethodChannelManager(c))
         mediaSessionConnection = MediaSessionConnection(
             context,
-            playerChangeNotifier!!
         )
     }
 

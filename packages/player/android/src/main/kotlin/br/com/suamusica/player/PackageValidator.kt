@@ -6,6 +6,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.os.Build
 import android.content.res.XmlResourceParser
 import android.os.Process
 import android.support.v4.media.session.MediaSessionCompat
@@ -13,7 +14,7 @@ import android.util.Base64
 import android.util.Log
 import androidx.annotation.XmlRes
 import androidx.media.MediaBrowserServiceCompat
-import com.google.firebase.encoders.json.BuildConfig
+import io.flutter.BuildConfig
 import org.xmlpull.v1.XmlPullParserException
 import java.io.IOException
 import java.security.MessageDigest
@@ -79,7 +80,11 @@ class PackageValidator(context: Context, @XmlRes xmlResId: Int) {
 
         // Build the caller info for the rest of the checks here.
         val callerPackageInfo = buildCallerInfo(callingPackage)
-                ?: throw IllegalStateException("Caller wasn't found in the system?")
+        if (callerPackageInfo == null) {
+            Log.w(TAG, "Caller package '$callingPackage' wasn't found in the system")
+            callerChecked[callingPackage] = Pair(callingUid, false)
+            return false
+        }
 
         // Verify that things aren't ... broken. (This test should always pass.)
         if (callerPackageInfo.uid != callingUid) {
@@ -177,9 +182,19 @@ class PackageValidator(context: Context, @XmlRes xmlResId: Int) {
      * @return [PackageInfo] for the package name or null if it's not found.
      */
     @SuppressLint("PackageManagerGetSignatures")
-    private fun getPackageInfo(callingPackage: String): PackageInfo? =
+    private fun getPackageInfo(callingPackage: String): PackageInfo? = try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             packageManager.getPackageInfo(callingPackage,
-                    PackageManager.GET_SIGNATURES or PackageManager.GET_PERMISSIONS)
+                PackageManager.PackageInfoFlags.of((PackageManager.GET_SIGNATURES or PackageManager.GET_PERMISSIONS).toLong()))
+        } else {
+            @Suppress("DEPRECATION")
+            packageManager.getPackageInfo(callingPackage,
+                PackageManager.GET_SIGNATURES or PackageManager.GET_PERMISSIONS)
+        }
+    } catch (e: Exception) {
+        Log.w(TAG, "Failed to get package info for '$callingPackage': ${e.message}")
+        null
+    }
 
     /**
      * Gets the signature of a given package's [PackageInfo].
@@ -261,7 +276,7 @@ class PackageValidator(context: Context, @XmlRes xmlResId: Int) {
         var eventType = parser.next()
         while (eventType != XmlResourceParser.END_TAG) {
             val isRelease = parser.getAttributeBooleanValue(null, "release", false)
-            val signature = parser.nextText().replace(WHITESPACE_REGEX, "").toLowerCase()
+            val signature = parser.nextText().replace(WHITESPACE_REGEX, "").lowercase()
             callerSignatures += KnownSignature(signature, isRelease)
 
             eventType = parser.next()
