@@ -32,16 +32,20 @@ import androidx.media3.session.CommandButton
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaController
 import androidx.media3.session.MediaNotification
+import androidx.media3.session.LibraryResult
+import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
-import androidx.media3.session.MediaSessionService
+import androidx.media3.session.SessionError
+import androidx.media3.session.SessionResult
+import androidx.media3.session.SessionCommand
 import br.com.suamusica.player.PlayerPlugin.Companion.FALLBACK_URL_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.IS_FAVORITE_ARGUMENT
 import br.com.suamusica.player.PlayerPlugin.Companion.cookie
 import br.com.suamusica.player.PlayerSingleton.playerChangeNotifier
-import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
 import com.google.android.gms.cast.MediaQueueItem
 import com.google.android.gms.cast.framework.CastContext
 import com.google.common.collect.ImmutableList
+import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -49,6 +53,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.asExecutor
 import org.json.JSONObject
 import java.io.File
 import java.util.Collections
@@ -57,11 +62,11 @@ import java.util.Collections
 const val NOW_PLAYING_NOTIFICATION: Int = 0xb339
 
 @UnstableApi
-class MediaService : MediaSessionService() {
+class MediaService : MediaLibraryService(), MediaLibraryService.MediaLibrarySession.Callback {
     private val TAG = "MediaService"
     private val userAgent =
         "SuaMusica/player (Linux; Android ${Build.VERSION.SDK_INT}; ${Build.BRAND}/${Build.MODEL})"
-    lateinit var mediaSession: MediaSession
+    lateinit var mediaSession: MediaLibrarySession
     private var mediaController: ListenableFuture<MediaController>? = null
     private val uAmpAudioAttributes = AudioAttributes.Builder()
         .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
@@ -83,6 +88,10 @@ class MediaService : MediaSessionService() {
     private var cast: CastManager? = null
     private var castContext: CastContext? = null
 
+    // Android Auto
+    private lateinit var browseTree: AndroidAutoBrowseTree
+    private lateinit var contentManager: AndroidAutoContentManager
+
     val smPlayer get() = exoPlayer
 
     override fun onCreate() {
@@ -90,38 +99,12 @@ class MediaService : MediaSessionService() {
         mediaButtonEventHandler = MediaButtonEventHandler(this)
         castContext = CastContext.getSharedInstance(this)
 
-        //TODO: nao cai aqui, e o que resolveu (justAudio) foi o setContentType do uAmpAudioAttributes
-
-        // val mAudioManager = getSystemService(AUDIO_SERVICE) as AudioManager
-
-        // val audioFocusListener = OnAudioFocusChangeListener { focusChange ->
-        //     Log.d("onAudioFocusChangeTeste", focusChange.toString())
-        //     when (focusChange) {
-        //         AudioManager.AUDIOFOCUS_LOSS -> {
-        //             Log.d("onAudioFocusChangeTeste", "AUDIOFOCUS_LOSS")
-        //             pause()
-        //         }
-        //         AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-        //             Log.d("onAudioFocusChangeTeste", "AUDIOFOCUS_LOSS_TRANSIENT")
-        //             pause()
-        //         }
-        //         AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-        //             Log.d("onAudioFocusChangeTeste", "AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK")
-        //             smPlayer?.volume = 0.2f
-        //         }
-        //         AudioManager.AUDIOFOCUS_GAIN -> {
-        //             Log.d("onAudioFocusChangeTeste", "AUDIOFOCUS_GAIN")
-        //             smPlayer?.volume = 1.0f
-        //             play()
-        //         }
-        //     }
-        // }
-
-        // mAudioManager.requestAudioFocus(
-        //     audioFocusListener,
-        //     AudioManager.STREAM_MUSIC,
-        //     AudioManager.AUDIOFOCUS_GAIN
-        // )
+//        Initialize Android Auto components
+        browseTree = AndroidAutoBrowseTree()
+        contentManager = AndroidAutoContentManager(browseTree)
+        
+//        Do not initialize with sample content - use real content only
+//        browseTree.initializeWithSampleContent()
 
 
         exoPlayer = ExoPlayer.Builder(this).build().apply {
@@ -137,9 +120,8 @@ class MediaService : MediaSessionService() {
             DataSourceBitmapLoader(applicationContext)
 
         exoPlayer?.let {
-            mediaSession = MediaSession.Builder(this, it)
+            mediaSession = MediaLibrarySession.Builder(this, it, this)
                 .setBitmapLoader(CacheBitmapLoader(dataSourceBitmapLoader))
-                .setCallback(mediaButtonEventHandler)
                 .setSessionActivity(getPendingIntent())
                 .build()
             this@MediaService.setMediaNotificationProvider(object : MediaNotification.Provider {
@@ -250,7 +232,7 @@ class MediaService : MediaSessionService() {
 
     override fun onGetSession(
         controllerInfo: MediaSession.ControllerInfo
-    ): MediaSession = mediaSession
+    ): MediaLibrarySession = mediaSession
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         smPlayer?.clearMediaItems()
@@ -363,7 +345,14 @@ class MediaService : MediaSessionService() {
             TAG,
             "#NATIVE LOGS MEDIA SERVICE ==> enqueue  $autoPlay | mediaItemCount: ${smPlayer?.mediaItemCount}"
         )
+        
+        // Update Android Auto content
+        contentManager.addMediaItems(medias)
+        
         addToQueue(medias)
+        
+        // Sync with Android Auto after adding to queue
+        contentManager.syncPlayerQueue(smPlayer)
     }
 
     private fun createMediaSource(cookie: String, medias: List<Media>) {
@@ -374,6 +363,9 @@ class MediaService : MediaSessionService() {
             }
             smPlayer?.addMediaSources(mediaSources)
             smPlayer?.prepare()
+            // Sync current queue with Android Auto
+            Log.d(TAG, "Syncing media sources with Android Auto...")
+            contentManager.syncPlayerQueue(smPlayer)
         }
     }
 
@@ -408,7 +400,7 @@ class MediaService : MediaSessionService() {
         return when (@C.ContentType val type = Util.inferContentType(uri)) {
             C.CONTENT_TYPE_HLS -> {
                 HlsMediaSource.Factory(dataSourceFactory)
-                    .setPlaylistParserFactory(SMHlsPlaylistParserFactory())
+                    // .setPlaylistParserFactory(SMHlsPlaylistParserFactory())
                     .setAllowChunklessPreparation(true)
                     .createMediaSource(mediaItem)
             }
@@ -483,14 +475,22 @@ class MediaService : MediaSessionService() {
         val bundle = Bundle()
         bundle.putBoolean(IS_FAVORITE_ARGUMENT, media.isFavorite ?: false)
         bundle.putString(FALLBACK_URL_ARGUMENT, media.fallbackUrl)
+        val artworkUri = try {
+            if (media.bigCoverUrl.isNotEmpty()) Uri.parse(media.bigCoverUrl) else null
+        } catch (e: Exception) {
+            Log.w(TAG, "Invalid artwork URI: ${media.bigCoverUrl}", e)
+            null
+        }
+        
         metadataBuilder.apply {
-            setAlbumTitle(media.name)
-            setArtist(media.author)
-            //TODO: verificar cover sem internet e null e empty
-            setArtworkUri(Uri.parse(media.bigCoverUrl))
-            setArtist(media.author)
             setTitle(media.name)
             setDisplayTitle(media.name)
+            setArtist(media.author)
+            setAlbumTitle(media.albumTitle)
+            setAlbumArtist(media.author)
+            if (artworkUri != null) {
+                setArtworkUri(artworkUri)
+            }
             setExtras(bundle)
         }
         val metadata = metadataBuilder.build()
@@ -513,6 +513,7 @@ class MediaService : MediaSessionService() {
     fun removeAll() {
         smPlayer?.stop()
         smPlayer?.clearMediaItems()
+        contentManager.clearContent()
     }
 
     fun seek(position: Long, playWhenReady: Boolean) {
@@ -522,5 +523,281 @@ class MediaService : MediaSessionService() {
 
     private fun releaseAndPerformAndDisableTracking() {
         smPlayer?.stop()
+    }
+
+    override fun onConnect(
+        session: MediaSession,
+        controller: MediaSession.ControllerInfo
+    ): MediaSession.ConnectionResult {
+         super.onConnect(session, controller)
+        // Log connection details for Android Auto debugging
+        Log.d(TAG, "onConnectAA - Client connecting: ${controller.packageName}")
+        if (controller.packageName == "com.google.android.projection.gearhead") {
+            // Always sync with current player queue when Android Auto connects
+            Log.d(TAG, "onConnectAA - Syncing current player queue with Android Auto...")
+            contentManager.syncPlayerQueue(smPlayer)
+        }
+        
+        return mediaButtonEventHandler.onConnectHandle(session)
+    }
+
+//    Android Auto callbacks
+   override fun onGetLibraryRoot(
+       session: MediaLibrarySession,
+       browser: MediaSession.ControllerInfo,
+       params: LibraryParams?
+   ): ListenableFuture<LibraryResult<MediaItem>> {
+       Log.d(TAG, "onGetLibraryRoot called from browser: ${browser.packageName}")
+       try {
+           val root = browseTree.getRoot()
+           Log.d(TAG, "Returning root: ${root.mediaId} - ${root.mediaMetadata.title}")
+           return Futures.immediateFuture(
+               LibraryResult.ofItem(root, params)
+           )
+       } catch (e: Exception) {
+           Log.e(TAG, "Error in onGetLibraryRoot", e)
+           return Futures.immediateFuture(LibraryResult.ofError(SessionError.ERROR_UNKNOWN))
+       }
+   }
+
+   override fun onGetChildren(
+       session: MediaLibrarySession,
+       browser: MediaSession.ControllerInfo,
+       parentId: String,
+       page: Int,
+       pageSize: Int,
+       params: LibraryParams?
+   ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
+       Log.d(TAG, "onGetChildren called with parentId: $parentId, page: $page, pageSize: $pageSize")
+       try {
+           val children = browseTree.getChildren(parentId)
+           Log.d(TAG, "Found ${children.size} children for parentId: $parentId")
+           
+           // Log first few items for debugging
+           children.take(3).forEach { item ->
+               Log.d(TAG, "Child item: ${item.mediaId} - ${item.mediaMetadata.title} (browsable: ${item.mediaMetadata.isBrowsable}, playable: ${item.mediaMetadata.isPlayable})")
+           }
+           
+           val result = LibraryResult.ofItemList(ImmutableList.copyOf(children), params)
+           return Futures.immediateFuture(result)
+       } catch (e: Exception) {
+           Log.e(TAG, "Error in onGetChildren for parentId: $parentId", e)
+           return Futures.immediateFuture(LibraryResult.ofError(SessionError.ERROR_UNKNOWN))
+       }
+   }
+
+    override fun onGetItem(
+        session: MediaLibrarySession,
+        browser: MediaSession.ControllerInfo,
+        mediaId: String
+    ): ListenableFuture<LibraryResult<MediaItem>> {
+        Log.d(TAG, "onGetItem called with mediaId: $mediaId from ${browser.packageName}")
+        
+        try {
+            val item = browseTree.getItem(mediaId)
+            return if (item != null) {
+                Log.d(TAG, "Found item: ${item.mediaMetadata.title} (playable: ${item.mediaMetadata.isPlayable}, browsable: ${item.mediaMetadata.isBrowsable})")
+                Futures.immediateFuture(LibraryResult.ofItem(item, null))
+            } else {
+                Log.w(TAG, "Item not found: $mediaId")
+                Futures.immediateFuture(LibraryResult.ofError(SessionError.ERROR_BAD_VALUE))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in onGetItem for mediaId: $mediaId", e)
+            return Futures.immediateFuture(LibraryResult.ofError(SessionError.ERROR_UNKNOWN))
+        }
+    }
+
+      fun updateFavorites(favoriteMedias: List<Media>) {
+        contentManager.updateFavorites(favoriteMedias)
+    }
+
+    fun addPlaylist(playlistId: String, playlistName: String, tracks: List<Media>) {
+        val playlistItem = browseTree.createBrowsableItem(
+            playlistId,
+            playlistName,
+            "${tracks.size} faixas",
+            null,
+            androidx.media3.common.MediaMetadata.FOLDER_TYPE_PLAYLISTS
+        )
+        browseTree.addMediaItem(playlistItem)
+
+        val playlistTracks = tracks.map { track ->
+            browseTree.createPlayableMediaItem(track)
+        }
+        browseTree.addPlaylistTracks(playlistId, playlistTracks)
+
+        // Update playlists section
+        val currentPlaylists = browseTree.getChildren(AndroidAutoBrowseTree.PLAYLISTS_ID).toMutableList()
+        if (currentPlaylists.none { it.mediaId == playlistId }) {
+            currentPlaylists.add(playlistItem)
+            browseTree.addChildren(AndroidAutoBrowseTree.PLAYLISTS_ID, currentPlaylists)
+        }
+        
+        Log.d(TAG, "Added playlist: $playlistName with ${tracks.size} tracks")
+    }
+
+    override fun onSearch(
+        session: MediaLibrarySession,
+        browser: MediaSession.ControllerInfo,
+        query: String,
+        params: LibraryParams?
+    ): ListenableFuture<LibraryResult<Void>> {
+        Log.d(TAG, "onSearch called with query: $query")
+        // Return success immediately, actual results will be sent via onGetSearchResult
+        return Futures.immediateFuture(LibraryResult.ofVoid())
+    }
+
+    override fun onGetSearchResult(
+        session: MediaLibrarySession,
+        browser: MediaSession.ControllerInfo,
+        query: String,
+        page: Int,
+        pageSize: Int,
+        params: LibraryParams?
+    ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
+        Log.d(TAG, "onGetSearchResult called with query: $query")
+        val searchResults = browseTree.search(query)
+        return Futures.immediateFuture(
+            LibraryResult.ofItemList(ImmutableList.copyOf(searchResults), params)
+        )
+    }
+
+    override fun onSubscribe(
+        session: MediaLibrarySession,
+        browser: MediaSession.ControllerInfo,
+        parentId: String,
+        params: LibraryParams?
+    ): ListenableFuture<LibraryResult<Void>> {
+        Log.d(TAG, "onSubscribe called with parentId: $parentId")
+        return Futures.immediateFuture(LibraryResult.ofVoid())
+    }
+
+    override fun onUnsubscribe(
+        session: MediaLibrarySession,
+        browser: MediaSession.ControllerInfo,
+        parentId: String
+    ): ListenableFuture<LibraryResult<Void>> {
+        Log.d(TAG, "onUnsubscribe called with parentId: $parentId")
+        return Futures.immediateFuture(LibraryResult.ofVoid())
+    }
+
+    // Delegar comandos customizados para o handler
+    override fun onCustomCommand(
+        session: MediaSession,
+        controller: MediaSession.ControllerInfo,
+        customCommand: SessionCommand,
+        args: Bundle
+    ): ListenableFuture<SessionResult> {
+        return mediaButtonEventHandler.onCustomCommand(session, customCommand, args)
+    }
+
+    override fun onMediaButtonEvent(
+        session: MediaSession,
+        controllerInfo: MediaSession.ControllerInfo,
+        intent: Intent
+    ): Boolean {
+        return mediaButtonEventHandler.onMediaButtonEvent(session, intent)
+    }
+
+
+
+    // Critical callback for Android Auto - handles when items are added to queue
+    override fun onAddMediaItems(
+        mediaSession: MediaSession,
+        controller: MediaSession.ControllerInfo,
+        mediaItems: MutableList<MediaItem>
+    ): ListenableFuture<MutableList<MediaItem>> {
+        Log.d(TAG, "onAddMediaItems called with ${mediaItems.size} items from ${controller.packageName}")
+        
+        try {
+            val resolvedItems = mutableListOf<MediaItem>()
+            
+            mediaItems.forEach { requestItem ->
+                val mediaId = requestItem.mediaId
+                Log.d(TAG, "Resolving mediaId: $mediaId")
+                
+                // Try to get the complete media item from browse tree
+                val completeItem = browseTree.getItem(mediaId)
+                
+                if (completeItem != null) {
+                    // Use the complete item from browse tree
+                    resolvedItems.add(completeItem)
+                    Log.d(TAG, "Resolved item: ${completeItem.mediaMetadata.title}")
+                } else {
+                    // If not found in browse tree, create a fallback item
+                    val fallbackItem = if (requestItem.requestMetadata.mediaUri != null) {
+                        // If request has URI, use it
+                        requestItem
+                    } else {
+                        // Create minimal item for browsable content
+                        MediaItem.Builder()
+                            .setMediaId(mediaId)
+                            .setMediaMetadata(
+                                MediaMetadata.Builder()
+                                    .setTitle("Unknown Item")
+                                    .setIsPlayable(false)
+                                    .setIsBrowsable(true)
+                                    .build()
+                            )
+                            .build()
+                    }
+                    resolvedItems.add(fallbackItem)
+                    Log.w(TAG, "Item not found in browse tree, using fallback: $mediaId")
+                }
+            }
+            
+            Log.d(TAG, "Resolved ${resolvedItems.size} items successfully")
+            return Futures.immediateFuture(resolvedItems)
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in onAddMediaItems", e)
+            return Futures.immediateFuture(mediaItems)
+        }
+    }
+
+    // Called when Android Auto wants to set the entire queue
+    override fun onSetMediaItems(
+        mediaSession: MediaSession,
+        controller: MediaSession.ControllerInfo,
+        mediaItems: MutableList<MediaItem>,
+        startIndex: Int,
+        startPositionMs: Long
+    ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+        Log.d(TAG, "onSetMediaItems called with ${mediaItems.size} items, startIndex: $startIndex, startPosition: $startPositionMs")
+        
+        try {
+            // Resolve all items through onAddMediaItems
+            val resolvedItemsFuture = onAddMediaItems(mediaSession, controller, mediaItems)
+            
+            return Futures.transformAsync(resolvedItemsFuture, { resolvedItems ->
+                val validStartIndex = if (startIndex >= 0 && startIndex < resolvedItems.size) {
+                    startIndex
+                } else {
+                    0
+                }
+                
+                val validStartPosition = if (startPositionMs >= 0) startPositionMs else 0L
+                
+                Log.d(TAG, "Setting ${resolvedItems.size} items with startIndex: $validStartIndex, startPosition: $validStartPosition")
+                
+                val result = MediaSession.MediaItemsWithStartPosition(
+                    resolvedItems,
+                    validStartIndex,
+                    validStartPosition
+                )
+                
+                Futures.immediateFuture(result)
+            }, Dispatchers.Main.asExecutor())
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in onSetMediaItems", e)
+            // Fallback to default behavior
+            val result = MediaSession.MediaItemsWithStartPosition(
+                mediaItems,
+                startIndex.coerceAtLeast(0),
+                startPositionMs.coerceAtLeast(0L)
+            )
+            return Futures.immediateFuture(result)
+        }
     }
 }

@@ -34,7 +34,14 @@ import br.com.suamusica.player.PlayerPlugin.Companion.UPDATE_IS_PLAYING
 import br.com.suamusica.player.PlayerPlugin.Companion.UPDATE_MEDIA_URI
 import com.google.gson.Gson
 import java.lang.ref.WeakReference
+import androidx.core.content.ContextCompat
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.session.MediaBrowser
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionToken
+import java.util.concurrent.Executors
 
+@UnstableApi
 class MediaSessionConnection(
     context: Context,
     val playerChangeNotifier: PlayerChangeNotifier
@@ -62,16 +69,36 @@ class MediaSessionConnection(
     private var mediaBrowser: MediaBrowserCompat? = null
     private var mediaController: MediaControllerCompat? = null
 
+    private var media3Browser: MediaBrowser? = null
+    private var browserFuture: java.util.concurrent.Future<MediaBrowser>? = null
+    private var media3Initialized = false
+
     init {
         ensureMediaBrowser {
+
+    }
+        val contextRef = weakContext.get()
+        val serviceComponent = weakServiceComponent.get()
+        if (contextRef != null && serviceComponent != null) {
+            val sessionToken = SessionToken(contextRef, serviceComponent)
+            val future = MediaBrowser.Builder(contextRef, sessionToken).buildAsync()
+            browserFuture = future
+            future.addListener({
+                try {
+                    media3Browser = future.get()
+                    media3Initialized = true
+                } catch (e: Exception) {
+                    Log.e(TAG, "Erro ao inicializar Media3 MediaBrowser", e)
+                }
+            }, ContextCompat.getMainExecutor(contextRef))
         }
     }
 
-    fun enqueue(medias: String, autoPlay: Boolean,) {
-        val bundle = Bundle()
-        bundle.putString("json", medias)
-        bundle.putBoolean("autoPlay", autoPlay)
-        sendCommand(ENQUEUE_METHOD, bundle)
+    fun enqueue(medias: String, autoPlay: Boolean) {
+            val bundle = Bundle()
+            bundle.putString("json", medias)
+            bundle.putBoolean("autoPlay", autoPlay)
+            sendCommand(ENQUEUE_METHOD, bundle)
     }
 
     fun playFromQueue(index: Int, timePosition: Long, loadOnly: Boolean) {
@@ -83,7 +110,7 @@ class MediaSessionConnection(
     }
 
     fun play() {
-        sendCommand("play", null)
+        sendCommand("play")
     }
 
     fun cast(id: String) {
@@ -208,14 +235,11 @@ class MediaSessionConnection(
     private fun sendCommand(
         command: String,
         bundle: Bundle? = null,
-        callbackHandler: ResultReceiver? = null
     ) {
-        ensureMediaBrowser {
-            ensureMediaController {
-                it.sendCommand(command, bundle, callbackHandler)
-            }
-        }
+        val newBundle = bundle ?: Bundle()
+        media3Browser?.sendCustomCommand(SessionCommand(command,Bundle()), newBundle)
     }
+
 
     private fun ensureMediaBrowser(callable: (mediaBrowser: MediaBrowserCompat) -> Unit) {
         try {

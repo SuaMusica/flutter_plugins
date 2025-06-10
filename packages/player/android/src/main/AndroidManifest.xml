@@ -11,11 +11,24 @@
         <meta-data
             android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
             android:value="br.com.suamusica.player.CastOptionsProvider" />
-        <service android:name=".MediaService" android:exported="false" android:foregroundServiceType="mediaPlayback">
+        <service android:name=".MediaService" android:exported="true" android:foregroundServiceType="mediaPlayback">
             <intent-filter>
                 <action android:name="androidx.media3.session.MediaSessionService"/>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
                 <action android:name="android.media.browse.MediaBrowserService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.media.browse_service"
+                android:resource="@xml/automotive_app_desc" />
+            <meta-data
+                android:name="android.media.browse.SEARCH_SUPPORTED"
+                android:value="true" />
+            <meta-data
+                android:name="android.media.session.MEDIA_BROWSER_SERVICE_EXTRAS"
+                android:resource="@xml/allowed_media_browser_callers" />
+            <intent-filter>
+                <action android:name="com.google.android.gms.car.media.BROWSE" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </service>
     </application>

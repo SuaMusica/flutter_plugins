@@ -19,7 +19,6 @@ import androidx.media3.common.Player.REPEAT_MODE_ONE
 import androidx.media3.common.Player.STATE_IDLE
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.CommandButton
-import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
 import androidx.media3.session.R.drawable
@@ -49,28 +48,21 @@ import br.com.suamusica.player.PlayerPlugin.Companion.UPDATE_FAVORITE
 import br.com.suamusica.player.PlayerPlugin.Companion.UPDATE_IS_PLAYING
 import br.com.suamusica.player.PlayerPlugin.Companion.UPDATE_MEDIA_URI
 import br.com.suamusica.player.PlayerSingleton.playerChangeNotifier
-import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
-import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.google.gson.GsonBuilder
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
 
 @UnstableApi
 class MediaButtonEventHandler(
     private val mediaService: MediaService,
-) : MediaSession.Callback {
-    private val BROWSABLE_ROOT = "/"
-    private val EMPTY_ROOT = "@empty@"
-    override fun onConnect(
+) {
+    fun onConnectHandle(
         session: MediaSession,
-        controller: MediaSession.ControllerInfo
-    ): MediaSession.ConnectionResult {
+    ): MediaSession.ConnectionResult{
         Log.d("Player", "onConnect")
         val sessionCommands =
-            MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon().apply {
+            MediaSession.ConnectionResult.DEFAULT_SESSION_AND_LIBRARY_COMMANDS.buildUpon().apply {
                 add(SessionCommand("notification_next", Bundle.EMPTY))
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     add(SessionCommand("notification_previous", Bundle.EMPTY))
@@ -107,10 +99,10 @@ class MediaButtonEventHandler(
 
         val playerCommands =
             MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS.buildUpon()
-                .remove(COMMAND_SEEK_TO_PREVIOUS)
-                .remove(COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
-                .remove(COMMAND_SEEK_TO_NEXT)
-                .remove(COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
+//                .remove(COMMAND_SEEK_TO_PREVIOUS)
+//                .remove(COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
+//                .remove(COMMAND_SEEK_TO_NEXT)
+//                .remove(COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
                 .add(COMMAND_GET_TIMELINE)
                 .build()
 
@@ -120,9 +112,8 @@ class MediaButtonEventHandler(
             .build()
     }
 
-    override fun onCustomCommand(
+    fun onCustomCommand(
         session: MediaSession,
-        controller: MediaSession.ControllerInfo,
         customCommand: SessionCommand,
         args: Bundle
     ): ListenableFuture<SessionResult> {
@@ -391,10 +382,8 @@ class MediaButtonEventHandler(
     }
 
 
-    @UnstableApi
-    override fun onMediaButtonEvent(
+fun onMediaButtonEvent(
         session: MediaSession,
-        controllerInfo: MediaSession.ControllerInfo,
         intent: Intent
     ): Boolean {
         onMediaButtonEventHandler(intent, session)
