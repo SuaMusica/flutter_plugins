@@ -3,7 +3,7 @@ version '1.0.4'
 
 
 buildscript {
-    ext.kotlin_version = '1.9.20'
+    ext.kotlin_version = '2.0.0'
     ext.exoplayer_version = '2.19.1'
     repositories {
         google()
@@ -11,7 +11,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.2.2'
+        classpath 'com.android.tools.build:gradle:8.1.4'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -32,7 +32,7 @@ kapt {
 }
 
 android {
-    compileSdkVersion 34
+    compileSdkVersion 35
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
@@ -44,7 +44,7 @@ android {
     lintOptions {
         disable 'InvalidPackage'
     }
-
+    namespace = "br.com.suamusica.player"
 }
 
 dependencies {
@@ -57,7 +57,7 @@ dependencies {
 
     // Glide dependencies
     implementation "com.github.bumptech.glide:glide:4.12.0"
-//    implementation files('/Users/alantrope/flutter/bin/cache/artifacts/engine/android-x64/flutter.jar')
+    // implementation files('/Users/lucastonussi/flutter/bin/cache/artifacts/engine/android-x64/flutter.jar')
     kapt "com.github.bumptech.glide:compiler:4.12.0"
 
 }
