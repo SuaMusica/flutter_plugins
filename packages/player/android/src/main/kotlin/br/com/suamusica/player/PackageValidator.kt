@@ -18,6 +18,7 @@ import org.xmlpull.v1.XmlPullParserException
 import java.io.IOException
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
+import java.util.Locale
 
 /**
  * Validates that the calling package is authorized to browse a [MediaBrowserServiceCompat].
@@ -153,15 +154,15 @@ class PackageValidator(context: Context, @XmlRes xmlResId: Int) {
     private fun buildCallerInfo(callingPackage: String): CallerPackageInfo? {
         val packageInfo = getPackageInfo(callingPackage) ?: return null
 
-        val appName = packageInfo.applicationInfo!!.loadLabel(packageManager).toString()
-        val uid = packageInfo.applicationInfo!!.uid
+        val appName = packageInfo.applicationInfo?.loadLabel(packageManager)?.toString() ?: ""
+        val uid = packageInfo.applicationInfo?.uid ?: -1
         val signature = getSignature(packageInfo)
 
         val requestedPermissions = packageInfo.requestedPermissions
         val permissionFlags = packageInfo.requestedPermissionsFlags
         val activePermissions = mutableSetOf<String>()
         requestedPermissions?.forEachIndexed { index, permission ->
-            if (permissionFlags!![index] and PackageInfo.REQUESTED_PERMISSION_GRANTED != 0) {
+            if (permissionFlags?.get(index)?.and(PackageInfo.REQUESTED_PERMISSION_GRANTED) != 0) {
                 activePermissions += permission
             }
         }
@@ -193,10 +194,11 @@ class PackageValidator(context: Context, @XmlRes xmlResId: Int) {
     private fun getSignature(packageInfo: PackageInfo): String? {
         // Security best practices dictate that an app should be signed with exactly one (1)
         // signature. Because of this, if there are multiple signatures, reject it.
-        if (packageInfo.signatures == null || packageInfo.signatures!!.size != 1) {
+        val signatures = packageInfo.signatures
+        if (signatures == null || signatures.size != 1) {
             return null
         } else {
-            val certificate = packageInfo.signatures!![0].toByteArray()
+            val certificate = signatures[0].toByteArray()
             return getSignatureSha256(certificate)
         }
     }
@@ -261,7 +263,8 @@ class PackageValidator(context: Context, @XmlRes xmlResId: Int) {
         var eventType = parser.next()
         while (eventType != XmlResourceParser.END_TAG) {
             val isRelease = parser.getAttributeBooleanValue(null, "release", false)
-            val signature = parser.nextText().replace(WHITESPACE_REGEX, "").toLowerCase()
+            val signature = parser.nextText().replace(WHITESPACE_REGEX, "")
+                .lowercase(Locale.getDefault())
             callerSignatures += KnownSignature(signature, isRelease)
 
             eventType = parser.next()
