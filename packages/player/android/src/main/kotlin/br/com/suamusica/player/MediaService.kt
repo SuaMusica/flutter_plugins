@@ -686,7 +686,9 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         }
 
         override fun run() {
-            notifyPositionChange()
+            if(previousState == PlaybackStateCompat.STATE_PLAYING) {
+                notifyPositionChange()
+            }
 
             if (!shutdownRequest.get()) {
                 handler.postDelayed(this, 800 /* ms */)
