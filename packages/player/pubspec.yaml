@@ -5,25 +5,26 @@ homepage: https://github.com/suamusica
 publish_to: none
 
 environment:
-  sdk: ">=2.12.0 <3.0.0"
+  sdk: ">=3.8.0 <4.0.0"
 
-isar_version: &isar_version 3.1.0
+isar_version: &isar_version ^3.2.0 # define the version to be used
 
 dependencies:
   flutter:
     sdk: flutter
-  mutex: ^3.0.1
-  isar: *isar_version
-  isar_flutter_libs: *isar_version
-  path_provider: ^2.0.11
+  mutex: ^3.1.0
+  isar_community: *isar_version
+  isar_community_flutter_libs: *isar_version
+  path_provider: ^2.1.5
   smaws:
     git:
       url: https://github.com/SuaMusica/flutter_plugins.git
       path: packages/aws/
+      ref: feature/16kb
 
 dev_dependencies:
   build_runner: ^2.2.1
-  isar_generator: *isar_version
+  isar_community_generator: *isar_version
   flutter_test:
     sdk: flutter
 
