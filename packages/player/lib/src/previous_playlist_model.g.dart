@@ -37,7 +37,7 @@ const PreviousPlaylistMusicsSchema = CollectionSchema(
   getId: _previousPlaylistMusicsGetId,
   getLinks: _previousPlaylistMusicsGetLinks,
   attach: _previousPlaylistMusicsAttach,
-  version: '3.3.0-dev.3',
+  version: '3.3.0',
 );
 
 int _previousPlaylistMusicsEstimateSize(
@@ -687,7 +687,7 @@ const PreviousPlaylistCurrentIndexSchema = CollectionSchema(
   getId: _previousPlaylistCurrentIndexGetId,
   getLinks: _previousPlaylistCurrentIndexGetLinks,
   attach: _previousPlaylistCurrentIndexAttach,
-  version: '3.3.0-dev.3',
+  version: '3.3.0',
 );
 
 int _previousPlaylistCurrentIndexEstimateSize(
@@ -1356,7 +1356,7 @@ const PreviousPlaylistPositionSchema = CollectionSchema(
   getId: _previousPlaylistPositionGetId,
   getLinks: _previousPlaylistPositionGetLinks,
   attach: _previousPlaylistPositionAttach,
-  version: '3.3.0-dev.3',
+  version: '3.3.0',
 );
 
 int _previousPlaylistPositionEstimateSize(
