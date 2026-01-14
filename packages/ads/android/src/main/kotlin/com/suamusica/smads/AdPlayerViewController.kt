@@ -6,11 +6,11 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import com.google.ads.interactivemedia.v3.api.AdErrorEvent
 import com.google.ads.interactivemedia.v3.api.AdEvent
-import com.google.ads.interactivemedia.v3.api.ImaSdkSettings
 import com.google.android.exoplayer2.ui.StyledPlayerView
 import com.suamusica.smads.extensions.gone
 import com.suamusica.smads.extensions.hide
 import com.suamusica.smads.extensions.show
+import com.suamusica.smads.helpers.RenderProcessGoneHandler
 import com.suamusica.smads.input.LoadMethodInput
 import com.suamusica.smads.output.AdEventOutput
 import com.suamusica.smads.platformview.AdPlayerView
@@ -35,6 +35,7 @@ class AdPlayerViewController(
     private var companionAdSlot: LinearLayout? = null
     private var progressBar: ProgressBar? = null
     private val ignorePausedEvent = AtomicBoolean(true)
+    private var renderProcessGoneHandler: RenderProcessGoneHandler? = null
     fun load(input: LoadMethodInput, adPlayerView: AdPlayerView) {
         Timber.d("load(input=%s)", input)
         dispose()
@@ -44,6 +45,12 @@ class AdPlayerViewController(
         this.companionAdSlot = adPlayerView.binding.companionAdSlot
         this.progressBar = adPlayerView.binding.progressBar
         ignorePausedEvent.set(true)
+        
+        // Set up render process gone handler to avoid crashes from WebView renderer crashes
+        renderProcessGoneHandler = RenderProcessGoneHandler { didCrash ->
+            onRenderProcessGone(didCrash)
+        }
+        
         adPlayerManager = AdPlayerManager(context, input )
         configureAdPlayerEventObservers()
         adPlayerManager?.load(adPlayerView.binding.videoAdContainer, adPlayerView.binding.companionAdSlot,  input.ppID)
@@ -70,6 +77,8 @@ class AdPlayerViewController(
         Timber.d("dispose()")
         compositeDisposable.clear()
         adPlayerManager?.release()
+        renderProcessGoneHandler?.clear()
+        renderProcessGoneHandler = null
         isCompleted.set(false)
     }
 
@@ -149,6 +158,40 @@ class AdPlayerViewController(
 
     private fun onAdLoaded() {
         progressBar?.gone()
+        
+        // Set up WebView render process crash handling after IMA SDK has created its views
+        adPlayerView?.let { view ->
+            // Post to ensure IMA SDK has finished setting up its view hierarchy
+            view.post {
+                renderProcessGoneHandler?.setupForViewHierarchy(view)
+            }
+        }
+    }
+    
+    /**
+     * Called when a WebView's render process has crashed or been killed.
+     * This prevents the app from crashing by handling the situation gracefully.
+     * 
+     * @param didCrash true if the process crashed, false if it was killed by the system
+     */
+    private fun onRenderProcessGone(didCrash: Boolean) {
+        Timber.e("onRenderProcessGone(didCrash=%s) - WebView renderer crashed/killed", didCrash)
+        
+        // Release resources to prevent further issues
+        adPlayerManager?.release()
+        adPlayerManager = null
+        
+        // Notify Flutter with an error event
+        val errorCode = if (didCrash) "RENDER_PROCESS_CRASHED" else "RENDER_PROCESS_KILLED"
+        val errorMessage = if (didCrash) {
+            "WebView render process crashed unexpectedly"
+        } else {
+            "WebView render process was killed by system (low memory)"
+        }
+        callback.onAddEvent(AdEventOutput.error(errorCode, errorMessage))
+        
+        // Complete the ad session so the app can continue
+        onComplete()
     }
     private fun canSkip() {
         progressBar?.gone()
@@ -166,6 +209,11 @@ class AdPlayerViewController(
             view?.show()
             videoAdContainer?.show()
             companionAdSlot?.hide()
+        }
+        
+        // Refresh handler for any new WebViews that IMA SDK may have created
+        adPlayerView?.let { view ->
+            renderProcessGoneHandler?.refresh(view)
         }
     }
 
