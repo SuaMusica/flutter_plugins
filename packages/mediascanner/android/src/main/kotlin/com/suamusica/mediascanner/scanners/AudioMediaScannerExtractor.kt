@@ -1,6 +1,7 @@
 package com.suamusica.mediascanner.scanners
 
 import android.annotation.TargetApi
+import android.content.ContentUris
 import android.content.Context
 import android.database.Cursor
 import android.media.MediaMetadataRetriever
@@ -21,6 +22,8 @@ import com.mpatric.mp3agic.Mp3File;
 import com.mpatric.mp3agic.NotSupportedException;
 import com.mpatric.mp3agic.UnsupportedTagException;
 import com.suamusica.mediascanner.db.ScannedMediaRepository
+import java.util.Locale
+import java.util.Locale.getDefault
 
 class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExtractor {
     private val rootPaths = mutableListOf<String>()
@@ -37,7 +40,9 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
             Audio.Media.DATA,
             Audio.Media.DATE_ADDED,
             Audio.Media.DATE_MODIFIED,
-            Audio.Media._ID
+            Audio.Media._ID,
+            Audio.Media.DISPLAY_NAME,
+            Audio.Media.MIME_TYPE
     )
 
     override val selection: String = Audio.Media.IS_MUSIC + " != 0"
@@ -68,13 +73,14 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
         //     Timber.d("Field $it: [${getString(cursor, it)}]")
         // }
 
-        var albumId = getLong(cursor, Audio.Media.ALBUM_ID)
+        val androidAlbumId = getLong(cursor, Audio.Media.ALBUM_ID)
+        var albumId = androidAlbumId
         var playlistId = -1L;
 
         var musicId = getLong(cursor, Audio.Media._ID) * -1;
         val path = getString(cursor, Audio.Media.DATA)
 
-        if(!path.toLowerCase().endsWith(".mp3")){
+        if(!path.lowercase(getDefault()).endsWith(".mp3")){
             return null
         }
         getSuaMusicaId(path)?.let {
@@ -119,15 +125,15 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
         }
         artist = if (artist.trim().isBlank() || artist.contains("unknown", ignoreCase = true)) UNKNOWN_ARTIST else artist
 
+        var titleFromId3: String? = null
         try {
-            //  Timber.d("Opening MP3 file...")
             val mp3file = Mp3File(path)
             if (mp3file.hasId3v2Tag()) {
-                // Timber.d("Trying to read Id3 tags...")
-                val id3v2Tag = mp3file.id3v2Tag;
+                val id3v2Tag = mp3file.id3v2Tag
+
+                id3v2Tag.title?.takeIf { it.isNotBlank() }?.let { titleFromId3 = it }
 
                 var url = id3v2Tag.url
-                // Timber.d("SM_URL: [$url]")
                 if (url != null && url.isNotEmpty()) {
                     val uri = Uri.parse(url)
                     uri.getQueryParameter("playlistId")?.let { value ->
@@ -141,32 +147,37 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
                     }
                 }
 
-                if (artist == UNKNOWN_ARTIST) {
-                    if (id3v2Tag.albumArtist.isNotEmpty()) {
-                        artist = id3v2Tag.albumArtist
-                    }
+                if (artist == UNKNOWN_ARTIST && id3v2Tag.albumArtist.isNotEmpty()) {
+                    artist = id3v2Tag.albumArtist
                 }
-            } 
-            
+            }
         } catch (e: Throwable) {
-            if (e is java.io.FileNotFoundException){
-                Timber.e(e, "File does not exist.. $path");
+            if (e is java.io.FileNotFoundException) {
+                Timber.e(e, "File does not exist.. $path")
                 return null
             }
-
-            Timber.e(e, "Failed to get ID3 tags. Ignoring...");
+            Timber.e(e, "Failed to get ID3 tags. Ignoring...")
         }
+
+        var displayTitle = getString(cursor, Audio.Media.TITLE) { getString(cursor, Audio.Media.DISPLAY_NAME) }
+        if (displayTitle.isNotBlank() && displayTitle.startsWith("\uFEFF")) {
+            displayTitle = displayTitle.removePrefix("\uFEFF")
+        }
+        titleFromId3?.let { displayTitle = it }
+        val title = if (displayTitle.isNotBlank()) displayTitle else path.substringAfterLast('/').substringBeforeLast('.')
 
         return ScannedMediaOutput(
                 mediaId = musicId,
-                title = getString(cursor, Audio.Media.TITLE) { getString(cursor, Audio.Media.DISPLAY_NAME) },
+                title = title,
                 artist = artist,
                 albumId = albumId,
                 playlistId = playlistId,
                 album = getString(cursor, Audio.Media.ALBUM) { getString(cursor, "_description") },
                 track = getString(cursor, Audio.Media.TRACK),
                 path = path,
-                albumCoverPath = getAlbumById(albumId, path)?.coverPath ?: "",
+                albumCoverPath = getAlbumById(androidAlbumId, path)?.coverPath
+                    ?: createCover(androidAlbumId, path).takeIf { it.isNotEmpty() }
+                    ?: "",
                 createdAt = getLong(cursor, Audio.Media.DATE_ADDED),
                 updatedAt = getLong(cursor, Audio.Media.DATE_MODIFIED)
         )
@@ -202,7 +213,7 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
             albumCache[albumId] = null
         }
 
-        if (albumCache.containsKey(albumId)) {
+        if (albumCache[albumId] != null) {
             // Timber.d("Album $albumId is present in cache")
             return albumCache[albumId]
         }
