@@ -117,16 +117,10 @@ class Queue {
     bool enqueueAfterCurrent = false,
   ]) async {
     int pos = _nextPosition();
+    storage.add(QueueItem(pos, pos, media));
 
-    if (enqueueAfterCurrent && storage.isNotEmpty) {
-      final position = _index + 1;
-      storage.insert(position, QueueItem(pos, pos, media));
-
-      for (var i = 0; i < storage.length; ++i) {
-        storage[i].position = i;
-      }
-    } else {
-      storage.add(QueueItem(pos, pos, media));
+    if (enqueueAfterCurrent && storage.length > 1) {
+      reorder(storage.length - 1, _index + 1);
     }
 
     await _save(medias: [media]);
@@ -152,10 +146,11 @@ class Queue {
     int i = storage.length == 1 ? 0 : storage.length - 1;
     if (enqueueAfterCurrent && storage.isNotEmpty) {
       final insertAt = _index + 1;
-      storage.insertAll(insertAt, _toQueueItems(medias, i));
+      final oldLength = storage.length;
+      storage.addAll(_toQueueItems(medias, i));
 
-      for (var j = 0; j < storage.length; j++) {
-        storage[j].position = j;
+      for (var k = 0; k < medias.length; k++) {
+        reorder(oldLength + k, insertAt + k);
       }
     } else if (saveOnTop) {
       storage.insertAll(0, _toQueueItems(medias, i));
@@ -163,7 +158,7 @@ class Queue {
       storage.addAll(_toQueueItems(medias, i));
     }
 
-    await _save(medias: items, saveOnTop: enqueueAfterCurrent || saveOnTop);
+    await _save(medias: items, saveOnTop: saveOnTop);
   }
 
   Future<void> _save({
