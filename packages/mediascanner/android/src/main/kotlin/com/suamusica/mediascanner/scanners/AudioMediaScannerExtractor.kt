@@ -4,6 +4,8 @@ import android.annotation.TargetApi
 import android.content.ContentUris
 import android.content.Context
 import android.database.Cursor
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
@@ -164,7 +166,7 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
             displayTitle = displayTitle.removePrefix("\uFEFF")
         }
         titleFromId3?.let { displayTitle = it }
-        val title = if (displayTitle.isNotBlank()) displayTitle else path.substringAfterLast('/').substringBeforeLast('.')
+        val title = displayTitle.ifBlank { path.substringAfterLast('/').substringBeforeLast('.') }
 
         return ScannedMediaOutput(
                 mediaId = musicId,
@@ -175,8 +177,8 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
                 album = getString(cursor, Audio.Media.ALBUM) { getString(cursor, "_description") },
                 track = getString(cursor, Audio.Media.TRACK),
                 path = path,
-                albumCoverPath = getAlbumById(androidAlbumId, path)?.coverPath
-                    ?: createCover(androidAlbumId, path).takeIf { it.isNotEmpty() }
+                albumCoverPath = getAlbumById(albumId, path)?.coverPath
+                    ?: createCover(albumId, path).takeIf { it.isNotEmpty() }
                     ?: "",
                 createdAt = getLong(cursor, Audio.Media.DATE_ADDED),
                 updatedAt = getLong(cursor, Audio.Media.DATE_MODIFIED)
@@ -252,22 +254,30 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
 
     private fun createCover(albumId: Long, filePath: String): String {
         // Timber.d("Trying create Album $albumId for file: $filePath")
-        var coverPath = ""
+        var coverPath = "https://suamusica.com.br/cover/cd/$albumId"
         try {
             val mmr = MediaMetadataRetriever()
             mmr.setDataSource(filePath)
-            mmr.embeddedPicture?.let {
-                val cacheDir = context.cacheDir
-                // Timber.d("Creating cover on cache dir: $cacheDir")
-                val outputFile = File.createTempFile("sm_$albumId", ".jpg", cacheDir)
+            mmr.embeddedPicture?.let { coverBytes ->
+                val appRoot = context.filesDir.parentFile
+                val appFlutterDir = File(appRoot, "app_flutter")
+                val coversDir = File(appFlutterDir, "covers")
+                if (!coversDir.exists()) {
+                    coversDir.mkdirs()
+                }
 
-                if (outputFile.exists())
+                val outputFile = File(coversDir, "$albumId.webp")
+                if (outputFile.exists()) {
                     outputFile.delete()
+                }
 
-                val fos = FileOutputStream(outputFile.path)
                 try {
-                    fos.write(it)
-                    fos.close()
+                    val bitmap = BitmapFactory.decodeByteArray(coverBytes, 0, coverBytes.size)
+                    if (bitmap != null) {
+                        FileOutputStream(outputFile).use { fos ->
+                            bitmap.compress(Bitmap.CompressFormat.WEBP, 90, fos)
+                        }
+                    }
                 } catch (e: IOException) {
                     Timber.e(e, "Error")
                 }
