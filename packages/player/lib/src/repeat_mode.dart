@@ -1,10 +1,10 @@
-enum RepeatMode { NONE, QUEUE, TRACK }
+enum PlayerRepeatMode { NONE, QUEUE, TRACK }
 
-extension ParseToString on RepeatMode {
+extension ParseToString on PlayerRepeatMode {
   String toShortString() => switch (this) {
-    RepeatMode.NONE => 'Disabled',
-    RepeatMode.QUEUE => 'Queue',
-    RepeatMode.TRACK => 'Track',
+    PlayerRepeatMode.NONE => 'Disabled',
+    PlayerRepeatMode.QUEUE => 'Queue',
+    PlayerRepeatMode.TRACK => 'Track',
     // ignore: unreachable_switch_case
     _ => "Unknown",
   };

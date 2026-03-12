@@ -11,11 +11,8 @@ import 'package:smplayer/src/shuffler.dart';
 import 'package:smplayer/src/simple_shuffle.dart';
 
 class Queue {
-  Queue({
-    shuffler,
-    mode,
-    this.initializeIsar = false,
-  }) : _shuffler = shuffler ?? SimpleShuffler() {
+  Queue({shuffler, mode, this.initializeIsar = false})
+    : _shuffler = shuffler ?? SimpleShuffler() {
     IsarService.instance.isarEnabled = initializeIsar;
     itemsReady = !initializeIsar;
     _initialize();
@@ -113,10 +110,7 @@ class Queue {
     }
   }
 
-  add(
-    Media media, [
-    bool enqueueAfterCurrent = false,
-  ]) async {
+  add(Media media, [bool enqueueAfterCurrent = false]) async {
     if (enqueueAfterCurrent && storage.isNotEmpty) {
       final insertAt = _index + 1;
       final originalPos = _maxOriginalPosition() + 1;
@@ -131,12 +125,10 @@ class Queue {
   }
 
   List<QueueItem<Media>> _toQueueItems(List<Media> items, int i) {
-    return items.map(
-      (e) {
-        i++;
-        return QueueItem(i, i, e);
-      },
-    ).toList();
+    return items.map((e) {
+      i++;
+      return QueueItem(i, i, e);
+    }).toList();
   }
 
   addAll(
@@ -281,8 +273,7 @@ class Queue {
     if (storage.isEmpty) return -1;
     return storage.fold<int>(
       storage.first.originalPosition,
-      (max, item) =>
-          item.originalPosition > max ? item.originalPosition : max,
+      (max, item) => item.originalPosition > max ? item.originalPosition : max,
     );
   }
 
@@ -352,10 +343,11 @@ class Queue {
     }
   }
 
-  Media? possibleNext(RepeatMode repeatMode) {
-    if (repeatMode == RepeatMode.NONE || repeatMode == RepeatMode.TRACK) {
+  Media? possibleNext(PlayerRepeatMode repeatMode) {
+    if (repeatMode == PlayerRepeatMode.NONE ||
+        repeatMode == PlayerRepeatMode.TRACK) {
       return _next();
-    } else if (repeatMode == RepeatMode.QUEUE) {
+    } else if (repeatMode == PlayerRepeatMode.QUEUE) {
       if (storage.length - 1 == index) {
         return storage[0].item;
       } else {
