@@ -245,7 +245,7 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
 
     private fun createCover(albumId: Long, filePath: String): String {
         // Timber.d("Trying create Album $albumId for file: $filePath")
-        if (albumId == -1L || albumId <= 10000000) {
+        if (albumId == -1L || albumId > 10000000) {
             return ""
         }
 
