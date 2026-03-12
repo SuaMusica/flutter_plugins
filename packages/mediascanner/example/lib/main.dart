@@ -72,9 +72,9 @@ class _MyAppState extends State<MyApp> {
                       primary: false,
                       padding: const EdgeInsets.all(2),
                       children: List.generate(
-                          snapshot.data.length,
+                          snapshot.data!.length,
                           (index) =>
-                              _getScannedMediaWidget(snapshot.data[index])),
+                              _getScannedMediaWidget(snapshot.data![index])),
                     ),
                   );
                 },
@@ -98,7 +98,7 @@ class _MyAppState extends State<MyApp> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            _getTile("Track", data.track),
+            _getTile("Track", data.track ?? ""),
             _getTile("AlbumId", data.albumId.toString()),
             _getTile("Album", data.album),
             _getTile("Title", data.title),
@@ -109,10 +109,10 @@ class _MyAppState extends State<MyApp> {
       child: Card(
         child: Opacity(
           opacity: 0.3,
-          child: data.albumCoverPath.isEmpty
+          child: (data.albumCoverPath ?? "").isEmpty
               ? Container()
               : Image.file(
-                  File(data.albumCoverPath),
+                  File(data.albumCoverPath!),
                   fit: BoxFit.fill,
                 ),
         ),

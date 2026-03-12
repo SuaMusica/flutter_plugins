@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide RepeatMode;
 import 'package:smaws/aws.dart';
 import 'package:smplayer/player.dart';
 import 'dart:async';

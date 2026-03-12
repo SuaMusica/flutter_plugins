@@ -50,6 +50,7 @@ class Queue {
   final Shuffler _shuffler;
   final bool initializeIsar;
   bool itemsReady = false;
+  bool _isShuffled = false;
   int previousIndex = 0;
   PreviousPlaylistPosition? previousPosition;
   var storage = <QueueItem<Media>>[];
@@ -116,11 +117,14 @@ class Queue {
     Media media, [
     bool enqueueAfterCurrent = false,
   ]) async {
-    int pos = _nextPosition();
-    storage.add(QueueItem(pos, pos, media));
-
-    if (enqueueAfterCurrent && storage.length > 1) {
-      reorder(storage.length - 1, _index + 1);
+    if (enqueueAfterCurrent && storage.isNotEmpty) {
+      final insertAt = _index + 1;
+      final originalPos = _maxOriginalPosition() + 1;
+      storage.insert(insertAt, QueueItem(originalPos, insertAt, media));
+      _fixPositions();
+    } else {
+      int pos = _nextPosition();
+      storage.add(QueueItem(pos, pos, media));
     }
 
     await _save(medias: [media]);
@@ -143,18 +147,21 @@ class Queue {
   }) async {
     final medias = shouldRemoveFirst ? items.sublist(1) : items;
 
-    int i = storage.length == 1 ? 0 : storage.length - 1;
     if (enqueueAfterCurrent && storage.isNotEmpty) {
       final insertAt = _index + 1;
-      final oldLength = storage.length;
-      storage.addAll(_toQueueItems(medias, i));
-
-      for (var k = 0; k < medias.length; k++) {
-        reorder(oldLength + k, insertAt + k);
-      }
+      var originalPos = _maxOriginalPosition();
+      final newItems = medias.map((e) {
+        originalPos++;
+        return QueueItem(originalPos, 0, e);
+      }).toList();
+      storage.insertAll(insertAt, newItems);
+      _fixPositions();
     } else if (saveOnTop) {
+      int i = storage.length == 1 ? 0 : storage.length - 1;
       storage.insertAll(0, _toQueueItems(medias, i));
+      _fixPositions();
     } else {
+      int i = storage.length == 1 ? 0 : storage.length - 1;
       storage.addAll(_toQueueItems(medias, i));
     }
 
@@ -237,6 +244,7 @@ class Queue {
       var currentIndex = storage.indexOf(current);
       reorder(currentIndex, 0, true);
       setIndex = 0;
+      _isShuffled = true;
     }
   }
 
@@ -256,7 +264,26 @@ class Queue {
         }
       }
       setIndex = current.position;
+      _isShuffled = false;
     }
+  }
+
+  void _fixPositions() {
+    for (var j = 0; j < storage.length; j++) {
+      storage[j].position = j;
+      if (!_isShuffled) {
+        storage[j].originalPosition = j;
+      }
+    }
+  }
+
+  int _maxOriginalPosition() {
+    if (storage.isEmpty) return -1;
+    return storage.fold<int>(
+      storage.first.originalPosition,
+      (max, item) =>
+          item.originalPosition > max ? item.originalPosition : max,
+    );
   }
 
   _nextPosition() {
