@@ -31,6 +31,7 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
             Audio.Media.TITLE,
             Audio.Media.TRACK,
             Audio.Media.ARTIST,
+            Audio.Media.ALBUM_ID,
             Audio.Media.ALBUM,
             Audio.Media.DATA,
             Audio.Media.DATE_ADDED,
