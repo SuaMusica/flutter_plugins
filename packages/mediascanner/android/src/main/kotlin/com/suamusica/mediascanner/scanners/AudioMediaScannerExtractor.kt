@@ -17,14 +17,8 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import timber.log.Timber
-import com.mpatric.mp3agic.ID3v1Tag;
-import com.mpatric.mp3agic.ID3v24Tag;
-import com.mpatric.mp3agic.InvalidDataException;
 import com.mpatric.mp3agic.Mp3File;
-import com.mpatric.mp3agic.NotSupportedException;
-import com.mpatric.mp3agic.UnsupportedTagException;
 import com.suamusica.mediascanner.db.ScannedMediaRepository
-import java.util.Locale
 import java.util.Locale.getDefault
 
 class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExtractor {
@@ -37,7 +31,6 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
             Audio.Media.TITLE,
             Audio.Media.TRACK,
             Audio.Media.ARTIST,
-            Audio.Media.ALBUM_ID,
             Audio.Media.ALBUM,
             Audio.Media.DATA,
             Audio.Media.DATE_ADDED,
@@ -178,8 +171,7 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
                 track = getString(cursor, Audio.Media.TRACK),
                 path = path,
                 albumCoverPath = getAlbumById(albumId, path)?.coverPath
-                    ?: createCover(albumId, path).takeIf { it.isNotEmpty() }
-                    ?: "",
+                    ?: createCover(albumId, path),
                 createdAt = getLong(cursor, Audio.Media.DATE_ADDED),
                 updatedAt = getLong(cursor, Audio.Media.DATE_MODIFIED)
         )
@@ -254,6 +246,10 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
 
     private fun createCover(albumId: Long, filePath: String): String {
         // Timber.d("Trying create Album $albumId for file: $filePath")
+        if (albumId < 5000 || albumId > 10000000) {
+            return ""
+        }
+
         var coverPath = "https://suamusica.com.br/cover/cd/$albumId"
         try {
             val mmr = MediaMetadataRetriever()
@@ -280,11 +276,13 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
                     }
                 } catch (e: IOException) {
                     Timber.e(e, "Error")
+                    return ""
                 }
                 coverPath = outputFile.path
                 // Timber.d("cover created: $coverPath")
             } ?: Timber.d("no has embeddedPicture.")
         } catch (t: Throwable) {
+            return ""
             Timber.e(t, "Error")
         }
 
