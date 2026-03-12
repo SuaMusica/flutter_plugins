@@ -1,19 +1,20 @@
 import 'dart:async';
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
-import 'package:smaws/aws.dart';
 import 'package:flutter/services.dart';
+import 'package:mutex/mutex.dart';
+import 'package:smaws/aws.dart';
 import 'package:smplayer/src/before_play_event.dart';
+import 'package:smplayer/src/duration_change_event.dart';
 import 'package:smplayer/src/event.dart';
 import 'package:smplayer/src/event_type.dart';
 import 'package:smplayer/src/isar_service.dart';
 import 'package:smplayer/src/media.dart';
-import 'package:smplayer/src/duration_change_event.dart';
 import 'package:smplayer/src/position_change_event.dart';
 import 'package:smplayer/src/previous_playlist_model.dart';
 import 'package:smplayer/src/queue.dart';
 import 'package:smplayer/src/repeat_mode.dart';
-import 'package:mutex/mutex.dart';
 
 import 'player_state.dart';
 
@@ -66,7 +67,7 @@ class Player {
     EventType.PAUSED,
     EventType.PLAYING,
     EventType.EXTERNAL_RESUME_REQUESTED,
-    EventType.EXTERNAL_PAUSE_REQUESTED
+    EventType.EXTERNAL_PAUSE_REQUESTED,
   ];
 
   Stream<Event>? _stream;
@@ -102,9 +103,10 @@ class Player {
   }
 
   Future<int> enqueue(
-    Media media,
-  ) async {
-    _queue.add(media);
+    Media media, [
+    bool enqueueAfterCurrent = false,
+  ]) async {
+    _queue.add(media, enqueueAfterCurrent);
     return Ok;
   }
 
@@ -112,19 +114,25 @@ class Player {
     List<Media> items, {
     bool shouldRemoveFirst = false,
     bool saveOnTop = false,
+    bool enqueueAfterCurrent = false,
   }) async {
     _queue.addAll(
       items,
       shouldRemoveFirst: shouldRemoveFirst,
       saveOnTop: saveOnTop,
+      enqueueAfterCurrent: enqueueAfterCurrent,
     );
     return Ok;
   }
 
-  int removeByPosition(
-      {required List<int> positionsToDelete, required bool isShuffle}) {
+  int removeByPosition({
+    required List<int> positionsToDelete,
+    required bool isShuffle,
+  }) {
     return _queue.removeByPosition(
-        positionsToDelete: positionsToDelete, isShuffle: isShuffle);
+      positionsToDelete: positionsToDelete,
+      isShuffle: isShuffle,
+    );
   }
 
   Future<int> removeAll() async {
@@ -216,8 +224,11 @@ class Player {
     return media;
   }
 
-  Future<int> reorder(int oldIndex, int newIndex,
-      [bool isShuffle = false]) async {
+  Future<int> reorder(
+    int oldIndex,
+    int newIndex, [
+    bool isShuffle = false,
+  ]) async {
     _queue.reorder(oldIndex, newIndex, isShuffle);
     return Ok;
   }
@@ -241,9 +252,9 @@ class Player {
   Media? get top => _queue.top;
 
   Future<int> load(Media media) async => _doPlay(
-        _queue.current!,
-        shouldLoadOnly: true,
-      );
+    _queue.current!,
+    shouldLoadOnly: true,
+  );
 
   Future<int> play(
     Media media, {
@@ -333,7 +344,7 @@ class Player {
         'position': position?.inMilliseconds,
         'respectSilence': respectSilence,
         'stayAwake': stayAwake,
-        'isFavorite': media.isFavorite
+        'isFavorite': media.isFavorite,
       });
     } else if (autoPlay) {
       _notifyBeforePlayEvent((loadOnly) => {});
@@ -352,7 +363,7 @@ class Player {
         'position': position?.inMilliseconds,
         'respectSilence': respectSilence,
         'stayAwake': stayAwake,
-        'isFavorite': media.isFavorite
+        'isFavorite': media.isFavorite,
       });
     } else {
       _notifyBeforePlayEvent((loadOnly) {
@@ -370,7 +381,7 @@ class Player {
           'position': position?.inMilliseconds,
           'respectSilence': respectSilence,
           'stayAwake': stayAwake,
-          'isFavorite': media.isFavorite
+          'isFavorite': media.isFavorite,
         });
       });
 
@@ -694,14 +705,16 @@ class Player {
 
           case PlayerState.ERROR:
             final error = callArgs['error'] ?? "Unknown from Source";
-            final isPermissionError =
-                (error as String).contains('Permission denied');
+            final isPermissionError = (error as String).contains(
+              'Permission denied',
+            );
             _notifyPlayerErrorEvent(
-                player: player,
-                error: error,
-                errorType: isPermissionError
-                    ? PlayerErrorType.PERMISSION_DENIED
-                    : null);
+              player: player,
+              error: error,
+              errorType: isPermissionError
+                  ? PlayerErrorType.PERMISSION_DENIED
+                  : null,
+            );
             break;
         }
 
@@ -773,7 +786,10 @@ class Player {
       case 'externalPlayback.play':
         print("Player: externalPlayback : Play");
         _notifyPlayerStateChangeEvent(
-            player, EventType.EXTERNAL_RESUME_REQUESTED, "");
+          player,
+          EventType.EXTERNAL_RESUME_REQUESTED,
+          "",
+        );
         break;
       case 'externalPlayback.pause':
         print("Player: externalPlayback : Pause");
@@ -800,61 +816,77 @@ class Player {
 
   _notifyChangeToNext(Media media) {
     _add(
-        Event(type: EventType.NEXT, media: media, queuePosition: _queue.index));
+      Event(type: EventType.NEXT, media: media, queuePosition: _queue.index),
+    );
   }
 
   _notifyChangeToPrevious(Media media) {
-    _add(Event(
-        type: EventType.PREVIOUS, media: media, queuePosition: _queue.index));
+    _add(
+      Event(
+        type: EventType.PREVIOUS,
+        media: media,
+        queuePosition: _queue.index,
+      ),
+    );
   }
 
   _notifyRewind(Media media) async {
     final positionInMilli = await getCurrentPosition();
     final durationInMilli = await getDuration();
-    _add(Event(
-      type: EventType.REWIND,
-      media: media,
-      queuePosition: _queue.index,
-      position: Duration(milliseconds: positionInMilli),
-      duration: Duration(milliseconds: durationInMilli),
-    ));
+    _add(
+      Event(
+        type: EventType.REWIND,
+        media: media,
+        queuePosition: _queue.index,
+        position: Duration(milliseconds: positionInMilli),
+        duration: Duration(milliseconds: durationInMilli),
+      ),
+    );
   }
 
   _notifyForward(Media media) async {
     final positionInMilli = await getCurrentPosition();
     final durationInMilli = await getDuration();
 
-    _add(Event(
-      type: EventType.FORWARD,
-      media: media,
-      queuePosition: _queue.index,
-      position: Duration(milliseconds: positionInMilli),
-      duration: Duration(milliseconds: durationInMilli),
-    ));
+    _add(
+      Event(
+        type: EventType.FORWARD,
+        media: media,
+        queuePosition: _queue.index,
+        position: Duration(milliseconds: positionInMilli),
+        duration: Duration(milliseconds: durationInMilli),
+      ),
+    );
   }
 
   _notifyPlayerStatusChangeEvent(EventType type) {
     if (_queue.current != null) {
-      _add(Event(
-          type: type, media: _queue.current!, queuePosition: _queue.index));
+      _add(
+        Event(type: type, media: _queue.current!, queuePosition: _queue.index),
+      );
     }
   }
 
   _notifyBeforePlayEvent(Function(bool) operation) {
-    _add(BeforePlayEvent(
+    _add(
+      BeforePlayEvent(
         media: _queue.current!,
         queuePosition: _queue.index,
-        operation: operation));
+        operation: operation,
+      ),
+    );
   }
 
   static _notifyDurationChangeEvent(Player player, Duration newDuration) {
     if (player._queue.current != null) {
       _addUsingPlayer(
-          player,
-          DurationChangeEvent(
-              media: player._queue.current!,
-              queuePosition: player._queue.index,
-              duration: newDuration));
+        player,
+        DurationChangeEvent(
+          media: player._queue.current!,
+          queuePosition: player._queue.index,
+          duration: newDuration,
+        ),
+      );
     }
   }
 
@@ -902,7 +934,10 @@ class Player {
   }
 
   static _notifyPositionChangeEvent(
-      Player player, Duration newPosition, Duration newDuration) {
+    Player player,
+    Duration newPosition,
+    Duration newDuration,
+  ) {
     final media = player.current;
     if (media != null) {
       final position = newPosition.inSeconds;

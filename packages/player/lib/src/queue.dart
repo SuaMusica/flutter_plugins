@@ -50,6 +50,7 @@ class Queue {
   final Shuffler _shuffler;
   final bool initializeIsar;
   bool itemsReady = false;
+  bool _isShuffled = false;
   int previousIndex = 0;
   PreviousPlaylistPosition? previousPosition;
   var storage = <QueueItem<Media>>[];
@@ -67,22 +68,22 @@ class Queue {
   }
 
   Future<List<Media>> get previousItems async {
-    previousPlaylistMusics =
-        await IsarService.instance.getPreviousPlaylistMusics();
+    previousPlaylistMusics = await IsarService.instance
+        .getPreviousPlaylistMusics();
     return previousPlaylistMusics?.musics?.toListMedia ?? [];
   }
 
   Future<PreviousPlaylistPosition?> get _previousPlaylistPosition async {
-    final previousPlaylistPosition =
-        await IsarService.instance.getPreviousPlaylistPosition();
+    final previousPlaylistPosition = await IsarService.instance
+        .getPreviousPlaylistPosition();
     return previousPlaylistPosition?.position != null
         ? previousPlaylistPosition
         : null;
   }
 
   Future<int> get previousPlaylistIndex async {
-    final previousPlaylistCurrentIndex =
-        await IsarService.instance.getPreviousPlaylistCurrentIndex();
+    final previousPlaylistCurrentIndex = await IsarService.instance
+        .getPreviousPlaylistCurrentIndex();
     return previousPlaylistCurrentIndex?.currentIndex ?? 0;
   }
 
@@ -112,9 +113,20 @@ class Queue {
     }
   }
 
-  add(Media media) async {
-    int pos = _nextPosition();
-    storage.add(QueueItem(pos, pos, media));
+  add(
+    Media media, [
+    bool enqueueAfterCurrent = false,
+  ]) async {
+    if (enqueueAfterCurrent && storage.isNotEmpty) {
+      final insertAt = _index + 1;
+      final originalPos = _maxOriginalPosition() + 1;
+      storage.insert(insertAt, QueueItem(originalPos, insertAt, media));
+      _fixPositions();
+    } else {
+      int pos = _nextPosition();
+      storage.add(QueueItem(pos, pos, media));
+    }
+
     await _save(medias: [media]);
   }
 
@@ -131,21 +143,35 @@ class Queue {
     List<Media> items, {
     bool shouldRemoveFirst = false,
     bool saveOnTop = false,
+    bool enqueueAfterCurrent = false,
   }) async {
     final medias = shouldRemoveFirst ? items.sublist(1) : items;
 
-    int i = storage.length == 1 ? 0 : storage.length - 1;
-    if (saveOnTop) {
+    if (enqueueAfterCurrent && storage.isNotEmpty) {
+      final insertAt = _index + 1;
+      var originalPos = _maxOriginalPosition();
+      final newItems = medias.map((e) {
+        originalPos++;
+        return QueueItem(originalPos, 0, e);
+      }).toList();
+      storage.insertAll(insertAt, newItems);
+      _fixPositions();
+    } else if (saveOnTop) {
+      int i = storage.length == 1 ? 0 : storage.length - 1;
       storage.insertAll(0, _toQueueItems(medias, i));
+      _fixPositions();
     } else {
+      int i = storage.length == 1 ? 0 : storage.length - 1;
       storage.addAll(_toQueueItems(medias, i));
     }
 
     await _save(medias: items, saveOnTop: saveOnTop);
   }
 
-  Future<void> _save(
-      {required List<Media> medias, bool saveOnTop = false}) async {
+  Future<void> _save({
+    required List<Media> medias,
+    bool saveOnTop = false,
+  }) async {
     final items = await previousItems;
     debugPrint(
       '[TESTE] itemsFromStorage: ${items.length} - mediasToSave: ${medias.length}',
@@ -166,12 +192,14 @@ class Queue {
 
     return [
       ...topList.toListStringCompressed,
-      ...bottomList.toListStringCompressed
+      ...bottomList.toListStringCompressed,
     ];
   }
 
-  int removeByPosition(
-      {required List<int> positionsToDelete, required bool isShuffle}) {
+  int removeByPosition({
+    required List<int> positionsToDelete,
+    required bool isShuffle,
+  }) {
     try {
       int lastLength = storage.length;
       for (var i = 0; i < positionsToDelete.length; ++i) {
@@ -189,7 +217,8 @@ class Queue {
       if (kDebugMode) {
         for (var e in storage) {
           debugPrint(
-              '=====> storage remove: ${e.item.name} - ${e.position} | ${e.originalPosition}');
+            '=====> storage remove: ${e.item.name} - ${e.position} | ${e.originalPosition}',
+          );
         }
       }
       return lastLength - storage.length;
@@ -215,6 +244,7 @@ class Queue {
       var currentIndex = storage.indexOf(current);
       reorder(currentIndex, 0, true);
       setIndex = 0;
+      _isShuffled = true;
     }
   }
 
@@ -229,11 +259,31 @@ class Queue {
       if (kDebugMode) {
         for (var e in storage) {
           debugPrint(
-              '=====> storage unshuffle: ${e.item.name} - ${e.position} | ${e.originalPosition}');
+            '=====> storage unshuffle: ${e.item.name} - ${e.position} | ${e.originalPosition}',
+          );
         }
       }
       setIndex = current.position;
+      _isShuffled = false;
     }
+  }
+
+  void _fixPositions() {
+    for (var j = 0; j < storage.length; j++) {
+      storage[j].position = j;
+      if (!_isShuffled) {
+        storage[j].originalPosition = j;
+      }
+    }
+  }
+
+  int _maxOriginalPosition() {
+    if (storage.isEmpty) return -1;
+    return storage.fold<int>(
+      storage.first.originalPosition,
+      (max, item) =>
+          item.originalPosition > max ? item.originalPosition : max,
+    );
   }
 
   _nextPosition() {

@@ -364,5 +364,119 @@ void main() {
       expect(subject.size, 3);
       expect(subject.current, media1);
     });
+
+    test(
+        'Add with enqueueAfterCurrent during shuffle should preserve original order on unshuffle',
+        () {
+      final subject = Queue();
+      final originalItems = <Media>[media1, media2, media3];
+      subject.addAll(originalItems);
+
+      // Move to media2
+      subject.next();
+      expect(subject.current, media2);
+
+      // Shuffle
+      subject.shuffle();
+      expect(subject.size, 3);
+      expect(subject.current, media2);
+
+      // Add media1 copy as new item after current while shuffled
+      final media4 = Media(
+          id: 4,
+          albumTitle: "Album 4",
+          albumId: 4,
+          ownerId: 4,
+          name: "Nova Musica",
+          url: "https://example.com/4.mp3",
+          coverUrl: "https://example.com/cover4.jpeg",
+          bigCoverUrl: "https://example.com/cover4_big.jpeg",
+          author: "Artista 4",
+          isLocal: false,
+          isVerified: true,
+          shareUrl: "");
+
+      subject.add(media4, true);
+      expect(subject.size, 4);
+
+      // The new item should be right after current in shuffled view
+      expect(subject.storage[subject.index + 1].item, media4);
+
+      // Unshuffle
+      subject.unshuffle();
+
+      // Original order should be restored with new item at the end
+      expect(subject.size, 4);
+      expect(subject.items[0], media1);
+      expect(subject.items[1], media2);
+      expect(subject.items[2], media3);
+      expect(subject.items[3], media4);
+
+      // Verify each item's cover matches its name
+      expect(subject.storage[0].item.name, "O Bebe");
+      expect(subject.storage[0].item.coverUrl, media1.coverUrl);
+      expect(subject.storage[1].item.name, "Solteiro Largado");
+      expect(subject.storage[1].item.coverUrl, media2.coverUrl);
+      expect(subject.storage[2].item.name, "Borrachinha");
+      expect(subject.storage[2].item.coverUrl, media3.coverUrl);
+      expect(subject.storage[3].item.name, "Nova Musica");
+      expect(subject.storage[3].item.coverUrl, "https://example.com/cover4.jpeg");
+    });
+
+    test(
+        'AddAll with enqueueAfterCurrent during shuffle should preserve original order on unshuffle',
+        () {
+      final subject = Queue();
+      subject.addAll([media1, media2, media3]);
+
+      subject.next();
+      expect(subject.current, media2);
+
+      subject.shuffle();
+
+      final media4 = Media(
+          id: 4,
+          albumTitle: "Album 4",
+          albumId: 4,
+          ownerId: 4,
+          name: "Nova Musica 1",
+          url: "https://example.com/4.mp3",
+          coverUrl: "https://example.com/cover4.jpeg",
+          bigCoverUrl: "https://example.com/cover4_big.jpeg",
+          author: "Artista 4",
+          isLocal: false,
+          isVerified: true,
+          shareUrl: "");
+
+      final media5 = Media(
+          id: 5,
+          albumTitle: "Album 5",
+          albumId: 5,
+          ownerId: 5,
+          name: "Nova Musica 2",
+          url: "https://example.com/5.mp3",
+          coverUrl: "https://example.com/cover5.jpeg",
+          bigCoverUrl: "https://example.com/cover5_big.jpeg",
+          author: "Artista 5",
+          isLocal: false,
+          isVerified: true,
+          shareUrl: "");
+
+      subject.addAll([media4, media5], enqueueAfterCurrent: true);
+      expect(subject.size, 5);
+
+      // New items should be after current in shuffled view
+      expect(subject.storage[subject.index + 1].item, media4);
+      expect(subject.storage[subject.index + 2].item, media5);
+
+      subject.unshuffle();
+
+      // Original order restored, new items at end
+      expect(subject.items[0], media1);
+      expect(subject.items[1], media2);
+      expect(subject.items[2], media3);
+      expect(subject.items[3], media4);
+      expect(subject.items[4], media5);
+    });
   });
 }
