@@ -247,11 +247,12 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
 
     private fun createCover(albumId: Long, filePath: String): String {
         // Timber.d("Trying create Album $albumId for file: $filePath")
-        if (albumId < 5000 || albumId > 10000000) {
-            return ""
-        }
-
         var coverPath = "https://suamusica.com.br/cover/cd/$albumId"
+        // if albumId is not a valid albumId, do not use cd/id format
+        if (albumId < 5000 || albumId > 10000000) {
+            coverPath = ""
+        }
+        // Try to create the cover from the embedded picture
         try {
             val mmr = MediaMetadataRetriever()
             mmr.setDataSource(filePath)
