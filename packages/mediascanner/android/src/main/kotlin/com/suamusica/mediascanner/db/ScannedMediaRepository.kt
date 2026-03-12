@@ -50,7 +50,7 @@ class ScannedMediaRepository(dbHelper: ScannedMediaDbHelper) {
                     null
             )
 
-            return cursor?.moveToNext() ?: false
+            return cursor.moveToNext()
         } finally {
             cursor?.close()
         }
