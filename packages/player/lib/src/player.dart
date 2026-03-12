@@ -46,7 +46,7 @@ class Player {
   CookiesForCustomPolicy? _cookies;
   PlayerState state = PlayerState.IDLE;
   late Queue _queue;
-  RepeatMode repeatMode = RepeatMode.NONE;
+  PlayerRepeatMode repeatMode = PlayerRepeatMode.NONE;
   final mutex = Mutex();
 
   final String playerId;
@@ -102,10 +102,7 @@ class Player {
         .then((result) => result ?? Future.value(Ok));
   }
 
-  Future<int> enqueue(
-    Media media, [
-    bool enqueueAfterCurrent = false,
-  ]) async {
+  Future<int> enqueue(Media media, [bool enqueueAfterCurrent = false]) async {
     _queue.add(media, enqueueAfterCurrent);
     return Ok;
   }
@@ -251,10 +248,8 @@ class Player {
   int get size => _queue.size;
   Media? get top => _queue.top;
 
-  Future<int> load(Media media) async => _doPlay(
-    _queue.current!,
-    shouldLoadOnly: true,
-  );
+  Future<int> load(Media media) async =>
+      _doPlay(_queue.current!, shouldLoadOnly: true);
 
   Future<int> play(
     Media media, {
@@ -443,33 +438,22 @@ class Player {
       return _rewind(current);
     } else {
       _notifyChangeToPrevious(previous);
-      return _doPlay(
-        previous,
-        mediaUrl: mediaUrl,
-      );
+      return _doPlay(previous, mediaUrl: mediaUrl);
     }
   }
 
-  Future<int?> next({
-    bool shallNotify = true,
-  }) async {
+  Future<int?> next({bool shallNotify = true}) async {
     final media = _queue.possibleNext(repeatMode);
     if (media != null) {
       final mediaUrl = (await localMediaValidator?.call(media)) ?? media.url;
 
-      return _doNext(
-        shallNotify: shallNotify,
-        mediaUrl: mediaUrl,
-      );
+      return _doNext(shallNotify: shallNotify, mediaUrl: mediaUrl);
     } else {
       return null;
     }
   }
 
-  Future<int> _doNext({
-    bool? shallNotify,
-    String? mediaUrl,
-  }) async {
+  Future<int> _doNext({bool? shallNotify, String? mediaUrl}) async {
     final current = _queue.current;
     Media? next;
 
@@ -486,25 +470,22 @@ class Player {
       // notice that in this case
       // we do not emit the NEXT event
       // we only play the track
-      return _doPlay(
-        next,
-        shallNotify: shallNotify,
-      );
+      return _doPlay(next, shallNotify: shallNotify);
     }
 
     next = _queue.next();
     if (next == null) {
       if ((state == PlayerState.PLAYING || state == PlayerState.PAUSED) &&
-          repeatMode == RepeatMode.NONE) {
+          repeatMode == PlayerRepeatMode.NONE) {
         return _forward(current);
       } else {
-        if (repeatMode == RepeatMode.NONE) {
+        if (repeatMode == PlayerRepeatMode.NONE) {
           _queue.setIndex = 0;
           return NotOk;
-        } else if (repeatMode == RepeatMode.QUEUE) {
+        } else if (repeatMode == PlayerRepeatMode.QUEUE) {
           next = _queue.restart();
-        } else if (repeatMode == RepeatMode.TRACK) {
-          repeatMode = RepeatMode.QUEUE;
+        } else if (repeatMode == PlayerRepeatMode.TRACK) {
+          repeatMode = PlayerRepeatMode.QUEUE;
           next = _queue.restart();
         } else {
           // this should not happen!
@@ -512,14 +493,10 @@ class Player {
         }
       }
     }
-    if (repeatMode == RepeatMode.TRACK) {
-      repeatMode = RepeatMode.QUEUE;
+    if (repeatMode == PlayerRepeatMode.TRACK) {
+      repeatMode = PlayerRepeatMode.QUEUE;
     }
-    return _doPlay(
-      next,
-      shallNotify: shallNotify,
-      mediaUrl: mediaUrl,
-    );
+    return _doPlay(next, shallNotify: shallNotify, mediaUrl: mediaUrl);
   }
 
   Future<int> pause() async {
@@ -602,12 +579,12 @@ class Player {
     player.state = PlayerState.COMPLETED;
     _notifyPlayerStateChangeEvent(player, EventType.FINISHED_PLAYING, "");
     switch (player.repeatMode) {
-      case RepeatMode.NONE:
-      case RepeatMode.QUEUE:
+      case PlayerRepeatMode.NONE:
+      case PlayerRepeatMode.QUEUE:
         player._doNext(shallNotify: false);
         break;
 
-      case RepeatMode.TRACK:
+      case PlayerRepeatMode.TRACK:
         player.rewind();
         break;
     }
@@ -653,26 +630,14 @@ class Player {
           case PlayerState.IDLE:
             break;
           case PlayerState.BUFFERING:
-            _notifyPlayerStateChangeEvent(
-              player,
-              EventType.BUFFERING,
-              error,
-            );
+            _notifyPlayerStateChangeEvent(player, EventType.BUFFERING, error);
             break;
           case PlayerState.PLAYING:
-            _notifyPlayerStateChangeEvent(
-              player,
-              EventType.PLAYING,
-              error,
-            );
+            _notifyPlayerStateChangeEvent(player, EventType.PLAYING, error);
             break;
 
           case PlayerState.PAUSED:
-            _notifyPlayerStateChangeEvent(
-              player,
-              EventType.PAUSED,
-              error,
-            );
+            _notifyPlayerStateChangeEvent(player, EventType.PAUSED, error);
             break;
 
           case PlayerState.STOPPED:
@@ -684,11 +649,7 @@ class Player {
             break;
 
           case PlayerState.SEEK_END:
-            _notifyPlayerStateChangeEvent(
-              player,
-              EventType.SEEK_END,
-              error,
-            );
+            _notifyPlayerStateChangeEvent(player, EventType.SEEK_END, error);
             break;
 
           case PlayerState.BUFFER_EMPTY:
