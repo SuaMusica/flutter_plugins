@@ -1,11 +1,12 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+
+import 'package:flutter/material.dart' hide RepeatMode;
+import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:smaws/aws.dart';
 import 'package:smplayer/player.dart';
-import 'dart:async';
-import 'package:flutter/services.dart';
 import 'package:smplayer_example/app_colors.dart';
 import 'package:smplayer_example/ui_data.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class SMPlayer extends StatefulWidget {
   SMPlayer({
@@ -240,9 +241,9 @@ class _SMPlayerState extends State<SMPlayer> {
   }
 
   _repeatModeToColor() {
-    if (_player.repeatMode == RepeatMode.NONE) {
+    if (_player.repeatMode == PlayerRepeatMode.NONE) {
       return AppColors.black;
-    } else if (_player.repeatMode == RepeatMode.QUEUE) {
+    } else if (_player.repeatMode == PlayerRepeatMode.QUEUE) {
       return AppColors.primary;
     } else {
       return AppColors.darkPink;
@@ -250,17 +251,17 @@ class _SMPlayerState extends State<SMPlayer> {
   }
 
   _changeRepeatMode() {
-    if (_player.repeatMode == RepeatMode.NONE) {
+    if (_player.repeatMode == PlayerRepeatMode.NONE) {
       setState(() {
-        _player.repeatMode = RepeatMode.QUEUE;
+        _player.repeatMode = PlayerRepeatMode.QUEUE;
       });
-    } else if (_player.repeatMode == RepeatMode.QUEUE) {
+    } else if (_player.repeatMode == PlayerRepeatMode.QUEUE) {
       setState(() {
-        _player.repeatMode = RepeatMode.TRACK;
+        _player.repeatMode = PlayerRepeatMode.TRACK;
       });
     } else {
       setState(() {
-        _player.repeatMode = RepeatMode.NONE;
+        _player.repeatMode = PlayerRepeatMode.NONE;
       });
     }
   }
