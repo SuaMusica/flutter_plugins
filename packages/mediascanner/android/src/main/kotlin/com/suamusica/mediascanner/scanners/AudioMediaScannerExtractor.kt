@@ -1,8 +1,11 @@
 package com.suamusica.mediascanner.scanners
 
 import android.annotation.TargetApi
+import android.content.ContentUris
 import android.content.Context
 import android.database.Cursor
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
@@ -14,13 +17,9 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import timber.log.Timber
-import com.mpatric.mp3agic.ID3v1Tag;
-import com.mpatric.mp3agic.ID3v24Tag;
-import com.mpatric.mp3agic.InvalidDataException;
 import com.mpatric.mp3agic.Mp3File;
-import com.mpatric.mp3agic.NotSupportedException;
-import com.mpatric.mp3agic.UnsupportedTagException;
 import com.suamusica.mediascanner.db.ScannedMediaRepository
+import java.util.Locale.getDefault
 
 class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExtractor {
     private val rootPaths = mutableListOf<String>()
@@ -37,7 +36,9 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
             Audio.Media.DATA,
             Audio.Media.DATE_ADDED,
             Audio.Media.DATE_MODIFIED,
-            Audio.Media._ID
+            Audio.Media._ID,
+            Audio.Media.DISPLAY_NAME,
+            Audio.Media.MIME_TYPE
     )
 
     override val selection: String = Audio.Media.IS_MUSIC + " != 0"
@@ -68,13 +69,14 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
         //     Timber.d("Field $it: [${getString(cursor, it)}]")
         // }
 
-        var albumId = getLong(cursor, Audio.Media.ALBUM_ID)
+        val androidAlbumId = getLong(cursor, Audio.Media.ALBUM_ID)
+        var albumId = androidAlbumId
         var playlistId = -1L;
 
         var musicId = getLong(cursor, Audio.Media._ID) * -1;
         val path = getString(cursor, Audio.Media.DATA)
 
-        if(!path.toLowerCase().endsWith(".mp3")){
+        if(!path.lowercase(getDefault()).endsWith(".mp3")){
             return null
         }
         getSuaMusicaId(path)?.let {
@@ -119,15 +121,15 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
         }
         artist = if (artist.trim().isBlank() || artist.contains("unknown", ignoreCase = true)) UNKNOWN_ARTIST else artist
 
+        var titleFromId3: String? = null
         try {
-            //  Timber.d("Opening MP3 file...")
             val mp3file = Mp3File(path)
             if (mp3file.hasId3v2Tag()) {
-                // Timber.d("Trying to read Id3 tags...")
-                val id3v2Tag = mp3file.id3v2Tag;
+                val id3v2Tag = mp3file.id3v2Tag
+
+                id3v2Tag.title?.takeIf { it.isNotBlank() }?.let { titleFromId3 = it }
 
                 var url = id3v2Tag.url
-                // Timber.d("SM_URL: [$url]")
                 if (url != null && url.isNotEmpty()) {
                     val uri = Uri.parse(url)
                     uri.getQueryParameter("playlistId")?.let { value ->
@@ -141,32 +143,36 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
                     }
                 }
 
-                if (artist == UNKNOWN_ARTIST) {
-                    if (id3v2Tag.albumArtist.isNotEmpty()) {
-                        artist = id3v2Tag.albumArtist
-                    }
+                if (artist == UNKNOWN_ARTIST && id3v2Tag.albumArtist.isNotEmpty()) {
+                    artist = id3v2Tag.albumArtist
                 }
-            } 
-            
+            }
         } catch (e: Throwable) {
-            if (e is java.io.FileNotFoundException){
-                Timber.e(e, "File does not exist.. $path");
+            if (e is java.io.FileNotFoundException) {
+                Timber.e(e, "File does not exist.. $path")
                 return null
             }
-
-            Timber.e(e, "Failed to get ID3 tags. Ignoring...");
+            Timber.e(e, "Failed to get ID3 tags. Ignoring...")
         }
+
+        var displayTitle = getString(cursor, Audio.Media.TITLE) { getString(cursor, Audio.Media.DISPLAY_NAME) }
+        if (displayTitle.isNotBlank() && displayTitle.startsWith("\uFEFF")) {
+            displayTitle = displayTitle.removePrefix("\uFEFF")
+        }
+        titleFromId3?.let { displayTitle = it }
+        val title = displayTitle.ifBlank { path.substringAfterLast('/').substringBeforeLast('.') }
 
         return ScannedMediaOutput(
                 mediaId = musicId,
-                title = getString(cursor, Audio.Media.TITLE) { getString(cursor, Audio.Media.DISPLAY_NAME) },
+                title = title,
                 artist = artist,
                 albumId = albumId,
                 playlistId = playlistId,
                 album = getString(cursor, Audio.Media.ALBUM) { getString(cursor, "_description") },
                 track = getString(cursor, Audio.Media.TRACK),
                 path = path,
-                albumCoverPath = getAlbumById(albumId, path)?.coverPath ?: "",
+                albumCoverPath = getAlbumById(albumId, path)?.coverPath
+                    ?: createCover(albumId, path),
                 createdAt = getLong(cursor, Audio.Media.DATE_ADDED),
                 updatedAt = getLong(cursor, Audio.Media.DATE_MODIFIED)
         )
@@ -202,7 +208,7 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
             albumCache[albumId] = null
         }
 
-        if (albumCache.containsKey(albumId)) {
+        if (albumCache[albumId] != null) {
             // Timber.d("Album $albumId is present in cache")
             return albumCache[albumId]
         }
@@ -241,29 +247,44 @@ class AudioMediaScannerExtractor(private val context: Context) : MediaScannerExt
 
     private fun createCover(albumId: Long, filePath: String): String {
         // Timber.d("Trying create Album $albumId for file: $filePath")
-        var coverPath = ""
+        var coverPath = "https://suamusica.com.br/cover/cd/$albumId"
+        // if albumId is not a valid albumId, do not use cd/id format
+        if (albumId < 5000 || albumId > 10000000) {
+            coverPath = ""
+        }
+        // Try to create the cover from the embedded picture
         try {
             val mmr = MediaMetadataRetriever()
             mmr.setDataSource(filePath)
-            mmr.embeddedPicture?.let {
-                val cacheDir = context.cacheDir
-                // Timber.d("Creating cover on cache dir: $cacheDir")
-                val outputFile = File.createTempFile("sm_$albumId", ".jpg", cacheDir)
+            mmr.embeddedPicture?.let { coverBytes ->
+                val appRoot = context.filesDir.parentFile
+                val appFlutterDir = File(appRoot, "app_flutter")
+                val coversDir = File(appFlutterDir, "covers")
+                if (!coversDir.exists()) {
+                    coversDir.mkdirs()
+                }
 
-                if (outputFile.exists())
+                val outputFile = File(coversDir, "$albumId.webp")
+                if (outputFile.exists()) {
                     outputFile.delete()
+                }
 
-                val fos = FileOutputStream(outputFile.path)
                 try {
-                    fos.write(it)
-                    fos.close()
+                    val bitmap = BitmapFactory.decodeByteArray(coverBytes, 0, coverBytes.size)
+                    if (bitmap != null) {
+                        FileOutputStream(outputFile).use { fos ->
+                            bitmap.compress(Bitmap.CompressFormat.WEBP, 90, fos)
+                        }
+                    }
                 } catch (e: IOException) {
                     Timber.e(e, "Error")
+                    return ""
                 }
                 coverPath = outputFile.path
                 // Timber.d("cover created: $coverPath")
             } ?: Timber.d("no has embeddedPicture.")
         } catch (t: Throwable) {
+            return ""
             Timber.e(t, "Error")
         }
 

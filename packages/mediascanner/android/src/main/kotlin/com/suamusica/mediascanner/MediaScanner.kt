@@ -281,7 +281,7 @@ class MediaScanner(
         var artist = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
                 ?: mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)
                 ?: "Artista Desconhecido"
-        if (artist.isBlank() || artist.toLowerCase().contains("unknown")) {
+        if (artist.isBlank() || artist.lowercase(Locale.getDefault()).contains("unknown")) {
             artist = "Artista Desconhecido"
         }
         val album = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)

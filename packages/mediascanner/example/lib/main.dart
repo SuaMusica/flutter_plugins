@@ -58,8 +58,14 @@ class _MyAppState extends State<MyApp> {
               StreamBuilder<List<ScannedMedia>>(
                 stream: MediaScanner.instance.onListScannedMediaStream,
                 builder: (context, snapshot) {
-                  if (snapshot.hasError || !snapshot.hasData)
-                    return Container();
+                  if (snapshot.hasError || !snapshot.hasData) {
+                    return const SizedBox.shrink();
+                  }
+
+                  final data = snapshot.data;
+                  if (data == null) {
+                    return const SizedBox.shrink();
+                  }
 
                   return Expanded(
                     child: GridView.count(
@@ -72,9 +78,9 @@ class _MyAppState extends State<MyApp> {
                       primary: false,
                       padding: const EdgeInsets.all(2),
                       children: List.generate(
-                          snapshot.data!.length,
-                          (index) =>
-                              _getScannedMediaWidget(snapshot.data![index])),
+                        data.length,
+                        (index) => _getScannedMediaWidget(data[index]),
+                      ),
                     ),
                   );
                 },
@@ -109,8 +115,8 @@ class _MyAppState extends State<MyApp> {
       child: Card(
         child: Opacity(
           opacity: 0.3,
-          child: (data.albumCoverPath ?? "").isEmpty
-              ? Container()
+          child: (data.albumCoverPath == null || data.albumCoverPath!.isEmpty)
+              ? const SizedBox.shrink()
               : Image.file(
                   File(data.albumCoverPath!),
                   fit: BoxFit.fill,
