@@ -7,7 +7,7 @@ publish_to: none
 environment:
   sdk: ">=3.8.0 <4.0.0"
 
-isar_version: &isar_version ^3.2.0 # define the version to be used
+isar_version: &isar_version ^3.3.2 # define the version to be used
 
 dependencies:
   flutter:
