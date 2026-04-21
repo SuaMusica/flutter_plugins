@@ -1,5 +1,6 @@
 package br.com.suamusica.player
 
+import android.content.Context
 import android.util.Log
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
@@ -9,7 +10,7 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 
 
-class PlayerPlugin : MethodCallHandler, FlutterPlugin,ActivityAware {
+class PlayerPlugin : MethodCallHandler, FlutterPlugin, ActivityAware {
 
     companion object {
         // Argument names
@@ -46,33 +47,46 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin,ActivityAware {
         const val Ok = 1
     }
 
+    private var applicationContext: Context? = null
+    private var channel: MethodChannel? = null
+    private var ownsPlayerSingleton = false
+
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         Log.d(TAG, "onAttachedToEngine")
-        val channel = MethodChannel(flutterPluginBinding.binaryMessenger, CHANNEL)
-        val context = flutterPluginBinding.applicationContext
-        channel.setMethodCallHandler(this)
-        PlayerSingleton.setChannel(channel, context)
+        applicationContext = flutterPluginBinding.applicationContext
+        channel = MethodChannel(flutterPluginBinding.binaryMessenger, CHANNEL).also {
+            it.setMethodCallHandler(this)
+        }
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         Log.d(TAG, "onDetachedFromEngine")
-        PlayerSingleton.channel?.setMethodCallHandler(null)
-        PlayerSingleton.channel = null
+        releaseOwnershipIfNeeded()
+        channel?.setMethodCallHandler(null)
+        channel = null
+        applicationContext = null
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
         Log.d(TAG, "onAttachedToActivity")
+        acquireOwnershipIfPossible()
     }
 
     override fun onDetachedFromActivityForConfigChanges() {
         Log.d(TAG, "onDetachedFromActivityForConfigChanges")
+        releaseOwnershipIfNeeded()
     }
-    override fun onReattachedToActivityForConfigChanges(p0: ActivityPluginBinding) {
+
+    override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
         Log.d(TAG, "onReattachedToActivityForConfigChanges")
+        acquireOwnershipIfPossible()
     }
+
     override fun onDetachedFromActivity() {
         Log.d(TAG, "onDetachedFromActivity")
+        releaseOwnershipIfNeeded()
     }
+
     override fun onMethodCall(call: MethodCall, response: MethodChannel.Result) {
         try {
             handleMethodCall(call, response)
@@ -186,5 +200,24 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin,ActivityAware {
             }
         }
         response.success(Ok)
+    }
+
+    private fun acquireOwnershipIfPossible() {
+        val activeChannel = channel
+        val activeContext = applicationContext
+        if (activeChannel == null || activeContext == null) {
+            Log.w(TAG, "acquireOwnershipIfPossible skipped because channel/context is null")
+            return
+        }
+        PlayerSingleton.setChannel(activeChannel, activeContext)
+        ownsPlayerSingleton = true
+    }
+
+    private fun releaseOwnershipIfNeeded() {
+        if (!ownsPlayerSingleton) {
+            return
+        }
+        PlayerSingleton.clearChannel()
+        ownsPlayerSingleton = false
     }
 }
