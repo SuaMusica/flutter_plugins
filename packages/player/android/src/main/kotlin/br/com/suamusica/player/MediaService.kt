@@ -460,7 +460,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         }
     }
     fun removeNotification() {
-        removeNowPlayingNotification();
+        exitForeground(removeNotification = true)
     }
 
     fun seek(position: Long, playWhenReady: Boolean) {
@@ -746,14 +746,26 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
     fun stopService() {
         if (isForegroundService) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                stopForeground(STOP_FOREGROUND_DETACH)
-            } else {
-                stopForeground(false)
-            }
+            stopForeground(STOP_FOREGROUND_REMOVE)
             isForegroundService = false
             stopSelf()
             Log.i(TAG, "Stopping Service")
+        }
+    }
+
+    private fun exitForeground(removeNotification: Boolean) {
+        if (isForegroundService) {
+            val stopFlag = if (removeNotification) {
+                STOP_FOREGROUND_REMOVE
+            } else {
+                STOP_FOREGROUND_DETACH
+            }
+            stopForeground(stopFlag)
+            isForegroundService = false
+        }
+
+        if (removeNotification) {
+            removeNowPlayingNotification()
         }
     }
 
@@ -817,15 +829,16 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                         }
                     }
                     else -> {
-                        if (isForegroundService) {
-                            // If playback has ended, also stop the service.
-                            if (updatedState == PlaybackStateCompat.STATE_NONE && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                        if (updatedState == PlaybackStateCompat.STATE_NONE) {
+                            if (isForegroundService) {
                                 stopService()
-                            }
-                            if (notification != null) {
-                                notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
-                            } else
+                            } else {
                                 removeNowPlayingNotification()
+                            }
+                        } else if (notification != null) {
+                            notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
+                        } else if (isForegroundService) {
+                            removeNowPlayingNotification()
                         }
                     }
                 }
