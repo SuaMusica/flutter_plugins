@@ -396,12 +396,18 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         }
     }
     fun adsPlaying() {
+        this.media = Media("Propaganda", "", "", "",null,null )
+        buildNotification(PlaybackStateCompat.STATE_PLAYING, true, null)?.let { notification ->
+            shouldStartService(notification)
+        }
         getArts(applicationContext,null) { bitmap ->
-            this.media = Media("Propaganda", "", "", "",null,null )
             val notification = buildNotification(PlaybackStateCompat.STATE_PLAYING, true, bitmap)
             notification?.let {
-                notificationManager?.notify(NOW_PLAYING_NOTIFICATION, it)
-                shouldStartService(it)
+                if (isForegroundService) {
+                    notificationManager?.notify(NOW_PLAYING_NOTIFICATION, it)
+                } else {
+                    shouldStartService(it)
+                }
             }
         }
     }
@@ -718,14 +724,22 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                     Intent(applicationContext, this@MediaService.javaClass)
                 )
                 startForeground(NOW_PLAYING_NOTIFICATION, notification)
+                isForegroundService = true
             } catch (e: Exception) {
-                startForeground(NOW_PLAYING_NOTIFICATION, notification)
-                ContextCompat.startForegroundService(
-                    applicationContext,
-                    Intent(applicationContext, this@MediaService.javaClass)
-                )
+                if (
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                    e is android.app.ForegroundServiceStartNotAllowedException
+                ) {
+                    Log.w(
+                        TAG,
+                        "Foreground start was denied; keeping a regular notification update instead.",
+                        e
+                    )
+                    notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
+                } else {
+                    Log.e(TAG, "Failed to promote playback service to foreground.", e)
+                }
             }
-            isForegroundService = true
 
         }
     }
@@ -765,8 +779,21 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             if (mediaController?.metadata == null || mediaSession == null) {
                 return
             }
+            val immediateState = state.state
+            val immediateOnGoing =
+                immediateState == PlaybackStateCompat.STATE_PLAYING || immediateState == PlaybackStateCompat.STATE_BUFFERING
+
+            // Promote the service immediately with a lightweight notification.
+            // Artwork loading can block long enough for Android 12+ to revoke the
+            // temporary foreground-start allowance.
+            if (immediateOnGoing) {
+                buildNotification(immediateState, immediateOnGoing, null)?.let { notification ->
+                    shouldStartService(notification)
+                }
+            }
+
             getArts(applicationContext,media?.bigCoverUrl ?: media?.coverUrl) { bitmap ->
-                val updatedState = state.state
+                val updatedState = mediaController?.playbackState?.state ?: state.state
                 val onGoing =
                     updatedState == PlaybackStateCompat.STATE_PLAYING || updatedState == PlaybackStateCompat.STATE_BUFFERING
                 // Skip building a notification when state is "none".
@@ -781,14 +808,12 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                     PlaybackStateCompat.STATE_BUFFERING,
                     PlaybackStateCompat.STATE_PLAYING -> {
                         Log.i(TAG, "updateNotification: STATE_BUFFERING or STATE_PLAYING")
-                        /**
-                         * This may look strange, but the documentation for [Service.startForeground]
-                         * notes that "calling this method does *not* put the service in the started
-                         * state itself, even though the name sounds like it."
-                         */
                         if (notification != null) {
-                            notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
-                            shouldStartService(notification)
+                            if (isForegroundService) {
+                                notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
+                            } else {
+                                shouldStartService(notification)
+                            }
                         }
                     }
                     else -> {
