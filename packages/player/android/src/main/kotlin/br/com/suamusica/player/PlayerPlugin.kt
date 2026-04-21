@@ -44,13 +44,10 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin,ActivityAware {
         const val ENABLE_NOTIFICATION_COMMANDS = "enable_notification_commands"
         const val TAG = "Player"
         const val Ok = 1
-        private var alreadyAttachedToActivity: Boolean = false
     }
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-        Log.d(TAG, "onAttachedToEngine $alreadyAttachedToActivity")
-        if (alreadyAttachedToActivity)
-            return
+        Log.d(TAG, "onAttachedToEngine")
         val channel = MethodChannel(flutterPluginBinding.binaryMessenger, CHANNEL)
         val context = flutterPluginBinding.applicationContext
         channel.setMethodCallHandler(this)
@@ -65,10 +62,6 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin,ActivityAware {
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
         Log.d(TAG, "onAttachedToActivity")
-//        val isStopped = (binding.activity.applicationInfo.flags and ApplicationInfo.FLAG_STOPPED) == ApplicationInfo.FLAG_STOPPED
-//        if(!isStopped){
-        alreadyAttachedToActivity = true
-//        }
     }
 
     override fun onDetachedFromActivityForConfigChanges() {
@@ -79,7 +72,6 @@ class PlayerPlugin : MethodCallHandler, FlutterPlugin,ActivityAware {
     }
     override fun onDetachedFromActivity() {
         Log.d(TAG, "onDetachedFromActivity")
-        alreadyAttachedToActivity = false
     }
     override fun onMethodCall(call: MethodCall, response: MethodChannel.Result) {
         try {
