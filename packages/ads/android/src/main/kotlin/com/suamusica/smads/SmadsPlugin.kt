@@ -76,6 +76,10 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
         Timber.d("load()")
         Handler(Looper.getMainLooper()).post {
             try {
+                if (input == null) {
+                    result.error(LoadResult.UNKNOWN_ERROR.toString(), "load arguments can not be null", null)
+                    return@post
+                }
                 controller.load(LoadMethodInput(input), AdPlayerView(context))
                 result.success(LoadResult.SUCCESS)
             } catch (t: Throwable) {
