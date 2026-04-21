@@ -25,6 +25,7 @@ class AdPlayerViewController(
         private val context: Context,
         private val callback: SmadsCallback
 ) {
+    val appContext: Context get() = context
     private var adPlayerManager: AdPlayerManager? = null
     private val isCompleted = AtomicBoolean(false)
     private val compositeDisposable: CompositeDisposable = CompositeDisposable()

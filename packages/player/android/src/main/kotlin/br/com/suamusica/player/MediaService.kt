@@ -51,6 +51,7 @@ import com.google.android.exoplayer2.util.Util
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -59,6 +60,7 @@ import java.io.InputStreamReader
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 
 class MediaService : androidx.media.MediaBrowserServiceCompat() {
     private val TAG = "MediaService"
@@ -104,39 +106,142 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         private const val NOTIFICATION_LARGE_ICON_SIZE = 500 // px
         private const val LOCAL_COVER_PNG = "../app_flutter/covers/0.png" // px
 
-        @OptIn(DelicateCoroutinesApi::class)
-        fun getArts(context: Context, artUri: String?, callback: (Bitmap?) -> Unit) {
-            GlobalScope.launch(Dispatchers.IO) {
-                Log.i("getArts", " artUri: $artUri")
-                val glider = Glide.with(context)
+        // Total remote attempts before we fall back to the local/default cover
+        // for the *initial* callback. We still keep retrying in background after
+        // that, but the user sees a cover immediately.
+        private const val REMOTE_ART_MAX_ATTEMPTS = 4
+
+        // Cached bitmap of the bundled default_art drawable. Kept alive for the
+        // process lifetime so we don't re-decode it on every media change.
+        @Volatile
+        private var defaultArtBitmap: Bitmap? = null
+
+        // Tracks the most-recent art URI the player is interested in. Background
+        // retries check this before firing a late callback so we never override
+        // the current track's cover with stale art from a previous track.
+        private val currentArtUri = AtomicReference<String?>(null)
+
+        private fun decodeDefaultArt(context: Context): Bitmap? {
+            defaultArtBitmap?.let { return it }
+            // Prefer Glide so the bundled drawable is sized to the notification
+            // icon target (NOTIFICATION_LARGE_ICON_SIZE) and shares the same
+            // bitmap pool as the remote path. BitmapFactory is a last-resort
+            // fallback to guarantee we always have *something*.
+            val viaGlide = try {
+                Glide.with(context)
+                    .asBitmap()
+                    .load(R.drawable.default_art)
+                    .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
+                    .get()
+            } catch (e: Exception) {
+                Log.w("getArts", "Glide failed to load default_art: $e")
+                null
+            }
+            if (viaGlide != null) {
+                defaultArtBitmap = viaGlide
+                return viaGlide
+            }
+            return try {
+                BitmapFactory.decodeResource(context.resources, R.drawable.default_art)
+                    ?.also { defaultArtBitmap = it }
+            } catch (e: Exception) {
+                Log.e("getArts", "Failed to decode default_art", e)
+                null
+            }
+        }
+
+        private fun loadRemote(context: Context, artUri: String): Bitmap? {
+            val future: FutureTarget<Bitmap> = Glide.with(context)
+                .applyDefaultRequestOptions(glideOptions)
+                .asBitmap()
+                .load(artUri)
+                .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
+            return try {
+                future.get()
+            } catch (e: Exception) {
+                Log.i("getArts", "ART load failed for $artUri: $e")
+                null
+            }
+        }
+
+        private fun loadLocal(context: Context): Bitmap? {
+            val file = File(context.filesDir, LOCAL_COVER_PNG)
+            if (!file.exists()) return null
+            return try {
+                Glide.with(context)
                     .applyDefaultRequestOptions(glideOptions)
                     .asBitmap()
-                val file = File(context.filesDir, LOCAL_COVER_PNG)
-                var bitmap: Bitmap? = null
-                val futureTarget: FutureTarget<Bitmap>? = when {
-                    !artUri.isNullOrBlank() -> glider.load(artUri)
-                        .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
+                    .load(Uri.fromFile(file))
+                    .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
+                    .get()
+            } catch (e: Exception) {
+                Log.i("getArts", "Local ART load failed: $e")
+                try {
+                    BitmapFactory.decodeFile(file.absolutePath)
+                } catch (t: Exception) {
+                    Log.e("getArts", "Local ART decode failed: $t")
+                    null
+                }
+            }
+        }
 
-                    file.exists() -> glider.load(Uri.fromFile(file))
-                        .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
+        @OptIn(DelicateCoroutinesApi::class)
+        fun getArts(context: Context, artUri: String?, callback: (Bitmap?) -> Unit) {
+            currentArtUri.set(artUri)
+            GlobalScope.launch(Dispatchers.IO) {
+                Log.i("getArts", " artUri: $artUri")
 
-                    else -> null
+                // 1) First attempt for the remote URI, if any.
+                val remoteFirst = if (!artUri.isNullOrBlank()) loadRemote(context, artUri) else null
+
+                // 2) If remote was not available, fall back to the local cover
+                //    (single file the app writes for the currently-playing track).
+                // 3) As the ultimate fallback, decode the bundled default_art so the
+                //    notification ALWAYS has a cover, even on first launch / offline.
+                val initialBitmap = remoteFirst
+                    ?: loadLocal(context)
+                    ?: decodeDefaultArt(context)
+
+                // Guard against a quick skip: if the user already moved to
+                // another track, don't stamp this older track's cover on the
+                // live notification.
+                if (currentArtUri.get() != artUri) {
+                    Log.i("getArts", "Dropping stale cover: track changed before initial callback ($artUri)")
+                    return@launch
                 }
 
-                if (futureTarget != null) {
-                    bitmap = try {
-                        futureTarget.get()
-                    } catch (e: Exception) {
-                        Log.i("getArts", "ART EXCP: $e")
-                        if (file.exists()) {
-                            BitmapFactory.decodeFile(file.absolutePath)
-                        } else {
-                            null
-                        }
-                    }
-                }
                 withContext(Dispatchers.Main) {
-                    callback(bitmap)
+                    callback(initialBitmap)
+                }
+
+                // 4) If the remote cover did not load on the first pass, keep
+                //    retrying in the background with exponential backoff so that
+                //    slow networks / flaky phones eventually show the real art.
+                //    We stop if the user has moved on to another track (the
+                //    currentArtUri changed) to avoid flashing stale art.
+                if (remoteFirst != null || artUri.isNullOrBlank()) return@launch
+
+                for (attempt in 2..REMOTE_ART_MAX_ATTEMPTS) {
+                    // 1s, 2s, 4s, 8s ...
+                    delay(1000L * (1L shl (attempt - 2)))
+
+                    if (currentArtUri.get() != artUri) {
+                        Log.i("getArts", "Aborting late retry: track changed ($artUri)")
+                        return@launch
+                    }
+
+                    val late = loadRemote(context, artUri) ?: continue
+
+                    if (currentArtUri.get() != artUri) {
+                        Log.i("getArts", "Late art arrived but track already changed ($artUri)")
+                        return@launch
+                    }
+
+                    Log.i("getArts", "Late art success on attempt $attempt for $artUri")
+                    withContext(Dispatchers.Main) {
+                        callback(late)
+                    }
+                    return@launch
                 }
             }
         }
