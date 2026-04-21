@@ -31,7 +31,7 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
         Timber.d("onAttachedToEngine")
         this.channel = MethodChannel(flutterPluginBinding.binaryMessenger, CHANNEL_NAME)
         this.context = flutterPluginBinding.applicationContext
-        this.callback = SmadsCallback(channel!!)
+        this.callback = SmadsCallback(requireNotNull(channel))
         this.channel?.setMethodCallHandler(this)
         controller = AdPlayerViewController(context, callback)
         flutterPluginBinding
@@ -41,6 +41,7 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         Timber.d("onDetachedFromEngine")
+        controller.dispose()
         channel?.setMethodCallHandler(null)
         channel = null
     }
@@ -50,25 +51,37 @@ class SmadsPlugin : FlutterPlugin, MethodCallHandler {
         Timber.d("call.method: %s", call.method)
         when (call.method) {
             LOAD_METHOD -> load(call.arguments, result)
-            PLAY_METHOD -> controller.play()
-            PAUSE_METHOD -> controller.pause()
-            DISPOSE_METHOD -> controller.dispose()
-            SKIP_METHOD -> controller.skipAd()
+            PLAY_METHOD -> {
+                controller.play()
+                result.success(LoadResult.SUCCESS)
+            }
+            PAUSE_METHOD -> {
+                controller.pause()
+                result.success(LoadResult.SUCCESS)
+            }
+            DISPOSE_METHOD -> {
+                controller.dispose()
+                result.success(LoadResult.SUCCESS)
+            }
+            SKIP_METHOD -> {
+                controller.skipAd()
+                result.success(LoadResult.SUCCESS)
+            }
             SCREEN_STATUS_METHOD -> screenStatus(result)
             else -> result.notImplemented()
         }
     }
 
-    private fun load(input: Any, result: Result) {
+    private fun load(input: Any?, result: Result) {
         Timber.d("load()")
-        try {
-            Handler(Looper.getMainLooper()).post {
+        Handler(Looper.getMainLooper()).post {
+            try {
                 controller.load(LoadMethodInput(input), AdPlayerView(context))
                 result.success(LoadResult.SUCCESS)
+            } catch (t: Throwable) {
+                Timber.e(t)
+                result.error(LoadResult.UNKNOWN_ERROR.toString(), t.message, null)
             }
-        } catch (t: Throwable) {
-            Timber.e(t)
-            result.error(LoadResult.UNKNOWN_ERROR.toString(), t.message, null)
         }
     }
 

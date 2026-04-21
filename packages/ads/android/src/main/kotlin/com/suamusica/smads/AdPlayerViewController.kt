@@ -77,8 +77,14 @@ class AdPlayerViewController(
         Timber.d("dispose()")
         compositeDisposable.clear()
         adPlayerManager?.release()
+        adPlayerManager = null
         renderProcessGoneHandler?.clear()
         renderProcessGoneHandler = null
+        adPlayerView = null
+        view = null
+        videoAdContainer = null
+        companionAdSlot = null
+        progressBar = null
         isCompleted.set(false)
     }
 
