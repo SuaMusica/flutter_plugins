@@ -148,13 +148,24 @@ class NotificationBuilder(private val context: Context) {
         /// when isAds is true, the metadata should be updated to show the correct value
         val isAds = media?.name?.contains("Propaganda") ?: false
 
-        if (shouldUseMetadata && (isAds || currentDuration != duration)) {
+        // The early-update path calls this with art = null so the foreground
+        // service can start immediately; we must not clobber an art that was
+        // already loaded for this track. Conversely, once the real bitmap
+        // arrives the duration may already match what we stored during the
+        // early update, so duration alone is not enough to trigger a metadata
+        // refresh — we must also react to the artwork transitioning from
+        // null to a valid bitmap (or to a different bitmap for a new track).
+        val currentArt =
+            mediaSession.controller.metadata?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
+        val artChanged = art != null && art !== currentArt
+
+        if (shouldUseMetadata && (isAds || currentDuration != duration || artChanged)) {
             mediaSession.setMetadata(
                 MediaMetadataCompat.Builder()
                     .putString(MediaMetadata.METADATA_KEY_TITLE, media?.name ?: "Propaganda")
                     .putString(MediaMetadata.METADATA_KEY_ARTIST, media?.author ?: "")
                     .putBitmap(
-                        MediaMetadata.METADATA_KEY_ALBUM_ART, art
+                        MediaMetadata.METADATA_KEY_ALBUM_ART, art ?: currentArt
                     )
                     .putLong(MediaMetadata.METADATA_KEY_DURATION, duration) // 4
                     .build()

@@ -78,7 +78,7 @@ class AdPlayerManager(
     private fun getAdsRenderingSettings(): AdsRenderingSettings {
         val adsRenderingSettings: AdsRenderingSettings =
             ImaSdkFactory.getInstance().createAdsRenderingSettings()
-        if (supportedMimeTypes != null && supportedMimeTypes!!.isNotEmpty()) {
+        if (!supportedMimeTypes.isNullOrEmpty()) {
             adsRenderingSettings.mimeTypes = supportedMimeTypes
         }
         adsRenderingSettings.enablePreloading = true
@@ -135,7 +135,7 @@ class AdPlayerManager(
                 dataSpec,
                 _adsID,
                 ProgressiveMediaSource.Factory(dataSourceFactory),
-                adsLoader!!,
+                requireNotNull(adsLoader),
                 playerView
             )
         )
@@ -170,8 +170,10 @@ class AdPlayerManager(
             player = null
         }
         adsManager?.destroy()
-        adsLoader?.release()
         adsLoader?.setPlayer(null)
+        adsLoader?.release()
+        adsManager = null
+        adsLoader = null
     }
 
     private fun setContentType(adEvent: AdEvent) {

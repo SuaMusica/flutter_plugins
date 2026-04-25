@@ -8,8 +8,8 @@ import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 
 class MusicPlayerPlaybackPreparer(
-    private val mediaService: MediaService,
-                                  ) : MediaSessionConnector.PlaybackPreparer {
+    private val mediaService: MediaService
+) : MediaSessionConnector.PlaybackPreparer {
     val TAG = "Player"
 
     override fun onPrepareFromMediaId(mediaId: String, playWhenReady: Boolean, extras: Bundle?) {

@@ -51,6 +51,7 @@ import com.google.android.exoplayer2.util.Util
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -59,6 +60,7 @@ import java.io.InputStreamReader
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 
 class MediaService : androidx.media.MediaBrowserServiceCompat() {
     private val TAG = "MediaService"
@@ -104,39 +106,142 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         private const val NOTIFICATION_LARGE_ICON_SIZE = 500 // px
         private const val LOCAL_COVER_PNG = "../app_flutter/covers/0.png" // px
 
-        @OptIn(DelicateCoroutinesApi::class)
-        fun getArts(context: Context, artUri: String?, callback: (Bitmap?) -> Unit) {
-            GlobalScope.launch(Dispatchers.IO) {
-                Log.i("getArts", " artUri: $artUri")
-                val glider = Glide.with(context)
+        // Total remote attempts before we fall back to the local/default cover
+        // for the *initial* callback. We still keep retrying in background after
+        // that, but the user sees a cover immediately.
+        private const val REMOTE_ART_MAX_ATTEMPTS = 4
+
+        // Cached bitmap of the bundled default_art drawable. Kept alive for the
+        // process lifetime so we don't re-decode it on every media change.
+        @Volatile
+        private var defaultArtBitmap: Bitmap? = null
+
+        // Tracks the most-recent art URI the player is interested in. Background
+        // retries check this before firing a late callback so we never override
+        // the current track's cover with stale art from a previous track.
+        private val currentArtUri = AtomicReference<String?>(null)
+
+        private fun decodeDefaultArt(context: Context): Bitmap? {
+            defaultArtBitmap?.let { return it }
+            // Prefer Glide so the bundled drawable is sized to the notification
+            // icon target (NOTIFICATION_LARGE_ICON_SIZE) and shares the same
+            // bitmap pool as the remote path. BitmapFactory is a last-resort
+            // fallback to guarantee we always have *something*.
+            val viaGlide = try {
+                Glide.with(context)
+                    .asBitmap()
+                    .load(R.drawable.default_art)
+                    .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
+                    .get()
+            } catch (e: Exception) {
+                Log.w("getArts", "Glide failed to load default_art: $e")
+                null
+            }
+            if (viaGlide != null) {
+                defaultArtBitmap = viaGlide
+                return viaGlide
+            }
+            return try {
+                BitmapFactory.decodeResource(context.resources, R.drawable.default_art)
+                    ?.also { defaultArtBitmap = it }
+            } catch (e: Exception) {
+                Log.e("getArts", "Failed to decode default_art", e)
+                null
+            }
+        }
+
+        private fun loadRemote(context: Context, artUri: String): Bitmap? {
+            val future: FutureTarget<Bitmap> = Glide.with(context)
+                .applyDefaultRequestOptions(glideOptions)
+                .asBitmap()
+                .load(artUri)
+                .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
+            return try {
+                future.get()
+            } catch (e: Exception) {
+                Log.i("getArts", "ART load failed for $artUri: $e")
+                null
+            }
+        }
+
+        private fun loadLocal(context: Context): Bitmap? {
+            val file = File(context.filesDir, LOCAL_COVER_PNG)
+            if (!file.exists()) return null
+            return try {
+                Glide.with(context)
                     .applyDefaultRequestOptions(glideOptions)
                     .asBitmap()
-                val file = File(context.filesDir, LOCAL_COVER_PNG)
-                var bitmap: Bitmap? = null
-                val futureTarget: FutureTarget<Bitmap>? = when {
-                    !artUri.isNullOrBlank() -> glider.load(artUri)
-                        .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
+                    .load(Uri.fromFile(file))
+                    .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
+                    .get()
+            } catch (e: Exception) {
+                Log.i("getArts", "Local ART load failed: $e")
+                try {
+                    BitmapFactory.decodeFile(file.absolutePath)
+                } catch (t: Exception) {
+                    Log.e("getArts", "Local ART decode failed: $t")
+                    null
+                }
+            }
+        }
 
-                    file.exists() -> glider.load(Uri.fromFile(file))
-                        .submit(NOTIFICATION_LARGE_ICON_SIZE, NOTIFICATION_LARGE_ICON_SIZE)
+        @OptIn(DelicateCoroutinesApi::class)
+        fun getArts(context: Context, artUri: String?, callback: (Bitmap?) -> Unit) {
+            currentArtUri.set(artUri)
+            GlobalScope.launch(Dispatchers.IO) {
+                Log.i("getArts", " artUri: $artUri")
 
-                    else -> null
+                // 1) First attempt for the remote URI, if any.
+                val remoteFirst = if (!artUri.isNullOrBlank()) loadRemote(context, artUri) else null
+
+                // 2) If remote was not available, fall back to the local cover
+                //    (single file the app writes for the currently-playing track).
+                // 3) As the ultimate fallback, decode the bundled default_art so the
+                //    notification ALWAYS has a cover, even on first launch / offline.
+                val initialBitmap = remoteFirst
+                    ?: loadLocal(context)
+                    ?: decodeDefaultArt(context)
+
+                // Guard against a quick skip: if the user already moved to
+                // another track, don't stamp this older track's cover on the
+                // live notification.
+                if (currentArtUri.get() != artUri) {
+                    Log.i("getArts", "Dropping stale cover: track changed before initial callback ($artUri)")
+                    return@launch
                 }
 
-                if (futureTarget != null) {
-                    bitmap = try {
-                        futureTarget.get()
-                    } catch (e: Exception) {
-                        Log.i("getArts", "ART EXCP: $e")
-                        if (file.exists()) {
-                            BitmapFactory.decodeFile(file.absolutePath)
-                        } else {
-                            null
-                        }
-                    }
-                }
                 withContext(Dispatchers.Main) {
-                    callback(bitmap)
+                    callback(initialBitmap)
+                }
+
+                // 4) If the remote cover did not load on the first pass, keep
+                //    retrying in the background with exponential backoff so that
+                //    slow networks / flaky phones eventually show the real art.
+                //    We stop if the user has moved on to another track (the
+                //    currentArtUri changed) to avoid flashing stale art.
+                if (remoteFirst != null || artUri.isNullOrBlank()) return@launch
+
+                for (attempt in 2..REMOTE_ART_MAX_ATTEMPTS) {
+                    // 1s, 2s, 4s, 8s ...
+                    delay(1000L * (1L shl (attempt - 2)))
+
+                    if (currentArtUri.get() != artUri) {
+                        Log.i("getArts", "Aborting late retry: track changed ($artUri)")
+                        return@launch
+                    }
+
+                    val late = loadRemote(context, artUri) ?: continue
+
+                    if (currentArtUri.get() != artUri) {
+                        Log.i("getArts", "Late art arrived but track already changed ($artUri)")
+                        return@launch
+                    }
+
+                    Log.i("getArts", "Late art success on attempt $attempt for $artUri")
+                    withContext(Dispatchers.Main) {
+                        callback(late)
+                    }
+                    return@launch
                 }
             }
         }
@@ -396,12 +501,18 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         }
     }
     fun adsPlaying() {
+        this.media = Media("Propaganda", "", "", "",null,null )
+        buildNotification(PlaybackStateCompat.STATE_PLAYING, true, null)?.let { notification ->
+            shouldStartService(notification)
+        }
         getArts(applicationContext,null) { bitmap ->
-            this.media = Media("Propaganda", "", "", "",null,null )
             val notification = buildNotification(PlaybackStateCompat.STATE_PLAYING, true, bitmap)
             notification?.let {
-                notificationManager?.notify(NOW_PLAYING_NOTIFICATION, it)
-                shouldStartService(it)
+                if (isForegroundService) {
+                    notificationManager?.notify(NOW_PLAYING_NOTIFICATION, it)
+                } else {
+                    shouldStartService(it)
+                }
             }
         }
     }
@@ -454,7 +565,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         }
     }
     fun removeNotification() {
-        removeNowPlayingNotification();
+        exitForeground(removeNotification = true)
     }
 
     fun seek(position: Long, playWhenReady: Boolean) {
@@ -718,28 +829,48 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                     Intent(applicationContext, this@MediaService.javaClass)
                 )
                 startForeground(NOW_PLAYING_NOTIFICATION, notification)
+                isForegroundService = true
             } catch (e: Exception) {
-                startForeground(NOW_PLAYING_NOTIFICATION, notification)
-                ContextCompat.startForegroundService(
-                    applicationContext,
-                    Intent(applicationContext, this@MediaService.javaClass)
-                )
+                if (
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                    e is android.app.ForegroundServiceStartNotAllowedException
+                ) {
+                    Log.w(
+                        TAG,
+                        "Foreground start was denied; keeping a regular notification update instead.",
+                        e
+                    )
+                    notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
+                } else {
+                    Log.e(TAG, "Failed to promote playback service to foreground.", e)
+                }
             }
-            isForegroundService = true
 
         }
     }
 
     fun stopService() {
         if (isForegroundService) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                stopForeground(STOP_FOREGROUND_DETACH)
-            } else {
-                stopForeground(false)
-            }
+            stopForeground(STOP_FOREGROUND_REMOVE)
             isForegroundService = false
             stopSelf()
             Log.i(TAG, "Stopping Service")
+        }
+    }
+
+    private fun exitForeground(removeNotification: Boolean) {
+        if (isForegroundService) {
+            val stopFlag = if (removeNotification) {
+                STOP_FOREGROUND_REMOVE
+            } else {
+                STOP_FOREGROUND_DETACH
+            }
+            stopForeground(stopFlag)
+            isForegroundService = false
+        }
+
+        if (removeNotification) {
+            removeNowPlayingNotification()
         }
     }
 
@@ -765,8 +896,21 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             if (mediaController?.metadata == null || mediaSession == null) {
                 return
             }
+            val immediateState = state.state
+            val immediateOnGoing =
+                immediateState == PlaybackStateCompat.STATE_PLAYING || immediateState == PlaybackStateCompat.STATE_BUFFERING
+
+            // Promote the service immediately with a lightweight notification.
+            // Artwork loading can block long enough for Android 12+ to revoke the
+            // temporary foreground-start allowance.
+            if (immediateOnGoing) {
+                buildNotification(immediateState, immediateOnGoing, null)?.let { notification ->
+                    shouldStartService(notification)
+                }
+            }
+
             getArts(applicationContext,media?.bigCoverUrl ?: media?.coverUrl) { bitmap ->
-                val updatedState = state.state
+                val updatedState = mediaController?.playbackState?.state ?: state.state
                 val onGoing =
                     updatedState == PlaybackStateCompat.STATE_PLAYING || updatedState == PlaybackStateCompat.STATE_BUFFERING
                 // Skip building a notification when state is "none".
@@ -781,26 +925,25 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                     PlaybackStateCompat.STATE_BUFFERING,
                     PlaybackStateCompat.STATE_PLAYING -> {
                         Log.i(TAG, "updateNotification: STATE_BUFFERING or STATE_PLAYING")
-                        /**
-                         * This may look strange, but the documentation for [Service.startForeground]
-                         * notes that "calling this method does *not* put the service in the started
-                         * state itself, even though the name sounds like it."
-                         */
                         if (notification != null) {
-                            notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
-                            shouldStartService(notification)
+                            if (isForegroundService) {
+                                notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
+                            } else {
+                                shouldStartService(notification)
+                            }
                         }
                     }
                     else -> {
-                        if (isForegroundService) {
-                            // If playback has ended, also stop the service.
-                            if (updatedState == PlaybackStateCompat.STATE_NONE && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                        if (updatedState == PlaybackStateCompat.STATE_NONE) {
+                            if (isForegroundService) {
                                 stopService()
-                            }
-                            if (notification != null) {
-                                notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
-                            } else
+                            } else {
                                 removeNowPlayingNotification()
+                            }
+                        } else if (notification != null) {
+                            notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
+                        } else if (isForegroundService) {
+                            removeNowPlayingNotification()
                         }
                     }
                 }

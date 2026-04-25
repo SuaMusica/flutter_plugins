@@ -33,7 +33,8 @@ public class MediaScannerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware
   private lateinit var context: Context
   private lateinit var mediaScanner: MediaScanner
   private var activity: Activity? = null
-  private var result: Result? = null
+  private var activityBinding: ActivityPluginBinding? = null
+  private var pendingDeleteResult: Result? = null
 
   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     Initializer.run()
@@ -46,13 +47,15 @@ public class MediaScannerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware
   }
 
   override fun onAttachedToActivity(binding: ActivityPluginBinding) {
+    activityBinding = binding
     this.activity = binding.activity
     binding.addActivityResultListener(this)
   }
 
   override fun onDetachedFromActivityForConfigChanges() {
-    // TODO: the Activity your plugin was attached to was destroyed to change configuration.
-    // This call will be followed by onReattachedToActivityForConfigChanges().
+    activityBinding?.removeActivityResultListener(this)
+    activityBinding = null
+    activity = null
   }
 
   override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
@@ -60,13 +63,19 @@ public class MediaScannerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware
   }
 
   override fun onDetachedFromActivity() {
-    // TODO: your plugin is no longer associated with an Activity. Clean up references.
+    activityBinding?.removeActivityResultListener(this)
+    activityBinding = null
+    activity = null
   }
   override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
-    if (requestCode == 0x1033) {
-      result?.success(resultCode == Activity.RESULT_OK)
+    if (requestCode != DELETE_MEDIAS_REQUEST_CODE) {
+      return false
     }
-    return false
+
+    val reply = pendingDeleteResult ?: return true
+    pendingDeleteResult = null
+    reply.success(resultCode == Activity.RESULT_OK)
+    return true
   }
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
     Timber.d("onMethodCall")
@@ -100,30 +109,70 @@ public class MediaScannerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware
   }
 
   private fun deleteMedias(call: MethodCall, result: Result) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-      val paths: List<String>? = call.argument("paths")
-      val urisToDelete: MutableList<Uri> = ArrayList()
-      if (paths != null) {
-        for (path in paths) {
-          Timber.d("path: %s", path)
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+      result.success(false)
+      return
+    }
 
-          val mediaID = getFilePathToMediaID(path)
-          Timber.d("mediaID: %d", mediaID)
+    if (pendingDeleteResult != null) {
+      result.error("delete_in_progress", "A media delete request is already running", null)
+      return
+    }
 
-          urisToDelete.add(ContentUris.withAppendedId(MediaStore.Audio.Media.getContentUri("external"), mediaID))
-        }
+    val currentActivity = activity
+    if (currentActivity == null) {
+      result.error("no_activity", "Plugin is not attached to an activity", null)
+      return
+    }
+
+    val paths: List<String> = call.argument("paths") ?: emptyList()
+    if (paths.isEmpty()) {
+      result.success(false)
+      return
+    }
+
+    val urisToDelete: MutableList<Uri> = ArrayList()
+    for (path in paths) {
+      Timber.d("path: %s", path)
+
+      val mediaID = getFilePathToMediaID(path)
+      Timber.d("mediaID: %d", mediaID)
+
+      if (mediaID > 0) {
+        urisToDelete.add(
+          ContentUris.withAppendedId(
+            MediaStore.Audio.Media.getContentUri("external"),
+            mediaID
+          )
+        )
       }
-      val trashRequest: PendingIntent =
-        MediaStore.createDeleteRequest(context.contentResolver, urisToDelete)
-      this.result = result
-      activity?.startIntentSenderForResult(
-          trashRequest.intentSender,
-          0x1033,
-          null,
-          0,
-          0,
-          0,
-          null
+    }
+
+    if (urisToDelete.isEmpty()) {
+      result.success(false)
+      return
+    }
+
+    val trashRequest: PendingIntent =
+      MediaStore.createDeleteRequest(context.contentResolver, urisToDelete)
+    pendingDeleteResult = result
+
+    try {
+      currentActivity.startIntentSenderForResult(
+        trashRequest.intentSender,
+        DELETE_MEDIAS_REQUEST_CODE,
+        null,
+        0,
+        0,
+        0,
+        null
+      )
+    } catch (exception: Exception) {
+      pendingDeleteResult = null
+      result.error(
+        "delete_launch_failed",
+        "Failed to launch delete request: ${exception.message}",
+        null
       )
     }
   }
@@ -154,6 +203,7 @@ public class MediaScannerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware
   }
 
   companion object {
+    private const val DELETE_MEDIAS_REQUEST_CODE = 0x1033
     private const val URI = "uri"
     private const val READ = "read"
     private const val SCAN_MEDIA = "scan_media"

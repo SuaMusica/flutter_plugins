@@ -17,6 +17,12 @@ class MediaSessionConnection(
 ) {
     val TAG = "Player"
 
+    private data class PendingCommand(
+        val command: String,
+        val bundle: Bundle?,
+        val callbackHandler: ResultReceiver?
+    )
+
     var releaseMode: Int
         get() {
             return ReleaseMode.RELEASE.ordinal
@@ -36,6 +42,8 @@ class MediaSessionConnection(
     private val mediaBrowserConnectionCallback = MediaBrowserConnectionCallback(context)
     private var mediaBrowser: MediaBrowserCompat? = null
     private var mediaController: MediaControllerCompat? = null
+    private var mediaControllerCallback: MediaControllerCompat.Callback? = null
+    private val pendingCommands = mutableListOf<PendingCommand>()
 
     init {
         ensureMediaBrowser {
@@ -116,10 +124,13 @@ class MediaSessionConnection(
     }
 
     private fun sendCommand(command: String, bundle: Bundle? = null, callbackHandler: ResultReceiver? = null) {
+        if (sendCommandIfReady(command, bundle, callbackHandler)) {
+            return
+        }
+
+        pendingCommands.add(PendingCommand(command, bundle, callbackHandler))
         ensureMediaBrowser {
-            ensureMediaController {
-                it.sendCommand(command, bundle, callbackHandler)
-            }
+            flushPendingCommands()
         }
     }
 
@@ -152,6 +163,53 @@ class MediaSessionConnection(
         mediaController?.let(callable)
     }
 
+    private fun sendCommandIfReady(
+        command: String,
+        bundle: Bundle?,
+        callbackHandler: ResultReceiver?
+    ): Boolean {
+        val browser = mediaBrowser
+        val controller = mediaController
+        return if (browser?.isConnected == true && controller != null) {
+            controller.sendCommand(command, bundle, callbackHandler)
+            true
+        } else {
+            false
+        }
+    }
+
+    private fun flushPendingCommands() {
+        if (pendingCommands.isEmpty()) {
+            return
+        }
+
+        val iterator = pendingCommands.iterator()
+        while (iterator.hasNext()) {
+            val pendingCommand = iterator.next()
+            if (sendCommandIfReady(
+                    pendingCommand.command,
+                    pendingCommand.bundle,
+                    pendingCommand.callbackHandler
+                )
+            ) {
+                iterator.remove()
+            } else {
+                return
+            }
+        }
+    }
+
+    fun dispose() {
+        mediaControllerCallback?.let { callback ->
+            mediaController?.unregisterCallback(callback)
+        }
+        mediaControllerCallback = null
+        mediaController = null
+        mediaBrowser?.disconnect()
+        mediaBrowser = null
+        pendingCommands.clear()
+    }
+
     private inner class MediaBrowserConnectionCallback(private val context: Context)
         : MediaBrowserCompat.ConnectionCallback() {
         override fun onConnected() {
@@ -160,8 +218,11 @@ class MediaSessionConnection(
                 if (mediaBrowser.isConnected.not())
                     return
 
+                mediaControllerCallback?.let { callback ->
+                    mediaController?.unregisterCallback(callback)
+                }
                 mediaController = MediaControllerCompat(context, mediaBrowser.sessionToken)
-                mediaController?.registerCallback(object : MediaControllerCompat.Callback() {
+                mediaControllerCallback = object : MediaControllerCompat.Callback() {
                     var lastState = PlaybackStateCompat.STATE_NONE - 1
                     override fun onPlaybackStateChanged(state: PlaybackStateCompat) {
                         if (lastState != state.state) {
@@ -202,7 +263,9 @@ class MediaSessionConnection(
                     override fun onMetadataChanged(metadata: MediaMetadataCompat) {
                         Log.i(TAG, "onMetadataChanged: $metadata duration: ${metadata.duration}")
                     }
-                })
+                }
+                mediaController?.registerCallback(mediaControllerCallback!!)
+                flushPendingCommands()
             }
             Log.i(TAG, "MediaBrowserConnectionCallback.onConnected : ENDED")
         }
@@ -210,6 +273,10 @@ class MediaSessionConnection(
         override fun onConnectionSuspended() {
             Log.i(TAG, "MediaBrowserConnectionCallback.onConnectionSuspended : STARTED")
 
+            mediaControllerCallback?.let { callback ->
+                mediaController?.unregisterCallback(callback)
+            }
+            mediaControllerCallback = null
             mediaController = null
 
             Log.i(TAG, "MediaBrowserConnectionCallback.onConnectionSuspended : ENDED")
@@ -218,6 +285,10 @@ class MediaSessionConnection(
         override fun onConnectionFailed() {
             Log.i(TAG, "MediaBrowserConnectionCallback.onConnectionFailed : STARTED")
 
+            mediaControllerCallback?.let { callback ->
+                mediaController?.unregisterCallback(callback)
+            }
+            mediaControllerCallback = null
             mediaController = null
 
             Log.i(TAG, "MediaBrowserConnectionCallback.onConnectionFailed : ENDED")
