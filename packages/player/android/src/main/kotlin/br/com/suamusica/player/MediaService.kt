@@ -908,6 +908,9 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
             if (isPlaybackActive) {
                 Log.i(TAG, "Keeping foreground service because playback became active again; state=$state")
+            } else if (isAdNotificationActive()) {
+                Log.i(TAG, "Keeping foreground service because an ad is still active; rescheduling stop")
+                scheduleForegroundStop("ad still active after $reason")
             } else {
                 Log.i(TAG, "Stopping foreground service after delayed $reason; state=$state")
                 stopService()
@@ -917,6 +920,10 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         pendingForegroundStop = stopRunnable
         Log.i(TAG, "Scheduling foreground stop in ${FOREGROUND_STOP_DELAY_MS}ms after $reason")
         foregroundStopHandler.postDelayed(stopRunnable, FOREGROUND_STOP_DELAY_MS)
+    }
+
+    private fun isAdNotificationActive(): Boolean {
+        return media?.name?.contains("Propaganda") == true
     }
 
     private fun cancelPendingForegroundStop(reason: String) {

@@ -158,11 +158,18 @@ class NotificationBuilder(private val context: Context) {
         val currentArt =
             mediaSession.controller.metadata?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
         val artChanged = art != null && art !== currentArt
+        val title = media?.name ?: "Propaganda"
+        val currentTitle =
+            mediaSession.controller.metadata?.getString(MediaMetadata.METADATA_KEY_TITLE)
+        val titleChanged = currentTitle != title
 
-        if (shouldUseMetadata && (isAds || currentDuration != duration || artChanged)) {
+        if (
+            shouldUseMetadata &&
+            (isAds || titleChanged || currentDuration != duration || artChanged)
+        ) {
             mediaSession.setMetadata(
                 MediaMetadataCompat.Builder()
-                    .putString(MediaMetadata.METADATA_KEY_TITLE, media?.name ?: "Propaganda")
+                    .putString(MediaMetadata.METADATA_KEY_TITLE, title)
                     .putString(MediaMetadata.METADATA_KEY_ARTIST, media?.author ?: "")
                     .putBitmap(
                         MediaMetadata.METADATA_KEY_ALBUM_ART, art ?: currentArt
