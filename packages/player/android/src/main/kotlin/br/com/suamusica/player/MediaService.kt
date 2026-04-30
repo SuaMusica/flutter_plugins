@@ -23,7 +23,6 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
 import androidx.media.session.MediaButtonReceiver
 import br.com.suamusica.player.media.parser.SMHlsPlaylistParserFactory
 import com.bumptech.glide.Glide
@@ -870,10 +869,6 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                 "Promoting MediaService to foreground for $reason; sdk=${Build.VERSION.SDK_INT}"
             )
             try {
-                ContextCompat.startForegroundService(
-                    applicationContext,
-                    Intent(applicationContext, this@MediaService.javaClass)
-                )
                 startForeground(NOW_PLAYING_NOTIFICATION, notification)
                 isForegroundService = true
                 foregroundStartDenied = false
