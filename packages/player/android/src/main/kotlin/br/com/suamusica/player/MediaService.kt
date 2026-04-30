@@ -77,6 +77,9 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
     private var notificationBuilder: NotificationBuilder? = null
     private var notificationManager: NotificationManagerCompat? = null
     private var isForegroundService = false
+    private var foregroundStartDenied = false
+    private val foregroundStopHandler = Handler()
+    private var pendingForegroundStop: Runnable? = null
     private var wifiLock: WifiManager.WifiLock? = null
     private var wakeLock: PowerManager.WakeLock? = null
 
@@ -93,6 +96,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
 
     private val BROWSABLE_ROOT = "/"
     private val EMPTY_ROOT = "@empty@"
+    private val FOREGROUND_STOP_DELAY_MS = 30_000L
 
     private val isSamsung = Build.MANUFACTURER.equals("samsung", ignoreCase = true)
     private val isHyperOS = !getProperty("ro.mi.os.version.name").isNullOrBlank()
@@ -496,6 +500,9 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
     }
 
     fun play() {
+        buildNotification(PlaybackStateCompat.STATE_PLAYING, true, null)?.let { notification ->
+            shouldStartService(notification, "play command", force = true)
+        }
         performAndEnableTracking {
             player?.play()
         }
@@ -509,7 +516,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             val notification = buildNotification(PlaybackStateCompat.STATE_PLAYING, true, bitmap)
             notification?.let {
                 if (isForegroundService) {
-                    notificationManager?.notify(NOW_PLAYING_NOTIFICATION, it)
+                    notifyNowPlaying(it)
                 } else {
                     shouldStartService(it)
                 }
@@ -550,12 +557,26 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                     bitmap
                 )
                 notification?.let { n->
-                    notificationManager?.notify(NOW_PLAYING_NOTIFICATION, n)
+                    notifyNowPlaying(n)
                     rebuildNotificationAndroid15Plus()
                 }
             }
         }
     }
+    private fun notifyNowPlaying(notification: Notification) {
+        val manager = notificationManager ?: return
+        if (!manager.areNotificationsEnabled()) {
+            Log.w(TAG, "Skipping now playing notification update because notifications are disabled.")
+            return
+        }
+
+        try {
+            manager.notify(NOW_PLAYING_NOTIFICATION, notification)
+        } catch (e: SecurityException) {
+            Log.w(TAG, "Skipping now playing notification update because notification permission is missing.", e)
+        }
+    }
+
     private fun rebuildNotificationAndroid15Plus(){
         //Gambiarra on Android15+ to force rebuild notification.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
@@ -569,6 +590,11 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
     }
 
     fun seek(position: Long, playWhenReady: Boolean) {
+        if (playWhenReady) {
+            buildNotification(PlaybackStateCompat.STATE_PLAYING, true, null)?.let { notification ->
+                shouldStartService(notification, "seek with playWhenReady", force = true)
+            }
+        }
         player?.seekTo(position)
         player?.playWhenReady = playWhenReady
     }
@@ -590,6 +616,9 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             if (player?.isPlaying == true) {
                 player?.pause()
             } else {
+                buildNotification(PlaybackStateCompat.STATE_PLAYING, true, null)?.let { notification ->
+                    shouldStartService(notification, "togglePlayPause command", force = true)
+                }
                 player?.play()
             }
         }
@@ -820,9 +849,26 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         }
     }
 
-    fun shouldStartService(notification: Notification) {
+    fun shouldStartService(
+        notification: Notification,
+        reason: String = "notification update",
+        force: Boolean = false
+    ) {
+        cancelPendingForegroundStop("foreground requested for $reason")
         if (!isForegroundService) {
-            Log.i(TAG, "Starting Service")
+            if (foregroundStartDenied && !force) {
+                Log.i(
+                    TAG,
+                    "Skipping foreground promotion for $reason because the previous attempt was denied; keeping a regular notification update."
+                )
+                notifyNowPlaying(notification)
+                return
+            }
+
+            Log.i(
+                TAG,
+                "Promoting MediaService to foreground for $reason; sdk=${Build.VERSION.SDK_INT}"
+            )
             try {
                 ContextCompat.startForegroundService(
                     applicationContext,
@@ -830,17 +876,19 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                 )
                 startForeground(NOW_PLAYING_NOTIFICATION, notification)
                 isForegroundService = true
+                foregroundStartDenied = false
             } catch (e: Exception) {
                 if (
                     Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
                     e is android.app.ForegroundServiceStartNotAllowedException
                 ) {
+                    foregroundStartDenied = true
                     Log.w(
                         TAG,
-                        "Foreground start was denied; keeping a regular notification update instead.",
+                        "Foreground start was denied for $reason; keeping a regular notification update instead.",
                         e
                     )
-                    notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
+                    notifyNowPlaying(notification)
                 } else {
                     Log.e(TAG, "Failed to promote playback service to foreground.", e)
                 }
@@ -849,16 +897,54 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
         }
     }
 
+    private fun scheduleForegroundStop(reason: String) {
+        if (!isForegroundService) {
+            removeNowPlayingNotification()
+            return
+        }
+
+        cancelPendingForegroundStop("rescheduling foreground stop")
+
+        val stopRunnable = Runnable {
+            pendingForegroundStop = null
+            val state = mediaController?.playbackState?.state ?: PlaybackStateCompat.STATE_NONE
+            val isPlaybackActive =
+                state == PlaybackStateCompat.STATE_PLAYING || state == PlaybackStateCompat.STATE_BUFFERING
+
+            if (isPlaybackActive) {
+                Log.i(TAG, "Keeping foreground service because playback became active again; state=$state")
+            } else {
+                Log.i(TAG, "Stopping foreground service after delayed $reason; state=$state")
+                stopService()
+            }
+        }
+
+        pendingForegroundStop = stopRunnable
+        Log.i(TAG, "Scheduling foreground stop in ${FOREGROUND_STOP_DELAY_MS}ms after $reason")
+        foregroundStopHandler.postDelayed(stopRunnable, FOREGROUND_STOP_DELAY_MS)
+    }
+
+    private fun cancelPendingForegroundStop(reason: String) {
+        pendingForegroundStop?.let {
+            foregroundStopHandler.removeCallbacks(it)
+            pendingForegroundStop = null
+            Log.i(TAG, "Canceled pending foreground stop: $reason")
+        }
+    }
+
     fun stopService() {
+        cancelPendingForegroundStop("stopService")
         if (isForegroundService) {
             stopForeground(STOP_FOREGROUND_REMOVE)
             isForegroundService = false
+            foregroundStartDenied = false
             stopSelf()
             Log.i(TAG, "Stopping Service")
         }
     }
 
     private fun exitForeground(removeNotification: Boolean) {
+        cancelPendingForegroundStop("exitForeground")
         if (isForegroundService) {
             val stopFlag = if (removeNotification) {
                 STOP_FOREGROUND_REMOVE
@@ -867,6 +953,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
             }
             stopForeground(stopFlag)
             isForegroundService = false
+            foregroundStartDenied = false
         }
 
         if (removeNotification) {
@@ -927,7 +1014,7 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                         Log.i(TAG, "updateNotification: STATE_BUFFERING or STATE_PLAYING")
                         if (notification != null) {
                             if (isForegroundService) {
-                                notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
+                                notifyNowPlaying(notification)
                             } else {
                                 shouldStartService(notification)
                             }
@@ -936,12 +1023,12 @@ class MediaService : androidx.media.MediaBrowserServiceCompat() {
                     else -> {
                         if (updatedState == PlaybackStateCompat.STATE_NONE) {
                             if (isForegroundService) {
-                                stopService()
+                                scheduleForegroundStop("STATE_NONE")
                             } else {
                                 removeNowPlayingNotification()
                             }
                         } else if (notification != null) {
-                            notificationManager?.notify(NOW_PLAYING_NOTIFICATION, notification)
+                            notifyNowPlaying(notification)
                         } else if (isForegroundService) {
                             removeNowPlayingNotification()
                         }
