@@ -23,12 +23,14 @@ class PreRoll extends StatefulWidget {
     this.controller,
     this.useHybridComposition = false,
     this.useinitExpensiveAndroidView = false,
+    this.useInitHybridAndroidView = true,
   });
 
   final double? maxHeight;
   final PreRollController? controller;
   final bool useHybridComposition;
   final bool useinitExpensiveAndroidView;
+  final bool useInitHybridAndroidView;
 
   @override
   State<PreRoll> createState() => _PreRollState();
@@ -68,6 +70,7 @@ class _PreRollState extends State<PreRoll> {
         TargetPlatform.android => _PreRollAndroidView(
             useHybridComposition: widget.useHybridComposition,
             useinitExpensiveAndroidView: widget.useinitExpensiveAndroidView,
+            useInitHybridAndroidView: widget.useInitHybridAndroidView,
             hcppSupported: _hcppSupported,
             controller: widget.controller,
             platformViewKey: _platformViewKey,
@@ -85,6 +88,7 @@ class _PreRollAndroidView extends StatelessWidget {
   const _PreRollAndroidView({
     required this.useHybridComposition,
     required this.useinitExpensiveAndroidView,
+    required this.useInitHybridAndroidView,
     required this.hcppSupported,
     required this.controller,
     required this.platformViewKey,
@@ -92,6 +96,7 @@ class _PreRollAndroidView extends StatelessWidget {
 
   final bool useHybridComposition;
   final bool useinitExpensiveAndroidView;
+  final bool useInitHybridAndroidView;
   final bool? hcppSupported;
   final PreRollController? controller;
   final Key platformViewKey;
@@ -112,6 +117,7 @@ class _PreRollAndroidView extends StatelessWidget {
     return _PreRollHybridPlatformViewLink(
       useHcpp: hcppSupported!,
       useinitExpensiveAndroidView: useinitExpensiveAndroidView,
+      useInitHybridAndroidView: useInitHybridAndroidView,
       controller: controller,
       platformViewKey: platformViewKey,
     );
@@ -122,12 +128,14 @@ class _PreRollHybridPlatformViewLink extends StatelessWidget {
   const _PreRollHybridPlatformViewLink({
     required this.useHcpp,
     required this.useinitExpensiveAndroidView,
+    required this.useInitHybridAndroidView,
     required this.controller,
     required this.platformViewKey,
   });
 
   final bool useHcpp;
   final bool useinitExpensiveAndroidView;
+  final bool useInitHybridAndroidView;
   final PreRollController? controller;
   final Key platformViewKey;
 
@@ -146,7 +154,8 @@ class _PreRollHybridPlatformViewLink extends StatelessWidget {
         hitTestBehavior: PlatformViewHitTestBehavior.opaque,
       ),
       onCreatePlatformView: (PlatformViewCreationParams params) {
-        final AndroidViewController viewController = useHcpp
+        final AndroidViewController viewController =
+            useHcpp && useInitHybridAndroidView
             ? PlatformViewsService.initHybridAndroidView(
                 id: params.id,
                 viewType: _kPreRollViewType,
