@@ -45,7 +45,15 @@ class _PreRollState extends State<PreRoll> {
     super.initState();
     if (defaultTargetPlatform == TargetPlatform.android &&
         widget.useHybridComposition) {
+      print(
+        '[_PreRollState] initState pre_roll hcpp: $widget.useHybridComposition',
+      );
+
       HybridAndroidViewController.checkIfSupported().then((supported) {
+        print(
+          '[_PreRollState] checkIfSupported pre_roll hcpp: $supported',
+        );
+
         if (mounted) {
           setState(() => _hcppSupported = supported);
         }
@@ -154,31 +162,35 @@ class _PreRollHybridPlatformViewLink extends StatelessWidget {
         hitTestBehavior: PlatformViewHitTestBehavior.opaque,
       ),
       onCreatePlatformView: (PlatformViewCreationParams params) {
+        print(
+          '[_PreRollHybridPlatformViewLink] onCreatePlatformView pre_roll hcpp: $useHcpp, $useInitHybridAndroidView',
+        );
+
         final AndroidViewController viewController =
             useHcpp && useInitHybridAndroidView
-            ? PlatformViewsService.initHybridAndroidView(
-                id: params.id,
-                viewType: _kPreRollViewType,
-                layoutDirection: TextDirection.ltr,
-                creationParams: _kPreRollCreationParams,
-                creationParamsCodec: _kPreRollCreationParamsCodec,
-                onFocus: () => params.onFocusChanged(true),
-              )
-            : useinitExpensiveAndroidView
-                ? PlatformViewsService.initExpensiveAndroidView(
+                ? PlatformViewsService.initHybridAndroidView(
                     id: params.id,
                     viewType: _kPreRollViewType,
                     layoutDirection: TextDirection.ltr,
                     creationParams: _kPreRollCreationParams,
                     creationParamsCodec: _kPreRollCreationParamsCodec,
+                    onFocus: () => params.onFocusChanged(true),
                   )
-                : PlatformViewsService.initSurfaceAndroidView(
-                    id: params.id,
-                    viewType: _kPreRollViewType,
-                    layoutDirection: TextDirection.ltr,
-                    creationParams: _kPreRollCreationParams,
-                    creationParamsCodec: _kPreRollCreationParamsCodec,
-                  );
+                : useinitExpensiveAndroidView
+                    ? PlatformViewsService.initExpensiveAndroidView(
+                        id: params.id,
+                        viewType: _kPreRollViewType,
+                        layoutDirection: TextDirection.ltr,
+                        creationParams: _kPreRollCreationParams,
+                        creationParamsCodec: _kPreRollCreationParamsCodec,
+                      )
+                    : PlatformViewsService.initSurfaceAndroidView(
+                        id: params.id,
+                        viewType: _kPreRollViewType,
+                        layoutDirection: TextDirection.ltr,
+                        creationParams: _kPreRollCreationParams,
+                        creationParamsCodec: _kPreRollCreationParamsCodec,
+                      );
 
         return viewController
           ..addOnPlatformViewCreatedListener((int id) {
@@ -207,7 +219,8 @@ class _PreRollTextureLayerAndroidView extends StatelessWidget {
       viewType: _kPreRollViewType,
       creationParams: _kPreRollCreationParams,
       creationParamsCodec: _kPreRollCreationParamsCodec,
-      onPlatformViewCreated: (id) => _onPreRollPlatformViewCreated(controller, id),
+      onPlatformViewCreated: (id) =>
+          _onPreRollPlatformViewCreated(controller, id),
       clipBehavior: Clip.none,
     );
   }
@@ -229,7 +242,8 @@ class _PreRollIosView extends StatelessWidget {
       viewType: _kPreRollViewType,
       creationParams: _kPreRollCreationParams,
       creationParamsCodec: _kPreRollCreationParamsCodec,
-      onPlatformViewCreated: (id) => _onPreRollPlatformViewCreated(controller, id),
+      onPlatformViewCreated: (id) =>
+          _onPreRollPlatformViewCreated(controller, id),
     );
   }
 }
