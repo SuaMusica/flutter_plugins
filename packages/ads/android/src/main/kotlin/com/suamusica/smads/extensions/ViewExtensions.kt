@@ -57,7 +57,7 @@ fun View.crossFade(boolean: Boolean = false) {
       .translationY(height.toFloat())
       .alpha(0f)
       .setListener(object : AnimatorListenerAdapter() {
-        override fun onAnimationEnd(animation: Animator?) {
+        override fun onAnimationEnd(animation: Animator) {
           super.onAnimationEnd(animation)
           this@crossFade.gone()
         }
