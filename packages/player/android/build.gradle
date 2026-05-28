@@ -24,8 +24,12 @@ rootProject.allprojects {
 }
 
 apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-kapt'
+
+def agpMajor = com.android.Version.ANDROID_GRADLE_PLUGIN_VERSION.tokenize('.')[0] as int
+if (agpMajor < 9) {
+    apply plugin: 'kotlin-android'
+    apply plugin: 'kotlin-kapt'
+}
 
 kapt {
     correctErrorTypes = true
@@ -45,6 +49,12 @@ android {
         disable 'InvalidPackage'
     }
     namespace = "br.com.suamusica.player"
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+    }
 }
 
 dependencies {

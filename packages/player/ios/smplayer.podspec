@@ -13,9 +13,9 @@ A new flutter plugin project.
   s.author           = { 'Sua Música' => 'contato@suamusica.com.br' }
   s.swift_version    = '5.0'
   s.source           = { :path => '.' }
-  s.source_files = 'Classes/**/*.{swift,h,m}'
-  s.public_header_files = 'Classes/**/*.h'
-  s.resources = ['Classes/**/*.{storyboard,xib,png}']
+  s.source_files = 'smplayer/Sources/smplayer/**/*.{swift,h,m}'
+  s.public_header_files = 'smplayer/Sources/smplayer/include/smplayer/**/*.h'
+  s.resources = ['smplayer/Sources/smplayer/**/*.{storyboard,xib,png}']
   s.dependency 'Flutter'
   s.dependency 'AFNetworking'
   s.dependency 'SDWebImage'

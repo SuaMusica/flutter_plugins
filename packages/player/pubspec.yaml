@@ -5,7 +5,8 @@ homepage: https://github.com/suamusica
 publish_to: none
 
 environment:
-  sdk: ">=3.8.0 <4.0.0"
+  sdk: ^3.12.0
+  flutter: ">=3.44.0"
 
 isar_version: &isar_version ^3.3.2 # define the version to be used
 

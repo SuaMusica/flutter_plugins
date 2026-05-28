@@ -14,12 +14,12 @@ A new flutter plugin project.
   s.author           = { 'Sua Música' => 'contato@suamusica.com.br' }
   s.swift_version    = '5.0'
   s.source           = { :path => '.' }
-  s.source_files = 'Classes/**/*.{swift,h,m}'
-  s.public_header_files = 'Classes/**/*.h'
-  s.resources  = ['Classes/**/*.{storyboard,xib,png}']
+  s.source_files = 'smads/Sources/smads/**/*.{swift,h,m}'
+  s.public_header_files = 'smads/Sources/smads/include/smads/**/*.h'
+  s.resources = ['smads/Sources/smads/**/*.{storyboard,xib,png}']
   s.dependency 'Flutter'
   s.dependency 'GoogleAds-IMA-iOS-SDK', '~> 3.22.1'
-  s.platform = :ios, '9.0'
+  s.platform = :ios, '15.0'
 
   # Flutter.framework does not contain a i386 slice. Only x86_64 simulators are supported.
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'VALID_ARCHS[sdk=iphonesimulator*]' => 'x86_64' }
