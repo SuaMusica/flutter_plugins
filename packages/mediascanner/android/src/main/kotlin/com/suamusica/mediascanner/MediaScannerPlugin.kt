@@ -35,6 +35,7 @@ public class MediaScannerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware
   private var activity: Activity? = null
   private var activityBinding: ActivityPluginBinding? = null
   private var pendingDeleteResult: Result? = null
+  private var deleteReplySubmitted = false
 
   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     Initializer.run()
@@ -66,6 +67,8 @@ public class MediaScannerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware
     activityBinding?.removeActivityResultListener(this)
     activityBinding = null
     activity = null
+    pendingDeleteResult = null
+    deleteReplySubmitted = false
   }
   override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
     if (requestCode != DELETE_MEDIAS_REQUEST_CODE) {
@@ -74,7 +77,15 @@ public class MediaScannerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware
 
     val reply = pendingDeleteResult ?: return true
     pendingDeleteResult = null
-    reply.success(resultCode == Activity.RESULT_OK)
+    if (deleteReplySubmitted) {
+      return true
+    }
+    deleteReplySubmitted = true
+    try {
+      reply.success(resultCode == Activity.RESULT_OK)
+    } catch (exception: IllegalStateException) {
+      Timber.w(exception, "MediaScanner delete reply already submitted")
+    }
     return true
   }
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
@@ -156,6 +167,7 @@ public class MediaScannerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware
     val trashRequest: PendingIntent =
       MediaStore.createDeleteRequest(context.contentResolver, urisToDelete)
     pendingDeleteResult = result
+    deleteReplySubmitted = false
 
     try {
       currentActivity.startIntentSenderForResult(
@@ -169,6 +181,7 @@ public class MediaScannerPlugin: FlutterPlugin, MethodCallHandler, ActivityAware
       )
     } catch (exception: Exception) {
       pendingDeleteResult = null
+      deleteReplySubmitted = false
       result.error(
         "delete_launch_failed",
         "Failed to launch delete request: ${exception.message}",
