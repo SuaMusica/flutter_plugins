@@ -1,3 +1,8 @@
 package com.suamusica.equalizer.external.presets.domain
 
-data class Band(val id: Int, val level: Int)
+import com.google.gson.annotations.SerializedName
+
+data class Band(
+    @SerializedName("id") val id: Int,
+    @SerializedName("level") val level: Int,
+)
