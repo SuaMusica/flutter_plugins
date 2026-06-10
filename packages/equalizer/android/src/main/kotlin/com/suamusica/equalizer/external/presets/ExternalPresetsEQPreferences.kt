@@ -111,7 +111,7 @@ class ExternalPresetsEQPreferences(context: Context) {
             return storedPreset.copy(bands = storedPreset.bandsOrEmpty())
         }
         val userPresets = getUserPresets()
-        val bandCount = userPresets.firstOrNull()?.bandsOrEmpty().size ?: 0
+        val bandCount = userPresets.firstOrNull()?.bandsOrEmpty()?.size ?: 0
         return Preset(
             name = CUSTOM_PRESET_NAME,
             bands = List(bandCount) { Band(it, 0) }
