@@ -15,11 +15,13 @@ class ExternalPresetsEQPreferences(context: Context) {
         private const val CURRENT_PRESET_KEY = "current_preset"
         private const val CUSTOM_PRESET_KEY = "custom_preset"
         private const val CUSTOM_PRESET_NAME = "Custom"
+
+        private val presetListType =
+            TypeToken.getParameterized(List::class.java, Preset::class.java).type
     }
 
     private val gson = Gson()
     private val preferences = context.getSharedPreferences(SHARED_PREFERENCE_NAME, Context.MODE_PRIVATE)
-
 
     fun init(userPresets: List<Preset>) {
         setUserPresets(userPresets)
@@ -46,9 +48,10 @@ class ExternalPresetsEQPreferences(context: Context) {
 
     private fun getUserPresets(): List<Preset> {
         val availablePresetsJsonString = preferences.getString(USER_PRESETS_KEY, null)
-        val typeToken = object : TypeToken<List<Preset>>() {}
-        return availablePresetsJsonString?.let { gson.fromJson<List<Preset>>(it, typeToken.type) }
-                ?: emptyList()
+        return availablePresetsJsonString?.let { json ->
+            gson.fromJson<List<Preset>>(json, presetListType)
+                ?.map { preset -> preset.copy(bands = preset.bandsOrEmpty()) }
+        } ?: emptyList()
     }
 
     fun getAvailablePresets(): List<Preset> {
@@ -60,6 +63,9 @@ class ExternalPresetsEQPreferences(context: Context) {
 
     fun setCurrentPresetByName(name: String) {
         val availablePresets = getAvailablePresets()
+        if (availablePresets.isEmpty()) {
+            return
+        }
         val preset = availablePresets.find { it.name == name }
         setCurrentPreset(preset ?: availablePresets.first())
     }
@@ -70,8 +76,11 @@ class ExternalPresetsEQPreferences(context: Context) {
 
     fun getCurrentPreset(): Preset {
         val jsonString = preferences.getString(CURRENT_PRESET_KEY, null)
-        return jsonString?.let { gson.fromJson<Preset>(jsonString, Preset::class.java) }
-                ?: getUserPresets().first()
+        val storedPreset = jsonString?.let { gson.fromJson(it, Preset::class.java) }
+        if (storedPreset != null && storedPreset.bandsOrEmpty().isNotEmpty()) {
+            return storedPreset.copy(bands = storedPreset.bandsOrEmpty())
+        }
+        return getUserPresets().firstOrNull() ?: getCustomPreset()
     }
 
     fun getCurrentPresetIndex(): Int {
@@ -80,8 +89,11 @@ class ExternalPresetsEQPreferences(context: Context) {
     }
 
     fun setBandLevel(newBand: Band) {
-        val currentPreset = getCurrentPreset()
-        val customPresetBands = currentPreset.bands.map {
+        val bands = getCurrentPreset().bandsOrEmpty()
+        if (bands.isEmpty()) {
+            return
+        }
+        val customPresetBands = bands.map {
             if (it.id == newBand.id) {
                 newBand
             } else {
@@ -94,11 +106,16 @@ class ExternalPresetsEQPreferences(context: Context) {
 
     private fun getCustomPreset(): Preset {
         val jsonString = preferences.getString(CUSTOM_PRESET_KEY, null)
-        return jsonString?.let { gson.fromJson(jsonString, Preset::class.java) }
-                ?: Preset(
-                        name = CUSTOM_PRESET_NAME,
-                        bands = List(getUserPresets().first().bands.size) { Band(it, 0) }
-                )
+        val storedPreset = jsonString?.let { gson.fromJson(it, Preset::class.java) }
+        if (storedPreset != null && storedPreset.bandsOrEmpty().isNotEmpty()) {
+            return storedPreset.copy(bands = storedPreset.bandsOrEmpty())
+        }
+        val userPresets = getUserPresets()
+        val bandCount = userPresets.firstOrNull()?.bandsOrEmpty().size ?: 0
+        return Preset(
+            name = CUSTOM_PRESET_NAME,
+            bands = List(bandCount) { Band(it, 0) }
+        )
     }
 
     private fun setCustomPresetBands(presetBands: List<Band>) {

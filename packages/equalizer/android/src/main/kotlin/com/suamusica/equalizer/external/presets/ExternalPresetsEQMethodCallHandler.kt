@@ -66,7 +66,7 @@ class ExternalPresetsEQMethodCallHandler(
             "getBandLevel" -> {
                 val bandId = call.arguments as Int
                 val level = externalPresetsEQPreferences.getCurrentPreset()
-                        .bands
+                        .bandsOrEmpty()
                         .find { it.id == bandId }?.level ?: 0
                 result.success(level)
             }
@@ -102,6 +102,8 @@ class ExternalPresetsEQMethodCallHandler(
 
     private fun setCurrentPresetIntoAndroidEqualizer() {
         val currentPreset = externalPresetsEQPreferences.getCurrentPreset()
-        currentPreset.bands.forEach { band -> CustomEQ.setBandLevel(band.id, band.level) }
+        currentPreset.bandsOrEmpty().forEach { band ->
+            CustomEQ.setBandLevel(band.id, band.level)
+        }
     }
 }
