@@ -31,6 +31,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     var sentOnComplete = false
     var ppID: String? = nil
     var isRegistered = false
+    private var offScreenHostWindow: UIWindow?
 
     @IBOutlet weak var videoView: UIView!
     @IBOutlet weak var companionView: UIView!
@@ -55,26 +56,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         print("AD: viewDidAppear at \(Date())")
-        if isRegistered {
-            return
-        }
-
-        setUpContentPlayer()
-        setUpAdsLoader()
-        setupAudioSession()
-
-        requestAds()
-
-        if self.videoView.frame.width > self.view.frame.width {
-            self.videoView.frame = CGRect(
-                x: 0,
-                y: 0,
-                width: self.view.frame.width,
-                height: self.view.frame.width / 1.333333333
-            )
-        }
-
-        isRegistered = true
+        beginAdSessionIfNeeded()
     }
 
     func setup(channel: FlutterMethodChannel?, adUrl: String?, contentUrl: String?, screen: Screen, args: [String: Any]?) {
@@ -87,10 +69,91 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         self.args = args
 
         resetSessionState()
+        scheduleBeginAdSessionIfNeeded()
+    }
+
+    private func scheduleBeginAdSessionIfNeeded() {
+        DispatchQueue.main.async { [weak self] in
+            self?.beginAdSessionIfNeeded()
+        }
+    }
+
+    private func beginAdSessionIfNeeded() {
+        guard !isRegistered else { return }
+
+        loadViewIfNeeded()
+
+        let isOffScreenAd = isOffScreenAdRequest()
+        let viewInWindow = viewIfLoaded?.window != nil
+        guard viewInWindow || isOffScreenAd else {
+            return
+        }
+
+        if isOffScreenAd && !viewInWindow {
+            attachToOffScreenWindowIfNeeded()
+        }
+
+        setUpContentPlayer()
+        setUpAdsLoader()
+        setupAudioSession()
+        requestAds()
+
+        if let videoView = videoView, videoView.frame.width > view.frame.width {
+            videoView.frame = CGRect(
+                x: 0,
+                y: 0,
+                width: view.frame.width,
+                height: view.frame.width / 1.333333333
+            )
+        }
+
+        isRegistered = true
+    }
+
+    private func isOffScreenAdRequest() -> Bool {
+        args?["__OFF_SCREEN__"] as? String == "1"
+    }
+
+    private func attachToOffScreenWindowIfNeeded() {
+        loadViewIfNeeded()
+        guard isOffScreenAdRequest(), view.window == nil else { return }
+
+        detachFromOffScreenHost()
+
+        let adFrame = CGRect(x: 0, y: 0, width: 640, height: 480)
+        let window: UIWindow
+
+        let scene = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first { $0.screen == UIScreen.main }
+            ?? UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first
+        if let scene = scene {
+            window = UIWindow(windowScene: scene)
+        } else {
+            window = UIWindow(frame: adFrame)
+        }
+
+        window.frame = adFrame
+        window.windowLevel = UIWindow.Level(rawValue: UIWindow.Level.normal.rawValue - 1)
+        window.rootViewController = self
+        view.frame = adFrame
+        window.isHidden = false
+        offScreenHostWindow = window
+
+    }
+
+    private func detachFromOffScreenHost() {
+        guard offScreenHostWindow != nil else { return }
+
+        offScreenHostWindow?.isHidden = true
+        offScreenHostWindow?.rootViewController = nil
+        offScreenHostWindow = nil
     }
 
     private func resetSessionState() {
         loadViewIfNeeded()
+
+        detachFromOffScreenHost()
 
         sentOnComplete = false
         playing = false
@@ -106,6 +169,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
 
     private func cleanupPlaybackResources() {
         removePlaybackObservers()
+        detachFromOffScreenHost()
 
         adsManager?.delegate = nil
         adsManager?.destroy()
