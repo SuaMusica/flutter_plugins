@@ -219,12 +219,10 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
 
     func setupAudioSession() {
         do {
+            let options: AVAudioSession.CategoryOptions = [.allowAirPlay, .allowBluetoothA2DP]
+            let mode: AVAudioSession.Mode = isOffScreenAdRequest() ? .default : .moviePlayback
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: mode, options: options)
             try AVAudioSession.sharedInstance().setActive(true)
-            if #available(iOS 10.0, *) {
-                try AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback, options: [])
-            } else {
-                try AVAudioSession.sharedInstance().setCategory(.playback, options: [])
-            }
         } catch let error {
             print("AD: \(error.localizedDescription)")
         }
@@ -321,6 +319,36 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             name: UIApplication.didEnterBackgroundNotification,
             object: nil
         )
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(AdsViewController.handleAudioSessionInterruption(notification:)),
+            name: AVAudioSession.interruptionNotification,
+            object: AVAudioSession.sharedInstance()
+        )
+    }
+
+    @objc func handleAudioSessionInterruption(notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeValue)
+        else { return }
+
+        switch type {
+        case .began:
+            print("AD: audio session interruption began")
+        case .ended:
+            print("AD: audio session interruption ended")
+            if let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt {
+                let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
+                if options.contains(.shouldResume) {
+                    setupAudioSession()
+                    adsManager?.resume()
+                }
+            }
+        @unknown default:
+            break
+        }
     }
 
     // Initialize ad display container.
@@ -364,7 +392,10 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
 
     @objc func applicationDidEnterBackground(notification: NSNotification) {
         print("AD: applicationDidEnterBackground")
-        self.active = false
+        // Off-screen audio ads must keep playing in background.
+        if !isOffScreenAdRequest() {
+            self.active = false
+        }
     }
 
     @objc func contentDidFinishPlaying(_ notification: Notification) {
@@ -406,7 +437,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     }
 
     func requestAds() {
-        guard self.active else {
+        guard self.active || isOffScreenAdRequest() else {
             onComplete()
             return
         }
