@@ -3,7 +3,7 @@ import GoogleInteractiveMediaAds
 import MediaPlayer
 import UIKit
 
-class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDelegate, AVPictureInPictureControllerDelegate {
+class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDelegate {
     var channel: FlutterMethodChannel?
 
     // Video objects
@@ -15,10 +15,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
     var adsLoader: IMAAdsLoader?
     var adsManager: IMAAdsManager?
     var companionSlot: IMACompanionAdSlot?
-
-    // PiP objects.
-    var pictureInPictureController: AVPictureInPictureController?
-    var pictureInPictureProxy: IMAPictureInPictureProxy?
 
     var isVideo: Bool = true
     var adUrl: String!
@@ -35,7 +31,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
 
     @IBOutlet weak var videoView: UIView!
     @IBOutlet weak var companionView: UIView!
-    @IBOutlet weak var pictureInPictureButton: UIButton!
 
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
@@ -184,10 +179,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         contentPlayer = nil
         contentPlayhead = nil
 
-        pictureInPictureController?.delegate = nil
-        pictureInPictureController = nil
-        pictureInPictureProxy = nil
-
         contentPlayerLayer?.removeFromSuperlayer()
         contentPlayerLayer = nil
 
@@ -279,23 +270,6 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
 
         // Set up our content playhead and contentComplete callback.
         contentPlayhead = IMAAVPlayerContentPlayhead(avPlayer: contentPlayer)
-
-        // Set ourselves up for PiP.
-        pictureInPictureProxy = IMAPictureInPictureProxy(avPictureInPictureControllerDelegate: self)
-
-        if let contentPlayerLayer {
-            pictureInPictureController = AVPictureInPictureController(playerLayer: contentPlayerLayer)
-        }
-
-        if pictureInPictureController != nil {
-            if #available(iOS 14.0, *) {
-                pictureInPictureController!.requiresLinearPlayback = true
-            }
-            pictureInPictureController!.delegate = pictureInPictureProxy
-        }
-        if !AVPictureInPictureController.isPictureInPictureSupported() && pictureInPictureButton != nil {
-            pictureInPictureButton.isHidden = true
-        }
 
         if let currentItem = contentPlayhead?.player.currentItem {
             NotificationCenter.default.addObserver(
@@ -442,9 +416,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             return
         }
 
-        guard let contentPlayer,
-              let pictureInPictureProxy
-        else {
+        guard let contentPlayer else {
             print("AD: ERROR: player is not ready to request ads")
             onComplete()
             return
@@ -455,7 +427,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
             adTagUrl: getAdTagUrl(),
             adDisplayContainer: createAdDisplayContainer(),
             avPlayerVideoDisplay: IMAAVPlayerVideoDisplay(avPlayer: contentPlayer),
-            pictureInPictureProxy: pictureInPictureProxy,
+            pictureInPictureProxy: nil,
             userContext: nil
         )
 
