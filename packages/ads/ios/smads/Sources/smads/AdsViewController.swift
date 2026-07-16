@@ -426,8 +426,7 @@ class AdsViewController: UIViewController, IMAAdsLoaderDelegate, IMAAdsManagerDe
         let request = IMAAdsRequest(
             adTagUrl: getAdTagUrl(),
             adDisplayContainer: createAdDisplayContainer(),
-            avPlayerVideoDisplay: IMAAVPlayerVideoDisplay(avPlayer: contentPlayer),
-            pictureInPictureProxy: nil,
+            contentPlayhead: contentPlayhead, // Passamos o playhead em vez do avPlayerVideoDisplay
             userContext: nil
         )
 
