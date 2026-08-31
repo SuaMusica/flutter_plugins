@@ -82,7 +82,16 @@ public class SwiftEqualizerPlugin: NSObject, FlutterPlugin {
                 result(OK)
                 
             } catch {
-                result(FlutterError(code: "-1", message: "An error occurred on init", details: error))
+                let nsError = error as NSError
+                result(FlutterError(
+                    code: "-1",
+                    message: "An error occurred on init",
+                    details: [
+                        "domain": nsError.domain,
+                        "code": nsError.code,
+                        "description": nsError.localizedDescription
+                    ]
+                ))
             }
             
         } else if (call.method == "open") {
